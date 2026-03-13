@@ -38,12 +38,7 @@ Append your identity to the task line. Use the format `@<tool>-<instance>` (e.g.
 - [ ] The task description (@your-agent-id)
 ```
 
-Commit the claim:
-
-```bash
-git add TASKS.md
-git commit -m "chore: claim task — <short task description>"
-```
+In multi-agent setups, commit and push the claim immediately. Otherwise, the claim commits with your work in step 5.
 
 ## 4. Do the work
 

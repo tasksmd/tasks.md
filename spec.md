@@ -1,6 +1,6 @@
 # TASKS.md Specification
 
-Version 0.5.0 (Draft)
+v0.5 (Draft)
 
 ## Overview
 
@@ -36,9 +36,9 @@ my-project/
 ```
 
 Discovery algorithm:
-1. Walk up from the agent's working directory toward the repository root (the directory containing `.git`) to find the nearest `TASKS.md`
-2. Also read the root `TASKS.md` if it's a different file
-3. Consider tasks from all applicable files together, prioritized by P-level regardless of which file they're in
+1. Find the repository root (the directory containing `.git`)
+2. Search for all `TASKS.md` files under the root, excluding `.git/` and `node_modules/`
+3. Read all discovered files and consider tasks together, prioritized by P-level regardless of which file they're in
 
 Task IDs should be unique across all `TASKS.md` files in the repo so blocker references are unambiguous. Blocker references work across files — the agent searches all applicable `TASKS.md` files for the ID.
 
@@ -222,6 +222,8 @@ An agent claims a task by appending its name in parentheses on the task line:
 
 Other agents should skip claimed tasks. On completion, the agent removes the entire task block from the file.
 
+In multi-agent setups, the agent should commit and push the claim immediately so other agents see it. In single-agent setups, the claim can be combined with the work commit — there's no one to race against.
+
 ### Agent Identity
 
 The recommended format is `@<tool>-<instance>`:
@@ -242,7 +244,9 @@ Teams can define their own identity convention in AGENTS.md. The key requirement
 
 Claiming is best-effort, not a distributed lock. Two agents can race to claim the same task if they read the file simultaneously. In practice this is rare — agents work on different timescales and the claim window is small. For stronger guarantees, use an MCP server as the coordination backend.
 
-Stale claims from crashed agents should be handled per team convention (e.g., "reclaim tasks with no activity for 30 minutes"). Document this in your AGENTS.md.
+Claims are only visible to other agents after the commit is pushed. An unpushed claim protects nothing in a multi-agent setup.
+
+Stale claims from crashed agents should be handled per team convention (e.g., "reclaim tasks with no commit activity for 30 minutes"). Document this in your AGENTS.md.
 
 ## Completion
 
@@ -259,7 +263,7 @@ Agents should read TASKS.md:
 - **After completing a task** — to pick up the next item
 - **When asked to "work on the next task"** or similar
 
-A missing or empty TASKS.md is not an error. The agent asks the user for instructions.
+A missing or empty TASKS.md is not an error — the agent should tell the user there are no tasks and ask for instructions. If no TASKS.md file exists anywhere in the repo, the agent should not create one unprompted.
 
 ### Writing Tasks
 

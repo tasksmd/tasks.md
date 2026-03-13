@@ -17,7 +17,7 @@ Pick the highest-priority unblocked task from TASKS.md and work on it.
 
 3. CLAIM IT — Append your identity (e.g., @gemini, @gemini-2) to the task line:
    - [ ] The task description (@your-agent-id)
-   Then commit: git add TASKS.md && git commit -m "chore: claim task — <description>"
+   In multi-agent setups, commit and push the claim immediately. Otherwise it commits with your work in step 5.
 
 4. DO THE WORK — Read Details, Files, Acceptance metadata. Check AGENTS.md for the project's build, test, and lint commands. Make minimal, focused edits. Run verification after changes.
 

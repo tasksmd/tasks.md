@@ -80,7 +80,7 @@ Agents claim different tasks, so removals target different lines and merge clean
 
 **Sub-tasks**: Nested checkboxes under a parent. Metadata first, then sub-tasks. The agent who claims the parent owns all sub-tasks. Remove the entire block when fully done.
 
-**Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Agent walks up to the git root to find files. Split when a file exceeds ~50 tasks.
+**Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Agent searches from the git root down to find all files. Split when a file exceeds ~50 tasks.
 
 See the [full specification](spec.md) for all details.
 
