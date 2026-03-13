@@ -16,12 +16,12 @@ Pick the highest-priority unblocked task from TASKS.md and work on it.
    - Prefer tasks whose **ID** appears in other tasks' **Blocked by** (unblocking has highest impact)
    - If the task has **Tags**, check whether they match your capabilities
 
-3. **Claim it** — append `(@cascade)` to the task line and commit:
+3. **Claim it** — append your identity (e.g., `(@cascade)`, `(@cascade-2)`) to the task line and commit:
    ```
    git add TASKS.md && git commit -m "chore: claim task — <description>"
    ```
 
-4. **Do the work** — read **Details**, **Files**, **Acceptance** metadata. Make focused edits. Run tests.
+4. **Do the work** — read **Details**, **Files**, **Acceptance** metadata. Check AGENTS.md for build/test/lint commands. Make focused edits. Run verification after changes.
 
 5. **Complete** — remove the entire task block (task line + metadata + sub-tasks) from TASKS.md. Commit with a conventional commit message:
    ```

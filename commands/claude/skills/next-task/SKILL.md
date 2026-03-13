@@ -2,6 +2,7 @@
 name: next-task
 description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
 disable-model-invocation: true
+allowed-tools: Bash, Read, Write, Edit, MultiEdit, Grep, Glob, LS
 ---
 
 # Next Task
@@ -31,10 +32,10 @@ If no tasks are available, tell the user.
 
 ## 3. Claim it
 
-Append your identity to the task line:
+Append your identity to the task line. Use the format `@<tool>-<instance>` (e.g., `@claude-code`, `@claude-code-2`):
 
 ```markdown
-- [ ] The task description (@claude-code)
+- [ ] The task description (@your-agent-id)
 ```
 
 Commit the claim:
@@ -47,8 +48,9 @@ git commit -m "chore: claim task — <short task description>"
 ## 4. Do the work
 
 - Read the task's **Details**, **Files**, and **Acceptance** metadata
+- Check AGENTS.md for the project's build, test, and lint commands
 - Make minimal, focused edits
-- Run the project's test/lint/typecheck commands if they exist
+- Run verification commands (test/lint/typecheck) after changes
 - Fix any issues before proceeding
 
 ## 5. Complete the task

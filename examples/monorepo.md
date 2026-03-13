@@ -27,3 +27,9 @@ Spec v0.5
 
 - [ ] Add changeset bot for automated version bumps
 - [ ] Consolidate duplicate ESLint configs into @myorg/eslint-config
+
+<!-- Cross-file blocker example:
+     If packages/api/TASKS.md had a task with **Blocked by**: ui-build-fix,
+     the agent would search all TASKS.md files and find ui-build-fix here
+     in the root file. The blocker resolves when ui-build-fix is completed
+     and removed from this file. -->

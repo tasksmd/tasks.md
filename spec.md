@@ -261,11 +261,14 @@ A missing or empty TASKS.md is not an error. The agent asks the user for instruc
 
 ### Writing Tasks
 
-In multi-agent setups, the **orchestrator should be the sole writer** of new tasks. This avoids merge conflicts from multiple agents appending to the same section simultaneously.
+When an agent discovers new work during implementation ("this function needs refactoring," "found a bug in the adjacent module"), it should add a task:
 
-When a single agent works alone, it can freely add tasks it discovers during implementation ("this function needs refactoring," "found a bug in the adjacent module").
+- Append to the **end** of the appropriate priority section
+- Use **P2** as the default if unsure of priority — it's valuable but not blocking
+- Add an **ID** if other tasks might need to reference it as a blocker
+- Include at least **Details** so the next agent has context
 
-Agents should claim and remove tasks regardless of setup — only *adding* new tasks needs coordination.
+In multi-agent setups, the **orchestrator should be the sole writer** of new tasks. This avoids merge conflicts from multiple agents appending to the same section simultaneously. Agents should claim and remove tasks regardless of setup — only *adding* new tasks needs coordination.
 
 ### Disagreements
 

@@ -33,16 +33,16 @@ Spec v0.5
 
 Most tasks are just checkboxes under priority headings. Tasks with dependencies get an **ID** so blockers can reference them stably. All metadata is optional.
 
-Add this to your AGENTS.md:
+Then add this to your `AGENTS.md` so agents know to use it:
 
 ```markdown
 ## Task Management
 - Read TASKS.md for available work before asking the user
 - Claim tasks by appending (@your-name) before starting work
 - Remove completed tasks from the file (history is in git log)
-- Prioritize tasks that unblock other work
-- Add new tasks you discover during implementation
 ```
+
+That's it. Your agent will read TASKS.md on session start and work through the queue.
 
 ## Why TASKS.md?
 
@@ -96,13 +96,15 @@ See the [full specification](spec.md) for all details.
 
 The most useful thing about TASKS.md is a single command: "pick the next task and do it." Drop a skill/command file into your agent's config and type `/next-task` to start an autonomous work loop:
 
-| Agent | Install | Format |
-|-------|---------|--------|
-| Claude Code | Copy [`commands/claude/skills/next-task/`](commands/claude/skills/next-task/SKILL.md) to `.claude/skills/next-task/` | [Skill](https://code.claude.com/docs/en/skills) (SKILL.md) |
-| Cursor | Copy [`commands/cursor/next-task.md`](commands/cursor/next-task.md) to `.cursor/commands/` | [Command](https://cursor.com/changelog/1-6) |
-| Windsurf | Copy [`commands/windsurf/next-task.md`](commands/windsurf/next-task.md) to `.windsurf/workflows/` | [Workflow](https://docs.codeium.com/windsurf/workflows) |
+| Agent | Install |
+|-------|---------|
+| Claude Code | `cp -r commands/claude/skills/next-task .claude/skills/` |
+| Cursor | `cp commands/cursor/next-task.md .cursor/commands/` |
+| Windsurf | `cp commands/windsurf/next-task.md .windsurf/workflows/` |
 
-The command reads TASKS.md, picks the highest-priority unblocked task, claims it, does the work, removes it on completion, and loops. Your agent works through the backlog without you pointing at individual tasks.
+The command reads TASKS.md, picks the highest-priority unblocked task, claims it, does the work, removes it on completion, and loops. Commit the command file to your repo so your whole team gets it.
+
+See [commands/](commands/) for the source files — [Claude Code skill](commands/claude/skills/next-task/SKILL.md), [Cursor command](commands/cursor/next-task.md), [Windsurf workflow](commands/windsurf/next-task.md).
 
 ## FAQ
 
