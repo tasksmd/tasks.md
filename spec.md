@@ -77,14 +77,28 @@ Spec v0.5
 
 ### Version
 
-The spec version is declared as plain text under the heading:
+The spec version is declared as plain text on the first non-empty line after `# Tasks`:
 
 ```markdown
 # Tasks
 Spec v0.5
 ```
 
-Capitalized but not bold — visually distinct from task metadata (which uses bold labels). Visible when rendered and tells both humans and tools which format to expect. If omitted, the latest version is assumed.
+Grammar: `Spec v<major>.<minor>` — case-sensitive, no patch version.
+
+```
+/^Spec v(\d+)\.(\d+)$/
+```
+
+| Example | Valid? |
+|---------|--------|
+| `Spec v0.5` | Yes |
+| `Spec v1.0` | Yes |
+| `spec v0.5` | No — lowercase `s` |
+| `Spec v0.5.1` | No — patch version not allowed |
+| `Spec v1` | No — minor version required |
+
+The version line is optional. If omitted, tools should assume the latest version. It is capitalized but not bold — visually distinct from task metadata (which uses bold labels).
 
 ### Priority Sections
 

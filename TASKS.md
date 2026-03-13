@@ -39,21 +39,6 @@ Spec v0.5
   - **Acceptance**: Site renders at the configured GitHub Pages URL.
     Mobile-responsive. All links work. No JavaScript required.
 
-- [ ] Define version line grammar for tooling
-  - **ID**: version-grammar
-  - **Tags**: spec, tooling
-  - **Details**: The spec shows `Spec v0.5` but never defines the grammar. Questions
-    tooling authors will ask:
-    - Is `spec v0.5` (lowercase) valid?
-    - Is `Spec v0.5.1` valid? `Spec v1`?
-    - Is the line required or optional? (spec says "if omitted, latest assumed")
-    - Exact regex for parsers?
-    Propose: `Spec v<major>.<minor>` — case-sensitive, no patch version, always
-    on the first non-empty line after `# Tasks`.
-  - **Files**: `spec.md`
-  - **Acceptance**: Spec includes a formal grammar (regex or BNF) for the version line.
-    The validator task can reference it.
-
 - [ ] Add concrete stale claim recovery protocol
   - **ID**: stale-claims
   - **Tags**: spec
