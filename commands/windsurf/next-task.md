@@ -6,28 +6,63 @@ description: Pick and work on the next task from TASKS.md
 
 Pick the highest-priority unblocked task from TASKS.md and work on it.
 
-## Steps
+## 1. Find the queue
 
-1. **Find the queue** — find all `TASKS.md` files from the current directory up to the git root. Read them all.
+```bash
+git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+find "$git_root" -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | head -20
+```
 
-2. **Pick a task** — select the first unclaimed, unblocked task by priority (P0 > P1 > P2 > P3):
-   - Skip tasks with `(@agent-name)` — claimed by another agent
-   - Skip tasks where **Blocked by** references an ID still in any TASKS.md
-   - Prefer tasks whose **ID** appears in other tasks' **Blocked by** (unblocking has highest impact)
-   - If the task has **Tags**, check whether they match your capabilities
+Read all discovered TASKS.md files.
 
-3. **Claim it** — append your identity (e.g., `(@cascade)`, `(@cascade-2)`) to the task line and commit:
-   ```
-   git add TASKS.md && git commit -m "chore: claim task — <description>"
-   ```
+## 2. Pick a task
 
-4. **Do the work** — read **Details**, **Files**, **Acceptance** metadata. Check AGENTS.md for build/test/lint commands. Make focused edits. Run verification after changes.
+Select the first unclaimed, unblocked task by priority:
 
-5. **Complete** — remove the entire task block (task line + metadata + sub-tasks) from TASKS.md. Commit with a conventional commit message:
-   ```
-   git add <changed-files> TASKS.md
-   git commit -m "<type>: <description>"
-   git pull --rebase && git push
-   ```
+1. **P0** first, then **P1**, **P2**, **P3**
+2. Skip tasks with `(@agent-name)` — they're claimed by another agent
+3. Skip tasks where **Blocked by** references an ID that still exists in any TASKS.md file
+4. Prefer tasks that unblock other tasks — if this task's **ID** appears in another task's **Blocked by**, it has the highest impact
+5. If the task has **Tags**, check whether they match your capabilities
 
-6. **Loop** — read TASKS.md again, pick the next task. Continue until empty or stopped.
+If no tasks are available, tell the user.
+
+## 3. Claim it
+
+Append your identity to the task line. Use the format `@<tool>-<instance>` (e.g., `@cascade`, `@cascade-2`):
+
+```markdown
+- [ ] The task description (@your-agent-id)
+```
+
+Commit the claim:
+
+```bash
+git add TASKS.md
+git commit -m "chore: claim task — <short task description>"
+```
+
+## 4. Do the work
+
+- Read the task's **Details**, **Files**, and **Acceptance** metadata
+- Check AGENTS.md for the project's build, test, and lint commands
+- Make minimal, focused edits
+- Run verification commands (test/lint/typecheck) after changes
+- Fix any issues before proceeding
+
+## 5. Complete the task
+
+Remove the entire task block from TASKS.md — the task line, all metadata, and any sub-tasks. Completed task history lives in git log.
+
+Commit everything together:
+
+```bash
+git add <changed-files> TASKS.md
+git commit -m "<conventional commit for the actual work>"
+git pull --rebase
+git push
+```
+
+## 6. Loop
+
+Read TASKS.md again and pick the next task. Continue until the queue is empty or the user stops you.

@@ -97,7 +97,7 @@ Tasks are organized under four priority headings — `## P0` through `## P3`:
 | `## P2` | Valuable but not blocking. Do after P0 and P1 are clear. |
 | `## P3` | Someday. Kept for reference, not actively worked. |
 
-P0–P3 is the [industry-standard severity scale](https://en.wikipedia.org/wiki/Severity_(engineering)) used by PagerDuty, Google SRE, and most incident management systems. We adopt it directly rather than inventing a new scheme.
+P0–P3 is a widely-used priority scale (PagerDuty, Google SRE, most incident management systems). We adopt it directly rather than inventing a new scheme.
 
 Empty sections can be omitted. Higher sections = higher priority. First task in a section = most important within that priority.
 
@@ -228,10 +228,12 @@ The recommended format is `@<tool>-<instance>`:
 
 | Example | Meaning |
 |---------|---------|
-| `@cursor-1` | Cursor, window 1 |
 | `@claude-code` | Claude Code CLI |
-| `@copilot-agent` | GitHub Copilot coding agent |
+| `@codex` | OpenAI Codex CLI |
+| `@cursor-1` | Cursor, window 1 |
+| `@gemini` | Gemini CLI |
 | `@cascade-bg` | Windsurf Cascade, background |
+| `@copilot-agent` | GitHub Copilot coding agent |
 | `@pipeline-a1b2` | Orchestrator pipeline |
 
 Teams can define their own identity convention in AGENTS.md. The key requirement is that identifiers distinguish concurrent instances of the same tool.
@@ -298,9 +300,19 @@ Reference TASKS.md from your AGENTS.md:
 - @docs-agent: tags docs
 ```
 
-### Agent Commands
+## Agent Commands
 
 Ready-made `/next-task` commands are available for [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://developers.openai.com/codex/skills), [Cursor](https://cursor.com/changelog/1-6), [Gemini CLI](https://geminicli.com/docs/cli/custom-commands/), and [Windsurf](https://docs.codeium.com/windsurf/workflows). Each implements the full pick → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
+
+Invocation syntax varies by agent:
+
+| Agent | Invoke |
+|-------|--------|
+| Claude Code | `/next-task` |
+| Codex | `$next-task` |
+| Cursor | `/next-task` |
+| Gemini CLI | `/next-task` |
+| Windsurf | `/next-task` |
 
 ## Orchestrator Integration
 

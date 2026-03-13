@@ -66,7 +66,7 @@ Agents claim different tasks, so removals target different lines and merge clean
 
 ## The Format
 
-**Priority**: `## P0` through `## P3` — the [industry-standard severity scale](https://en.wikipedia.org/wiki/Severity_(engineering)) (PagerDuty, Google SRE).
+**Priority**: `## P0` through `## P3` — a widely-used priority scale (PagerDuty, Google SRE).
 
 **Tasks**: Markdown checkboxes. Should be completable in a single agent session.
 
@@ -104,9 +104,9 @@ The most useful thing about TASKS.md is a single command: "pick the next task an
 | Gemini CLI | `cp commands/gemini/next-task.toml .gemini/commands/` |
 | Windsurf | `cp commands/windsurf/next-task.md .windsurf/workflows/` |
 
-The command reads TASKS.md, picks the highest-priority unblocked task, claims it, does the work, removes it on completion, and loops. Commit the command file to your repo so your whole team gets it.
+The command reads TASKS.md, picks the highest-priority unblocked task, claims it, does the work, removes it on completion, and loops.
 
-See [commands/](commands/) for all source files.
+All paths above are **project-local** (inside your repo). Commit the command file so your whole team gets it. See [commands/](commands/) for all source files and format details.
 
 ## FAQ
 

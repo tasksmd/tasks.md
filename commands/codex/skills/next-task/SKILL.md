@@ -9,7 +9,12 @@ Pick the highest-priority unblocked task from TASKS.md and work on it.
 
 ## 1. Find the queue
 
-Find all `TASKS.md` files from the current directory up to the git root. Read them all.
+```bash
+git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+find "$git_root" -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | head -20
+```
+
+Read all discovered TASKS.md files.
 
 ## 2. Pick a task
 
@@ -25,10 +30,17 @@ If no tasks are available, tell the user.
 
 ## 3. Claim it
 
-Append your identity (e.g., `(@codex)`, `(@codex-2)`) to the task line and commit:
+Append your identity to the task line. Use the format `@<tool>-<instance>` (e.g., `@codex`, `@codex-2`):
 
+```markdown
+- [ ] The task description (@your-agent-id)
 ```
-git add TASKS.md && git commit -m "chore: claim task — <description>"
+
+Commit the claim:
+
+```bash
+git add TASKS.md
+git commit -m "chore: claim task — <short task description>"
 ```
 
 ## 4. Do the work
@@ -41,14 +53,17 @@ git add TASKS.md && git commit -m "chore: claim task — <description>"
 
 ## 5. Complete the task
 
-Remove the entire task block (task line + metadata + sub-tasks) from TASKS.md. Commit with a conventional commit message:
+Remove the entire task block from TASKS.md — the task line, all metadata, and any sub-tasks. Completed task history lives in git log.
 
-```
+Commit everything together:
+
+```bash
 git add <changed-files> TASKS.md
-git commit -m "<type>: <description>"
-git pull --rebase && git push
+git commit -m "<conventional commit for the actual work>"
+git pull --rebase
+git push
 ```
 
 ## 6. Loop
 
-Read TASKS.md again, pick the next task. Continue until empty or stopped.
+Read TASKS.md again and pick the next task. Continue until the queue is empty or the user stops you.
