@@ -167,7 +167,20 @@ They complement each other. A GitHub Issue says "Add auth." TASKS.md breaks that
 
 ### Why not TODO.md?
 
-`TODO.md` has baggage — it's often a dumping ground with no structure, priority, or ownership. TASKS.md is a managed queue with a strict format. The name parallels AGENTS.md.
+We considered improving `TODO.md` instead of creating a new file. Here's why we didn't:
+
+**TODO.md has no spec.** There are thousands of `TODO.md` files in the wild and they all look different — flat bullet lists, numbered lists, headings by feature, headings by date, mixed prose. Defining a strict format for `TODO.md` would make every existing one "non-compliant." With TASKS.md, there's no legacy to conflict with.
+
+**Different mental model.** A "todo list" is a passive wish list for humans. A "task queue" is an active work queue for agents and orchestrators. The name sets the right expectation: this file is read and written by machines, not just skimmed by people.
+
+**Naming convention.** The agent standards family is forming: `AGENTS.md` (instructions), `TASKS.md` (work queue). `TODO.md` doesn't fit this pattern.
+
+**If you already have a TODO.md**, migration is simple — rename it, add the `P0`–`P3` headings, and convert items to checkboxes:
+
+```bash
+mv TODO.md TASKS.md
+# Add priority headings and checkbox format per the spec
+```
 
 ### Do I need an orchestrator?
 
