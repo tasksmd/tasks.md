@@ -139,6 +139,27 @@ Tasks can have nested metadata using bold labels:
   - **Blocked by**: jwt-upgrade
 ```
 
+Metadata values can span multiple indented lines. Everything indented under the bold label is part of that field's value:
+
+```markdown
+- [ ] Migrate payment processing to Stripe v2 API
+  - **ID**: stripe-v2
+  - **Tags**: backend, payments
+  - **Details**: The current integration uses Stripe v1 which is deprecated.
+    Key changes needed:
+    - Replace `charges.create()` with `paymentIntents.create()`
+    - Add support for 3D Secure authentication flow
+    - Update webhook handlers for new event format
+    - Migrate stored customer payment methods using Stripe's batch tool
+    The v1 API will be removed on 2025-06-01. See https://stripe.com/docs/upgrades
+  - **Files**: `src/payments/stripe.ts`, `src/webhooks/stripe.ts`,
+    `src/payments/types.ts`, `tests/payments/stripe.test.ts`
+  - **Acceptance**: All existing payment flows work on v2 API.
+    3D Secure triggers correctly for EU cards.
+    Webhook signature validation passes.
+    No v1 API calls remain in codebase.
+```
+
 | Field | Purpose |
 |-------|---------|
 | **ID** | Stable identifier for blocker references and cross-file linking |
