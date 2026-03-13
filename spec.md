@@ -260,7 +260,17 @@ Claiming is best-effort, not a distributed lock. Two agents can race to claim th
 
 Claims are only visible to other agents after the commit is pushed. An unpushed claim protects nothing in a multi-agent setup.
 
-Stale claims from crashed agents should be handled per team convention (e.g., "reclaim tasks with no commit activity for 30 minutes"). Document this in your AGENTS.md.
+### Stale Claims
+
+A claim becomes stale when the claiming agent crashes or its session ends before completing the task. Two recovery paths:
+
+1. **Same agent restarts** — The agent's `/next-task` command checks for its own prior claims and resumes (see Reading Tasks). This is the common case and is handled automatically.
+
+2. **Different agent encounters a claimed task** — Check `git log` for recent commits by the claiming agent. If the repo has no commits referencing that agent's work in the last 30 minutes, the claim is likely stale. The agent should ask the user before reclaiming — never silently steal another agent's task.
+
+To reclaim: replace the stale `(@old-agent)` with `(@your-agent-id)` on the task line.
+
+Teams with specific SLAs or automated reclamation should document their policy in AGENTS.md.
 
 ## Completion
 

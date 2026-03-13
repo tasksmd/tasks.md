@@ -39,21 +39,6 @@ Spec v0.5
   - **Acceptance**: Site renders at the configured GitHub Pages URL.
     Mobile-responsive. All links work. No JavaScript required.
 
-- [ ] Add concrete stale claim recovery protocol
-  - **ID**: stale-claims
-  - **Tags**: spec
-  - **Details**: "Handle per team convention" is a cop-out for the most common real-world
-    failure (agent crashes mid-task). The spec should provide a recommended default:
-    - Define "stale" as: no commits by the claiming agent in the last N minutes
-    - HOW to check: `git log --author=<agent> --since="30 minutes ago"` (but agents
-      don't have git authors — claims are just `(@name)` annotations)
-    - Alternative: timestamp-based (`(@cursor-1 2025-03-13T17:00)`)
-    - Or: just document "any agent can reclaim after 30 min of no pushes to the branch"
-    This is the #1 real-world multi-agent failure mode. Punting it weakens the spec.
-  - **Files**: `spec.md`
-  - **Acceptance**: Spec has a recommended stale claim policy. The policy is
-    implementable without custom tooling (git log or file timestamps only).
-
 - [ ] Clarify tag matching semantics for agent routing
   - **ID**: tag-semantics
   - **Tags**: spec
