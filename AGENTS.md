@@ -6,6 +6,7 @@
 ## Contributing
 - Edit `spec.md` for specification changes
 - Add examples to `examples/` directory
+- Add or improve agent commands in `commands/` (Claude Code skills, Cursor commands, Windsurf workflows)
 - Keep README.md as the landing page / quick start
 - Use conventional commits: `feat:`, `fix:`, `docs:`
 
