@@ -36,11 +36,11 @@ my-project/
 ```
 
 Discovery algorithm:
-1. Walk up from the agent's working directory to find the nearest `TASKS.md`
+1. Walk up from the agent's working directory toward the repository root (the directory containing `.git`) to find the nearest `TASKS.md`
 2. Also read the root `TASKS.md` if it's a different file
 3. Consider tasks from all applicable files together, prioritized by P-level regardless of which file they're in
 
-Task IDs should be unique across all `TASKS.md` files in the repo so blocker references are unambiguous.
+Task IDs should be unique across all `TASKS.md` files in the repo so blocker references are unambiguous. Blocker references work across files — the agent searches all applicable `TASKS.md` files for the ID.
 
 **When to split**: Consider separate files when a single TASKS.md exceeds ~50 tasks, or when teams working in different packages rarely overlap on tasks.
 
@@ -48,8 +48,7 @@ Task IDs should be unique across all `TASKS.md` files in the repo so blocker ref
 
 ```markdown
 # Tasks
-
-**Spec**: v0.5
+spec v0.5
 
 ## P0
 
@@ -62,7 +61,6 @@ Task IDs should be unique across all `TASKS.md` files in the repo so blocker ref
 ## P1
 
 - [ ] Add rate limiting to public API endpoints (@cursor-1)
-  - **ID**: rate-limit
   - **Details**: Use express-rate-limit, 100 req/min per IP
   - **Blocked by**: auth-fix
 
@@ -77,15 +75,14 @@ Task IDs should be unique across all `TASKS.md` files in the repo so blocker ref
 
 ### Version
 
-The spec version is declared as a metadata line under the heading:
+The spec version is declared as plain text under the heading:
 
 ```markdown
 # Tasks
-
-**Spec**: v0.5
+spec v0.5
 ```
 
-This is visible when rendered and tells both humans and tools which format to expect. If omitted, the latest version is assumed.
+This is visible when rendered and tells both humans and tools which format to expect. Plain text distinguishes it from task metadata (which uses bold labels). If omitted, the latest version is assumed.
 
 ### Priority Sections
 
@@ -149,6 +146,8 @@ Tasks can have nested metadata using bold labels:
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
+Teams can add custom metadata fields beyond these five (e.g., labels, estimates, assignees). The five fields above are the ones the spec defines behavior for.
+
 ### Blockers
 
 Blockers reference tasks by their **ID**:
@@ -158,23 +157,29 @@ Blockers reference tasks by their **ID**:
   - **Blocked by**: auth-fix, rate-limit
 ```
 
-A blocked task should not be started until every referenced ID has been removed from the file (i.e., completed). Agents should:
+An agent checking blockers searches all applicable `TASKS.md` files for the referenced IDs. If an ID is not found in any file, that blocker is resolved (the task was completed and removed). The **Blocked by** line can be cleaned up by any agent, but the search is what determines whether a task is actually blocked.
+
+Agents should:
 1. Skip blocked tasks when selecting work
 2. Prioritize tasks that block other work — unblocking has the highest impact
-3. Remove the **Blocked by** line (or individual IDs) when the blocking task is gone
 
 ### Sub-tasks
 
-Tasks can have sub-tasks as nested checkboxes:
+Tasks can have sub-tasks as nested checkboxes. Metadata comes first, then sub-tasks:
 
 ```markdown
-- [ ] Implement user authentication
+- [ ] Implement user authentication (@cursor-1)
+  - **ID**: auth
+  - **Details**: Use JWT with refresh tokens
+  - **Acceptance**: All auth endpoints working, tests pass
   - [x] Design auth schema
-  - [ ] Set up JWT token generation
+  - [x] Set up JWT token generation
   - [ ] Add login endpoint
+  - [ ] Add logout endpoint
 ```
 
 Rules:
+- Metadata fields come first, sub-tasks after
 - Sub-tasks marked `[x]` stay in the file — they track progress on the parent
 - When the parent task is fully complete (all sub-tasks done), the entire block is removed: parent, sub-tasks, and metadata together
 - Sub-tasks inherit priority from their parent
@@ -286,14 +291,4 @@ This works whether the orchestrator is a server, a CI pipeline, or a human runni
 
 ## Spec Versioning
 
-This specification follows [Semantic Versioning](https://semver.org/).
-
-| Version | Status | Changes |
-|---------|--------|---------|
-| 0.5.0 | Draft | Task IDs as metadata field, spec version as metadata line, sub-task ownership, task granularity, concurrent write guidance, agent disagreement protocol |
-| 0.4.0 | Superseded | Task names as identifiers, SHOULD-based language |
-| 0.3.0 | Superseded | Inline task IDs, multi-file support, simplified priority headings |
-| 0.2.0 | Superseded | Orchestrator-first framing, strict format |
-| 0.1.0 | Superseded | Initial draft |
-
-Breaking changes increment the minor version during 0.x development.
+This specification follows [Semantic Versioning](https://semver.org/). Breaking changes increment the minor version during 0.x development. Full version history is in the git log.

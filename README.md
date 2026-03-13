@@ -10,26 +10,30 @@ Create a `TASKS.md` at your repo root:
 
 ```markdown
 # Tasks
+spec v0.5
 
-**Spec**: v0.5
+## P1
 
-## P0
+- [ ] Add rate limiting to public API endpoints
+- [ ] Migrate database queries to prepared statements
+- [ ] Update README with new API endpoints
 
+## P2
+
+- [ ] Add request/response logging middleware
+```
+
+That's the minimal version — just checkboxes under priority headings. When tasks have dependencies, add metadata:
+
+```markdown
 - [ ] Fix authentication crash on token refresh
   - **ID**: auth-fix
   - **Details**: JWT refresh returns 500 on expired tokens
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
   - **Acceptance**: Refresh works, tests pass, regression test added
 
-## P1
-
 - [ ] Add rate limiting to public API endpoints
-  - **ID**: rate-limit
   - **Blocked by**: auth-fix
-
-## P2
-
-- [ ] Update README with new API endpoints
 ```
 
 Tasks with dependencies get an **ID** so blockers can reference them stably. Tasks without blockers don't need one.
@@ -71,15 +75,15 @@ Agents claim different tasks, so removals target different lines and merge clean
 
 **Tasks**: Markdown checkboxes. Should be completable in a single agent session.
 
-**IDs**: An `**ID**: kebab-case` metadata field on tasks that are referenced as blockers. Stable — don't change once assigned.
+**IDs**: An `**ID**: kebab-case` metadata field on tasks referenced as blockers. Stable — don't change once assigned.
 
-**Blockers**: `**Blocked by**: auth-fix, rate-limit` — references task IDs. A task is unblocked when the referenced IDs are no longer in the file.
+**Blockers**: `**Blocked by**: auth-fix, rate-limit` — references task IDs across all files. A task is unblocked when the referenced IDs are no longer in any file.
 
-**Metadata**: Optional nested fields — **ID**, **Details**, **Files**, **Acceptance**, **Blocked by**.
+**Metadata**: Optional nested fields — **ID**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields (labels, estimates) beyond these five.
 
-**Sub-tasks**: Nested checkboxes under a parent. Mark `[x]` as you go. The agent who claims the parent owns all sub-tasks. Remove the entire block when fully done.
+**Sub-tasks**: Nested checkboxes under a parent. Metadata first, then sub-tasks. The agent who claims the parent owns all sub-tasks. Remove the entire block when fully done.
 
-**Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Split when a file exceeds ~50 tasks or when teams rarely overlap.
+**Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Agent walks up to the git root to find files. Split when a file exceeds ~50 tasks.
 
 See the [full specification](spec.md) for all details.
 

@@ -1,6 +1,5 @@
 # Tasks
-
-**Spec**: v0.5
+spec v0.5
 
 ## P1
 
