@@ -346,6 +346,32 @@ This works whether the orchestrator is a server, a CI pipeline, or a human runni
 | [MCP](https://modelcontextprotocol.io/) | An MCP server can provide read/write access to TASKS.md. |
 | GitHub Issues / Jira | Issues track features for teams. TASKS.md tracks implementation steps for agents. A single Issue may produce multiple TASKS.md entries. |
 
+## Design Decisions
+
+### Why is the version line plain text instead of a structured field?
+
+`Spec v0.5` as plain text is an intentional tradeoff for simplicity. A structured header (YAML frontmatter, HTML comment) would be easier to parse but harder for humans to type and read. LLMs parse "Spec v0.5" reliably, and the line's fixed position (first non-empty line after `# Tasks`) makes it unambiguous in practice.
+
+### Why not enforce task ordering within a priority section?
+
+Ordering within a section is inherently subjective — "most important P1" depends on context that changes hourly. The spec recommends placing the most important task first, but doesn't enforce it. Agents should treat all tasks in a section as roughly equal priority and use blocker relationships to determine sequencing.
+
+### Isn't best-effort claiming too weak for real coordination?
+
+For file-based coordination, yes — two agents can theoretically race to claim the same task. In practice this is rare because the claim window is a single git commit. For stronger guarantees, use an MCP server as the coordination backend (a tasks-mcp server is on the [roadmap](TASKS.md)). The spec defines the protocol; the transport can be upgraded without changing the format.
+
+### Why delete completed tasks instead of marking them done?
+
+Git log is the archive by design. A `## Done` section or `[x]` marker would grow unboundedly and add noise to a file that should show only pending work. `git log -p --all -S "auth-fix"` finds any completed task instantly. This mirrors how CI pipelines work — the queue shows pending jobs, not historical runs.
+
+### Why does `commands/` use its own directory structure instead of dotfile paths?
+
+`commands/` is a neutral staging area that users copy from. Mirroring dotfile paths (`.claude/skills/`, `.cursor/commands/`) in the repo would imply the repo itself is a project that uses these agents, which it isn't. The directory names (`claude/`, `cursor/`, `gemini/`, etc.) are clear enough, and the README install table shows exactly where each file goes.
+
+### Why does the complex example mix so many concepts?
+
+`examples/complex-tasks.md` is specifically the "everything together" example — multiline details, sub-tasks, blockers, tags, and claims in one file. The other examples (`web-app.md`, `cli-tool.md`) demonstrate simpler patterns. Having one example that shows how all features compose is important for users who need the full feature set.
+
 ## Spec Versioning
 
 This specification follows [Semantic Versioning](https://semver.org/). Breaking changes increment the minor version during 0.x development. Full version history is in the git log.
