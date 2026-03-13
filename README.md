@@ -99,12 +99,14 @@ The most useful thing about TASKS.md is a single command: "pick the next task an
 | Agent | Install |
 |-------|---------|
 | Claude Code | `cp -r commands/claude/skills/next-task .claude/skills/` |
+| Codex | `cp -r commands/codex/skills/next-task .agents/skills/` |
 | Cursor | `cp commands/cursor/next-task.md .cursor/commands/` |
+| Gemini CLI | `cp commands/gemini/next-task.toml .gemini/commands/` |
 | Windsurf | `cp commands/windsurf/next-task.md .windsurf/workflows/` |
 
 The command reads TASKS.md, picks the highest-priority unblocked task, claims it, does the work, removes it on completion, and loops. Commit the command file to your repo so your whole team gets it.
 
-See [commands/](commands/) for the source files — [Claude Code skill](commands/claude/skills/next-task/SKILL.md), [Cursor command](commands/cursor/next-task.md), [Windsurf workflow](commands/windsurf/next-task.md).
+See [commands/](commands/) for all source files.
 
 ## FAQ
 

@@ -300,7 +300,7 @@ Reference TASKS.md from your AGENTS.md:
 
 ### Agent Commands
 
-Ready-made `/next-task` commands are available for Claude Code ([Skill](https://code.claude.com/docs/en/skills)), Cursor ([Command](https://cursor.com/changelog/1-6)), and Windsurf ([Workflow](https://docs.codeium.com/windsurf/workflows)). Each implements the full pick → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
+Ready-made `/next-task` commands are available for [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://developers.openai.com/codex/skills), [Cursor](https://cursor.com/changelog/1-6), [Gemini CLI](https://geminicli.com/docs/cli/custom-commands/), and [Windsurf](https://docs.codeium.com/windsurf/workflows). Each implements the full pick → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
 
 ## Orchestrator Integration
 
