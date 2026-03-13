@@ -129,6 +129,7 @@ Tasks can have nested metadata using bold labels:
 ```markdown
 - [ ] Fix authentication crash on token refresh
   - **ID**: auth-fix
+  - **Tags**: backend, auth
   - **Details**: JWT refresh returns 500 on expired tokens.
     Catch TokenExpiredError and issue a new token.
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
@@ -139,6 +140,7 @@ Tasks can have nested metadata using bold labels:
 | Field | Purpose |
 |-------|---------|
 | **ID** | Stable identifier for blocker references and cross-file linking |
+| **Tags** | Comma-separated labels for filtering and orchestrator routing |
 | **Details** | Implementation guidance, context, approach |
 | **Files** | Relevant file paths (backtick-quoted, comma-separated) |
 | **Acceptance** | Definition of done |
@@ -146,7 +148,7 @@ Tasks can have nested metadata using bold labels:
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
-Teams can add custom metadata fields beyond these five (e.g., labels, estimates, assignees). The five fields above are the ones the spec defines behavior for.
+Teams can add custom metadata fields beyond these six (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
 
 ### Blockers
 
@@ -278,6 +280,23 @@ TASKS.md serves as the interface between an orchestrator and its agents:
 1. **Orchestrator** decomposes work into tasks and writes TASKS.md
 2. **Agent** reads TASKS.md, claims a task, implements it, removes it when done
 3. **Orchestrator** monitors the file, resolves blockers, adds follow-up tasks
+
+### Tag-Based Routing
+
+Orchestrators can use **Tags** to route tasks to specialized agents:
+
+```markdown
+- [ ] Fix N+1 query in user dashboard
+  - **Tags**: backend, database
+
+- [ ] Update onboarding flow copy
+  - **Tags**: frontend, ux
+
+- [ ] Write API migration guide
+  - **Tags**: docs
+```
+
+The orchestrator matches tags against agent capabilities (defined in AGENTS.md) and assigns accordingly. Without tags, the orchestrator assigns by priority order alone.
 
 This works whether the orchestrator is a server, a CI pipeline, or a human running agents from chat.
 

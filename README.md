@@ -79,7 +79,9 @@ Agents claim different tasks, so removals target different lines and merge clean
 
 **Blockers**: `**Blocked by**: auth-fix, rate-limit` — references task IDs across all files. A task is unblocked when the referenced IDs are no longer in any file.
 
-**Metadata**: Optional nested fields — **ID**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields (labels, estimates) beyond these five.
+**Tags**: `**Tags**: backend, auth` — comma-separated labels for filtering and orchestrator routing to specialized agents.
+
+**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields (estimates, assignees) beyond these six.
 
 **Sub-tasks**: Nested checkboxes under a parent. Metadata first, then sub-tasks. The agent who claims the parent owns all sub-tasks. Remove the entire block when fully done.
 
