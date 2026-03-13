@@ -39,19 +39,6 @@ Spec v0.5
   - **Acceptance**: Site renders at the configured GitHub Pages URL.
     Mobile-responsive. All links work. No JavaScript required.
 
-- [ ] Resolve "agents write tasks" vs "orchestrator sole writer" contradiction
-  - **ID**: writing-rule
-  - **Tags**: spec
-  - **Details**: Spec lines 270-277 tell agents to add discovered tasks. Line 277 says
-    the orchestrator should be the sole writer. These directly contradict. Options:
-    - Remove the sole-writer rule entirely (agents always write)
-    - Scope the sole-writer rule to only apply when an orchestrator is declared in AGENTS.md
-    - Split into "single-agent" and "multi-agent" behavior sections
-    The current wording confuses implementers building agent commands.
-  - **Files**: `spec.md`
-  - **Acceptance**: One clear rule for when agents vs orchestrators write new tasks.
-    No contradictory guidance in the same section.
-
 - [ ] Define version line grammar for tooling
   - **ID**: version-grammar
   - **Tags**: spec, tooling

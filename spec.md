@@ -276,7 +276,7 @@ When an agent discovers new work during implementation ("this function needs ref
 - Add an **ID** if other tasks might need to reference it as a blocker
 - Include at least **Details** so the next agent has context
 
-In multi-agent setups, the **orchestrator should be the sole writer** of new tasks. This avoids merge conflicts from multiple agents appending to the same section simultaneously. Agents should claim and remove tasks regardless of setup — only *adding* new tasks needs coordination.
+If an orchestrator manages the file (declared in AGENTS.md), the **orchestrator is the sole writer** of new tasks — agents report discovered work to the orchestrator instead of writing directly. This avoids merge conflicts from multiple agents appending to the same section simultaneously. Claiming and removing tasks is always done by the agent, regardless of setup.
 
 ### Disagreements
 
