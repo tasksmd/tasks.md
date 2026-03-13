@@ -91,6 +91,18 @@ See the [full specification](spec.md) for all details.
 - [Monorepo](examples/monorepo.md)
 - [Multi-agent workflow](examples/multi-agent.md)
 
+## Agent Commands
+
+The most useful thing about TASKS.md is a simple command: "pick the next task and do it." Drop a command file into your agent's config and use `/next-task` to start an autonomous work loop:
+
+| Agent | Install |
+|-------|---------|
+| Claude Code | Copy [`commands/claude/next-task.md`](commands/claude/next-task.md) to `.claude/commands/` |
+| Cursor | Copy [`commands/cursor/next-task.md`](commands/cursor/next-task.md) to `.cursor/commands/` |
+| Windsurf | Copy [`commands/windsurf/next-task.md`](commands/windsurf/next-task.md) to `.windsurf/workflows/` |
+
+The command reads TASKS.md, picks the highest-priority unblocked task, claims it, does the work, removes it on completion, and loops. Your agent works through the backlog without you pointing at individual tasks.
+
 ## FAQ
 
 ### How is this different from GitHub Issues?
