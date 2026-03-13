@@ -1,6 +1,6 @@
 # TASKS.md Specification
 
-**Version**: 0.5.0 (Draft)
+Version 0.5.0 (Draft)
 
 ## Overview
 
@@ -48,12 +48,13 @@ Task IDs should be unique across all `TASKS.md` files in the repo so blocker ref
 
 ```markdown
 # Tasks
-spec v0.5
+Spec v0.5
 
 ## P0
 
 - [ ] Fix authentication crash on token refresh
   - **ID**: auth-fix
+  - **Tags**: backend, auth
   - **Details**: JWT refresh returns 500 on expired tokens
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
   - **Acceptance**: Refresh works, tests pass, regression test added
@@ -61,6 +62,7 @@ spec v0.5
 ## P1
 
 - [ ] Add rate limiting to public API endpoints (@cursor-1)
+  - **Tags**: backend
   - **Details**: Use express-rate-limit, 100 req/min per IP
   - **Blocked by**: auth-fix
 
@@ -79,10 +81,10 @@ The spec version is declared as plain text under the heading:
 
 ```markdown
 # Tasks
-spec v0.5
+Spec v0.5
 ```
 
-This is visible when rendered and tells both humans and tools which format to expect. Plain text distinguishes it from task metadata (which uses bold labels). If omitted, the latest version is assumed.
+Capitalized but not bold — visually distinct from task metadata (which uses bold labels). Visible when rendered and tells both humans and tools which format to expect. If omitted, the latest version is assumed.
 
 ### Priority Sections
 
@@ -140,7 +142,7 @@ Tasks can have nested metadata using bold labels:
 | Field | Purpose |
 |-------|---------|
 | **ID** | Stable identifier for blocker references and cross-file linking |
-| **Tags** | Comma-separated labels for filtering and orchestrator routing |
+| **Tags** | Lowercase, comma-separated labels for filtering and orchestrator routing |
 | **Details** | Implementation guidance, context, approach |
 | **Files** | Relevant file paths (backtick-quoted, comma-separated) |
 | **Acceptance** | Definition of done |
@@ -149,6 +151,8 @@ Tasks can have nested metadata using bold labels:
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
 Teams can add custom metadata fields beyond these six (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
+
+Tags are lowercase, freeform labels. Teams should document their tag vocabulary in AGENTS.md to keep values consistent across tasks and agents.
 
 ### Blockers
 
@@ -263,6 +267,11 @@ Reference TASKS.md from your AGENTS.md:
 - Remove completed tasks from the file (history is in git log)
 - Prioritize tasks that unblock other work
 - Add new tasks you discover during implementation
+
+## Agents
+- @backend-agent: tags backend, database, infra
+- @frontend-agent: tags frontend, ux
+- @docs-agent: tags docs
 ```
 
 ## Orchestrator Integration
@@ -283,20 +292,9 @@ TASKS.md serves as the interface between an orchestrator and its agents:
 
 ### Tag-Based Routing
 
-Orchestrators can use **Tags** to route tasks to specialized agents:
+Orchestrators can use **Tags** to route tasks to specialized agents. The orchestrator matches task tags against agent capabilities (declared in the AGENTS.md `## Agents` section) and assigns accordingly.
 
-```markdown
-- [ ] Fix N+1 query in user dashboard
-  - **Tags**: backend, database
-
-- [ ] Update onboarding flow copy
-  - **Tags**: frontend, ux
-
-- [ ] Write API migration guide
-  - **Tags**: docs
-```
-
-The orchestrator matches tags against agent capabilities (defined in AGENTS.md) and assigns accordingly. Without tags, the orchestrator assigns by priority order alone.
+Tasks without tags are available to any agent. Tagged tasks are preferentially routed to matching agents but not exclusively locked — any agent can claim an unmatched task if no specialist is available.
 
 This works whether the orchestrator is a server, a CI pipeline, or a human running agents from chat.
 

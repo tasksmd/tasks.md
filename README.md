@@ -10,33 +10,28 @@ Create a `TASKS.md` at your repo root:
 
 ```markdown
 # Tasks
-spec v0.5
+Spec v0.5
 
-## P1
+## P0
 
-- [ ] Add rate limiting to public API endpoints
-- [ ] Migrate database queries to prepared statements
-- [ ] Update README with new API endpoints
-
-## P2
-
-- [ ] Add request/response logging middleware
-```
-
-That's the minimal version — just checkboxes under priority headings. When tasks have dependencies, add metadata:
-
-```markdown
 - [ ] Fix authentication crash on token refresh
   - **ID**: auth-fix
   - **Details**: JWT refresh returns 500 on expired tokens
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
   - **Acceptance**: Refresh works, tests pass, regression test added
 
+## P1
+
 - [ ] Add rate limiting to public API endpoints
   - **Blocked by**: auth-fix
+- [ ] Migrate database queries to prepared statements
+
+## P2
+
+- [ ] Update README with new API endpoints
 ```
 
-Tasks with dependencies get an **ID** so blockers can reference them stably. Tasks without blockers don't need one.
+Most tasks are just checkboxes under priority headings. Tasks with dependencies get an **ID** so blockers can reference them stably. All metadata is optional.
 
 Add this to your AGENTS.md:
 
@@ -79,9 +74,9 @@ Agents claim different tasks, so removals target different lines and merge clean
 
 **Blockers**: `**Blocked by**: auth-fix, rate-limit` — references task IDs across all files. A task is unblocked when the referenced IDs are no longer in any file.
 
-**Tags**: `**Tags**: backend, auth` — comma-separated labels for filtering and orchestrator routing to specialized agents.
+**Tags**: `**Tags**: backend, auth` — lowercase labels for filtering and orchestrator routing to specialized agents.
 
-**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields (estimates, assignees) beyond these six.
+**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields beyond these six.
 
 **Sub-tasks**: Nested checkboxes under a parent. Metadata first, then sub-tasks. The agent who claims the parent owns all sub-tasks. Remove the entire block when fully done.
 

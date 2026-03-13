@@ -1,5 +1,5 @@
 # Tasks
-spec v0.5
+Spec v0.5
 
 ## P0
 

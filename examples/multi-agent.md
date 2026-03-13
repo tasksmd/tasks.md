@@ -1,5 +1,5 @@
 # Tasks
-spec v0.5
+Spec v0.5
 
 ## P0
 
@@ -19,12 +19,10 @@ spec v0.5
   - **Blocked by**: job-race
 
 - [ ] Implement graceful shutdown with in-flight request draining
-  - **Tags**: backend, infra
   - **Details**: On SIGTERM, stop accepting new connections, wait up to 30s for in-flight requests, then exit.
   - **Files**: `src/server.ts`
 
 - [ ] Add structured JSON logging
-  - **Tags**: backend
   - **Details**: Replace `console.log` with pino. Include request ID, timestamp, level.
   - **Files**: `src/logger.ts`, `src/middleware/requestId.ts`
 
