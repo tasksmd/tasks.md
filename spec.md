@@ -362,9 +362,14 @@ TASKS.md serves as the interface between an orchestrator and its agents:
 
 ### Tag-Based Routing
 
-Orchestrators can use **Tags** to route tasks to specialized agents. The orchestrator matches task tags against agent capabilities (declared in the AGENTS.md `## Agents` section) and assigns accordingly.
+Orchestrators can use **Tags** to route tasks to specialized agents. Agent capabilities are declared in the AGENTS.md `## Agents` section (e.g., `@backend-agent: tags backend, database`).
 
-Tasks without tags are available to any agent. Tagged tasks are preferentially routed to matching agents but not exclusively locked — any agent can claim an unmatched task if no specialist is available.
+Matching algorithm:
+
+1. **Untagged tasks** are available to any agent
+2. **Tagged tasks** use **ANY-match** — an agent matches if it shares at least one tag with the task. A task tagged `backend, auth` matches an agent with `tags: backend, database` (overlap on `backend`)
+3. Tags are a **soft preference**, not a hard filter — if no matching specialist is available, any agent can claim the task
+4. When multiple tasks match, prefer the one with the most overlapping tags
 
 This works whether the orchestrator is a server, a CI pipeline, or a human running agents from chat.
 

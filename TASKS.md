@@ -39,20 +39,6 @@ Spec v0.5
   - **Acceptance**: Site renders at the configured GitHub Pages URL.
     Mobile-responsive. All links work. No JavaScript required.
 
-- [ ] Clarify tag matching semantics for agent routing
-  - **ID**: tag-semantics
-  - **Tags**: spec
-  - **Details**: The Tag-Based Routing section says "preferentially routed... not
-    exclusively locked" but doesn't define the matching algorithm. Questions:
-    - Does an agent with `tags: backend, database` skip frontend-tagged tasks or just deprioritize them?
-    - Does a task with `tags: backend, auth` require an agent matching ALL tags or ANY?
-    - What about tasks with no tags — available to everyone? Only to unspecialized agents?
-    Propose: ANY-match (agent matches if it has at least one overlapping tag),
-    untagged tasks are available to all agents, tagged tasks are preferred-not-required.
-  - **Files**: `spec.md`
-  - **Acceptance**: Tag matching algorithm is specified precisely enough to implement
-    in the MCP server and linter.
-
 ## P2
 
 - [ ] Specify discovery order for deterministic task selection
