@@ -1,5 +1,3 @@
-
-
 # Next Task
 
 Pick the highest-priority unblocked task from TASKS.md and work on it.

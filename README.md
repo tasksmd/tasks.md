@@ -127,8 +127,9 @@ Each agent claims a unique task (different line). Git auto-merges deletions on n
 ## Contributing
 
 - Improve the [specification](spec.md)
-- Add examples for your stack
-- Share how TASKS.md works with your tool
+- Add [examples](examples/) for your stack
+- Add or improve [agent commands](commands/) for your tool
+- Open an issue or PR on [GitHub](https://github.com/tasksmd/tasks.md)
 
 ## License
 

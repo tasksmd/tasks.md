@@ -40,12 +40,12 @@ Spec v0.5
     Admins can manage all resources and assign roles.
     Unauthorized actions return 403 with a clear error message.
     Role checks covered by integration tests.
+  - **Blocked by**: webhook-fix
   - [x] Design role schema and migration
   - [x] Add role column to users table
   - [ ] Implement middleware role check
   - [ ] Add admin routes for role management
   - [ ] Write integration tests for all three roles
-  - **Blocked by**: webhook-fix
 
 - [ ] Migrate from Express to Fastify
   - **Tags**: backend, infra
