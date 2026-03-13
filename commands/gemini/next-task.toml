@@ -8,7 +8,7 @@ Pick the highest-priority unblocked task from TASKS.md and work on it.
    find "$git_root" -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | head -20
    Read all discovered TASKS.md files.
 
-2. PICK A TASK — Select the first unclaimed, unblocked task by priority (P0 > P1 > P2 > P3):
+2. PICK A TASK — First, check if you already claimed a task in a previous session — look for your (@agent-id) on any task line. If found, resume that task (skip to step 4). Otherwise, select the first unclaimed, unblocked task by priority (P0 > P1 > P2 > P3):
    - Skip tasks with (@agent-name) — claimed by another agent
    - Skip tasks where Blocked by references an ID still in any TASKS.md
    - Prefer tasks whose ID appears in other tasks' Blocked by (unblocking has highest impact)

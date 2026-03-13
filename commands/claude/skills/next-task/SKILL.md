@@ -20,7 +20,9 @@ Read all discovered TASKS.md files.
 
 ## 2. Pick a task
 
-Select the first unclaimed, unblocked task by priority:
+First, check if you already claimed a task in a previous session — look for your `(@agent-id)` on any task line. If found, resume that task (skip to step 4).
+
+Otherwise, select the first unclaimed, unblocked task by priority:
 
 1. **P0** first, then **P1**, **P2**, **P3**
 2. Skip tasks with `(@agent-name)` — they're claimed by another agent

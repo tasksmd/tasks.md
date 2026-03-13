@@ -263,6 +263,8 @@ Agents should read TASKS.md:
 - **After completing a task** — to pick up the next item
 - **When asked to "work on the next task"** or similar
 
+Before picking a new task, the agent should check if it already has a claimed task (from a previous session that ended before completion). If so, resume that task instead of claiming a new one. This prevents orphaned claims and duplicate work.
+
 A missing or empty TASKS.md is not an error — the agent should tell the user there are no tasks and ask for instructions. If no TASKS.md file exists anywhere in the repo, the agent should not create one unprompted.
 
 ### Writing Tasks
