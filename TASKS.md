@@ -39,7 +39,98 @@ Spec v0.5
   - **Acceptance**: Site renders at the configured GitHub Pages URL.
     Mobile-responsive. All links work. No JavaScript required.
 
+- [ ] Resolve "agents write tasks" vs "orchestrator sole writer" contradiction
+  - **ID**: writing-rule
+  - **Tags**: spec
+  - **Details**: Spec lines 270-277 tell agents to add discovered tasks. Line 277 says
+    the orchestrator should be the sole writer. These directly contradict. Options:
+    - Remove the sole-writer rule entirely (agents always write)
+    - Scope the sole-writer rule to only apply when an orchestrator is declared in AGENTS.md
+    - Split into "single-agent" and "multi-agent" behavior sections
+    The current wording confuses implementers building agent commands.
+  - **Files**: `spec.md`
+  - **Acceptance**: One clear rule for when agents vs orchestrators write new tasks.
+    No contradictory guidance in the same section.
+
+- [ ] Define version line grammar for tooling
+  - **ID**: version-grammar
+  - **Tags**: spec, tooling
+  - **Details**: The spec shows `Spec v0.5` but never defines the grammar. Questions
+    tooling authors will ask:
+    - Is `spec v0.5` (lowercase) valid?
+    - Is `Spec v0.5.1` valid? `Spec v1`?
+    - Is the line required or optional? (spec says "if omitted, latest assumed")
+    - Exact regex for parsers?
+    Propose: `Spec v<major>.<minor>` — case-sensitive, no patch version, always
+    on the first non-empty line after `# Tasks`.
+  - **Files**: `spec.md`
+  - **Acceptance**: Spec includes a formal grammar (regex or BNF) for the version line.
+    The validator task can reference it.
+
+- [ ] Add concrete stale claim recovery protocol
+  - **ID**: stale-claims
+  - **Tags**: spec
+  - **Details**: "Handle per team convention" is a cop-out for the most common real-world
+    failure (agent crashes mid-task). The spec should provide a recommended default:
+    - Define "stale" as: no commits by the claiming agent in the last N minutes
+    - HOW to check: `git log --author=<agent> --since="30 minutes ago"` (but agents
+      don't have git authors — claims are just `(@name)` annotations)
+    - Alternative: timestamp-based (`(@cursor-1 2025-03-13T17:00)`)
+    - Or: just document "any agent can reclaim after 30 min of no pushes to the branch"
+    This is the #1 real-world multi-agent failure mode. Punting it weakens the spec.
+  - **Files**: `spec.md`
+  - **Acceptance**: Spec has a recommended stale claim policy. The policy is
+    implementable without custom tooling (git log or file timestamps only).
+
+- [ ] Clarify tag matching semantics for agent routing
+  - **ID**: tag-semantics
+  - **Tags**: spec
+  - **Details**: The Tag-Based Routing section says "preferentially routed... not
+    exclusively locked" but doesn't define the matching algorithm. Questions:
+    - Does an agent with `tags: backend, database` skip frontend-tagged tasks or just deprioritize them?
+    - Does a task with `tags: backend, auth` require an agent matching ALL tags or ANY?
+    - What about tasks with no tags — available to everyone? Only to unspecialized agents?
+    Propose: ANY-match (agent matches if it has at least one overlapping tag),
+    untagged tasks are available to all agents, tagged tasks are preferred-not-required.
+  - **Files**: `spec.md`
+  - **Acceptance**: Tag matching algorithm is specified precisely enough to implement
+    in the MCP server and linter.
+
 ## P2
+
+- [ ] Specify discovery order for deterministic task selection
+  - **ID**: discovery-order
+  - **Tags**: spec
+  - **Details**: The `find` command in agent commands returns results in filesystem order,
+    which varies by OS and filesystem type. Two agents on different machines could discover
+    TASKS.md files in different orders, read tasks in different orders, and pick the same
+    "first unclaimed P1" from different files — increasing claim races.
+    Fix: spec should recommend sorting discovered files by path (lexicographic).
+    Commands should pipe find through `sort`.
+  - **Files**: `spec.md`, `commands/`
+  - **Acceptance**: Spec defines a deterministic discovery order. All 5 commands sort results.
+
+- [ ] Add rebase conflict guidance for TASKS.md to commands
+  - **Tags**: commands
+  - **Details**: Step 5 of every command says `git pull --rebase` then `git push`, but
+    TASKS.md is the most likely file to conflict — every agent modifies it (claims,
+    removals, additions). The commands give no guidance on what to do when rebase fails.
+    Options:
+    - Add a "if rebase conflicts on TASKS.md, re-read and re-apply your removal" step
+    - Or: recommend `git pull --rebase --autostash` + manual conflict resolution
+    - Or: just note that TASKS.md conflicts are usually trivial (accept both deletions)
+  - **Files**: `commands/`
+
+- [ ] Explicitly forbid `[x]` on top-level tasks in the spec
+  - **Tags**: spec
+  - **Details**: The spec says "remove completed tasks" but never explicitly says "don't
+    mark top-level tasks `[x]`." Human editors will instinctively check the box instead
+    of deleting the block. The spec should state: "`[x]` is only for sub-tasks tracking
+    progress on a parent. Top-level tasks are removed when done, never checked."
+    The linter should flag `[x]` on top-level tasks as a warning.
+  - **Files**: `spec.md`
+  - **Acceptance**: Spec has an explicit rule. Examples don't show `[x]` on top-level tasks
+    (already true). Linter spec updated to flag it.
 
 - [ ] Add a validator script that checks TASKS.md format
   - **Tags**: tooling
