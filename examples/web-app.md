@@ -1,8 +1,11 @@
-# Tasks (v0.4)
+# Tasks
+
+**Spec**: v0.5
 
 ## P0
 
 - [ ] Fix CORS headers blocking API requests from production domain
+  - **ID**: cors-fix
   - **Details**: `Access-Control-Allow-Origin` only includes `localhost`. Add production domain.
   - **Files**: `src/middleware/cors.ts`
   - **Acceptance**: API accessible from `app.example.com`, no browser CORS errors
@@ -12,7 +15,7 @@
 - [ ] Add rate limiting to public API endpoints
   - **Details**: Use `express-rate-limit`, 100 req/min per IP for `/api/public/*`
   - **Files**: `src/middleware/rateLimit.ts`, `src/routes/public.ts`
-  - **Blocked by**: "Fix CORS headers blocking API requests from production domain"
+  - **Blocked by**: cors-fix
 
 - [ ] Migrate database queries to prepared statements
   - **Details**: Replace string interpolation with parameterized queries in all `src/db/*.ts` files

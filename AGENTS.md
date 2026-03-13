@@ -12,9 +12,9 @@
 ## Code Style
 - Markdown only — no custom syntax
 - Examples must be valid TASKS.md files that follow the spec
-- Files start with `# Tasks (v0.4)`
+- Files start with `# Tasks` followed by `**Spec**: v0.5`
 - Priority sections use headings: `## P0`, `## P1`, `## P2`, `## P3`
-- Task names should be unique — they serve as blocker references
+- Tasks with blockers need an `**ID**: kebab-case` metadata field
 - Use fenced code blocks with `markdown` language tag for examples
 
 ## Testing

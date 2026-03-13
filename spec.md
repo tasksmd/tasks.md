@@ -1,19 +1,17 @@
 # TASKS.md Specification
 
-**Version**: 0.4.0 (Draft)
+**Version**: 0.5.0 (Draft)
 
 ## Overview
 
-TASKS.md is a convention for agent task queues. A Markdown file that orchestrators and coding agents use to track and coordinate work in a repository.
+TASKS.md is a lightweight specification for agent task queues. A Markdown file that orchestrators and coding agents use to track and coordinate work in a repository.
 
 It complements [AGENTS.md](https://agents.md/). AGENTS.md tells agents **how** to work. TASKS.md tells them **what** to work on.
 
 ## Design Principles
 
-Following the [AGENTS.md design philosophy](https://agents.md/):
-
 1. **Markdown first** — Human-readable, git-friendly, zero tooling required
-2. **Convention, not protocol** — Agents parse by understanding, not by regex. This works because LLMs read Markdown natively.
+2. **Lightweight spec** — Enough structure for tools to parse reliably, enough flexibility for humans to write naturally. LLMs read Markdown natively, so the format doesn't need to be machine-strict.
 3. **Scales up** — Single file for small repos, directory-scoped files for large ones
 4. **Opinionated defaults** — One recommended way to do things, but teams can adapt
 
@@ -25,7 +23,7 @@ Following the [AGENTS.md design philosophy](https://agents.md/):
 
 ### Multiple Files
 
-Small repos use one `TASKS.md` at the root. Large repos and monorepos can add `TASKS.md` files in subdirectories:
+Small repos use one `TASKS.md` at the root. Large repos and monorepos can add `TASKS.md` files in subdirectories to scope work by package or team:
 
 ```
 my-project/
@@ -40,18 +38,23 @@ my-project/
 Discovery algorithm:
 1. Walk up from the agent's working directory to find the nearest `TASKS.md`
 2. Also read the root `TASKS.md` if it's a different file
-3. Tasks from both files apply. Nearer file takes precedence for same-named tasks.
+3. Consider tasks from all applicable files together, prioritized by P-level regardless of which file they're in
 
-Task names should be unique across all `TASKS.md` files in the repo to avoid ambiguity in blocker references.
+Task IDs should be unique across all `TASKS.md` files in the repo so blocker references are unambiguous.
+
+**When to split**: Consider separate files when a single TASKS.md exceeds ~50 tasks, or when teams working in different packages rarely overlap on tasks.
 
 ## Format
 
 ```markdown
-# Tasks (v0.4)
+# Tasks
+
+**Spec**: v0.5
 
 ## P0
 
 - [ ] Fix authentication crash on token refresh
+  - **ID**: auth-fix
   - **Details**: JWT refresh returns 500 on expired tokens
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
   - **Acceptance**: Refresh works, tests pass, regression test added
@@ -59,8 +62,9 @@ Task names should be unique across all `TASKS.md` files in the repo to avoid amb
 ## P1
 
 - [ ] Add rate limiting to public API endpoints (@cursor-1)
+  - **ID**: rate-limit
   - **Details**: Use express-rate-limit, 100 req/min per IP
-  - **Blocked by**: "Fix authentication crash on token refresh"
+  - **Blocked by**: auth-fix
 
 ## P2
 
@@ -73,7 +77,13 @@ Task names should be unique across all `TASKS.md` files in the repo to avoid amb
 
 ### Version
 
-The heading includes the spec version: `# Tasks (v0.4)`
+The spec version is declared as a metadata line under the heading:
+
+```markdown
+# Tasks
+
+**Spec**: v0.5
+```
 
 This is visible when rendered and tells both humans and tools which format to expect. If omitted, the latest version is assumed.
 
@@ -100,7 +110,20 @@ A task is a Markdown checkbox with a short imperative description:
 - [ ] Fix authentication crash on token refresh
 ```
 
-**Task names should be unique** within a repository. The task description on the checkbox line serves as both the human-readable label and the identifier for blocker references. Keep names concise but distinct.
+Tasks should be completable in a single agent session — typically a focused unit of work like fixing a bug, adding an endpoint, or refactoring a module. If a task is too large, break it into sub-tasks or multiple top-level tasks.
+
+### Task IDs
+
+Tasks that are referenced as blockers or need cross-file linking should have an **ID** metadata field:
+
+```markdown
+- [ ] Fix authentication crash on token refresh
+  - **ID**: auth-fix
+```
+
+IDs are short, kebab-case, and stable — they should not change once assigned. IDs should be unique across all `TASKS.md` files in the repository.
+
+Tasks with no blockers or cross-references don't need an ID. A bare `- [ ] Fix the typo` is valid.
 
 ### Metadata
 
@@ -108,37 +131,37 @@ Tasks can have nested metadata using bold labels:
 
 ```markdown
 - [ ] Fix authentication crash on token refresh
+  - **ID**: auth-fix
   - **Details**: JWT refresh returns 500 on expired tokens.
     Catch TokenExpiredError and issue a new token.
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
   - **Acceptance**: Refresh works, tests pass, regression test added
-  - **Blocked by**: "Upgrade jsonwebtoken to v10"
+  - **Blocked by**: jwt-upgrade
 ```
 
 | Field | Purpose |
 |-------|---------|
+| **ID** | Stable identifier for blocker references and cross-file linking |
 | **Details** | Implementation guidance, context, approach |
 | **Files** | Relevant file paths (backtick-quoted, comma-separated) |
 | **Acceptance** | Definition of done |
-| **Blocked by** | Quoted task name(s) of blocking tasks — comma-separated if multiple |
+| **Blocked by** | Task ID(s) of blocking tasks — comma-separated if multiple |
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
 ### Blockers
 
-Blockers reference tasks by their **exact name** in quotes:
+Blockers reference tasks by their **ID**:
 
 ```markdown
 - [ ] Deploy to production
-  - **Blocked by**: "Fix authentication crash on token refresh", "Add rate limiting to public API endpoints"
+  - **Blocked by**: auth-fix, rate-limit
 ```
 
-A blocked task should not be started until every referenced task has been removed from the file (i.e., completed). Agents should:
+A blocked task should not be started until every referenced ID has been removed from the file (i.e., completed). Agents should:
 1. Skip blocked tasks when selecting work
 2. Prioritize tasks that block other work — unblocking has the highest impact
-3. Remove the **Blocked by** line when the blocking task is gone
-
-Since task names serve as identifiers, they should not be renamed once other tasks reference them as blockers.
+3. Remove the **Blocked by** line (or individual IDs) when the blocking task is gone
 
 ### Sub-tasks
 
@@ -151,9 +174,11 @@ Tasks can have sub-tasks as nested checkboxes:
   - [ ] Add login endpoint
 ```
 
-Sub-tasks marked `[x]` stay in the file — they track progress on the parent. When the parent task is fully complete (all sub-tasks done), the entire block is removed: parent, sub-tasks, and metadata together.
-
-Sub-tasks inherit priority from their parent.
+Rules:
+- Sub-tasks marked `[x]` stay in the file — they track progress on the parent
+- When the parent task is fully complete (all sub-tasks done), the entire block is removed: parent, sub-tasks, and metadata together
+- Sub-tasks inherit priority from their parent
+- The agent who claims the parent owns all its sub-tasks. Other agents should not claim individual sub-tasks of a claimed parent. For parallel work, promote sub-tasks to top-level tasks with blocker relationships instead.
 
 ## Claiming
 
@@ -177,7 +202,7 @@ The recommended format is `@<tool>-<instance>`:
 | `@cascade-bg` | Windsurf Cascade, background |
 | `@pipeline-a1b2` | Orchestrator pipeline |
 
-Teams can define their own identity convention in AGENTS.md. The key requirement is that identifiers should distinguish concurrent instances of the same tool.
+Teams can define their own identity convention in AGENTS.md. The key requirement is that identifiers distinguish concurrent instances of the same tool.
 
 ### Limitations
 
@@ -191,19 +216,34 @@ When a task is done, the agent removes it from the file — the task line, its m
 
 This keeps the file focused on pending work. Each agent works on a different task (via claiming), so removals target different lines and merge cleanly.
 
-## Agent Discovery
+## Agent Behavior
+
+### Reading Tasks
 
 Agents should read TASKS.md:
 - **On session start** — before asking the user what to work on
 - **After completing a task** — to pick up the next item
 - **When asked to "work on the next task"** or similar
 
-Agents should write TASKS.md:
-- **Before starting work** — claim the task
-- **After completing work** — remove the task
-- **When discovering new work** — add tasks found during implementation
-
 A missing or empty TASKS.md is not an error. The agent asks the user for instructions.
+
+### Writing Tasks
+
+In multi-agent setups, the **orchestrator should be the sole writer** of new tasks. This avoids merge conflicts from multiple agents appending to the same section simultaneously.
+
+When a single agent works alone, it can freely add tasks it discovers during implementation ("this function needs refactoring," "found a bug in the adjacent module").
+
+Agents should claim and remove tasks regardless of setup — only *adding* new tasks needs coordination.
+
+### Disagreements
+
+An agent may encounter a task it believes is misprioritized, too vague, or should be split. Agents should **not** silently reprioritize or restructure tasks. Instead:
+
+- **Flag it**: Add a note to the task's **Details** explaining the concern
+- **Ask**: If a human is in the loop, surface the issue before proceeding
+- **Defer**: If an orchestrator manages the file, leave reprioritization to it
+
+The orchestrator or human is the authority on priority and scope. Agents execute.
 
 ### AGENTS.md Integration
 
@@ -250,9 +290,10 @@ This specification follows [Semantic Versioning](https://semver.org/).
 
 | Version | Status | Changes |
 |---------|--------|---------|
-| 0.4.0 | Draft | Task names as identifiers, version in heading, multi-file discovery algorithm, sub-task completion rules, SHOULD-based language |
-| 0.3.0 | Superseded | Task IDs, multi-file support, simplified priority headings |
+| 0.5.0 | Draft | Task IDs as metadata field, spec version as metadata line, sub-task ownership, task granularity, concurrent write guidance, agent disagreement protocol |
+| 0.4.0 | Superseded | Task names as identifiers, SHOULD-based language |
+| 0.3.0 | Superseded | Inline task IDs, multi-file support, simplified priority headings |
 | 0.2.0 | Superseded | Orchestrator-first framing, strict format |
 | 0.1.0 | Superseded | Initial draft |
 
-Breaking changes increment the minor version during 0.x development. The heading `# Tasks (v0.4)` tells tools which spec version a file follows.
+Breaking changes increment the minor version during 0.x development.

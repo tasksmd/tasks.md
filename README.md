@@ -1,6 +1,6 @@
 # TASKS.md
 
-A convention for AI agent task queues — the companion to [AGENTS.md](https://agents.md/).
+A lightweight spec for AI agent task queues — the companion to [AGENTS.md](https://agents.md/).
 
 AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
@@ -9,11 +9,14 @@ AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 Create a `TASKS.md` at your repo root:
 
 ```markdown
-# Tasks (v0.4)
+# Tasks
+
+**Spec**: v0.5
 
 ## P0
 
 - [ ] Fix authentication crash on token refresh
+  - **ID**: auth-fix
   - **Details**: JWT refresh returns 500 on expired tokens
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
   - **Acceptance**: Refresh works, tests pass, regression test added
@@ -21,12 +24,15 @@ Create a `TASKS.md` at your repo root:
 ## P1
 
 - [ ] Add rate limiting to public API endpoints
-  - **Blocked by**: "Fix authentication crash on token refresh"
+  - **ID**: rate-limit
+  - **Blocked by**: auth-fix
 
 ## P2
 
 - [ ] Update README with new API endpoints
 ```
+
+Tasks with dependencies get an **ID** so blockers can reference them stably. Tasks without blockers don't need one.
 
 Add this to your AGENTS.md:
 
@@ -38,8 +44,6 @@ Add this to your AGENTS.md:
 - Prioritize tasks that unblock other work
 - Add new tasks you discover during implementation
 ```
-
-That's it. Any agent that reads Markdown can now work from your task queue.
 
 ## Why TASKS.md?
 
@@ -63,19 +67,21 @@ Agents claim different tasks, so removals target different lines and merge clean
 
 ## The Format
 
-**Priority**: Four headings — `## P0` through `## P3` — following the [industry-standard severity scale](https://en.wikipedia.org/wiki/Severity_(engineering)) (PagerDuty, Google SRE).
+**Priority**: `## P0` through `## P3` — the [industry-standard severity scale](https://en.wikipedia.org/wiki/Severity_(engineering)) (PagerDuty, Google SRE).
 
-**Tasks**: Markdown checkboxes. Names should be unique — they serve as identifiers for blocker references.
+**Tasks**: Markdown checkboxes. Should be completable in a single agent session.
 
-**Metadata**: Optional nested fields — **Details**, **Files**, **Acceptance**, **Blocked by**.
+**IDs**: An `**ID**: kebab-case` metadata field on tasks that are referenced as blockers. Stable — don't change once assigned.
 
-**Blockers**: Reference tasks by quoted name: `**Blocked by**: "Fix auth crash"`. A task is unblocked when the referenced task is removed from the file.
+**Blockers**: `**Blocked by**: auth-fix, rate-limit` — references task IDs. A task is unblocked when the referenced IDs are no longer in the file.
 
-**Sub-tasks**: Nested checkboxes under a parent. Mark `[x]` as you go. Remove the entire block when the parent is fully done.
+**Metadata**: Optional nested fields — **ID**, **Details**, **Files**, **Acceptance**, **Blocked by**.
 
-**Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Agent walks up from working directory to find the nearest file, also reads root.
+**Sub-tasks**: Nested checkboxes under a parent. Mark `[x]` as you go. The agent who claims the parent owns all sub-tasks. Remove the entire block when fully done.
 
-See the [full specification](spec.md) for details.
+**Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Split when a file exceeds ~50 tasks or when teams rarely overlap.
+
+See the [full specification](spec.md) for all details.
 
 ## Examples
 
@@ -92,7 +98,7 @@ Issues track features for teams. TASKS.md tracks implementation steps for agents
 
 ### Why not TODO.md?
 
-`TODO.md` has no spec and thousands of incompatible formats in the wild. A "todo list" is a human wish list; a "task queue" is an active work queue for agents. The naming also fits the emerging convention: `AGENTS.md` (instructions), `TASKS.md` (work queue).
+`TODO.md` has no spec and thousands of incompatible formats in the wild. A "todo list" is a human wish list; a "task queue" is an active work queue for agents. The naming fits the emerging pattern: `AGENTS.md` (instructions), `TASKS.md` (work queue).
 
 Migration: `mv TODO.md TASKS.md`, add P0–P3 headings, convert to checkboxes.
 

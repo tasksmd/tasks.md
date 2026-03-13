@@ -1,4 +1,6 @@
-# Tasks (v0.4)
+# Tasks
+
+**Spec**: v0.5
 
 ## P0
 

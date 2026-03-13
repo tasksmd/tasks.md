@@ -1,8 +1,11 @@
-# Tasks (v0.4)
+# Tasks
+
+**Spec**: v0.5
 
 ## P0
 
 - [ ] Fix shared @myorg/ui build breaking downstream packages
+  - **ID**: ui-build-fix
   - **Details**: The `tsconfig.json` in `packages/ui` emits ESM but `packages/web` expects CJS. Align module format.
   - **Files**: `packages/ui/tsconfig.json`, `packages/web/tsconfig.json`
   - **Acceptance**: `pnpm build` succeeds across all packages
@@ -19,7 +22,7 @@
 
 - [ ] Upgrade TypeScript to 5.7 across all packages
   - **Details**: Currently on 5.4. Update root `tsconfig.base.json` and resolve any new strict errors.
-  - **Blocked by**: "Fix shared @myorg/ui build breaking downstream packages"
+  - **Blocked by**: ui-build-fix
 
 ## P2
 
