@@ -2,10 +2,6 @@
 
 ## P0 — Critical
 
-- [x] Fix database connection pool exhaustion under load (@claude-code)
-  - **Details**: Pool max is 10 but p95 concurrency is 25. Increase to 50 with proper idle timeout.
-  - **Files**: `src/db/pool.ts`
-
 - [ ] Resolve race condition in job queue consumer (@cursor-bg)
   - **Details**: Two workers occasionally process the same job. Add row-level locking with `SELECT ... FOR UPDATE SKIP LOCKED`.
   - **Files**: `src/jobs/consumer.ts`, `src/db/queries.ts`

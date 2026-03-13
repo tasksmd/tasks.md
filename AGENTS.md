@@ -22,6 +22,7 @@
 ## Task Management
 - Read TASKS.md for available work before asking the user
 - Claim tasks by appending (@your-agent-id) before starting work
-- Mark tasks [x] when done — do not delete completed tasks
+- Remove completed tasks from the file (history is in git log)
+- Commit TASKS.md changes separately from code changes
 - Prioritize tasks that unblock other work
 - Add new tasks you discover during implementation

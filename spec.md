@@ -140,32 +140,38 @@ For stronger guarantees, use an MCP server as the coordination backend.
 
 ## Completion
 
-### Completing a Task
-
-Mark the checkbox and keep the agent attribution:
+When a task is done, the agent removes it from the file entirely:
 
 ```markdown
-- [x] Fix authentication crash on token refresh (@cursor-1)
+# Before
+- [ ] Fix authentication crash (@cursor-1)
+- [ ] Add rate limiting
+
+# After
+- [ ] Add rate limiting
 ```
 
-This is a **single-character change** (`[ ]` → `[x]`). It will not cause merge conflicts, even when multiple agents complete different tasks simultaneously.
+The completed task, its metadata, and its sub-tasks are all removed. History lives in git log.
 
-### Cleanup
+### Commit Protocol
 
-Agents MUST NOT delete completed tasks inline. Completed `[x]` lines stay in the file until explicitly pruned.
+Agents MUST commit TASKS.md changes separately from code changes, and pull before committing:
 
-Pruning is a separate, atomic operation. It can be done by:
-- A human reviewing the file
-- A CI job on a schedule
-- An agent explicitly asked to prune (not as part of other work)
+```
+git pull --rebase
+git add TASKS.md
+git commit -m "tasks: complete 'Fix authentication crash'"
+```
 
-The prune operation removes all `- [x]` lines and their metadata. It SHOULD be done as a standalone commit with no other changes.
+### Why This Is Safe
 
-**Why**: Deleting lines while other agents are editing the same file causes merge conflicts. Separating "doing work" from "housekeeping" eliminates this. A `[ ]` → `[x]` change never conflicts with another `[ ]` → `[x]` change on a different line.
+The claiming protocol guarantees each agent works on a **different task**, which means a **different line**. Git auto-merges changes to non-adjacent lines. Two agents completing two different tasks will never conflict — they're deleting different lines in different parts of the file.
+
+The only edge case is two agents completing **adjacent** tasks simultaneously, which can produce a trivial merge conflict. This is rare in practice and easy to resolve.
 
 ## Blockers
 
-A task with `**Blocked by**` MUST NOT be started until the blocking task is completed (`[x]`):
+A task with `**Blocked by**` MUST NOT be started until the blocking task is gone from the file (i.e., completed and removed):
 
 ```markdown
 - [ ] Deploy to production
@@ -175,7 +181,7 @@ A task with `**Blocked by**` MUST NOT be started until the blocking task is comp
 Agents SHOULD:
 1. Prioritize tasks that block other work — unblocking has the highest impact
 2. Skip blocked tasks when selecting work
-3. Remove the `**Blocked by**` line when the blocker is marked `[x]`
+3. Remove the `**Blocked by**` line when the blocking task is no longer in the file
 
 ## Agent Discovery
 
@@ -205,7 +211,8 @@ Teams SHOULD add this to their AGENTS.md:
 ## Task Management
 - Read TASKS.md for available work before asking the user
 - Claim tasks by appending (@your-agent-id) before starting work
-- Mark tasks [x] when done — do not delete completed tasks
+- Remove completed tasks from the file (history is in git log)
+- Commit TASKS.md changes separately from code changes
 - Prioritize tasks that unblock other work
 - Add new tasks you discover during implementation
 ```
@@ -219,13 +226,12 @@ TASKS.md is designed as the interface between an orchestrator and its agents:
 │ Orchestrator │ ──────────────> │ TASKS.md │ <────────────── │  Agent  │
 │  (planner)   │                 │          │ ──────────────> │ (coder) │
 └─────────────┘     reads       └──────────┘     writes      └─────────┘
-                  completions                    claims/[x]
+                  completions                   claims/removes
 ```
 
 1. **Orchestrator** decomposes work into tasks and writes TASKS.md
-2. **Agent** reads TASKS.md, claims a task, implements it, marks `[x]`
-3. **Orchestrator** monitors completions, resolves blockers, adds follow-up tasks
-4. **Prune** runs periodically to clean up `[x]` items
+2. **Agent** reads TASKS.md, claims a task, implements it, removes the task when done
+3. **Orchestrator** monitors the file, resolves blockers, adds follow-up tasks
 
 This loop works whether the orchestrator is a background server, a CI pipeline, or a human running agents manually.
 

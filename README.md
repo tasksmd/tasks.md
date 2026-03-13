@@ -35,7 +35,8 @@ Add this to your AGENTS.md so agents know about it:
 ## Task Management
 - Read TASKS.md for available work before asking the user
 - Claim tasks by appending (@your-agent-id) before starting work
-- Mark tasks [x] when done — do not delete completed tasks
+- Remove completed tasks from the file (history is in git log)
+- Commit TASKS.md changes separately from code changes
 - Prioritize tasks that unblock other work
 - Add new tasks you discover during implementation
 ```
@@ -66,13 +67,12 @@ TASKS.md solves this with one Markdown file:
 │ Orchestrator │ ──────────────> │ TASKS.md │ <────────────── │  Agent  │
 │  (planner)   │                 │          │ ──────────────> │ (coder) │
 └─────────────┘     reads       └──────────┘     writes      └─────────┘
-                  completions                    claims/[x]
+                  completions                   claims/removes
 ```
 
 1. **Orchestrator** (or human) writes tasks to TASKS.md
-2. **Agent** reads the file, claims a task, implements it, marks `[x]`
-3. **Orchestrator** monitors completions, resolves blockers, adds follow-up tasks
-4. **Prune** runs periodically to clean up completed items
+2. **Agent** reads the file, claims a task, implements it, removes the task when done
+3. **Orchestrator** monitors the file, resolves blockers, adds follow-up tasks
 
 This works whether the orchestrator is a background server, a CI pipeline, or a human running agents from chat.
 
@@ -100,8 +100,9 @@ Markdown checkboxes. One line per task:
 ```markdown
 - [ ] Fix the bug                              # pending
 - [ ] Add rate limiting (@cursor-1)            # claimed
-- [x] Fix CORS headers (@claude-code)          # done
 ```
+
+Completed tasks are removed from the file. History lives in git log.
 
 ### Metadata
 
@@ -121,21 +122,22 @@ All optional. A bare `- [ ] Fix the bug` is valid.
 Agents claim tasks by appending `(@agent-id)`. Format: `@<tool>-<instance>`.
 
 ```markdown
-- [ ] Add rate limiting (@cascade-1)           # claimed
-- [x] Add rate limiting (@cascade-1)           # done
+- [ ] Add rate limiting (@cascade-1)           # claimed by cascade-1
 ```
 
 Claiming is best-effort, not a lock. See [full spec](spec.md) for details.
 
 ### Completion
 
-Mark `[x]`. **Do not delete the line.**
+Remove the task from the file. Commit TASKS.md separately from code:
 
-```markdown
-- [x] Fix authentication crash (@cursor-1)
+```
+git pull --rebase
+git add TASKS.md
+git commit -m "tasks: complete 'Fix authentication crash'"
 ```
 
-This is a single-character change — it never causes merge conflicts, even when multiple agents complete tasks simultaneously. Completed lines are pruned separately as a dedicated cleanup step.
+This is safe because each agent works on a different task (different line). Git auto-merges non-adjacent line deletions.
 
 See the [full specification](spec.md) for all rules and edge cases.
 
@@ -171,9 +173,9 @@ They complement each other. A GitHub Issue says "Add auth." TASKS.md breaks that
 
 No. A solo developer with one agent benefits too — TASKS.md persists your backlog across sessions. But the format is designed so orchestrators can also read and write it programmatically.
 
-### Why can't agents delete completed tasks?
+### Won't deleting tasks cause merge conflicts?
 
-Deleting lines while other agents edit the same file causes merge conflicts. Marking `[x]` is a single-character change that never conflicts. Cleanup runs separately.
+No. Each agent claims a unique task (different line). Git auto-merges deletions on non-adjacent lines. Agents also commit TASKS.md separately from code and pull before committing, which keeps the conflict window minimal.
 
 ### Can agents add tasks?
 
