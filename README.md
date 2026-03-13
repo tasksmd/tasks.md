@@ -94,13 +94,13 @@ See the [full specification](spec.md) for all details.
 
 ## Agent Commands
 
-The most useful thing about TASKS.md is a simple command: "pick the next task and do it." Drop a command file into your agent's config and use `/next-task` to start an autonomous work loop:
+The most useful thing about TASKS.md is a single command: "pick the next task and do it." Drop a skill/command file into your agent's config and type `/next-task` to start an autonomous work loop:
 
-| Agent | Install |
-|-------|---------|
-| Claude Code | Copy [`commands/claude/next-task.md`](commands/claude/next-task.md) to `.claude/commands/` |
-| Cursor | Copy [`commands/cursor/next-task.md`](commands/cursor/next-task.md) to `.cursor/commands/` |
-| Windsurf | Copy [`commands/windsurf/next-task.md`](commands/windsurf/next-task.md) to `.windsurf/workflows/` |
+| Agent | Install | Format |
+|-------|---------|--------|
+| Claude Code | Copy [`commands/claude/skills/next-task/`](commands/claude/skills/next-task/SKILL.md) to `.claude/skills/next-task/` | [Skill](https://code.claude.com/docs/en/skills) (SKILL.md) |
+| Cursor | Copy [`commands/cursor/next-task.md`](commands/cursor/next-task.md) to `.cursor/commands/` | [Command](https://cursor.com/changelog/1-6) |
+| Windsurf | Copy [`commands/windsurf/next-task.md`](commands/windsurf/next-task.md) to `.windsurf/workflows/` | [Workflow](https://docs.codeium.com/windsurf/workflows) |
 
 The command reads TASKS.md, picks the highest-priority unblocked task, claims it, does the work, removes it on completion, and loops. Your agent works through the backlog without you pointing at individual tasks.
 
