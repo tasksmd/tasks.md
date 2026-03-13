@@ -1,180 +1,171 @@
 # TASKS.md Specification
 
-**Version**: 0.1.0 (Draft)
+**Version**: 0.2.0 (Draft)
 
 ## Overview
 
-TASKS.md is a Markdown file at the root of a repository that gives coding agents a persistent, prioritized backlog. It complements [AGENTS.md](https://agents.md/) — AGENTS.md provides instructions, TASKS.md provides work items.
+TASKS.md is a standard file format for agent task queues. It is a Markdown file at the root of a repository that an orchestrator — or any coding agent — uses to assign, track, and coordinate work.
 
-The primary use case is **session persistence**: work survives across agent sessions, tool switches, and restarts. The advanced use case is **multi-agent coordination**: multiple agents can read, claim, and complete tasks without conflicts.
+TASKS.md is designed for **agent orchestrators**: systems that decompose work into tasks and assign them to coding agents. Examples include [Bosun](https://github.com/fivanishche/bosun), [OpenHands](https://github.com/All-Hands-AI/OpenHands), [Factory Droids](https://factory.ai), GitHub Copilot coding agent, and custom pipelines.
 
-## File Location
+It complements [AGENTS.md](https://agents.md/). AGENTS.md tells agents **how** to work. TASKS.md tells them **what** to work on.
 
-The file MUST be named `TASKS.md` and placed at the repository root, alongside `README.md` and `AGENTS.md`.
+## File
 
-In monorepos, additional `TASKS.md` files MAY be placed in package directories. Agents read the most specific file for the directory they are working in, falling back to the root file.
+- **Name**: `TASKS.md`
+- **Location**: Repository root (next to `README.md` and `AGENTS.md`)
+- **Format**: Markdown
+- **Encoding**: UTF-8
 
-```
-my-project/
-├── AGENTS.md
-├── TASKS.md           # Project-wide tasks
-├── README.md
-├── packages/
-│   ├── api/
-│   │   └── TASKS.md   # API-specific tasks
-│   └── web/
-│       └── TASKS.md   # Web-specific tasks
-```
+One file per repository. In monorepos, place one `TASKS.md` at the root. Use the **Files** metadata field to scope tasks to specific packages — not separate files.
 
 ## Format
 
-### Structure
-
-A TASKS.md file consists of:
-1. A top-level heading (`# Tasks`)
-2. Priority sections as level-2 headings (`## P0`, `## P1`, etc.)
-3. Tasks as Markdown checkbox list items (`- [ ]`)
-
-### Priority Sections
-
-Tasks are organized into exactly four priority tiers:
-
-| Section | Meaning |
-|---------|---------|
-| `## P0 — Critical` | Broken or blocking — must fix immediately |
-| `## P1 — Important` | Core features and fixes |
-| `## P2 — Nice to Have` | Polish, docs, minor improvements |
-| `## P3 — Future` | Long-term, aspirational |
-
-Empty sections MAY be omitted. The `P0`–`P3` labels are the canonical format. Agents MUST understand these labels and SHOULD treat them as ordered: P0 > P1 > P2 > P3.
-
-Within a section, tasks are ordered by importance — first task is most important. Agents work top-to-bottom: pick the first unclaimed, unblocked task in the highest non-empty priority section.
-
-### Task Format
-
-A task is a Markdown checkbox list item with a short, imperative description:
+A TASKS.md file has this exact structure:
 
 ```markdown
+# Tasks
+
+## P0 — Critical
+
 - [ ] Fix authentication crash on token refresh
-```
-
-A completed task:
-
-```markdown
-- [x] Fix authentication crash on token refresh (@cursor-1)
-```
-
-### Task Metadata
-
-Tasks MAY include structured metadata as nested bold-label items:
-
-```markdown
-- [ ] Fix authentication crash on token refresh
-  - **Details**: The JWT refresh endpoint returns 500 when the token has expired.
-    Need to catch the TokenExpiredError and issue a new token.
+  - **Details**: JWT refresh returns 500 on expired tokens
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
-  - **Acceptance**: Token refresh works, existing tests pass, new regression test added
+  - **Acceptance**: Refresh works, tests pass, regression test added
+
+## P1 — Important
+
+- [ ] Add rate limiting to public API endpoints (@cursor-1)
+  - **Details**: Use express-rate-limit, 100 req/min per IP for /api/public/*
+  - **Blocked by**: "Fix authentication crash on token refresh"
+
+## P2 — Nice to Have
+
+- [ ] Update README with new API endpoints
+
+## P3 — Future
+
+- [ ] Support WebSocket connections
+```
+
+### Rules
+
+1. The file MUST start with `# Tasks`
+2. Tasks are organized under exactly four headings: `## P0 — Critical`, `## P1 — Important`, `## P2 — Nice to Have`, `## P3 — Future`
+3. Empty sections MAY be omitted
+4. Each task is a Markdown checkbox: `- [ ]` (pending) or `- [x]` (done)
+5. Higher sections = higher priority. First task in a section = most important
+6. No other headings, sections, or structure is permitted at the top level
+
+### Tasks
+
+A task is a single checkbox line with an imperative description:
+
+```markdown
+- [ ] Fix authentication crash on token refresh
+```
+
+### Metadata
+
+Tasks MAY have nested metadata using bold labels. There are exactly four recognized fields:
+
+```markdown
+- [ ] Fix authentication crash on token refresh
+  - **Details**: JWT refresh returns 500 on expired tokens.
+    Catch TokenExpiredError and issue a new token.
+  - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
+  - **Acceptance**: Refresh works, tests pass, regression test added
   - **Blocked by**: "Upgrade jsonwebtoken to v10"
 ```
 
-| Field | Format | Purpose |
-|-------|--------|---------|
-| **Details** | Free text | Implementation guidance, context, approach |
-| **Files** | Backtick-quoted paths, comma-separated | Scope hint for the agent |
-| **Acceptance** | Free text | Definition of done |
-| **Blocked by** | Quoted task description | Dependency — cannot start until blocker is resolved |
+| Field | Purpose |
+|-------|---------|
+| **Details** | Implementation guidance |
+| **Files** | File paths (backtick-quoted, comma-separated) |
+| **Acceptance** | Definition of done |
+| **Blocked by** | Quoted description of the blocking task |
 
-All metadata fields are optional. A bare `- [ ] Fix the bug` is a valid task.
+All metadata is optional. No other metadata fields are part of the spec.
 
 ### Sub-tasks
 
-Tasks MAY have sub-tasks using nested checkboxes:
+Tasks MAY have sub-tasks as nested checkboxes:
 
 ```markdown
 - [ ] Implement user authentication
   - [x] Design auth schema (@cursor-1)
   - [ ] Set up JWT token generation
   - [ ] Add login endpoint
-  - [ ] Add token refresh endpoint
 ```
 
 Sub-tasks inherit priority from their parent.
 
-## Agent Discovery
+## Claiming
 
-How agents find and interact with TASKS.md:
-
-### When to Read
-
-Agents SHOULD check TASKS.md:
-- **On session start** — before asking the user what to work on
-- **After completing a task** — to find the next item
-- **When idle** — if the user hasn't given explicit instructions
-
-### When to Write
-
-Agents SHOULD update TASKS.md:
-- **Before starting work** — claim the task (multi-agent only)
-- **After completing work** — mark the task done
-- **When discovering new work** — add tasks found during implementation
-
-### When TASKS.md Is Empty or Missing
-
-- **Missing file**: Agent works normally — asks the user for instructions
-- **Empty file**: Agent asks the user what to work on, or looks for other signals (failing tests, open PRs, TODO comments)
-
-An empty or missing TASKS.md is not an error.
-
-### AGENTS.md Integration
-
-Until tool vendors add native TASKS.md support, teams SHOULD reference it from AGENTS.md:
+An agent claims a task by appending its identifier in parentheses:
 
 ```markdown
-# AGENTS.md
-
-## Task Management
-- Check TASKS.md for available work before asking the user
-- Claim tasks before starting work
-- Remove completed tasks (history is in git log)
-- Prioritize tasks that unblock other work
-- Add new tasks you discover during implementation
+- [ ] Add rate limiting to API (@cascade-1)
 ```
 
-## Multi-Agent Coordination
+### Rules
 
-When multiple agents work in the same repository, TASKS.md provides a best-effort coordination protocol.
-
-### Claiming
-
-An agent claims a task by appending its identifier and committing the change:
-
-```markdown
-- [ ] Add rate limiting to API (@cascade-1 — in progress)
-```
-
-Rules:
-- An agent MUST claim a task before starting work on it
-- Other agents MUST NOT pick up claimed tasks
-- On completion, the agent marks `[x]` and keeps attribution
-- On abandonment, the agent SHOULD remove its claim
+- An agent MUST claim a task before starting work
+- Other agents MUST skip claimed tasks
+- The claim is part of the task line, not metadata
+- On completion: `- [x] Add rate limiting to API (@cascade-1)`
 
 ### Agent Identity
 
-The claim format is `(@<tool>-<instance>)`. Examples:
+Format: `@<tool>-<instance>`
 
-| Claim | Meaning |
-|-------|---------|
-| `@cursor-1` | Cursor, first window |
+| Example | Meaning |
+|---------|---------|
+| `@cursor-1` | Cursor, window 1 |
 | `@claude-code` | Claude Code CLI |
 | `@copilot-agent` | GitHub Copilot coding agent |
-| `@cascade-bg` | Windsurf Cascade, background session |
-| `@pipeline-a1b2` | Automated pipeline with ID |
+| `@cascade-bg` | Windsurf Cascade, background |
+| `@pipeline-a1b2` | Orchestrator pipeline |
 
-The identifier should be specific enough that a human can tell which agent instance claimed the task. Tool name alone is insufficient if multiple instances run concurrently.
+The identifier MUST be specific enough to distinguish concurrent instances of the same tool.
 
-### Blocker Protocol
+### Limitations
 
-A task with `**Blocked by**` cannot be started until the referenced task is completed:
+Claiming is **best-effort, not a distributed lock**:
+
+- **Race conditions**: Two agents can claim the same task if they read simultaneously. Mitigation: `git pull` before claiming, commit only TASKS.md (`git commit --only TASKS.md`).
+- **Stale claims**: A crashed agent's claim stays. Mitigation: define a stale claim policy in AGENTS.md (e.g., "reclaim if no commit from the agent in 30 minutes").
+
+For stronger guarantees, use an MCP server as the coordination backend.
+
+## Completion
+
+### Completing a Task
+
+Mark the checkbox and keep the agent attribution:
+
+```markdown
+- [x] Fix authentication crash on token refresh (@cursor-1)
+```
+
+This is a **single-character change** (`[ ]` → `[x]`). It will not cause merge conflicts, even when multiple agents complete different tasks simultaneously.
+
+### Cleanup
+
+Agents MUST NOT delete completed tasks inline. Completed `[x]` lines stay in the file until explicitly pruned.
+
+Pruning is a separate, atomic operation. It can be done by:
+- A human reviewing the file
+- A CI job on a schedule
+- An agent explicitly asked to prune (not as part of other work)
+
+The prune operation removes all `- [x]` lines and their metadata. It SHOULD be done as a standalone commit with no other changes.
+
+**Why**: Deleting lines while other agents are editing the same file causes merge conflicts. Separating "doing work" from "housekeeping" eliminates this. A `[ ]` → `[x]` change never conflicts with another `[ ]` → `[x]` change on a different line.
+
+## Blockers
+
+A task with `**Blocked by**` MUST NOT be started until the blocking task is completed (`[x]`):
 
 ```markdown
 - [ ] Deploy to production
@@ -182,85 +173,70 @@ A task with `**Blocked by**` cannot be started until the referenced task is comp
 ```
 
 Agents SHOULD:
-1. Scan for tasks that block other work and prioritize those — unblocking has the highest impact
+1. Prioritize tasks that block other work — unblocking has the highest impact
 2. Skip blocked tasks when selecting work
-3. Remove the `**Blocked by**` line when the blocker is resolved
+3. Remove the `**Blocked by**` line when the blocker is marked `[x]`
 
-### Limitations and Mitigations
+## Agent Discovery
 
-The claiming protocol is **best-effort, not a distributed lock**. Known limitations:
+### When to Read
 
-| Limitation | Mitigation |
-|------------|-----------|
-| **Race conditions** — Two agents can claim the same task simultaneously | Agents should `git pull` before claiming, and use `git commit --only TASKS.md` to minimize the conflict window. In practice, races are rare. |
-| **Stale claims** — A crashed agent leaves its claim forever | Teams should define a stale claim policy in AGENTS.md (e.g., "reclaim after 1 hour of inactivity"). The spec intentionally does not define a timeout — it varies by team. |
-| **Merge conflicts** — Simultaneous edits to TASKS.md | Agents should commit TASKS.md changes separately from code changes. Markdown checkbox diffs are simple to resolve. |
+Agents SHOULD read TASKS.md:
+- **On session start** — before asking the user what to work on
+- **After completing a task** — to find the next item
+- **When the user says "work on the next task"** or similar
 
-For stronger coordination guarantees, use an MCP server as the coordination backend and TASKS.md as the human-readable view.
+### When to Write
 
-## Lifecycle
+Agents SHOULD update TASKS.md:
+- **Before starting work** — claim the task
+- **After completing work** — mark `[x]`
+- **When discovering new work** — add tasks found during implementation
 
-### Adding Tasks
+### When TASKS.md Is Empty or Missing
 
-Tasks are added by humans or agents. Agents MAY add tasks they discover during work (e.g., a bug found while implementing a feature, a refactoring opportunity, a missing test).
+Not an error. The agent asks the user for instructions.
 
-### Completing Tasks
+### AGENTS.md Integration
 
-When a task is done:
-1. Mark it `[x]` with attribution: `- [x] Task description (@agent-name)`
-2. Remove it from the file
+Teams SHOULD add this to their AGENTS.md:
 
-Completed task history lives in git log. Removing done tasks keeps the file focused on pending work.
+```markdown
+## Task Management
+- Read TASKS.md for available work before asking the user
+- Claim tasks by appending (@your-agent-id) before starting work
+- Mark tasks [x] when done — do not delete completed tasks
+- Prioritize tasks that unblock other work
+- Add new tasks you discover during implementation
+```
 
-Teams that prefer in-file history MAY keep a `## Done` section at the bottom, but this is not recommended for active projects — the file grows without bound.
+## Orchestrator Integration
 
-### Ordering
+TASKS.md is designed as the interface between an orchestrator and its agents:
 
-Within a priority section, tasks are ordered by importance (most important first). When reordering, prefer moving tasks up rather than down — the top of each section is the "next up" position.
+```
+┌─────────────┐     writes      ┌──────────┐     reads      ┌─────────┐
+│ Orchestrator │ ──────────────> │ TASKS.md │ <────────────── │  Agent  │
+│  (planner)   │                 │          │ ──────────────> │ (coder) │
+└─────────────┘     reads       └──────────┘     writes      └─────────┘
+                  completions                    claims/[x]
+```
+
+1. **Orchestrator** decomposes work into tasks and writes TASKS.md
+2. **Agent** reads TASKS.md, claims a task, implements it, marks `[x]`
+3. **Orchestrator** monitors completions, resolves blockers, adds follow-up tasks
+4. **Prune** runs periodically to clean up `[x]` items
+
+This loop works whether the orchestrator is a background server, a CI pipeline, or a human running agents manually.
 
 ## Relationship to Other Standards
 
 | Standard | Relationship |
 |----------|-------------|
-| [AGENTS.md](https://agents.md/) | Complementary. AGENTS.md = how. TASKS.md = what. |
-| [MCP](https://modelcontextprotocol.io/) | MCP servers can provide read/write access to TASKS.md as a tool. |
-| GitHub Issues / Jira | TASKS.md is not a replacement. Issues track features and bugs for teams. TASKS.md tracks implementation steps for agents. A GitHub Issue might say "Add auth." TASKS.md breaks that into steps. Tasks MAY reference issue numbers. |
-
-## Extensions
-
-The following extensions are not part of the core spec but are recognized patterns for teams with specific needs.
-
-### YAML Format (tasks-queue.yaml)
-
-For automated task processing (orchestrators, CI pipelines, queue processors), a YAML format provides machine-readable structure:
-
-```yaml
-- task: "Fix authentication crash on token refresh"
-  priority: P0
-  blocked_by: []
-  claimed_by: null
-  details: |
-    The JWT refresh endpoint returns 500 when the token is expired.
-  files:
-    - src/auth/refresh.ts
-    - src/middleware/auth.ts
-  acceptance: |
-    Token refresh works, existing tests pass, new regression test added
-```
-
-If both `TASKS.md` and `tasks-queue.yaml` exist, `TASKS.md` is authoritative.
-
-### Labels / Tags
-
-Tasks MAY include inline tags for filtering:
-
-```markdown
-- [ ] Fix CORS headers #security #api
-- [ ] Update dependencies #chore
-```
-
-The spec does not define a tag taxonomy. Tags are freeform and team-specific.
+| [AGENTS.md](https://agents.md/) | AGENTS.md = how to work. TASKS.md = what to work on. |
+| [MCP](https://modelcontextprotocol.io/) | An MCP server can provide read/write access to TASKS.md. |
+| GitHub Issues / Jira | Issues track features for teams. TASKS.md tracks implementation steps for agents. They complement each other — a single Issue may produce multiple TASKS.md entries. |
 
 ## Versioning
 
-This specification follows [Semantic Versioning](https://semver.org/). The current version is **0.1.0** (draft, seeking community feedback).
+This specification follows [Semantic Versioning](https://semver.org/). The current version is **0.2.0** (draft).
