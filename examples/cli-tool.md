@@ -1,23 +1,24 @@
+<!-- tasks-spec: 0.3 -->
 # Tasks
 
-## P0 — Critical
+## P0
 
-- [ ] Fix `--output` flag silently ignoring invalid paths
+- [ ] Fix `--output` flag silently ignoring invalid paths `#output-validation`
   - **Details**: When `--output /nonexistent/dir/file.json` is passed, the tool exits 0 with no output. Should validate the directory exists and exit 1 with a clear error.
   - **Files**: `src/cli/flags.ts`, `src/output/writer.ts`
   - **Acceptance**: Invalid paths produce exit code 1 and stderr message
 
-## P1 — Important
+## P1
 
-- [ ] Add `--format csv` output support
+- [ ] Add `--format csv` output support `#csv-format`
   - **Details**: Currently supports JSON and YAML. Add CSV with proper escaping for quoted fields.
-  - **Files**: `src/output/formatters/csv.ts` (new), `src/output/index.ts`
+  - **Files**: `src/output/formatters/csv.ts`, `src/output/index.ts`
 
-- [ ] Support reading config from `~/.toolrc.yaml`
+- [ ] Support reading config from `~/.toolrc.yaml` `#config-file`
   - **Details**: Check for config file on startup, merge with CLI flags (flags take precedence)
   - **Files**: `src/config/loader.ts`
 
-## P2 — Nice to Have
+## P2
 
 - [ ] Add shell completion scripts for bash/zsh/fish
 - [ ] Colorize terminal output with chalk

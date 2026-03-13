@@ -1,119 +1,176 @@
 # TASKS.md Specification
 
-**Version**: 0.2.0 (Draft)
+**Version**: 0.3.0 (Draft)
 
 ## Overview
 
-TASKS.md is a standard file format for agent task queues. It is a Markdown file at the root of a repository that an orchestrator — or any coding agent — uses to assign, track, and coordinate work.
-
-TASKS.md is designed for **agent orchestrators**: systems that decompose work into tasks and assign them to coding agents. Examples include [Bosun](https://github.com/fivanishche/bosun), [OpenHands](https://github.com/All-Hands-AI/OpenHands), [Factory Droids](https://factory.ai), GitHub Copilot coding agent, and custom pipelines.
+TASKS.md is a convention for agent task queues. It is a Markdown file that orchestrators and coding agents use to assign, track, and coordinate work in a repository.
 
 It complements [AGENTS.md](https://agents.md/). AGENTS.md tells agents **how** to work. TASKS.md tells them **what** to work on.
+
+## Design Principles
+
+1. **Markdown first** — Human-readable, git-friendly, zero tooling required
+2. **Convention, not protocol** — Agents parse by understanding, not by regex. Like AGENTS.md, this works because LLMs read Markdown natively.
+3. **Scales from one task to hundreds** — Single file for small repos, directory-scoped files for large ones
+4. **Stable references** — Tasks have IDs so blockers and cross-references don't break when descriptions change
 
 ## File
 
 - **Name**: `TASKS.md`
-- **Location**: Repository root (next to `README.md` and `AGENTS.md`)
-- **Format**: Markdown
+- **Location**: Repository root, next to `README.md` and `AGENTS.md`
 - **Encoding**: UTF-8
 
-One file per repository. In monorepos, place one `TASKS.md` at the root. Use the **Files** metadata field to scope tasks to specific packages — not separate files.
+### Multiple Files
+
+In large repositories and monorepos, additional `TASKS.md` files MAY be placed in subdirectories to scope work:
+
+```
+my-project/
+├── AGENTS.md
+├── TASKS.md             # project-wide tasks
+├── packages/
+│   ├── api/
+│   │   └── TASKS.md     # API-specific tasks
+│   └── web/
+│       └── TASKS.md     # web-specific tasks
+```
+
+When multiple files exist:
+- An agent working in a subdirectory reads the **most specific** `TASKS.md` for that directory, then falls back to the root file
+- Task IDs (see [Task IDs](#task-ids)) MUST be unique across all `TASKS.md` files in a repository
+- The root `TASKS.md` MAY reference tasks in subdirectory files using their IDs
+
+### In-File Version
+
+Files SHOULD declare which spec version they follow using an HTML comment on the first line:
+
+```markdown
+<!-- tasks-spec: 0.3 -->
+# Tasks
+```
+
+This allows tools to handle format changes across spec versions. If omitted, the latest version is assumed.
 
 ## Format
 
-A TASKS.md file has this exact structure:
-
 ```markdown
+<!-- tasks-spec: 0.3 -->
 # Tasks
 
-## P0 — Critical
+## P0
 
-- [ ] Fix authentication crash on token refresh
+- [ ] Fix authentication crash on token refresh `#auth-fix`
   - **Details**: JWT refresh returns 500 on expired tokens
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
   - **Acceptance**: Refresh works, tests pass, regression test added
 
-## P1 — Important
+## P1
 
-- [ ] Add rate limiting to public API endpoints (@cursor-1)
-  - **Details**: Use express-rate-limit, 100 req/min per IP for /api/public/*
-  - **Blocked by**: "Fix authentication crash on token refresh"
+- [ ] Add rate limiting to public API endpoints `#rate-limit` (@cursor-1)
+  - **Details**: Use express-rate-limit, 100 req/min per IP
+  - **Blocked by**: `#auth-fix`
 
-## P2 — Nice to Have
+## P2
 
-- [ ] Update README with new API endpoints
+- [ ] Update README with new API endpoints `#update-docs`
 
-## P3 — Future
+## P3
 
-- [ ] Support WebSocket connections
+- [ ] Support WebSocket connections `#websocket`
 ```
 
-### Rules
+### Priority Sections
 
-1. The file MUST start with `# Tasks`
-2. Tasks are organized under exactly four headings: `## P0 — Critical`, `## P1 — Important`, `## P2 — Nice to Have`, `## P3 — Future`
-3. Empty sections MAY be omitted
-4. Each task is a Markdown checkbox: `- [ ]` (pending) or `- [x]` (done)
-5. Higher sections = higher priority. First task in a section = most important
-6. No other headings, sections, or structure is permitted at the top level
+Tasks are organized under four priority headings:
+
+| Heading | When to use | Examples |
+|---------|-------------|---------|
+| `## P0` | System is broken or users are blocked. Drop everything. | Production crash, data loss, security vulnerability |
+| `## P1` | Core work that must ship. The default for planned features and important bugs. | Feature implementation, significant bugs, tech debt blocking progress |
+| `## P2` | Valuable but not blocking. Do after P0 and P1 are clear. | Polish, docs, minor improvements, non-critical refactors |
+| `## P3` | Someday. Kept for reference, not actively worked. | Long-term ideas, speculative features, "would be nice" items |
+
+**Why four levels**: Fewer than four (e.g., High/Medium/Low) conflates "system is down" with "important feature." More than four creates ambiguity — people can't consistently distinguish five priority levels. Four maps cleanly to incident severity (P0–P3) which is already an industry standard.
+
+Rules:
+- The heading MUST be exactly `## P0`, `## P1`, `## P2`, or `## P3` (no suffix required)
+- Empty sections MAY be omitted
+- Higher sections = higher priority
+- First task in a section = most important within that priority
 
 ### Tasks
 
-A task is a single checkbox line with an imperative description:
+A task is a Markdown checkbox with an imperative description:
 
 ```markdown
-- [ ] Fix authentication crash on token refresh
+- [ ] Fix authentication crash on token refresh `#auth-fix`
 ```
+
+### Task IDs
+
+Tasks SHOULD have a short, stable identifier in backticks at the end of the task line:
+
+```markdown
+- [ ] Fix authentication crash `#auth-fix`
+- [ ] Add rate limiting `#rate-limit`
+```
+
+Rules:
+- Format: `` `#<kebab-case-id>` ``
+- IDs MUST be unique within a repository (across all TASKS.md files)
+- IDs MUST NOT change once assigned — they are stable references
+- IDs are used for blocker references and cross-file linking
+
+IDs are optional for simple tasks with no blockers or cross-references. A bare `- [ ] Fix the typo` is valid.
 
 ### Metadata
 
-Tasks MAY have nested metadata using bold labels. There are exactly four recognized fields:
+Tasks MAY have nested metadata using bold labels:
 
 ```markdown
-- [ ] Fix authentication crash on token refresh
+- [ ] Fix authentication crash `#auth-fix`
   - **Details**: JWT refresh returns 500 on expired tokens.
     Catch TokenExpiredError and issue a new token.
   - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
   - **Acceptance**: Refresh works, tests pass, regression test added
-  - **Blocked by**: "Upgrade jsonwebtoken to v10"
+  - **Blocked by**: `#jwt-upgrade`
 ```
 
 | Field | Purpose |
 |-------|---------|
-| **Details** | Implementation guidance |
-| **Files** | File paths (backtick-quoted, comma-separated) |
+| **Details** | Implementation guidance, context, approach |
+| **Files** | Relevant file paths (backtick-quoted, comma-separated) |
 | **Acceptance** | Definition of done |
-| **Blocked by** | Quoted description of the blocking task |
+| **Blocked by** | Task ID(s) of blocking tasks — comma-separated if multiple |
 
-All metadata is optional. No other metadata fields are part of the spec.
+All metadata is optional.
 
 ### Sub-tasks
 
 Tasks MAY have sub-tasks as nested checkboxes:
 
 ```markdown
-- [ ] Implement user authentication
+- [ ] Implement user authentication `#auth`
   - [x] Design auth schema (@cursor-1)
   - [ ] Set up JWT token generation
   - [ ] Add login endpoint
 ```
 
-Sub-tasks inherit priority from their parent.
+Sub-tasks inherit priority from their parent. Sub-tasks do not need IDs unless they are referenced as blockers.
 
 ## Claiming
 
-An agent claims a task by appending its identifier in parentheses:
+An agent claims a task by appending its identifier in parentheses on the task line:
 
 ```markdown
-- [ ] Add rate limiting to API (@cascade-1)
+- [ ] Add rate limiting `#rate-limit` (@cascade-1)
 ```
 
-### Rules
-
+Rules:
 - An agent MUST claim a task before starting work
 - Other agents MUST skip claimed tasks
-- The claim is part of the task line, not metadata
-- On completion: `- [x] Add rate limiting to API (@cascade-1)`
+- On completion, the agent removes the task from the file
 
 ### Agent Identity
 
@@ -131,95 +188,65 @@ The identifier MUST be specific enough to distinguish concurrent instances of th
 
 ### Limitations
 
-Claiming is **best-effort, not a distributed lock**:
+Claiming is best-effort, not a distributed lock. Two agents can race to claim the same task if they read the file simultaneously. In practice this is rare. For stronger guarantees, use an MCP server as the coordination backend with TASKS.md as the human-readable view.
 
-- **Race conditions**: Two agents can claim the same task if they read simultaneously. Mitigation: `git pull` before claiming, commit only TASKS.md (`git commit --only TASKS.md`).
-- **Stale claims**: A crashed agent's claim stays. Mitigation: define a stale claim policy in AGENTS.md (e.g., "reclaim if no commit from the agent in 30 minutes").
-
-For stronger guarantees, use an MCP server as the coordination backend.
-
-## Completion
-
-When a task is done, the agent removes it from the file entirely:
-
-```markdown
-# Before
-- [ ] Fix authentication crash (@cursor-1)
-- [ ] Add rate limiting
-
-# After
-- [ ] Add rate limiting
-```
-
-The completed task, its metadata, and its sub-tasks are all removed. History lives in git log.
-
-### Commit Protocol
-
-Agents MUST commit TASKS.md changes separately from code changes, and pull before committing:
-
-```
-git pull --rebase
-git add TASKS.md
-git commit -m "tasks: complete 'Fix authentication crash'"
-```
-
-### Why This Is Safe
-
-The claiming protocol guarantees each agent works on a **different task**, which means a **different line**. Git auto-merges changes to non-adjacent lines. Two agents completing two different tasks will never conflict — they're deleting different lines in different parts of the file.
-
-The only edge case is two agents completing **adjacent** tasks simultaneously, which can produce a trivial merge conflict. This is rare in practice and easy to resolve.
+Stale claims from crashed agents should be documented in your AGENTS.md (e.g., "reclaim tasks with no activity for 30 minutes").
 
 ## Blockers
 
-A task with `**Blocked by**` MUST NOT be started until the blocking task is gone from the file (i.e., completed and removed):
+A task with `**Blocked by**` MUST NOT be started until every referenced task ID has been removed from the file (i.e., completed):
 
 ```markdown
-- [ ] Deploy to production
-  - **Blocked by**: "Fix authentication crash on token refresh"
+- [ ] Deploy to production `#deploy`
+  - **Blocked by**: `#auth-fix`, `#rate-limit`
 ```
+
+The blocker uses **task IDs**, not descriptions. This means:
+- Blockers don't break when task descriptions are edited
+- Blockers work across TASKS.md files in a monorepo
+- An agent can mechanically check if a blocker is resolved: search all TASKS.md files for the ID
 
 Agents SHOULD:
 1. Prioritize tasks that block other work — unblocking has the highest impact
 2. Skip blocked tasks when selecting work
-3. Remove the `**Blocked by**` line when the blocking task is no longer in the file
+3. Remove the `**Blocked by**` line (or individual IDs) when the blocking task is gone
+
+## Completion
+
+When a task is done, the agent removes it from the file — the task line, its metadata, and its sub-tasks. Completed task history lives in git log.
+
+This keeps the file focused on pending work and prevents unbounded growth. Each agent works on a different task (guaranteed by claiming), so removals target different lines and merge cleanly.
 
 ## Agent Discovery
 
-### When to Read
-
 Agents SHOULD read TASKS.md:
 - **On session start** — before asking the user what to work on
-- **After completing a task** — to find the next item
-- **When the user says "work on the next task"** or similar
+- **After completing a task** — to pick up the next item
+- **When asked to "work on the next task"** or similar
 
-### When to Write
-
-Agents SHOULD update TASKS.md:
+Agents SHOULD write TASKS.md:
 - **Before starting work** — claim the task
-- **After completing work** — mark `[x]`
+- **After completing work** — remove the task
 - **When discovering new work** — add tasks found during implementation
 
-### When TASKS.md Is Empty or Missing
-
-Not an error. The agent asks the user for instructions.
+A missing or empty TASKS.md is not an error. The agent asks the user for instructions.
 
 ### AGENTS.md Integration
 
-Teams SHOULD add this to their AGENTS.md:
+Teams SHOULD reference TASKS.md from their AGENTS.md:
 
 ```markdown
 ## Task Management
 - Read TASKS.md for available work before asking the user
 - Claim tasks by appending (@your-agent-id) before starting work
 - Remove completed tasks from the file (history is in git log)
-- Commit TASKS.md changes separately from code changes
 - Prioritize tasks that unblock other work
 - Add new tasks you discover during implementation
 ```
 
 ## Orchestrator Integration
 
-TASKS.md is designed as the interface between an orchestrator and its agents:
+TASKS.md serves as the interface between an orchestrator and its agents:
 
 ```
 ┌─────────────┐     writes      ┌──────────┐     reads      ┌─────────┐
@@ -233,7 +260,7 @@ TASKS.md is designed as the interface between an orchestrator and its agents:
 2. **Agent** reads TASKS.md, claims a task, implements it, removes the task when done
 3. **Orchestrator** monitors the file, resolves blockers, adds follow-up tasks
 
-This loop works whether the orchestrator is a background server, a CI pipeline, or a human running agents manually.
+This works whether the orchestrator is a background server, a CI pipeline, or a human running agents from chat.
 
 ## Relationship to Other Standards
 
@@ -241,8 +268,16 @@ This loop works whether the orchestrator is a background server, a CI pipeline, 
 |----------|-------------|
 | [AGENTS.md](https://agents.md/) | AGENTS.md = how to work. TASKS.md = what to work on. |
 | [MCP](https://modelcontextprotocol.io/) | An MCP server can provide read/write access to TASKS.md. |
-| GitHub Issues / Jira | Issues track features for teams. TASKS.md tracks implementation steps for agents. They complement each other — a single Issue may produce multiple TASKS.md entries. |
+| GitHub Issues / Jira | Issues track features for teams. TASKS.md tracks implementation steps for agents. A single Issue may produce multiple TASKS.md entries. |
 
-## Versioning
+## Spec Versioning
 
-This specification follows [Semantic Versioning](https://semver.org/). The current version is **0.2.0** (draft).
+This specification follows [Semantic Versioning](https://semver.org/).
+
+| Version | Status | Changes |
+|---------|--------|---------|
+| 0.3.0 | Draft | Task IDs, multi-file support, in-file versioning, simplified priority headings |
+| 0.2.0 | Superseded | Orchestrator-first framing, strict format |
+| 0.1.0 | Superseded | Initial draft |
+
+Breaking changes increment the minor version during 0.x development. Files declare their version via `<!-- tasks-spec: 0.3 -->` so tools can handle migrations.

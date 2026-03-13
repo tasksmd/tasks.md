@@ -10,9 +10,10 @@
 - Use conventional commits: `feat:`, `fix:`, `docs:`
 
 ## Code Style
-- Markdown only — no HTML, no custom syntax
+- Markdown only — no HTML except `<!-- tasks-spec: 0.3 -->` version comment
 - Examples must be valid TASKS.md files that follow the spec
-- Priority sections must use exact headings: `## P0 — Critical`, `## P1 — Important`, `## P2 — Nice to Have`, `## P3 — Future`
+- Priority sections use exact headings: `## P0`, `## P1`, `## P2`, `## P3`
+- Tasks with blockers or cross-references must have IDs (`` `#kebab-case` ``)
 - Use fenced code blocks with `markdown` language tag for examples
 
 ## Testing

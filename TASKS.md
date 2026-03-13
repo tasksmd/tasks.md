@@ -1,21 +1,22 @@
+<!-- tasks-spec: 0.3 -->
 # Tasks
 
-## P1 — Important
+## P1
 
-- [ ] File an issue on agentsmd/agents.md proposing TASKS.md as a companion standard
+- [ ] File an issue on agentsmd/agents.md proposing TASKS.md as a companion standard `#agents-issue`
   - **Details**: Reference Issue #71 (.agent directory proposal). Position TASKS.md as the task management layer that complements AGENTS.md instructions.
 
-- [ ] Build a tasks-mcp server that reads/writes TASKS.md
-  - **Details**: Lightweight MCP server so any agent with MCP support gets TASKS.md integration for free — without waiting for tool vendors to add native support. Commands: list tasks, claim task, complete task, add task.
+- [ ] Build a tasks-mcp server that reads/writes TASKS.md `#mcp-server`
+  - **Details**: Lightweight MCP server so any agent with MCP support gets TASKS.md integration for free. Commands: list tasks, claim task, complete task, add task.
 
-- [ ] Write a blog post: "Why your AI agent needs a backlog"
-  - **Details**: Lead with session persistence (mass market), not multi-agent (niche). Cover the fragmentation problem, the AGENTS.md parallel, and how TASKS.md solves it. Include the FAQ comparisons (vs GitHub Issues, vs TODO.md).
+- [ ] Write a blog post: "Why your AI agent needs a backlog" `#blog-post`
+  - **Details**: Lead with session persistence, not multi-agent. Cover the fragmentation problem, the AGENTS.md parallel, and how TASKS.md solves it.
 
-- [ ] Add a simple static website (GitHub Pages)
-  - **Details**: Single-page site explaining the spec with examples. Follow the agents.md pattern.
-  - **Files**: `docs/` directory or `index.html`
+- [ ] Add a simple static website (GitHub Pages) `#website`
+  - **Details**: Single-page site explaining the convention with examples. Follow the agents.md pattern.
+  - **Files**: `docs/`
 
-## P2 — Nice to Have
+## P2
 
 - [ ] Add more examples (Python project, Rust project, mobile app)
 - [ ] Add a validator script that checks TASKS.md format
