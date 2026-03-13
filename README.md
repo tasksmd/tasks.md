@@ -1,23 +1,12 @@
 # TASKS.md
 
-A simple, open format for giving coding agents a task queue.
+A simple, open format for giving coding agents a persistent backlog.
 
-Think of TASKS.md as a **backlog for agents**: a persistent, version-controlled, human-readable list of work that any agent can read, claim, and complete.
+**Your agent loses context between sessions.** You describe a feature, the agent works on it, the session ends — and everything it learned, planned, and queued is gone. Next session, you start from scratch.
 
-**TASKS.md is a companion to [AGENTS.md](https://agents.md/).** While AGENTS.md tells agents *how* to work, TASKS.md tells them *what* to work on.
+TASKS.md fixes this. It's a Markdown file at the root of your repository that persists work across sessions, agents, and tools.
 
-## Why TASKS.md?
-
-AI coding agents are increasingly autonomous — they research, plan, implement, test, and open PRs. But there is no standard way to give them a queue of work.
-
-Today's landscape is fragmented:
-
-- **Ad-hoc chat** — "Add auth to the API" → lost after the session ends
-- **TODO comments** — `// TODO: fix this` → scattered, no priority, no claiming
-- **Issue trackers** — GitHub Issues, Jira → requires API access, not in the repo
-- **Custom files** — Every team invents their own format
-
-TASKS.md provides a single, predictable place for task management — just like AGENTS.md did for agent instructions.
+**TASKS.md is a companion to [AGENTS.md](https://agents.md/).** AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
 ## Quick Start
 
@@ -43,50 +32,107 @@ Create a `TASKS.md` file at the root of your repository:
 - [ ] Update README with new API endpoints
 ```
 
-That's it. Your agents now have a backlog.
+That's it. Your agent now has a backlog that survives across sessions.
+
+Tell your agent to check TASKS.md — or add it to your [AGENTS.md](#agentsmd-integration):
+
+```markdown
+## Task Management
+- Check TASKS.md for available work before asking the user
+- Claim tasks before starting work
+- Remove completed tasks (history is in git log)
+```
+
+## Why TASKS.md?
+
+### The problem
+
+AI coding agents are increasingly autonomous — they research, plan, implement, test, and open PRs. But their work is ephemeral. Every session starts from zero.
+
+Developers work around this by pasting context into chat, maintaining personal notes, or hoping the agent figures it out. None of this scales.
+
+### What exists today
+
+| Approach | Limitation |
+|----------|------------|
+| **Chat prompts** | Lost after the session ends |
+| **TODO comments** | Scattered across files, no priority, no structure |
+| **GitHub Issues** | Great for project management, but heavyweight for agent scratch work (see [FAQ](#how-is-this-different-from-github-issues)) |
+| **Custom files** | Every team invents their own format |
+
+### What TASKS.md provides
+
+- **Persistent** — Survives across sessions, restarts, tool switches
+- **Version-controlled** — Tracked in git alongside the code it describes
+- **Human-readable** — Plain Markdown. No tooling required.
+- **Agent-readable** — Any LLM that reads Markdown can read TASKS.md
+- **Vendor-neutral** — Works with any coding agent, today
 
 ## Format
 
-### Required
+### Tasks
 
-| Element | Format | Purpose |
-|---------|--------|---------|
-| **Task** | `- [ ] Description` | Markdown checkbox — universal, diff-friendly |
-| **Priority** | `## P0` through `## P3` | Section headers define priority tiers |
+A task is a Markdown checkbox list item:
 
-### Optional
+```markdown
+- [ ] Short description of the task
+```
 
-| Element | Format | Purpose |
-|---------|--------|---------|
-| **Details** | `- **Details**: ...` | Implementation guidance |
-| **Files** | `- **Files**: \`path\`` | Scope hint for the agent |
-| **Acceptance** | `- **Acceptance**: ...` | Definition of done |
-| **Blocked by** | `- **Blocked by**: "task"` | Dependency tracking |
-| **Claimed by** | `(@name — in progress)` | Multi-agent coordination |
+### Priority
 
-### Conventions
+Tasks are organized into priority sections using `##` headings. The spec defines four tiers:
 
-1. **Completed tasks are removed** — History lives in git log. TASKS.md only contains pending work.
+| Section | Meaning |
+|---------|---------|
+| `## P0 — Critical` | Broken / blocking — fix immediately |
+| `## P1 — Important` | Core features and fixes |
+| `## P2 — Nice to Have` | Polish, docs, minor improvements |
+| `## P3 — Future` | Long-term, aspirational |
 
-2. **Priority tiers are customizable** — `P0`–`P3` is a recommendation. Teams can use `## Critical`, `## Backlog`, etc. Higher sections = higher priority.
+Higher sections in the file = higher priority. Agents work top-to-bottom.
 
-3. **Claiming prevents conflicts** — In multi-agent environments, append `(@agent-name — in progress)` to claim a task. Other agents must skip claimed tasks.
+### Task Metadata
 
-4. **Blockers are first-class** — Agents should prioritize unblocking work. A task with `**Blocked by**` cannot be started until the blocker is resolved.
+Tasks can include optional structured metadata:
 
-5. **Sub-tasks use indentation**:
-   ```markdown
-   - [ ] Implement user authentication
-     - [ ] Set up JWT token generation
-     - [ ] Add login endpoint
-     - [x] Design auth schema (@cursor-1)
-   ```
+```markdown
+- [ ] Fix authentication crash on token refresh
+  - **Details**: JWT refresh returns 500 on expired tokens
+  - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
+  - **Acceptance**: Refresh works, tests pass, regression test added
+  - **Blocked by**: "Upgrade jsonwebtoken to v10"
+```
+
+| Field | Purpose |
+|-------|---------|
+| **Details** | Implementation guidance |
+| **Files** | Scope hint — which files to look at |
+| **Acceptance** | Definition of done |
+| **Blocked by** | Dependency on another task |
+
+All metadata is optional. A bare `- [ ] Fix the bug` is a valid task.
+
+### Sub-tasks
+
+```markdown
+- [ ] Implement user authentication
+  - [x] Design auth schema
+  - [ ] Set up JWT token generation
+  - [ ] Add login endpoint
+  - [ ] Add token refresh endpoint
+```
+
+### Lifecycle
+
+- **Add** tasks as you discover work (humans or agents)
+- **Complete** by checking the box: `- [x] Task description`
+- **Remove** completed tasks — history lives in git log
 
 See the [full specification](spec.md) for details.
 
 ## Multi-Agent Coordination
 
-TASKS.md solves a problem that simple TODO lists don't address: **multiple agents working in the same repo**.
+When multiple agents work in the same repo, TASKS.md provides a lightweight coordination layer.
 
 ```markdown
 ## P1 — Important
@@ -96,16 +142,23 @@ TASKS.md solves a problem that simple TODO lists don't address: **multiple agent
 - [x] Fix CORS headers (@claude-code)
 ```
 
-The protocol:
-1. **Read** TASKS.md to find unclaimed work
-2. **Claim** by appending your agent name
-3. **Work** on the task
-4. **Complete** by marking `[x]` with attribution
-5. **Cleanup** — remove completed tasks (history is in git)
+### Claiming Protocol
+
+1. **Read** — Agent reads TASKS.md, finds the first unclaimed, unblocked task
+2. **Claim** — Agent appends `(@agent-name — in progress)` and commits
+3. **Work** — Agent implements the task
+4. **Complete** — Agent marks `[x]` with attribution
+5. **Cleanup** — Completed tasks are removed
+
+### Limitations
+
+This is a **best-effort protocol**, not a distributed lock. Two agents can race to claim the same task if they read the file simultaneously. In practice, this is rare — agents typically work on different timescales and the claim window is small. For stronger guarantees, use an MCP server as a coordination backend with TASKS.md as the human-readable view.
+
+Stale claims (from crashed agents) should be reclaimed by other agents after a reasonable period. The spec does not define a timeout — teams should document their convention in AGENTS.md.
 
 ## AGENTS.md Integration
 
-Reference TASKS.md from your AGENTS.md:
+Add a task management section to your AGENTS.md:
 
 ```markdown
 # AGENTS.md
@@ -115,54 +168,63 @@ Reference TASKS.md from your AGENTS.md:
 - Claim tasks before starting work
 - Remove completed tasks (history is in git log)
 - Prioritize tasks that unblock other work
+- Add new tasks you discover during implementation
 ```
 
-## One TASKS.md Works Across Many Agents
+This is how agents learn about TASKS.md today. As tool vendors add native support, this section becomes optional.
 
-TASKS.md uses plain Markdown checkboxes — the most universal format. Any agent that reads Markdown can read TASKS.md:
+## Works With Any Agent
 
-- GitHub Copilot coding agent
-- OpenAI Codex
-- Cursor
-- Claude Code
-- Windsurf
-- Augment
-- Any future agent
-
-No special parser, MCP server, or tooling required.
-
-## Structured Alternative: YAML
-
-For teams with automated task processing (orchestrators, CI pipelines, MCP servers), a YAML format works too:
-
-```yaml
-- task: "Fix authentication crash on token refresh"
-  priority: P0
-  blocked_by: []
-  details: |
-    JWT refresh endpoint returns 500 when token is expired.
-    Files: src/auth/refresh.ts, src/middleware/auth.ts
-  acceptance: |
-    Token refresh works, existing tests pass, new regression test added
-```
-
-Tools that read `TASKS.md` should also check for `tasks-queue.yaml` as a structured equivalent.
+TASKS.md uses plain Markdown checkboxes — the most universal format. Any agent that reads Markdown can read TASKS.md. No special parser, MCP server, or tooling required.
 
 ## Examples
 
-See the [examples/](examples/) directory for TASKS.md files across different project types:
+See the [examples/](examples/) directory:
 - [Web application](examples/web-app.md)
 - [CLI tool](examples/cli-tool.md)
 - [Monorepo](examples/monorepo.md)
 - [Multi-agent workflow](examples/multi-agent.md)
 
+## FAQ
+
+### How is this different from GitHub Issues?
+
+GitHub Issues is a project management tool for teams. TASKS.md is a lightweight, in-repo backlog for agents.
+
+| | GitHub Issues | TASKS.md |
+|-|---------------|----------|
+| **Audience** | Teams, PMs, contributors | Coding agents |
+| **Granularity** | Features, bugs, epics | Implementation steps |
+| **Access** | API / web UI | `cat TASKS.md` |
+| **Works offline** | No | Yes |
+| **In the repo** | No (metadata) | Yes (version-controlled) |
+| **Setup** | Built into GitHub | One file, any git host |
+
+They complement each other. A GitHub Issue might say "Add user authentication." TASKS.md breaks that into implementation steps the agent can execute.
+
+### Why not TODO.md?
+
+`TODO.md` is a recognized convention, but it has baggage — it's often a dumping ground of aspirational items with no structure, priority, or ownership. TASKS.md signals a managed backlog with a defined format. The name also parallels AGENTS.md.
+
+### Do I need multiple agents to benefit?
+
+No. The simplest use case is **one developer, one agent, persistent context**. You describe work in TASKS.md, your agent picks it up next session without you repeating yourself. Multi-agent coordination is the advanced chapter.
+
+### What if TASKS.md is empty?
+
+The agent should ask the user what to work on, or look for other signals (open PRs, failing tests, TODO comments in code). An empty TASKS.md is not an error.
+
+### Can agents add their own tasks?
+
+Yes. Agents often discover work during implementation ("this function also needs refactoring," "found a bug in the adjacent module"). They should add these to TASKS.md for the next session.
+
 ## Contributing
 
-We welcome contributions! Open an issue or PR to:
-- Improve the specification
+We welcome contributions. Open an issue or PR to:
+- Improve the [specification](spec.md)
 - Add examples for your stack
-- Propose extensions for specific use cases
-- Report how TASKS.md works (or doesn't) with your agent
+- Propose extensions
+- Share how TASKS.md works (or doesn't) with your agent
 
 ## License
 
@@ -170,6 +232,6 @@ We welcome contributions! Open an issue or PR to:
 
 ## About
 
-TASKS.md emerged from real-world multi-agent development workflows. When you have multiple AI agents (Cursor, Claude Code, Windsurf, orchestrator pipelines) working in the same repository simultaneously, you need a coordination layer. TASKS.md is that layer.
+TASKS.md emerged from real-world multi-agent development workflows where multiple AI coding agents work in the same repository simultaneously. It started as a team convention, grew into a structured format, and is now proposed as an open standard.
 
 We aim to work with the [AGENTS.md](https://agents.md/) community and the [Agentic AI Foundation](https://openai.com/index/agentic-ai-foundation/) to establish TASKS.md as a companion standard.
