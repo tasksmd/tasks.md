@@ -1,5 +1,7 @@
 # TASKS.md
 
+[![CI](https://github.com/tasksmd/tasks.md/actions/workflows/ci.yml/badge.svg)](https://github.com/tasksmd/tasks.md/actions/workflows/ci.yml)
+
 A lightweight spec for AI agent task queues — the companion to [AGENTS.md](https://agents.md/).
 
 **[Website](https://tasksmd.github.io/tasks.md/)** · **[Spec](spec.md)** · **[Examples](examples/)** · **[MCP Server](mcp/)**

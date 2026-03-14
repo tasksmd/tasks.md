@@ -9,6 +9,9 @@
   "files": [
     "index.js"
   ],
+  "scripts": {
+    "test": "node --test test.js"
+  },
   "keywords": [
     "tasks",
     "lint",

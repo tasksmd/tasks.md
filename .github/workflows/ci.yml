@@ -57,3 +57,7 @@ jobs:
       - name: Run MCP tests
         run: npm test
         working-directory: mcp
+
+      - name: Run lint tests
+        run: npm test
+        working-directory: lint
