@@ -20,3 +20,40 @@ jobs:
           if [ -f TASKS.md ]; then
             bash scripts/validate-examples.sh TASKS.md
           fi
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Lint examples
+        run: node lint/index.js examples/*.md
+
+      - name: Lint TASKS.md
+        run: |
+          if [ -f TASKS.md ]; then
+            node lint/index.js TASKS.md
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install MCP dependencies
+        run: npm ci
+        working-directory: mcp
+
+      - name: Build MCP server
+        run: npm run build
+        working-directory: mcp
+
+      - name: Run MCP tests
+        run: npm test
+        working-directory: mcp
