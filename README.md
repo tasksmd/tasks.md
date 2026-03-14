@@ -53,13 +53,16 @@ That's it. Your agent will read TASKS.md on session start and work through the q
 
 **Planning first leads to better results.** When you write a task down — even a one-liner — you're forced to think about what you actually want before the agent starts coding. That small act of planning is the difference between an agent that builds the right thing and one that guesses. TASKS.md makes planning the natural first step, not an afterthought.
 
+**Zero friction beats any tool.** Opening Jira to write a task takes you out of flow — you switch context, fill in fields, pick a project, assign a sprint. With TASKS.md, you add a line to a file that's already open in your editor. The lower the friction, the more likely you are to actually write tasks down — and written tasks are the whole point.
+
 **One Markdown file that any tool can read and write:**
 
-- **Persistent** — Survives sessions, restarts, tool switches
-- **Version-controlled** — In git, next to the code
-- **Human-readable** — Edit in any text editor
-- **Agent-readable** — Any LLM parses Markdown natively
-- **Vendor-neutral** — Works with any tool, today
+- **Zero setup** — No accounts, no APIs, no tokens. Create a file and start writing.
+- **In your editor** — Add tasks without leaving your IDE. No browser tab, no context switch.
+- **Version-controlled** — In git, next to the code. Every change is tracked.
+- **Agent-native** — LLMs parse Markdown natively. No API client needed to read a file.
+- **Vendor-neutral** — Works with any agent, any IDE, any CI system, today.
+- **Offline** — Works on a plane. No server required.
 
 ## How It Works
 
@@ -174,9 +177,37 @@ You're always adding to the queue. The agent is always draining it. This is the 
 
 ## FAQ
 
-### How is this different from GitHub Issues?
+### Why not Jira / GitHub Issues / Linear?
 
-Issues track features for teams. TASKS.md tracks implementation steps for agents. They complement each other — one Issue may produce multiple TASKS.md entries.
+They solve a different problem. Issue trackers are for **team coordination** — prioritizing features, tracking sprints, assigning across people, reporting to stakeholders. TASKS.md is for **agent execution** — a local, fast, file-based queue that agents read and write without API calls.
+
+Key differences:
+
+| | Issue trackers | TASKS.md |
+|--|----------------|----------|
+| **Audience** | Product managers, teams | Agents, solo devs |
+| **Granularity** | Features, bugs, epics | Implementation steps |
+| **Access** | API calls, auth tokens | Read a file |
+| **Speed** | Browser/API round-trip | Edit a line in your editor |
+| **Works offline** | No | Yes |
+| **Agent can write** | Needs API client + auth | Append to a file |
+| **Git-native** | Separate system | Same repo, same PR |
+
+They complement each other — one Jira ticket or GitHub Issue often becomes multiple TASKS.md entries. Use the tracker for *what* to build; use TASKS.md for *how* the agent builds it.
+
+### Can I use TASKS.md alongside Jira / GitHub Issues?
+
+Absolutely — that's the expected setup for teams. The issue tracker is your source of truth for product work. When you pick up an issue, break it into implementation steps in TASKS.md and let the agent execute them. The agent doesn't need access to your tracker; it just needs the file.
+
+```markdown
+## P1
+
+- [ ] Implement user profile page (PROJ-142)
+  - **Details**: See Jira PROJ-142 for designs. Build the profile
+    page with avatar, bio, and settings link.
+  - **Files**: `src/pages/profile.tsx`, `src/api/user.ts`
+  - **Acceptance**: Page renders, matches Figma, tests pass
+```
 
 ### Why not TODO.md?
 
@@ -186,7 +217,7 @@ Migration: `mv TODO.md TASKS.md`, add P0–P3 headings, convert to checkboxes.
 
 ### Do I need an orchestrator?
 
-No. A solo developer with one agent benefits from persistent context across sessions. You write tasks, the agent works through them. An orchestrator helps when you have multiple agents, but it's not required.
+No. A solo developer with one agent benefits from persistent context across sessions. You write tasks, the agent works through them. An orchestrator helps when you have multiple agents, but it's not required. TASKS.md is intentionally simple enough that any agent can use it without special tooling.
 
 ### Won't deleting tasks cause merge conflicts?
 
