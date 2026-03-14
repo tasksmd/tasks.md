@@ -41,17 +41,6 @@ Spec v0.5
 
 ## P2
 
-- [ ] Explicitly forbid `[x]` on top-level tasks in the spec
-  - **Tags**: spec
-  - **Details**: The spec says "remove completed tasks" but never explicitly says "don't
-    mark top-level tasks `[x]`." Human editors will instinctively check the box instead
-    of deleting the block. The spec should state: "`[x]` is only for sub-tasks tracking
-    progress on a parent. Top-level tasks are removed when done, never checked."
-    The linter should flag `[x]` on top-level tasks as a warning.
-  - **Files**: `spec.md`
-  - **Acceptance**: Spec has an explicit rule. Examples don't show `[x]` on top-level tasks
-    (already true). Linter spec updated to flag it.
-
 - [ ] Add a validator script that checks TASKS.md format
   - **Tags**: tooling
   - **Details**: Node.js CLI script (`npx tasks-lint`). Checks:
