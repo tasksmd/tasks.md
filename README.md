@@ -92,6 +92,8 @@ See the [full specification](spec.md) for all details.
 - [Multi-agent workflow](examples/multi-agent.md)
 - [Complex tasks](examples/complex-tasks.md) — multiline details, rich acceptance criteria, sub-tasks with metadata
 - [Python API](examples/python-api.md) — FastAPI with SQLAlchemy, pytest, mypy, ruff
+- [Rust CLI](examples/rust-cli.md) — Cargo project with clippy, assert_cmd, crates.io publishing
+- [Mobile app](examples/mobile-app.md) — React Native with biometrics, offline sync, Detox E2E
 
 ## Agent Commands
 

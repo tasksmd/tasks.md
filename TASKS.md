@@ -30,13 +30,6 @@ Spec v0.5
   - **Acceptance**: Exits 0 on valid files, exits 1 with line-numbered errors on invalid files.
     Works on all files in `examples/`.
 
-- [ ] Add examples for Python, Rust, and mobile projects
-  - **Tags**: docs
-  - **Details**: Three new example files showing idiomatic task queues:
-    - `examples/python-api.md` — FastAPI project with pytest, mypy, ruff
-    - `examples/rust-cli.md` — Cargo project with clippy, integration tests
-    - `examples/mobile-app.md` — React Native with iOS/Android build tasks
-  - **Files**: `examples/python-api.md`, `examples/rust-cli.md`, `examples/mobile-app.md`
 
 - [ ] Create a GitHub Issues to TASKS.md sync script
   - **Tags**: tooling
