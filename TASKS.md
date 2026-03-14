@@ -17,9 +17,5 @@
   - **Details**: The linter exists in `lint/` with 22 tests and CI. Package as `tasks-lint` CLI. Needs npm auth.
   - **Files**: `lint/`
 
-- [ ] Add MCP server tool tests
-  - **Details**: Only the parser (21 tests) and linter (22 tests) are tested. The 4 MCP tools in `index.ts` (list_tasks, claim_task, complete_task, add_task) have no tests. Add integration tests that exercise the tools against fixture TASKS.md files.
-  - **Files**: `mcp/src/index.ts`
-
 - [ ] Set up custom domain tasks.md for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md domain for a cleaner URL.

@@ -2,16 +2,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { readFile, writeFile } from "node:fs/promises";
 import {
   loadAllTasks,
-  parseTaskFile,
-  getAllTaskIds,
-  isBlocked,
   discoverTaskFiles,
-  type Task,
-  type TaskFile,
 } from "./parser.js";
+import {
+  listTasksFromFiles,
+  claimTask,
+  completeTask,
+  addTask,
+} from "./tools.js";
 
 const server = new McpServer({
   name: "tasks-mcp",
@@ -20,19 +20,6 @@ const server = new McpServer({
 
 function getWorkingDirectory(): string {
   return process.env.TASKS_MCP_DIR || process.cwd();
-}
-
-function formatTask(task: Task, allIds: Set<string>): Record<string, unknown> {
-  return {
-    summary: task.summary,
-    priority: task.priority,
-    claimed: task.claimed ?? null,
-    blocked: isBlocked(task, allIds),
-    metadata: task.metadata,
-    subtasks: task.subtasks.length > 0 ? task.subtasks : undefined,
-    file: task.file,
-    line: task.startLine,
-  };
 }
 
 // ── list_tasks ──
@@ -64,49 +51,10 @@ server.registerTool(
   async ({ priority, tag, unclaimed_only, unblocked_only }) => {
     const directory = getWorkingDirectory();
     const taskFiles = await loadAllTasks(directory);
-    const allIds = getAllTaskIds(taskFiles);
-
-    let allTasks: Task[] = taskFiles.flatMap((file) => file.tasks);
-
-    if (priority) {
-      allTasks = allTasks.filter(
-        (task) => task.priority.toUpperCase() === priority.toUpperCase()
-      );
-    }
-
-    if (tag) {
-      allTasks = allTasks.filter((task) =>
-        task.metadata.tags?.some(
-          (t) => t.toLowerCase() === tag.toLowerCase()
-        )
-      );
-    }
-
-    if (unclaimed_only) {
-      allTasks = allTasks.filter((task) => !task.claimed);
-    }
-
-    if (unblocked_only) {
-      allTasks = allTasks.filter((task) => !isBlocked(task, allIds));
-    }
-
-    // Sort by priority (P0 first)
-    allTasks.sort((a, b) => a.priority.localeCompare(b.priority));
-
-    const formatted = allTasks.map((task) => formatTask(task, allIds));
-
-    const summary =
-      allTasks.length === 0
-        ? "No tasks found matching the filters."
-        : `Found ${allTasks.length} task(s) across ${taskFiles.length} file(s).`;
+    const result = listTasksFromFiles(taskFiles, { priority, tag, unclaimed_only, unblocked_only });
 
     return {
-      content: [
-        {
-          type: "text" as const,
-          text: JSON.stringify({ summary, tasks: formatted }, null, 2),
-        },
-      ],
+      content: [{ type: "text" as const, text: result.text }],
     };
   }
 );
@@ -134,64 +82,11 @@ server.registerTool(
   async ({ query, agent_name }) => {
     const directory = getWorkingDirectory();
     const taskFiles = await loadAllTasks(directory);
-    const queryLower = query.toLowerCase();
-
-    let matchedTask: Task | undefined;
-    for (const file of taskFiles) {
-      for (const task of file.tasks) {
-        if (
-          task.metadata.id?.toLowerCase() === queryLower ||
-          task.summary.toLowerCase().includes(queryLower)
-        ) {
-          matchedTask = task;
-          break;
-        }
-      }
-      if (matchedTask) break;
-    }
-
-    if (!matchedTask) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `No task found matching "${query}".`,
-          },
-        ],
-        isError: true,
-      };
-    }
-
-    if (matchedTask.claimed) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Task "${matchedTask.summary}" is already claimed by ${matchedTask.claimed}.`,
-          },
-        ],
-        isError: true,
-      };
-    }
-
-    const fileContent = await readFile(matchedTask.file, "utf-8");
-    const lines = fileContent.split("\n");
-    const taskLineIndex = matchedTask.startLine - 1;
-    const taskLine = lines[taskLineIndex];
-
-    // Append (@agent-name) to the task line
-    const claimTag = `(@${agent_name.replace(/^@/, "")})`;
-    lines[taskLineIndex] = taskLine + ` ${claimTag}`;
-
-    await writeFile(matchedTask.file, lines.join("\n"), "utf-8");
+    const result = await claimTask(taskFiles, query, agent_name);
 
     return {
-      content: [
-        {
-          type: "text" as const,
-          text: `Claimed "${matchedTask.summary}" for ${claimTag} in ${matchedTask.file}:${matchedTask.startLine}`,
-        },
-      ],
+      content: [{ type: "text" as const, text: result.text }],
+      ...(result.isError ? { isError: true } : {}),
     };
   }
 );
@@ -214,58 +109,11 @@ server.registerTool(
   async ({ query }) => {
     const directory = getWorkingDirectory();
     const taskFiles = await loadAllTasks(directory);
-    const queryLower = query.toLowerCase();
-
-    let matchedTask: Task | undefined;
-    for (const file of taskFiles) {
-      for (const task of file.tasks) {
-        if (
-          task.metadata.id?.toLowerCase() === queryLower ||
-          task.summary.toLowerCase().includes(queryLower)
-        ) {
-          matchedTask = task;
-          break;
-        }
-      }
-      if (matchedTask) break;
-    }
-
-    if (!matchedTask) {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `No task found matching "${query}".`,
-          },
-        ],
-        isError: true,
-      };
-    }
-
-    const fileContent = await readFile(matchedTask.file, "utf-8");
-    const lines = fileContent.split("\n");
-
-    // Remove lines from startLine to endLine (1-indexed)
-    const startIndex = matchedTask.startLine - 1;
-    const endIndex = matchedTask.endLine;
-
-    // Also remove trailing blank line if present
-    let removeEnd = endIndex;
-    if (removeEnd < lines.length && lines[removeEnd]?.trim() === "") {
-      removeEnd++;
-    }
-
-    lines.splice(startIndex, removeEnd - startIndex);
-
-    await writeFile(matchedTask.file, lines.join("\n"), "utf-8");
+    const result = await completeTask(taskFiles, query);
 
     return {
-      content: [
-        {
-          type: "text" as const,
-          text: `Removed "${matchedTask.summary}" (${matchedTask.priority}) from ${matchedTask.file} (lines ${matchedTask.startLine}-${matchedTask.endLine})`,
-        },
-      ],
+      content: [{ type: "text" as const, text: result.text }],
+      ...(result.isError ? { isError: true } : {}),
     };
   }
 );
@@ -316,91 +164,13 @@ server.registerTool(
       };
     }
 
-    let fileContent: string;
-    try {
-      fileContent = await readFile(targetFile, "utf-8");
-    } catch {
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Cannot read ${targetFile}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-
-    // Build the task block
-    const taskLines: string[] = [`- [ ] ${summary}`];
-    if (id) taskLines.push(`  - **ID**: ${id}`);
-    if (tags) taskLines.push(`  - **Tags**: ${tags}`);
-    if (details) taskLines.push(`  - **Details**: ${details}`);
-    if (files) taskLines.push(`  - **Files**: ${files}`);
-    if (acceptance) taskLines.push(`  - **Acceptance**: ${acceptance}`);
-    if (blocked_by) taskLines.push(`  - **Blocked by**: ${blocked_by}`);
-    const taskBlock = taskLines.join("\n");
-
-    const normalizedPriority = priority.toUpperCase();
-    const lines = fileContent.split("\n");
-
-    // Find the insertion point — after the last task in the priority section
-    let sectionStart = -1;
-    let insertAt = -1;
-    const priorityNum = parseInt(normalizedPriority.replace("P", ""), 10);
-
-    for (let i = 0; i < lines.length; i++) {
-      const match = lines[i].match(/^##\s+P([0-3])$/);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (num === priorityNum) {
-          sectionStart = i;
-        } else if (sectionStart >= 0 && num > priorityNum) {
-          // Found the next section — insert before it
-          // Back up past blank lines
-          insertAt = i;
-          while (insertAt > 0 && lines[insertAt - 1]?.trim() === "") {
-            insertAt--;
-          }
-          break;
-        }
-      }
-    }
-
-    if (sectionStart >= 0 && insertAt < 0) {
-      // Section exists but no following section — append at end
-      insertAt = lines.length;
-      while (insertAt > 0 && lines[insertAt - 1]?.trim() === "") {
-        insertAt--;
-      }
-    }
-
-    if (sectionStart < 0) {
-      // Priority section doesn't exist — create it
-      // Find where to insert the new section (after lower-priority sections or at end)
-      let insertSectionAt = lines.length;
-      for (let i = 0; i < lines.length; i++) {
-        const match = lines[i].match(/^##\s+P([0-3])$/);
-        if (match && parseInt(match[1], 10) > priorityNum) {
-          insertSectionAt = i;
-          break;
-        }
-      }
-      const sectionBlock = `\n## ${normalizedPriority}\n\n${taskBlock}\n`;
-      lines.splice(insertSectionAt, 0, sectionBlock);
-    } else {
-      lines.splice(insertAt, 0, taskBlock + "\n");
-    }
-
-    await writeFile(targetFile, lines.join("\n"), "utf-8");
+    const result = await addTask(targetFile, {
+      summary, priority, id, tags, details, files, acceptance, blocked_by,
+    });
 
     return {
-      content: [
-        {
-          type: "text" as const,
-          text: `Added "${summary}" (${normalizedPriority}) to ${targetFile}`,
-        },
-      ],
+      content: [{ type: "text" as const, text: result.text }],
+      ...(result.isError ? { isError: true } : {}),
     };
   }
 );
