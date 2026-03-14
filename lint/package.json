@@ -1,0 +1,19 @@
+{
+  "name": "tasks-lint",
+  "version": "0.1.0",
+  "description": "Validate TASKS.md files against the spec",
+  "type": "module",
+  "bin": {
+    "tasks-lint": "./index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    "tasks",
+    "lint",
+    "ai-agents",
+    "markdown"
+  ],
+  "license": "MIT"
+}

@@ -17,18 +17,6 @@ Spec v0.5
 
 ## P2
 
-- [ ] Add a validator script that checks TASKS.md format
-  - **Tags**: tooling
-  - **Details**: Node.js CLI script (`npx tasks-lint`). Checks:
-    - `# Tasks` heading and `Spec v0.5` version line present
-    - Priority headings are valid (P0–P3, in order)
-    - Tasks are checkboxes (`- [ ]` or `- [x]`)
-    - IDs are kebab-case and unique across all files
-    - Blocked-by references point to existing IDs
-    - No orphaned metadata (metadata without a parent task)
-  - **Files**: `lint/index.js`, `lint/package.json`
-  - **Acceptance**: Exits 0 on valid files, exits 1 with line-numbered errors on invalid files.
-    Works on all files in `examples/`.
 
 
 - [ ] Create a GitHub Issues to TASKS.md sync script
