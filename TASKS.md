@@ -19,13 +19,6 @@ Spec v0.5
 
 
 
-- [ ] Create a GitHub Issues to TASKS.md sync script
-  - **Tags**: tooling
-  - **Details**: Script that reads GitHub Issues with a `tasks.md` label and generates
-    TASKS.md entries. Maps issue labels to priority (P0=critical, P1=high, P2=medium, P3=low)
-    and to tags. Uses `gh` CLI for API access.
-  - **Files**: `scripts/sync-issues.sh`
-  - **Acceptance**: Running the script produces a valid TASKS.md from labeled issues.
 
 
 
