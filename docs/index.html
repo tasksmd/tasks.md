@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TASKS.md — A task queue for AI agents</title>
+  <meta name="description" content="A lightweight spec for AI agent task queues. The companion to AGENTS.md.">
+  <meta property="og:title" content="TASKS.md">
+  <meta property="og:description" content="A lightweight spec for AI agent task queues — the companion to AGENTS.md.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <h1><code>TASKS.md</code></h1>
+      <p class="subtitle">A task queue for AI agents. The companion to <a href="https://agents.md">AGENTS.md</a>.</p>
+      <p class="subtitle" style="margin-top:-1rem; font-size:1rem">AGENTS.md tells agents <em>how</em> to work. TASKS.md tells them <em>what</em> to work on.</p>
+      <div class="cta">
+        <a href="#quickstart" class="btn btn-primary">Quick Start</a>
+        <a href="https://github.com/tasksmd/tasks.md" class="btn btn-secondary">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section id="quickstart">
+    <div class="container">
+      <h2>Quick Start</h2>
+      <p>Create a <code>TASKS.md</code> at your repo root:</p>
+      <pre><code># Tasks
+Spec v0.5
+
+## P0
+
+- [ ] Fix authentication crash on token refresh
+  - **ID**: auth-fix
+  - **Details**: JWT refresh returns 500 on expired tokens
+  - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
+  - **Acceptance**: Refresh works, tests pass, regression test added
+
+## P1
+
+- [ ] Add rate limiting to public API endpoints
+  - **Blocked by**: auth-fix
+- [ ] Migrate database queries to prepared statements
+
+## P2
+
+- [ ] Update README with new API endpoints</code></pre>
+      <p>Most tasks are just checkboxes under priority headings. Add metadata only when needed.</p>
+    </div>
+  </section>
+
+  <!-- Why -->
+  <section id="why">
+    <div class="container">
+      <h2>Why TASKS.md?</h2>
+      <p>Every agent invents its own task format. Tasks get lost between sessions. Humans can't see the backlog. Multiple agents can't share a queue.</p>
+      <div class="why-grid">
+        <div class="why-card">
+          <h3>Persistent</h3>
+          <p>Survives sessions, restarts, and tool switches</p>
+        </div>
+        <div class="why-card">
+          <h3>Git-native</h3>
+          <p>Version-controlled, next to your code</p>
+        </div>
+        <div class="why-card">
+          <h3>Human-readable</h3>
+          <p>Edit in any text editor, review in any diff tool</p>
+        </div>
+        <div class="why-card">
+          <h3>Vendor-neutral</h3>
+          <p>Works with any agent, any IDE, today</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how">
+    <div class="container">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Write tasks</h3>
+            <p>Add checkboxes under P0&ndash;P3 priority headings. Add metadata (ID, blockers, files) only when needed.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Agent claims &amp; works</h3>
+            <p>The agent reads the file, claims a task with <code>(@agent-name)</code>, and implements it.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Remove when done</h3>
+            <p>Completed tasks are removed from the file. History lives in git log.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Format -->
+  <section id="format">
+    <div class="container">
+      <h2>The Format</h2>
+      <table class="format-table">
+        <thead>
+          <tr><th>Field</th><th>Purpose</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Priority</td>
+            <td>P0&ndash;P3 headings (PagerDuty/SRE scale)</td>
+            <td><code>## P1</code></td>
+          </tr>
+          <tr>
+            <td>ID</td>
+            <td>Stable reference for blockers</td>
+            <td><code>**ID**: auth-fix</code></td>
+          </tr>
+          <tr>
+            <td>Tags</td>
+            <td>Labels for filtering &amp; routing</td>
+            <td><code>**Tags**: backend, auth</code></td>
+          </tr>
+          <tr>
+            <td>Details</td>
+            <td>Implementation context</td>
+            <td><code>**Details**: JWT returns 500</code></td>
+          </tr>
+          <tr>
+            <td>Files</td>
+            <td>Relevant source files</td>
+            <td><code>**Files**: `src/auth.ts`</code></td>
+          </tr>
+          <tr>
+            <td>Blocked by</td>
+            <td>Dependencies on other task IDs</td>
+            <td><code>**Blocked by**: auth-fix</code></td>
+          </tr>
+          <tr>
+            <td>Acceptance</td>
+            <td>Definition of done</td>
+            <td><code>**Acceptance**: Tests pass</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top:1rem; color:var(--text-muted); font-size:0.9rem">All metadata is optional. Most tasks are just a checkbox and a sentence.</p>
+    </div>
+  </section>
+
+  <!-- Agent Commands -->
+  <section id="install">
+    <div class="container">
+      <h2>Agent Commands</h2>
+      <p>Drop a command file into your agent's config and type <code>/next-task</code> to start an autonomous work loop:</p>
+      <table class="install-table">
+        <thead>
+          <tr><th>Agent</th><th>Install</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Claude Code</td>
+            <td><code>cp -r commands/claude/skills/next-task .claude/skills/</code></td>
+          </tr>
+          <tr>
+            <td>Codex</td>
+            <td><code>cp -r commands/codex/skills/next-task .agents/skills/</code></td>
+          </tr>
+          <tr>
+            <td>Cursor</td>
+            <td><code>cp commands/cursor/next-task.md .cursor/commands/</code></td>
+          </tr>
+          <tr>
+            <td>Gemini CLI</td>
+            <td><code>cp commands/gemini/next-task.toml .gemini/commands/</code></td>
+          </tr>
+          <tr>
+            <td>Windsurf</td>
+            <td><code>cp commands/windsurf/next-task.md .windsurf/workflows/</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top:1rem; color:var(--text-muted); font-size:0.9rem">All paths are project-local. Commit the file so your whole team gets it.</p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="container">
+      <h2>FAQ</h2>
+      <div class="steps">
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>How is this different from GitHub Issues?</h3>
+          <p style="color:var(--text-muted)">Issues track features for teams. TASKS.md tracks implementation steps for agents. One Issue may produce multiple TASKS.md entries.</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>Why not TODO.md?</h3>
+          <p style="color:var(--text-muted)">TODO.md has no spec and thousands of incompatible formats. A "task queue" is an active work queue for agents, not a human wish list. The naming fits: AGENTS.md (instructions) + TASKS.md (work queue).</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>Do I need an orchestrator?</h3>
+          <p style="color:var(--text-muted)">No. A solo developer with one agent benefits from persistent context across sessions.</p>
+        </div>
+        <div class="step-content">
+          <h3>Won't deleting tasks cause merge conflicts?</h3>
+          <p style="color:var(--text-muted)">Each agent claims a unique task. Git auto-merges deletions on non-adjacent lines. Conflicts are rare and trivial.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>
+        <a href="https://github.com/tasksmd/tasks.md">GitHub</a> &middot;
+        <a href="https://github.com/tasksmd/tasks.md/blob/main/spec.md">Spec</a> &middot;
+        <a href="https://github.com/tasksmd/tasks.md/tree/main/examples">Examples</a> &middot;
+        MIT License
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>

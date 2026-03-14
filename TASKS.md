@@ -25,19 +25,6 @@ Spec v0.5
     with priority, tags, blockers. `claim_task` appends agent identity. `complete_task` removes
     the task block. `add_task` appends under the correct priority heading.
 
-- [ ] Add a GitHub Pages site at tasksmd.com
-  - **ID**: website
-  - **Tags**: docs
-  - **Details**: Single-page static site (plain HTML + CSS, no framework). Sections:
-    - Hero: "A task queue for AI agents" + Quick Start code block
-    - Why: session persistence, vendor-neutral, git-native
-    - Format overview with the six metadata fields
-    - Install table for agent commands
-    - Link to spec, examples, GitHub repo
-    Follow the agents.md site pattern. Use GitHub Pages from `docs/` folder.
-  - **Files**: `docs/index.html`, `docs/style.css`
-  - **Acceptance**: Site renders at the configured GitHub Pages URL.
-    Mobile-responsive. All links work. No JavaScript required.
 
 ## P2
 
