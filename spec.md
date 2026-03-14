@@ -38,7 +38,8 @@ my-project/
 Discovery algorithm:
 1. Find the repository root (the directory containing `.git`)
 2. Search for all `TASKS.md` files under the root, excluding `.git/` and `node_modules/`
-3. Read all discovered files and consider tasks together, prioritized by P-level regardless of which file they're in
+3. Sort discovered files by path (lexicographic) for deterministic order across machines
+4. Read all discovered files and consider tasks together, prioritized by P-level regardless of which file they're in
 
 Task IDs should be unique across all `TASKS.md` files in the repo so blocker references are unambiguous. Blocker references work across files — the agent searches all applicable `TASKS.md` files for the ID.
 

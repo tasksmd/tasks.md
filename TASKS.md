@@ -41,18 +41,6 @@ Spec v0.5
 
 ## P2
 
-- [ ] Specify discovery order for deterministic task selection
-  - **ID**: discovery-order
-  - **Tags**: spec
-  - **Details**: The `find` command in agent commands returns results in filesystem order,
-    which varies by OS and filesystem type. Two agents on different machines could discover
-    TASKS.md files in different orders, read tasks in different orders, and pick the same
-    "first unclaimed P1" from different files — increasing claim races.
-    Fix: spec should recommend sorting discovered files by path (lexicographic).
-    Commands should pipe find through `sort`.
-  - **Files**: `spec.md`, `commands/`
-  - **Acceptance**: Spec defines a deterministic discovery order. All 5 commands sort results.
-
 - [ ] Add rebase conflict guidance for TASKS.md to commands
   - **Tags**: commands
   - **Details**: Step 5 of every command says `git pull --rebase` then `git push`, but

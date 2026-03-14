@@ -11,7 +11,7 @@ Pick the highest-priority unblocked task from TASKS.md and work on it.
 
 ```bash
 git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-find "$git_root" -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | head -20
+find "$git_root" -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | sort | head -20
 ```
 
 Read all discovered TASKS.md files.
