@@ -101,9 +101,41 @@ See the [full specification](spec.md) for all details.
 - [Rust CLI](examples/rust-cli.md) — Cargo project with clippy, assert_cmd, crates.io publishing
 - [Mobile app](examples/mobile-app.md) — React Native with biometrics, offline sync, Detox E2E
 
-## Agent Commands
+## Writing Good Tasks
 
-The most useful thing about TASKS.md is a single command: "pick the next task and do it." Drop a skill/command file into your agent's config and type `/next-task` to start an autonomous work loop:
+The quality of your task description directly affects the quality of the agent's output. A task is a small contract between you and the agent — the more specific you are, the better the result.
+
+**A one-liner is fine for obvious work:**
+
+```markdown
+- [ ] Add input validation to the /users endpoint
+```
+
+**Add metadata when the task needs context:**
+
+```markdown
+- [ ] Fix race condition in WebSocket reconnect
+  - **Details**: When the server restarts, clients reconnect but sometimes
+    miss messages sent during the reconnect window. Add a sequence number
+    to messages and request missed messages after reconnecting.
+  - **Files**: `src/ws/client.ts`, `src/ws/server.ts`
+  - **Acceptance**: No dropped messages during server restart in integration test
+```
+
+**Tips for writing tasks agents can actually complete:**
+
+- **One session, one task** — If it takes you more than a sentence to describe, it might be two tasks
+- **Include file paths** — Agents explore faster when they know where to look
+- **Define "done"** — An **Acceptance** field turns a vague ask into a testable outcome
+- **Use IDs for dependencies** — If task B depends on task A, give A an **ID** and add `**Blocked by**: task-a` to B. The agent will skip B until A is gone.
+
+## The `/next-task` Command
+
+The most useful thing about TASKS.md is a single command: "pick the next task and do it." Install the command for your agent, then type `/next-task` to start an autonomous work loop.
+
+### Install
+
+Copy the command file into your project (commit it so your team gets it too):
 
 | Agent | Install |
 |-------|---------|
@@ -113,9 +145,32 @@ The most useful thing about TASKS.md is a single command: "pick the next task an
 | Gemini CLI | `cp commands/gemini/next-task.toml .gemini/commands/` |
 | Windsurf | `cp commands/windsurf/next-task.md .windsurf/workflows/` |
 
-The command reads TASKS.md, picks the highest-priority unblocked task, claims it, does the work, removes it on completion, and loops.
+All paths are **project-local** (inside your repo). See [commands/](commands/) for source files and format details.
 
-All paths above are **project-local** (inside your repo). Commit the command file so your whole team gets it. See [commands/](commands/) for all source files and format details.
+### What it does
+
+When you type `/next-task`, the agent runs a 6-step loop:
+
+1. **Find** — Discovers all `TASKS.md` files from the git root down
+2. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first). Resumes previously claimed tasks if it finds its own `(@agent-id)`.
+3. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
+4. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
+5. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
+6. **Loop** — Reads TASKS.md again, picks the next task, continues until the queue is empty
+
+### The workflow
+
+```
+You                              Agent
+──────────────────               ──────────────────
+Write tasks as ideas come  →     /next-task
+Add more tasks             →     Claims P0 task, starts working
+Add more tasks             →     Completes task, picks next one
+Review agent's commits     ←     Commits, removes task, loops
+Add more tasks             →     ...keeps draining the queue
+```
+
+You're always adding to the queue. The agent is always draining it. This is the core loop — planning is your job, execution is the agent's.
 
 ## FAQ
 
