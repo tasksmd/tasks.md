@@ -70,13 +70,6 @@ Spec v0.5
   - **Files**: `scripts/sync-issues.sh`
   - **Acceptance**: Running the script produces a valid TASKS.md from labeled issues.
 
-- [ ] Commit untracked `examples/python-api.md` and update README examples list
-  - **ID**: commit-python-example
-  - **Details**: `examples/python-api.md` was created in a previous session but never committed
-    (shows as untracked in `git status`). The README examples section (lines 87–93) doesn't
-    list it yet. Commit the file and add it to the examples list in README.md.
-  - **Files**: `examples/python-api.md`, `README.md`
-  - **Acceptance**: File is tracked, README lists it alongside the other examples
 
 
 - [ ] Add CI workflow for example validation

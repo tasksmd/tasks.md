@@ -91,6 +91,7 @@ See the [full specification](spec.md) for all details.
 - [Monorepo](examples/monorepo.md)
 - [Multi-agent workflow](examples/multi-agent.md)
 - [Complex tasks](examples/complex-tasks.md) — multiline details, rich acceptance criteria, sub-tasks with metadata
+- [Python API](examples/python-api.md) — FastAPI with SQLAlchemy, pytest, mypy, ruff
 
 ## Agent Commands
 
