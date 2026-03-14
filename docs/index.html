@@ -58,15 +58,16 @@
   <section id="why">
     <div class="container">
       <h2>Why TASKS.md?</h2>
-      <p>Every agent invents its own task format. Tasks get lost between sessions. Humans can't see the backlog. Multiple agents can't share a queue.</p>
+      <p><strong>You think faster than agents can code.</strong> Ideas come in bursts &mdash; while an agent implements one feature, you've already thought of three more. TASKS.md is your buffer: write tasks down as they come, and agents work through them at their own pace.</p>
+      <p><strong>Planning first leads to better results.</strong> Writing a task down &mdash; even a one-liner &mdash; forces you to think about what you actually want before the agent starts coding. That small act of planning is the difference between an agent that builds the right thing and one that guesses.</p>
       <div class="why-grid">
         <div class="why-card">
-          <h3>Persistent</h3>
-          <p>Survives sessions, restarts, and tool switches</p>
+          <h3>Async queue</h3>
+          <p>You keep adding tasks; agents keep draining them. No ideas get lost.</p>
         </div>
         <div class="why-card">
           <h3>Git-native</h3>
-          <p>Version-controlled, next to your code</p>
+          <p>Version-controlled, next to your code, survives sessions and tool switches</p>
         </div>
         <div class="why-card">
           <h3>Human-readable</h3>
@@ -88,22 +89,29 @@
         <div class="step">
           <div class="step-num">1</div>
           <div class="step-content">
-            <h3>Write tasks</h3>
-            <p>Add checkboxes under P0&ndash;P3 priority headings. Add metadata (ID, blockers, files) only when needed.</p>
+            <h3>Plan</h3>
+            <p>Write tasks under P0&ndash;P3 priority headings as ideas come to you. Even a one-liner is enough.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
           <div class="step-content">
-            <h3>Agent claims &amp; works</h3>
-            <p>The agent reads the file, claims a task with <code>(@agent-name)</code>, and implements it.</p>
+            <h3>Delegate</h3>
+            <p>Agent reads the file, claims a task with <code>(@agent-name)</code>, and implements it.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
           <div class="step-content">
-            <h3>Remove when done</h3>
-            <p>Completed tasks are removed from the file. History lives in git log.</p>
+            <h3>Remove</h3>
+            <p>Completed tasks are deleted from the file. History lives in git log.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Repeat</h3>
+            <p>You keep adding tasks while agents keep working. No ideas get lost, agents never run out of work.</p>
           </div>
         </div>
       </div>

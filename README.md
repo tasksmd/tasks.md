@@ -47,9 +47,11 @@ That's it. Your agent will read TASKS.md on session start and work through the q
 
 ## Why TASKS.md?
 
-Every agent and orchestrator invents its own task format — JSON, YAML, database rows, chat context. Tasks get lost between sessions. Humans can't see the agent's backlog. Multiple agents can't share a queue.
+**You think faster than agents can code.** Ideas come in bursts — while an agent implements one feature, you've already thought of three more. Without a queue, those ideas live in your head or scatter across chat windows. TASKS.md is your buffer: write tasks down as they come, and agents work through them at their own pace.
 
-TASKS.md is one Markdown file that any tool can read and write:
+**Planning first leads to better results.** When you write a task down — even a one-liner — you're forced to think about what you actually want before the agent starts coding. That small act of planning is the difference between an agent that builds the right thing and one that guesses. TASKS.md makes planning the natural first step, not an afterthought.
+
+**One Markdown file that any tool can read and write:**
 
 - **Persistent** — Survives sessions, restarts, tool switches
 - **Version-controlled** — In git, next to the code
@@ -59,11 +61,12 @@ TASKS.md is one Markdown file that any tool can read and write:
 
 ## How It Works
 
-1. **Write** tasks under P0–P3 priority headings
-2. **Agent** reads the file, claims a task with `(@agent-name)`, implements it
-3. **Remove** the task when done — history lives in git log
+1. **Plan** — Write tasks under P0–P3 priority headings as ideas come to you
+2. **Delegate** — Agent reads the file, claims a task with `(@agent-name)`, implements it
+3. **Remove** — Completed tasks are deleted from the file; history lives in git log
+4. **Repeat** — You keep adding tasks while agents keep working through them
 
-Agents claim different tasks, so removals target different lines and merge cleanly.
+You're always adding to the queue; agents are always draining it. No ideas get lost, and agents never run out of work.
 
 ## The Format
 
