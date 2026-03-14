@@ -70,6 +70,36 @@ Spec v0.5
   - **Files**: `scripts/sync-issues.sh`
   - **Acceptance**: Running the script produces a valid TASKS.md from labeled issues.
 
+- [ ] Commit untracked `examples/python-api.md` and update README examples list
+  - **ID**: commit-python-example
+  - **Details**: `examples/python-api.md` was created in a previous session but never committed
+    (shows as untracked in `git status`). The README examples section (lines 87–93) doesn't
+    list it yet. Commit the file and add it to the examples list in README.md.
+  - **Files**: `examples/python-api.md`, `README.md`
+  - **Acceptance**: File is tracked, README lists it alongside the other examples
+
+- [ ] Add `.idea/` to `.gitignore`
+  - **ID**: gitignore-idea
+  - **Details**: `.idea/` directory (JetBrains IDE config) is untracked but visible in
+    `git status`. The `.gitignore` only has `.DS_Store`, `*.swp`, and `*~`. Add common
+    IDE directories (`.idea/`, `.vscode/`) and `node_modules/` for when the mcp-server
+    and lint packages are developed in-tree.
+  - **Files**: `.gitignore`
+  - **Acceptance**: `git status` no longer shows `.idea/`
+
+- [ ] Add CI workflow for example validation
+  - **ID**: ci-validation
+  - **Tags**: tooling
+  - **Details**: No `.github/workflows/` exists. Add a basic CI that validates:
+    - All `examples/*.md` files start with `# Tasks` + `Spec v0.5`
+    - Priority headings are in order (P0–P3)
+    - Tasks use `- [ ]` checkbox format
+    - No `[x]` on top-level tasks
+    This can be a simple shell script until the full `tasks-lint` validator (P2 task) is built.
+    Also validates that README example code blocks match the spec format.
+  - **Files**: `.github/workflows/ci.yml`
+  - **Acceptance**: CI runs on push/PR, catches malformed examples
+
 ## P3
 
 - [ ] Write a blog post: "Why your AI agent needs a backlog"
