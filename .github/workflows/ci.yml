@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate example files
+        run: bash scripts/validate-examples.sh examples
+
+      - name: Validate TASKS.md (if exists)
+        run: |
+          if [ -f TASKS.md ]; then
+            bash scripts/validate-examples.sh TASKS.md
+          fi

@@ -72,18 +72,6 @@ Spec v0.5
 
 
 
-- [ ] Add CI workflow for example validation
-  - **ID**: ci-validation
-  - **Tags**: tooling
-  - **Details**: No `.github/workflows/` exists. Add a basic CI that validates:
-    - All `examples/*.md` files start with `# Tasks` + `Spec v0.5`
-    - Priority headings are in order (P0–P3)
-    - Tasks use `- [ ]` checkbox format
-    - No `[x]` on top-level tasks
-    This can be a simple shell script until the full `tasks-lint` validator (P2 task) is built.
-    Also validates that README example code blocks match the spec format.
-  - **Files**: `.github/workflows/ci.yml`
-  - **Acceptance**: CI runs on push/PR, catches malformed examples
 
 ## P3
 
