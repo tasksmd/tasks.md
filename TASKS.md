@@ -78,14 +78,6 @@ Spec v0.5
   - **Files**: `examples/python-api.md`, `README.md`
   - **Acceptance**: File is tracked, README lists it alongside the other examples
 
-- [ ] Add `.idea/` to `.gitignore`
-  - **ID**: gitignore-idea
-  - **Details**: `.idea/` directory (JetBrains IDE config) is untracked but visible in
-    `git status`. The `.gitignore` only has `.DS_Store`, `*.swp`, and `*~`. Add common
-    IDE directories (`.idea/`, `.vscode/`) and `node_modules/` for when the mcp-server
-    and lint packages are developed in-tree.
-  - **Files**: `.gitignore`
-  - **Acceptance**: `git status` no longer shows `.idea/`
 
 - [ ] Add CI workflow for example validation
   - **ID**: ci-validation
