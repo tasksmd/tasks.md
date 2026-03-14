@@ -7,12 +7,6 @@
 
 ## P2
 
-- [ ] Add lint/README.md
-  - **ID**: lint-readme
-  - **Details**: The linter has no README. Add usage examples, CLI options, exit codes, and validation rules before npm publish.
-  - **Files**: `lint/`
-  - **Blocked by**: publish-lint
-
 - [ ] Publish tasks-mcp to npm
   - **ID**: publish-mcp
   - **Details**: The MCP server exists in `mcp/` with 21 parser tests and CI. Add prepublish build step, verify bin entry works, publish to npm as `tasks-mcp`.
