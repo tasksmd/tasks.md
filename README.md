@@ -4,7 +4,7 @@
 
 A lightweight spec for AI agent task queues — the companion to [AGENTS.md](https://agents.md/).
 
-**[Website](https://tasksmd.github.io/tasks.md/)** · **[Spec](spec.md)** · **[Examples](examples/)** · **[MCP Server](mcp/)**
+**[Website](https://tasksmd.github.io/tasks.md/)** · **[Spec](spec.md)** · **[Examples](examples/)** · **[MCP Server](mcp/)** · **[Linter](lint/)**
 
 AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
@@ -73,37 +73,6 @@ That's it. Your agent will read TASKS.md on session start and work through the q
 
 You're always adding to the queue; agents are always draining it. No ideas get lost, and agents never run out of work.
 
-## The Format
-
-**Priority**: `## P0` through `## P3` — a widely-used priority scale (PagerDuty, Google SRE).
-
-**Tasks**: Markdown checkboxes. Should be completable in a single agent session.
-
-**IDs**: An `**ID**: kebab-case` metadata field on tasks referenced as blockers. Stable — don't change once assigned.
-
-**Blockers**: `**Blocked by**: auth-fix, rate-limit` — references task IDs across all files. A task is unblocked when the referenced IDs are no longer in any file.
-
-**Tags**: `**Tags**: backend, auth` — lowercase labels for filtering and orchestrator routing to specialized agents.
-
-**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields beyond these six.
-
-**Sub-tasks**: Nested checkboxes under a parent. Metadata first, then sub-tasks. The agent who claims the parent owns all sub-tasks. Remove the entire block when fully done.
-
-**Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Agent searches from the git root down to find all files. Split when a file exceeds ~50 tasks.
-
-See the [full specification](spec.md) for all details.
-
-## Examples
-
-- [Web application](examples/web-app.md)
-- [CLI tool](examples/cli-tool.md)
-- [Monorepo](examples/monorepo.md)
-- [Multi-agent workflow](examples/multi-agent.md)
-- [Complex tasks](examples/complex-tasks.md) — multiline details, rich acceptance criteria, sub-tasks with metadata
-- [Python API](examples/python-api.md) — FastAPI with SQLAlchemy, pytest, mypy, ruff
-- [Rust CLI](examples/rust-cli.md) — Cargo project with clippy, assert_cmd, crates.io publishing
-- [Mobile app](examples/mobile-app.md) — React Native with biometrics, offline sync, Detox E2E
-
 ## Writing Good Tasks
 
 The quality of your task description directly affects the quality of the agent's output. A task is a small contract between you and the agent — the more specific you are, the better the result.
@@ -131,6 +100,37 @@ The quality of your task description directly affects the quality of the agent's
 - **Include file paths** — Agents explore faster when they know where to look
 - **Define "done"** — An **Acceptance** field turns a vague ask into a testable outcome
 - **Use IDs for dependencies** — If task B depends on task A, give A an **ID** and add `**Blocked by**: task-a` to B. The agent will skip B until A is gone.
+
+## The Format
+
+**Priority**: `## P0` through `## P3` — a widely-used scale (PagerDuty, Google SRE). P0 is "drop everything", P3 is "nice to have".
+
+**Tasks**: Markdown checkboxes (`- [ ]`). Each task should be completable in a single agent session.
+
+**IDs**: `**ID**: kebab-case` — stable identifiers for tasks that other tasks depend on. Don't rename once assigned.
+
+**Blockers**: `**Blocked by**: auth-fix, rate-limit` — references task IDs across all files. A task is unblocked when the referenced IDs no longer exist in any file.
+
+**Tags**: `**Tags**: backend, auth` — lowercase labels for filtering and routing to specialized agents.
+
+**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields beyond these six.
+
+**Sub-tasks**: Nested checkboxes under a parent. The agent who claims the parent owns all sub-tasks. Remove the entire block when done.
+
+**Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Split when a file exceeds ~50 tasks.
+
+See the [full specification](spec.md) for all rules and edge cases.
+
+## Examples
+
+- [Web application](examples/web-app.md)
+- [CLI tool](examples/cli-tool.md)
+- [Monorepo](examples/monorepo.md)
+- [Multi-agent workflow](examples/multi-agent.md)
+- [Complex tasks](examples/complex-tasks.md) — multiline details, rich acceptance criteria, sub-tasks with metadata
+- [Python API](examples/python-api.md) — FastAPI with SQLAlchemy, pytest, mypy, ruff
+- [Rust CLI](examples/rust-cli.md) — Cargo project with clippy, assert_cmd, crates.io publishing
+- [Mobile app](examples/mobile-app.md) — React Native with biometrics, offline sync, Detox E2E
 
 ## The `/next-task` Command
 
@@ -174,6 +174,34 @@ Add more tasks             →     ...keeps draining the queue
 ```
 
 You're always adding to the queue. The agent is always draining it. This is the core loop — planning is your job, execution is the agent's.
+
+## Tooling
+
+### MCP Server
+
+The [`tasks-mcp`](mcp/) server lets MCP-compatible agents (Claude Code, Cursor, Windsurf) manage TASKS.md files programmatically — list, claim, complete, and add tasks without file parsing.
+
+```json
+{
+  "mcpServers": {
+    "tasks": {
+      "command": "node",
+      "args": ["/path/to/tasks.md/mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+### Linter
+
+The [`tasks-lint`](lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references.
+
+```bash
+node lint/index.js TASKS.md           # lint one file
+node lint/index.js TASKS.md examples/ # lint multiple files/directories
+```
+
+Add it to CI to catch formatting issues before merge.
 
 ## FAQ
 
@@ -266,10 +294,12 @@ They're companions. AGENTS.md tells agents how your project works (build command
 
 ## Contributing
 
+We track work in our own [TASKS.md](TASKS.md). Contributions welcome:
+
 - Improve the [specification](spec.md)
 - Add [examples](examples/) for your stack
 - Add or improve [agent commands](commands/) for your tool
-- Open an issue or PR on [GitHub](https://github.com/tasksmd/tasks.md)
+- Report bugs or suggest features via [GitHub Issues](https://github.com/tasksmd/tasks.md/issues)
 
 ## License
 
