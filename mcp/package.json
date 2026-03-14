@@ -1,0 +1,32 @@
+{
+  "name": "tasks-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for reading and writing TASKS.md files",
+  "type": "module",
+  "bin": {
+    "tasks-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "tasks",
+    "ai-agents",
+    "task-queue"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

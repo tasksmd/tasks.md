@@ -13,17 +13,6 @@ Spec v0.5
     - Propose adding a "See also: TASKS.md" reference in agents.md docs
   - **Acceptance**: Issue filed with clear proposal, link shared in README
 
-- [ ] Build a tasks-mcp server that reads/writes TASKS.md
-  - **ID**: mcp-server
-  - **Tags**: tooling
-  - **Details**: TypeScript MCP server using `@modelcontextprotocol/sdk`.
-    Four tools: `list_tasks`, `claim_task`, `complete_task`, `add_task`.
-    Reads/writes TASKS.md files following the spec (multi-file discovery, blocker resolution).
-    Publish as `tasks-mcp` on npm.
-  - **Files**: `mcp/src/index.ts`, `mcp/package.json`
-  - **Acceptance**: Works with Claude Code MCP config. `list_tasks` returns structured task data
-    with priority, tags, blockers. `claim_task` appends agent identity. `complete_task` removes
-    the task block. `add_task` appends under the correct priority heading.
 
 
 ## P2
