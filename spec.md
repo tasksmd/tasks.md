@@ -355,7 +355,7 @@ This works whether the orchestrator is a server, a CI pipeline, or a human runni
 | Standard | Relationship |
 |----------|-------------|
 | [AGENTS.md](https://agents.md/) | AGENTS.md = how to work. TASKS.md = what to work on. |
-| [MCP](https://modelcontextprotocol.io/) | An MCP server can provide read/write access to TASKS.md. |
+| [MCP](https://modelcontextprotocol.io/) | The [`tasks-mcp`](mcp/) server provides read/write access to TASKS.md via MCP tools. |
 | GitHub Issues / Jira | Issues track features for teams. TASKS.md tracks implementation steps for agents. A single Issue may produce multiple TASKS.md entries. |
 
 ## Design Decisions
@@ -374,7 +374,7 @@ Ordering within a section is inherently subjective — "most important P1" depen
 
 ### Isn't best-effort claiming too weak for real coordination?
 
-For file-based coordination, yes — two agents can theoretically race to claim the same task. In practice this is rare because the claim window is a single git commit. For stronger guarantees, use an MCP server as the coordination backend (a tasks-mcp server is on the [roadmap](TASKS.md)). The spec defines the protocol; the transport can be upgraded without changing the format.
+For file-based coordination, yes — two agents can theoretically race to claim the same task. In practice this is rare because the claim window is a single git commit. For stronger guarantees, use the [`tasks-mcp`](mcp/) server as the coordination backend. The spec defines the protocol; the transport can be upgraded without changing the format.
 
 ### Why delete completed tasks instead of marking them done?
 
