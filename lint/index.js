@@ -38,12 +38,7 @@ function validateFile(filePath, allIds, allBlockedBy) {
     error(filePath, 1, `first line must be '# Tasks', got '${lines[0] || ""}'`);
   }
 
-  // Line 2: must be "Spec v0.5"
-  if (lines.length < 2 || lines[1] !== "Spec v0.5") {
-    error(filePath, 2, `second line must be 'Spec v0.5', got '${lines[1] || ""}'`);
-  }
-
-  for (let i = 2; i < lines.length; i++) {
+  for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     const lineNum = i + 1;
 

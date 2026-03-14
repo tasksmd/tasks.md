@@ -10,7 +10,6 @@ Create a `TASKS.md` at your repo root:
 
 ```markdown
 # Tasks
-Spec v0.5
 
 ## P0
 

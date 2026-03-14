@@ -140,7 +140,6 @@ done
 # Generate output
 generate() {
   echo "# Tasks"
-  echo "Spec v0.5"
 
   local has_output=false
 

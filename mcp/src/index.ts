@@ -309,7 +309,7 @@ server.registerTool(
         content: [
           {
             type: "text" as const,
-            text: "No TASKS.md file found. Create one with '# Tasks\\nSpec v0.5' header first.",
+            text: "No TASKS.md file found. Create one with '# Tasks' header first.",
           },
         ],
         isError: true,

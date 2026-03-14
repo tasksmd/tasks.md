@@ -1,6 +1,6 @@
 # TASKS.md Specification
 
-v0.5 (Draft)
+v1.0
 
 ## Overview
 
@@ -49,7 +49,6 @@ Task IDs should be unique across all `TASKS.md` files in the repo so blocker ref
 
 ```markdown
 # Tasks
-Spec v0.5
 
 ## P0
 
@@ -75,31 +74,6 @@ Spec v0.5
 
 - [ ] Support WebSocket connections
 ```
-
-### Version
-
-The spec version is declared as plain text on the first non-empty line after `# Tasks`:
-
-```markdown
-# Tasks
-Spec v0.5
-```
-
-Grammar: `Spec v<major>.<minor>` — case-sensitive, no patch version.
-
-```
-/^Spec v(\d+)\.(\d+)$/
-```
-
-| Example | Valid? |
-|---------|--------|
-| `Spec v0.5` | Yes |
-| `Spec v1.0` | Yes |
-| `spec v0.5` | No — lowercase `s` |
-| `Spec v0.5.1` | No — patch version not allowed |
-| `Spec v1` | No — minor version required |
-
-The version line is optional. If omitted, tools should assume the latest version. It is capitalized but not bold — visually distinct from task metadata (which uses bold labels).
 
 ### Priority Sections
 
@@ -386,9 +360,13 @@ This works whether the orchestrator is a server, a CI pipeline, or a human runni
 
 ## Design Decisions
 
-### Why is the version line plain text instead of a structured field?
+### Why is there no version line in TASKS.md files?
 
-`Spec v0.5` as plain text is an intentional tradeoff for simplicity. A structured header (YAML frontmatter, HTML comment) would be easier to parse but harder for humans to type and read. LLMs parse "Spec v0.5" reliably, and the line's fixed position (first non-empty line after `# Tasks`) makes it unambiguous in practice.
+Earlier drafts included a `Spec v0.5` line after `# Tasks`. We removed it for v1 because:
+1. LLMs parse the markdown structure directly — they don't need a version hint
+2. The format is self-describing: `# Tasks`, `## P0`–`## P3`, `- [ ]` checkboxes, bold metadata labels
+3. The spec commits to non-breaking, additive-only changes from v1 onward — so version branching is unnecessary
+4. AGENTS.md (the companion standard) has no version line in documents either
 
 ### Why not enforce task ordering within a priority section?
 
@@ -412,4 +390,4 @@ Git log is the archive by design. A `## Done` section or `[x]` marker would grow
 
 ## Spec Versioning
 
-This specification follows [Semantic Versioning](https://semver.org/). Breaking changes increment the minor version during 0.x development. Full version history is in the git log.
+This specification follows [Semantic Versioning](https://semver.org/). From v1.0 onward, all changes are non-breaking and additive — new optional features, new metadata fields, new recommendations. The format of existing TASKS.md files will never be invalidated by a spec update. Full version history is in the git log.

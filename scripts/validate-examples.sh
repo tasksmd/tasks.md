@@ -14,7 +14,6 @@ validate_file() {
   local file="$1"
   local line_num=0
   local has_header=false
-  local has_version=false
   local last_priority=-1
   local in_task=false
 
@@ -33,15 +32,6 @@ validate_file() {
       continue
     fi
 
-    # Line 2: must be "Spec v0.5"
-    if [[ $line_num -eq 2 ]]; then
-      if [[ "$line" != "Spec v0.5" ]]; then
-        error "$file" "$line_num" "second line must be 'Spec v0.5', got '$line'"
-      else
-        has_version=true
-      fi
-      continue
-    fi
 
     # Priority headings must be P0-P3 and in order
     if [[ "$line" =~ ^##\ P([0-3])$ ]]; then
@@ -79,9 +69,6 @@ validate_file() {
 
   if ! $has_header; then
     error "$file" "1" "missing '# Tasks' heading"
-  fi
-  if ! $has_version; then
-    error "$file" "2" "missing 'Spec v0.5' version line"
   fi
 }
 

@@ -1,5 +1,4 @@
 # Tasks
-Spec v0.5
 
 ## P0
 
