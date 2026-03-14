@@ -186,11 +186,47 @@ Migration: `mv TODO.md TASKS.md`, add P0–P3 headings, convert to checkboxes.
 
 ### Do I need an orchestrator?
 
-No. A solo developer with one agent benefits from persistent context across sessions.
+No. A solo developer with one agent benefits from persistent context across sessions. You write tasks, the agent works through them. An orchestrator helps when you have multiple agents, but it's not required.
 
 ### Won't deleting tasks cause merge conflicts?
 
 Each agent claims a unique task (different line). Git auto-merges deletions on non-adjacent lines. Conflicts are rare and trivial.
+
+### How detailed should my tasks be?
+
+As detailed as needed for the agent to succeed without asking you. A one-liner works for obvious changes (`Add input validation to /users`). For anything ambiguous, add **Details**, **Files**, and **Acceptance** so the agent knows what to do, where to look, and when it's done.
+
+### Can I use TASKS.md without AI agents?
+
+Yes. It works as a personal backlog for any developer. The format is just prioritized Markdown checkboxes — you don't need an agent to benefit from writing tasks down before starting work. The planning habit alone improves outcomes.
+
+### How do I handle tasks that are too big for one session?
+
+Break them into sub-tasks or split them into separate tasks with dependencies. If a task takes more than one sentence to describe, it's probably two tasks. Use **Blocked by** to order them:
+
+```markdown
+- [ ] Set up auth database schema
+  - **ID**: auth-schema
+
+- [ ] Implement JWT token refresh
+  - **Blocked by**: auth-schema
+```
+
+### What happens when an agent gets stuck?
+
+The agent should tell you it's stuck and move on to the next task. The stuck task stays in the queue with its `(@agent-id)` claim. You can either add more detail to help the next attempt, or remove the claim so another agent (or a fresh session) can try.
+
+### Can multiple agents work on the same TASKS.md?
+
+Yes — that's what the claiming mechanism is for. Each agent appends `(@agent-id)` to the task it picks up. Other agents see the claim and skip to the next unclaimed task. In multi-agent setups, agents should commit and push claims immediately to avoid races.
+
+### Should I keep completed tasks in the file?
+
+No. Remove them. Git log is your history. Keeping completed tasks in the file adds noise and makes it harder for agents to scan the queue. The spec enforces this — `tasks-lint` will flag checked-off tasks as errors.
+
+### How does TASKS.md relate to AGENTS.md?
+
+They're companions. AGENTS.md tells agents how your project works (build commands, conventions, architecture). TASKS.md tells agents what to work on (prioritized queue). Together, an agent can start a session, read both files, and be immediately productive — no human prompting needed.
 
 ## See Also
 
