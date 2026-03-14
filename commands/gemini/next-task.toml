@@ -25,6 +25,7 @@ Pick the highest-priority unblocked task from TASKS.md and work on it.
    git add <changed-files> TASKS.md
    git commit -m "<conventional commit for the actual work>"
    git pull --rebase && git push
+   If rebase conflicts on TASKS.md, re-read the file, re-apply your removal, then git add TASKS.md && git rebase --continue.
 
 6. LOOP — Read TASKS.md again, pick the next task. Continue until empty or stopped.
 """

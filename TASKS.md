@@ -41,17 +41,6 @@ Spec v0.5
 
 ## P2
 
-- [ ] Add rebase conflict guidance for TASKS.md to commands
-  - **Tags**: commands
-  - **Details**: Step 5 of every command says `git pull --rebase` then `git push`, but
-    TASKS.md is the most likely file to conflict — every agent modifies it (claims,
-    removals, additions). The commands give no guidance on what to do when rebase fails.
-    Options:
-    - Add a "if rebase conflicts on TASKS.md, re-read and re-apply your removal" step
-    - Or: recommend `git pull --rebase --autostash` + manual conflict resolution
-    - Or: just note that TASKS.md conflicts are usually trivial (accept both deletions)
-  - **Files**: `commands/`
-
 - [ ] Explicitly forbid `[x]` on top-level tasks in the spec
   - **Tags**: spec
   - **Details**: The spec says "remove completed tasks" but never explicitly says "don't

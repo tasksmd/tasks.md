@@ -61,6 +61,8 @@ git pull --rebase
 git push
 ```
 
+If `git pull --rebase` conflicts on TASKS.md, re-read the file, re-apply your task removal, then `git add TASKS.md && git rebase --continue`. TASKS.md conflicts are usually trivial — another agent claimed or removed a different task.
+
 ## 6. Loop
 
 Read TASKS.md again and pick the next task. Continue until the queue is empty or the user stops you.
