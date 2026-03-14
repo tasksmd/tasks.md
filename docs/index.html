@@ -58,24 +58,33 @@
   <section id="why">
     <div class="container">
       <h2>Why TASKS.md?</h2>
-      <p><strong>You think faster than agents can code.</strong> Ideas come in bursts &mdash; while an agent implements one feature, you've already thought of three more. TASKS.md is your buffer: write tasks down as they come, and agents work through them at their own pace.</p>
+      <p><strong>You think faster than agents can code.</strong> Ideas come in bursts &mdash; while an agent implements one feature, you've already thought of three more. Without a queue, those ideas live in your head or scatter across chat windows. TASKS.md is your buffer: write tasks down as they come, and agents work through them at their own pace.</p>
       <p><strong>Planning first leads to better results.</strong> Writing a task down &mdash; even a one-liner &mdash; forces you to think about what you actually want before the agent starts coding. That small act of planning is the difference between an agent that builds the right thing and one that guesses.</p>
+      <p><strong>Zero friction beats any tool.</strong> Opening Jira to write a task takes you out of flow &mdash; you switch context, fill in fields, pick a project, assign a sprint. With TASKS.md, you add a line to a file that's already open in your editor. The lower the friction, the more likely you are to actually write tasks down.</p>
       <div class="why-grid">
         <div class="why-card">
-          <h3>Async queue</h3>
-          <p>You keep adding tasks; agents keep draining them. No ideas get lost.</p>
+          <h3>Zero setup</h3>
+          <p>No accounts, no APIs, no tokens. Create a file and start writing.</p>
         </div>
         <div class="why-card">
-          <h3>Git-native</h3>
-          <p>Version-controlled, next to your code, survives sessions and tool switches</p>
+          <h3>In your editor</h3>
+          <p>Add tasks without leaving your IDE. No browser tab, no context switch.</p>
         </div>
         <div class="why-card">
-          <h3>Human-readable</h3>
-          <p>Edit in any text editor, review in any diff tool</p>
+          <h3>Version-controlled</h3>
+          <p>In git, next to the code. Every change is tracked.</p>
+        </div>
+        <div class="why-card">
+          <h3>Agent-native</h3>
+          <p>LLMs parse Markdown natively. No API client needed to read a file.</p>
         </div>
         <div class="why-card">
           <h3>Vendor-neutral</h3>
-          <p>Works with any agent, any IDE, today</p>
+          <p>Works with any agent, any IDE, any CI system, today.</p>
+        </div>
+        <div class="why-card">
+          <h3>Offline</h3>
+          <p>Works on a plane. No server required.</p>
         </div>
       </div>
     </div>
@@ -113,6 +122,41 @@
             <h3>Repeat</h3>
             <p>You keep adding tasks while agents keep working. No ideas get lost, agents never run out of work.</p>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Writing Good Tasks -->
+  <section id="writing">
+    <div class="container">
+      <h2>Writing Good Tasks</h2>
+      <p>A task is a small contract between you and the agent &mdash; the more specific you are, the better the result.</p>
+      <p style="margin-top:1rem"><strong>A one-liner is fine for obvious work:</strong></p>
+      <pre><code>- [ ] Add input validation to the /users endpoint</code></pre>
+      <p><strong>Add metadata when the task needs context:</strong></p>
+      <pre><code>- [ ] Fix race condition in WebSocket reconnect
+  - **Details**: When the server restarts, clients reconnect but sometimes
+    miss messages sent during the reconnect window. Add a sequence number
+    to messages and request missed messages after reconnecting.
+  - **Files**: `src/ws/client.ts`, `src/ws/server.ts`
+  - **Acceptance**: No dropped messages during server restart in integration test</code></pre>
+      <div class="why-grid" style="margin-top:1.5rem">
+        <div class="why-card">
+          <h3>One session, one task</h3>
+          <p>If it takes more than a sentence to describe, it might be two tasks.</p>
+        </div>
+        <div class="why-card">
+          <h3>Include file paths</h3>
+          <p>Agents explore faster when they know where to look.</p>
+        </div>
+        <div class="why-card">
+          <h3>Define "done"</h3>
+          <p>An <strong>Acceptance</strong> field turns a vague ask into a testable outcome.</p>
+        </div>
+        <div class="why-card">
+          <h3>Use IDs for dependencies</h3>
+          <p>Give task A an <strong>ID</strong>, add <code>Blocked by</code> to task B. The agent will skip B until A is gone.</p>
         </div>
       </div>
     </div>
@@ -168,11 +212,14 @@
     </div>
   </section>
 
-  <!-- Agent Commands -->
-  <section id="install">
+  <!-- /next-task Command -->
+  <section id="next-task">
     <div class="container">
-      <h2>Agent Commands</h2>
-      <p>Drop a command file into your agent's config and type <code>/next-task</code> to start an autonomous work loop:</p>
+      <h2>The <code>/next-task</code> Command</h2>
+      <p>The most useful thing about TASKS.md is a single command: "pick the next task and do it." Install it for your agent, then type <code>/next-task</code> to start an autonomous work loop.</p>
+
+      <h3 style="margin-top:2rem">Install</h3>
+      <p>Copy the command file into your project (commit it so your team gets it too):</p>
       <table class="install-table">
         <thead>
           <tr><th>Agent</th><th>Install</th></tr>
@@ -200,7 +247,80 @@
           </tr>
         </tbody>
       </table>
-      <p style="margin-top:1rem; color:var(--text-muted); font-size:0.9rem">All paths are project-local. Commit the file so your whole team gets it.</p>
+
+      <h3 style="margin-top:2rem">What it does</h3>
+      <p>When you type <code>/next-task</code>, the agent runs a 6-step loop:</p>
+      <div class="steps" style="margin-top:1rem">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Find</h3>
+            <p>Discovers all <code>TASKS.md</code> files from the git root down.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Pick</h3>
+            <p>Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Claim</h3>
+            <p>Appends <code>(@agent-id)</code> to the task line so other agents skip it.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Work</h3>
+            <p>Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <h3>Complete</h3>
+            <p>Removes the entire task block from TASKS.md, commits, pushes.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <h3>Loop</h3>
+            <p>Reads TASKS.md again, picks the next task, continues until the queue is empty.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:2rem">The workflow</h3>
+      <pre><code>You                              Agent
+──────────────────               ──────────────────
+Write tasks as ideas come  →     /next-task
+Add more tasks             →     Claims P0 task, starts working
+Add more tasks             →     Completes task, picks next one
+Review agent's commits     ←     Commits, removes task, loops
+Add more tasks             →     ...keeps draining the queue</code></pre>
+      <p style="margin-top:0.5rem; color:var(--text-muted); font-size:0.9rem">You're always adding to the queue. The agent is always draining it. Planning is your job, execution is the agent's.</p>
+    </div>
+  </section>
+
+  <!-- Tooling -->
+  <section id="tooling">
+    <div class="container">
+      <h2>Tooling</h2>
+      <div class="why-grid">
+        <div class="why-card">
+          <h3>MCP Server</h3>
+          <p><a href="https://github.com/tasksmd/tasks.md/tree/main/mcp">tasks-mcp</a> lets MCP-compatible agents (Claude Code, Cursor, Windsurf) manage TASKS.md files programmatically &mdash; list, claim, complete, and add tasks without file parsing.</p>
+        </div>
+        <div class="why-card">
+          <h3>Linter</h3>
+          <p><a href="https://github.com/tasksmd/tasks.md/tree/main/lint">tasks-lint</a> validates TASKS.md files against the spec &mdash; checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references. Add it to CI.</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -210,8 +330,26 @@
       <h2>FAQ</h2>
       <div class="steps">
         <div class="step-content" style="margin-bottom:1.5rem">
-          <h3>How is this different from GitHub Issues?</h3>
-          <p style="color:var(--text-muted)">Issues track features for teams. TASKS.md tracks implementation steps for agents. One Issue may produce multiple TASKS.md entries.</p>
+          <h3>Why not Jira / GitHub Issues / Linear?</h3>
+          <p style="color:var(--text-muted)">They solve a different problem. Issue trackers are for <strong>team coordination</strong> &mdash; sprints, assignments, reporting. TASKS.md is for <strong>agent execution</strong> &mdash; a local, fast, file-based queue that agents read and write without API calls. Use the tracker for <em>what</em> to build; use TASKS.md for <em>how</em> the agent builds it.</p>
+          <table class="format-table" style="margin-top:0.75rem; font-size:0.85rem">
+            <thead>
+              <tr><th></th><th>Issue trackers</th><th>TASKS.md</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Audience</td><td style="color:var(--text-muted)">Product managers, teams</td><td style="color:var(--text-muted)">Agents, solo devs</td></tr>
+              <tr><td>Granularity</td><td style="color:var(--text-muted)">Features, bugs, epics</td><td style="color:var(--text-muted)">Implementation steps</td></tr>
+              <tr><td>Access</td><td style="color:var(--text-muted)">API calls, auth tokens</td><td style="color:var(--text-muted)">Read a file</td></tr>
+              <tr><td>Speed</td><td style="color:var(--text-muted)">Browser/API round-trip</td><td style="color:var(--text-muted)">Edit a line in your editor</td></tr>
+              <tr><td>Works offline</td><td style="color:var(--text-muted)">No</td><td style="color:var(--text-muted)">Yes</td></tr>
+              <tr><td>Agent can write</td><td style="color:var(--text-muted)">Needs API client + auth</td><td style="color:var(--text-muted)">Append to a file</td></tr>
+              <tr><td>Git-native</td><td style="color:var(--text-muted)">Separate system</td><td style="color:var(--text-muted)">Same repo, same PR</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>Can I use TASKS.md alongside Jira / GitHub Issues?</h3>
+          <p style="color:var(--text-muted)">Absolutely &mdash; that's the expected setup for teams. The issue tracker is your source of truth for product work. When you pick up an issue, break it into implementation steps in TASKS.md and let the agent execute them.</p>
         </div>
         <div class="step-content" style="margin-bottom:1.5rem">
           <h3>Why not TODO.md?</h3>
@@ -219,11 +357,39 @@
         </div>
         <div class="step-content" style="margin-bottom:1.5rem">
           <h3>Do I need an orchestrator?</h3>
-          <p style="color:var(--text-muted)">No. A solo developer with one agent benefits from persistent context across sessions.</p>
+          <p style="color:var(--text-muted)">No. A solo developer with one agent benefits from persistent context across sessions. An orchestrator helps with multiple agents, but it's not required. TASKS.md is intentionally simple enough that any agent can use it without special tooling.</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>Won't deleting tasks cause merge conflicts?</h3>
+          <p style="color:var(--text-muted)">Each agent claims a unique task (different line). Git auto-merges deletions on non-adjacent lines. Conflicts are rare and trivial.</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>How detailed should my tasks be?</h3>
+          <p style="color:var(--text-muted)">As detailed as needed for the agent to succeed without asking you. A one-liner works for obvious changes. For anything ambiguous, add <strong>Details</strong>, <strong>Files</strong>, and <strong>Acceptance</strong> so the agent knows what to do, where to look, and when it's done.</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>Can I use TASKS.md without AI agents?</h3>
+          <p style="color:var(--text-muted)">Yes. It works as a personal backlog for any developer. The format is just prioritized Markdown checkboxes &mdash; you don't need an agent to benefit from writing tasks down before starting work.</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>How do I handle tasks that are too big?</h3>
+          <p style="color:var(--text-muted)">Break them into sub-tasks or split them into separate tasks with dependencies. If a task takes more than one sentence to describe, it's probably two tasks. Use <strong>Blocked by</strong> to order them.</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>What happens when an agent gets stuck?</h3>
+          <p style="color:var(--text-muted)">The agent should tell you it's stuck and move on to the next task. The stuck task stays in the queue with its claim. You can add more detail or remove the claim so another agent can try.</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>Can multiple agents work on the same TASKS.md?</h3>
+          <p style="color:var(--text-muted)">Yes &mdash; that's what the claiming mechanism is for. Each agent appends <code>(@agent-id)</code> to the task it picks up. Other agents see the claim and skip to the next unclaimed task.</p>
+        </div>
+        <div class="step-content" style="margin-bottom:1.5rem">
+          <h3>Should I keep completed tasks in the file?</h3>
+          <p style="color:var(--text-muted)">No. Remove them. Git log is your history. Keeping completed tasks adds noise and makes it harder for agents to scan the queue.</p>
         </div>
         <div class="step-content">
-          <h3>Won't deleting tasks cause merge conflicts?</h3>
-          <p style="color:var(--text-muted)">Each agent claims a unique task. Git auto-merges deletions on non-adjacent lines. Conflicts are rare and trivial.</p>
+          <h3>How does TASKS.md relate to AGENTS.md?</h3>
+          <p style="color:var(--text-muted)">They're companions. AGENTS.md tells agents how your project works (build commands, conventions, architecture). TASKS.md tells agents what to work on (prioritized queue). Together, an agent can start a session, read both files, and be immediately productive.</p>
         </div>
       </div>
     </div>
@@ -236,6 +402,8 @@
         <a href="https://github.com/tasksmd/tasks.md">GitHub</a> &middot;
         <a href="https://github.com/tasksmd/tasks.md/blob/main/spec.md">Spec</a> &middot;
         <a href="https://github.com/tasksmd/tasks.md/tree/main/examples">Examples</a> &middot;
+        <a href="https://github.com/tasksmd/tasks.md/tree/main/mcp">MCP Server</a> &middot;
+        <a href="https://github.com/tasksmd/tasks.md/tree/main/lint">Linter</a> &middot;
         MIT License
       </p>
     </div>

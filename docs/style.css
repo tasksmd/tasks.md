@@ -144,7 +144,7 @@ h3 {
 
 .why-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   margin-top: 1.25rem;
 }
@@ -277,7 +277,8 @@ footer a:hover { color: var(--accent); }
   .hero h1 { font-size: 1.75rem; }
   .hero .subtitle { font-size: 1.05rem; }
   section { padding: 3rem 0; }
-  .why-grid { grid-template-columns: 1fr; }
+  .why-grid { grid-template-columns: 1fr 1fr; }
+  #writing .why-grid { grid-template-columns: 1fr; }
   pre { padding: 1rem; font-size: 0.8rem; }
   .install-table code { font-size: 0.75rem; }
 }
