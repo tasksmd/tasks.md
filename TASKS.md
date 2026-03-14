@@ -2,11 +2,6 @@
 
 ## P1
 
-- [ ] Sync docs site with README
-  - **ID**: sync-docs-site
-  - **Details**: The docs site (docs/index.html) is missing sections added to README: "Writing Good Tasks" guide, "/next-task Command" with 6-step workflow, async workflow diagram, AGENTS.md integration snippet, and 7 new FAQ entries. Port these sections to the HTML site.
-  - **Files**: `docs/index.html`
-
 - [ ] Write a blog post: "Why your AI agent needs a backlog"
   - **Details**: Lead with the two core ideas: (1) you think faster than agents code — TASKS.md is your async buffer, (2) planning first leads to better results — writing it down before the agent starts is the key habit. Cover the fragmentation problem, the AGENTS.md parallel, and how TASKS.md solves it.
 
