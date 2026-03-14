@@ -3,7 +3,7 @@
 ## P1
 
 - [ ] Write a blog post: "Why your AI agent needs a backlog"
-  - **Details**: Lead with the two core ideas: (1) you think faster than agents code — TASKS.md is your async buffer, (2) planning first leads to better results — writing it down before the agent starts is the key habit. Cover the fragmentation problem, the AGENTS.md parallel, and how TASKS.md solves it.
+  - **Details**: Lead with the two core ideas: (1) you think faster than agents code — TASKS.md is your async buffer, (2) planning first leads to better results — writing it down before the agent starts is the key habit. Cover the fragmentation problem, the AGENTS.md parallel, and how TASKS.md solves it. Include a personal story about how TASKS.md proved invaluable while building a large AI orchestrator project (multi-agent pipelines, personas, background execution) — the kind of complex project where ideas and tasks pile up faster than any single agent can handle.
 
 ## P2
 
