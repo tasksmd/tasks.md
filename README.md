@@ -131,6 +131,11 @@ No. A solo developer with one agent benefits from persistent context across sess
 
 Each agent claims a unique task (different line). Git auto-merges deletions on non-adjacent lines. Conflicts are rare and trivial.
 
+## See Also
+
+- [AGENTS.md](https://agents.md/) — the companion spec for agent instructions
+- [Proposal: TASKS.md as a companion standard](https://github.com/agentsmd/agents.md/issues/166) — discussion on the agents.md repo
+
 ## Contributing
 
 - Improve the [specification](spec.md)
