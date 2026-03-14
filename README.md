@@ -2,6 +2,8 @@
 
 A lightweight spec for AI agent task queues — the companion to [AGENTS.md](https://agents.md/).
 
+**[Website](https://tasksmd.github.io/tasks.md/)** · **[Spec](spec.md)** · **[Examples](examples/)** · **[MCP Server](mcp/)**
+
 AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
 ## Quick Start

@@ -18,5 +18,5 @@
   - **Details**: The linter exists in `lint/` but isn't published. Package as `tasks-lint` CLI.
   - **Files**: lint/
 
-- [ ] Enable GitHub Pages for the docs site
-  - **Details**: `docs/index.html` exists but GitHub Pages may not be enabled on the repo yet.
+- [ ] Set up custom domain tasks.md for GitHub Pages
+  - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md domain for a cleaner URL.
