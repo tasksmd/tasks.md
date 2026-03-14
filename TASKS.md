@@ -2,16 +2,13 @@
 
 ## P1
 
-- [ ] File an issue on agentsmd/agents.md proposing TASKS.md as a companion standard
-  - **Details**: Reference Issue #71 (.agent directory proposal). Position TASKS.md as the task management layer that complements AGENTS.md instructions.
-
 - [ ] Write a blog post: "Why your AI agent needs a backlog"
-  - **Details**: Lead with session persistence, not multi-agent. Cover the fragmentation problem, the AGENTS.md parallel, and how TASKS.md solves it.
+  - **Details**: Lead with the two core ideas: (1) you think faster than agents code — TASKS.md is your async buffer, (2) planning first leads to better results — writing it down before the agent starts is the key habit. Cover the fragmentation problem, the AGENTS.md parallel, and how TASKS.md solves it.
 
 ## P2
 
 - [ ] Publish tasks-mcp to npm
-  - **Details**: The MCP server exists in `mcp/` but isn't published. Add build step, bin entry, and publish to npm as `tasks-mcp`.
+  - **Details**: The MCP server exists in `mcp/` but isn't published. Has 21 parser tests and CI. Publish to npm as `tasks-mcp`.
   - **Files**: mcp/
 
 - [ ] Publish tasks-lint to npm
