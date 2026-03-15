@@ -17,7 +17,7 @@ npx tasks-lint TASKS.md
 ## Usage
 
 ```bash
-tasks-lint <file|directory> [file|directory...]
+tasks-lint [--fix] <file|directory> [file|directory...]
 ```
 
 Pass individual files or directories. Directories are scanned for `.md` files (non-recursive).
@@ -26,7 +26,17 @@ Pass individual files or directories. Directories are scanned for `.md` files (n
 tasks-lint TASKS.md                    # single file
 tasks-lint TASKS.md packages/          # file + directory
 tasks-lint frontend/TASKS.md backend/  # monorepo
+tasks-lint --fix TASKS.md              # auto-fix deterministic errors
 ```
+
+### Auto-fix mode
+
+Use `--fix` to automatically correct deterministic errors in-place:
+
+- Removes completed (`[x]`) tasks and their metadata blocks
+- Cleans up consecutive blank lines left after removals
+
+Ambiguous cases (priority reordering, dangling blockers) are reported but not auto-fixed.
 
 When multiple files are passed, IDs are checked for uniqueness across all files and blocker references are resolved globally.
 

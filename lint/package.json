@@ -10,13 +10,24 @@
     "index.js"
   ],
   "scripts": {
-    "test": "node --test test.js"
+    "test": "node --test test.js",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "tasks",
     "lint",
     "ai-agents",
-    "markdown"
+    "markdown",
+    "task-queue"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tasksmd/tasks.md",
+    "directory": "lint"
+  },
+  "homepage": "https://tasks.md",
+  "engines": {
+    "node": ">=18"
+  }
 }
