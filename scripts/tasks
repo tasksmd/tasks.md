@@ -10,6 +10,7 @@
 #   pick [--tags TAGS]        Pick the best task to work on next
 #   sync-issues [options]     Sync GitHub Issues into TASKS.md
 #   stats                     Show task completion throughput from git history
+#   diff [REF]                Show queue changes since last commit (or REF)
 #   generate-commands         Regenerate agent command files from canonical source
 #   help                      Show this help
 
@@ -31,6 +32,7 @@ Commands:
   pick [--tags TAGS]        Pick the best task to work on next (requires tasks-mcp)
   sync-issues [options]     Sync GitHub Issues into TASKS.md
   stats                     Show task completion throughput from git history
+  diff [REF]                Show queue changes since last commit (or REF)
   generate-commands         Regenerate agent command files from canonical source
   help                      Show this help
 
@@ -200,6 +202,67 @@ case "${1:-help}" in
         echo "    $agent: $count task(s)"
       done
     fi
+    ;;
+
+  diff)
+    shift
+    ref="${1:-HEAD}"
+    git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+
+    # Get diff for all TASKS.md files
+    diff_output=$(git -C "$git_root" diff "$ref" -- "*/TASKS.md" "TASKS.md" 2>/dev/null || true)
+
+    if [ -z "$diff_output" ]; then
+      echo "No TASKS.md changes since $ref"
+      exit 0
+    fi
+
+    # Extract added tasks (lines starting with +- [ ])
+    added=$(echo "$diff_output" | grep '^+- \[ \]' | sed 's/^+//' || true)
+    # Extract removed tasks (lines starting with -- [ ])
+    removed=$(echo "$diff_output" | grep '^-- \[ \]' | sed 's/^-//' || true)
+    # Extract newly claimed tasks (added lines with @agent tag)
+    claimed=$(echo "$diff_output" | grep '^+- \[ \].*(@' | sed 's/^+//' || true)
+
+    added_count=$(echo "$added" | grep -c '^\- \[ \]' || true)
+    removed_count=$(echo "$removed" | grep -c '^\- \[ \]' || true)
+    claimed_count=$(echo "$claimed" | grep -c '^\- \[ \]' || true)
+
+    echo "📋 Queue Changes (since $ref)"
+    echo ""
+
+    if [ "$removed_count" -gt 0 ]; then
+      echo "  ✅ Removed ($removed_count):"
+      echo "$removed" | while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        # Strip "- [ ] " prefix for cleaner display
+        task="${line#- \[ \] }"
+        echo "    $task"
+      done
+      echo ""
+    fi
+
+    if [ "$added_count" -gt 0 ]; then
+      echo "  ➕ Added ($added_count):"
+      echo "$added" | while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        task="${line#- \[ \] }"
+        echo "    $task"
+      done
+      echo ""
+    fi
+
+    if [ "$claimed_count" -gt 0 ]; then
+      echo "  🔒 Claimed ($claimed_count):"
+      echo "$claimed" | while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        task="${line#- \[ \] }"
+        echo "    $task"
+      done
+      echo ""
+    fi
+
+    echo "  Summary: +$added_count added, -$removed_count removed, $claimed_count claimed"
     ;;
 
   generate-commands)

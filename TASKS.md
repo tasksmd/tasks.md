@@ -37,11 +37,3 @@
     Could use `gh` equivalent or Jira REST API. Extends the bridge pattern from story 10.
   - **Files**: `scripts/sync-jira.sh`
 
-- [ ] Add `tasks diff` — show queue changes since last commit
-  - **ID**: tasks-diff
-  - **Tags**: cli, orchestrator
-  - **Details**: Show tasks added, removed, and claimed since the last git commit.
-    Useful for orchestrators monitoring progress (story 11) and for humans reviewing
-    what agents accomplished in a session. Could be a `scripts/tasks diff` subcommand.
-  - **Files**: `scripts/tasks`
-
