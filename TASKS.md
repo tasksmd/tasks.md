@@ -29,14 +29,6 @@
 
 ## P3
 
-- [ ] Add `tasks watch` command (auto-lint on file save)
-  - **ID**: tasks-watch
-  - **Tags**: tooling, ux
-  - **Details**: Use `fswatch` (or `inotifywait` on Linux) to watch TASKS.md files
-    and run `tasks-lint` on change. Print errors inline. Lightweight alternative to
-    CI for local development. Add to `scripts/tasks` as a subcommand.
-  - **Files**: `scripts/tasks`, `scripts/watch.sh`
-
 - [ ] Add GitHub Actions reusable workflow for TASKS.md validation
   - **ID**: ci-action
   - **Tags**: tooling, ci

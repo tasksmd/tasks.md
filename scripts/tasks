@@ -10,6 +10,7 @@
 #   pick [--tags TAGS]        Pick the best task to work on next
 #   sync-issues [options]     Sync GitHub Issues into TASKS.md
 #   sync-jira [options]       Sync Jira issues into TASKS.md
+#   watch [directory]         Watch TASKS.md files and auto-lint on change
 #   stats                     Show task completion throughput from git history
 #   diff [REF]                Show queue changes since last commit (or REF)
 #   generate-commands         Regenerate agent command files from canonical source
@@ -33,6 +34,7 @@ Commands:
   pick [--tags TAGS]        Pick the best task to work on next (requires tasks-mcp)
   sync-issues [options]     Sync GitHub Issues into TASKS.md
   sync-jira [options]       Sync Jira issues into TASKS.md
+  watch [directory]         Watch TASKS.md files and auto-lint on change
   stats                     Show task completion throughput from git history
   diff [REF]                Show queue changes since last commit (or REF)
   generate-commands         Regenerate agent command files from canonical source
@@ -96,6 +98,11 @@ case "${1:-help}" in
   sync-jira)
     shift
     exec bash "$SCRIPT_DIR/sync-jira.sh" "$@"
+    ;;
+
+  watch)
+    shift
+    exec bash "$SCRIPT_DIR/watch.sh" "$@"
     ;;
 
   stats)
