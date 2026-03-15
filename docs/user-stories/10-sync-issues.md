@@ -1,6 +1,6 @@
-# User Story: Sync from GitHub Issues
+# User Story: Sync from Issue Trackers
 
-> As a team using GitHub Issues for product work, I want to generate a TASKS.md from labeled issues so agents can execute without needing GitHub API access.
+> As a team using an issue tracker for product work, I want to auto-generate a TASKS.md from issues so agents can execute without needing API access.
 
 ## How It Works
 
@@ -132,7 +132,18 @@ scripts/sync-jira.sh --project PROJ --merge --output TASKS.md
 
 Jira priority mapping: Highest/Blocker/Critical → P0, High → P1, Medium → P2, Low/Lowest → P3. Labels become tags, issue keys become IDs (`jira-PROJ-123`). Requires `JIRA_URL` and `JIRA_TOKEN` environment variables.
 
-Both scripts implement the same bridge pattern — import the "what" from your tracker so agents can execute the "how".
+## Linear Sync
+
+A companion script syncs from Linear using the same pattern:
+
+```bash
+scripts/sync-linear.sh --team ENG --output TASKS.md
+scripts/sync-linear.sh --team ENG --project "Q1 Launch" --merge --output TASKS.md
+```
+
+Linear priority mapping: Urgent → P0, High → P1, Medium → P2, Low/No priority → P3. Labels become tags, issue identifiers become IDs (`linear-ENG-123`). Requires `LINEAR_API_KEY` environment variable.
+
+All three scripts implement the same bridge pattern — import the "what" from your tracker so agents can execute the "how".
 
 ## Files Involved
 
@@ -140,3 +151,4 @@ Both scripts implement the same bridge pattern — import the "what" from your t
 |------|---------|
 | `scripts/sync-issues.sh` | GitHub Issues sync script |
 | `scripts/sync-jira.sh` | Jira sync script |
+| `scripts/sync-linear.sh` | Linear sync script |

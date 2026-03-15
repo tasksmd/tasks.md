@@ -1,6 +1,6 @@
 # User Story: Create a Task Queue
 
-> As a developer, I want to create a task queue for my project so agents know what to work on without asking me.
+> As a developer, I want to create a task queue for my project so agents can start working immediately without asking me what to do.
 
 ## Quick Start ✓
 
@@ -15,7 +15,7 @@ Or install via npm and run anywhere:
 npx tasks-mcp   # starts the MCP server (includes init via add_task)
 ```
 
-## Steps (Manual — also works)
+## Manual Alternative
 
 1. **Create the file** at your repo root:
    ```markdown

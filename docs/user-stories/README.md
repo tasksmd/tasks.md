@@ -1,21 +1,21 @@
 # User Stories
 
-How people and agents use TASKS.md — one doc per workflow.
+How agents and people use TASKS.md — one doc per workflow.
 
-TASKS.md is a spec, not a product. The user stories below cover both **spec users** (developers adding TASKS.md to their repos) and **tooling users** (people using the MCP server, linter, and agent commands shipped with this repo).
+TASKS.md is a spec, not a product. The user stories below cover both **spec users** (developers adding TASKS.md to their repos) and **tooling users** (agents and people using the MCP server, linter, and CLI commands shipped with this repo). Most workflows assume an agent-driven or CLI-automated approach as the default.
 
 | # | Story | Who | How |
 |---|-------|-----|-----|
-| 1 | [Create a task queue](01-create-task-queue.md) | Human | Create `TASKS.md`, add tasks under P0–P3 |
-| 2 | [Write good tasks](02-write-good-tasks.md) | Human | One-liners vs. rich metadata |
-| 3 | [Install /next-task](03-install-next-task.md) | Human (once) | Copy command file into project |
+| 1 | [Create a task queue](01-create-task-queue.md) | CLI / Agent | `tasks init` scaffolds TASKS.md + AGENTS.md |
+| 2 | [Write good tasks](02-write-good-tasks.md) | Agent / Human | One-liners vs. rich metadata |
+| 3 | [Install /next-task](03-install-next-task.md) | CLI | `tasks install` auto-detects agents |
 | 4 | [Run the autonomous loop](04-autonomous-loop.md) | Agent | `/next-task` → pick → claim → work → remove → loop |
-| 5 | [Use blockers and dependencies](05-blockers.md) | Human / Agent | IDs, `Blocked by`, unblocking impact |
-| 6 | [Multi-file setup](06-multi-file.md) | Human | Monorepo with multiple TASKS.md files |
+| 5 | [Use blockers and dependencies](05-blockers.md) | Agent / Human | IDs, `Blocked by`, unblocking impact |
+| 6 | [Multi-file setup](06-multi-file.md) | Agent / Human | Monorepo with multiple TASKS.md files |
 | 7 | [Multi-agent coordination](07-multi-agent.md) | Agent | Claiming, stale claims, conflict resolution |
 | 8 | [Use the MCP server](08-mcp-server.md) | Agent | `tasks-mcp` for programmatic task management |
-| 9 | [Lint in CI](09-lint-in-ci.md) | CI | `tasks-lint` validates format on every push |
-| 10 | [Sync from GitHub Issues](10-sync-issues.md) | Human / CI | `sync-issues.sh` imports labeled issues |
+| 9 | [Lint in CI](09-lint-in-ci.md) | CI / CLI | `tasks-lint` validates format on every push |
+| 10 | [Sync from issue trackers](10-sync-issues.md) | CI / CLI | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
 | 11 | [Integrate with an orchestrator](11-orchestrator.md) | Orchestrator | Tag-based routing, planner/executor pattern |
 | 12 | [Add an example](12-add-example.md) | Contributor | Add a new stack example to `examples/` |
 
@@ -32,6 +32,9 @@ All originally-identified automation gaps have been implemented:
 | Linter `--fix` mode | [09](09-lint-in-ci.md) | ✅ `node lint/index.js --fix` |
 | sync-issues `--merge` mode | [10](10-sync-issues.md) | ✅ `scripts/sync-issues.sh --merge` |
 | sync-jira (Jira bridge) | [10](10-sync-issues.md#jira-sync) | ✅ `scripts/sync-jira.sh` |
+| sync-linear (Linear bridge) | [10](10-sync-issues.md#linear-sync) | ✅ `scripts/sync-linear.sh` |
+| `tasks watch` (auto-lint) | — | ✅ `scripts/watch.sh` |
+| Reusable CI workflow | [09](09-lint-in-ci.md#reusable-workflow) | ✅ `.github/workflows/tasks-lint.yml` |
 
 ## Design Philosophy
 

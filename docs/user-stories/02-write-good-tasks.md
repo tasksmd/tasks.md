@@ -1,10 +1,10 @@
 # User Story: Write Good Tasks
 
-> As a developer, I want to write tasks that agents can actually complete — without asking me follow-up questions.
+> As a developer or agent, I want to write tasks that can be completed autonomously — without follow-up questions.
 
 ## The Principle
 
-A task is a small contract between you and the agent. The more specific you are, the better the result. But most tasks don't need much — a clear one-liner is often enough.
+A task is a small contract. The more specific, the better the result. Both humans and agents add tasks — agents discover work during implementation and add follow-up tasks to the queue. Most tasks don't need much — a clear one-liner is often enough.
 
 ## One-Liners (Most Tasks)
 
