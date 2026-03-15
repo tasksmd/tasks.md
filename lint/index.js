@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 let errors = 0;
+let fixed = 0;
 let filesChecked = 0;
+const fixMode = process.argv.includes("--fix");
 
 function error(file, line, message) {
   console.error(`ERROR: ${file}:${line}: ${message}`);
@@ -27,6 +29,7 @@ function validateFile(filePath, allIds, allBlockedBy) {
 
   filesChecked++;
   const lines = content.split("\n");
+  const linesToRemove = new Set();
   let lastPriority = -1;
   let inTask = false;
   let taskStartLine = 0;
@@ -63,7 +66,22 @@ function validateFile(filePath, allIds, allBlockedBy) {
 
     // Completed task (should be removed)
     if (/^-\s+\[x\]\s/.test(line)) {
-      error(filePath, lineNum, "completed task should be removed, not checked off");
+      if (fixMode) {
+        linesToRemove.add(i);
+        // Also remove subsequent indented lines (metadata/subtasks)
+        for (let j = i + 1; j < lines.length; j++) {
+          if (/^\s{2,}/.test(lines[j]) || lines[j].trim() === "") {
+            linesToRemove.add(j);
+            if (lines[j].trim() === "") break;
+          } else {
+            break;
+          }
+        }
+        fixed++;
+        console.log(`FIX: ${filePath}:${lineNum}: removed completed task`);
+      } else {
+        error(filePath, lineNum, "completed task should be removed, not checked off");
+      }
       continue;
     }
 
@@ -148,6 +166,17 @@ function validateFile(filePath, allIds, allBlockedBy) {
       continue;
     }
   }
+
+  // Apply fixes if in fix mode
+  if (fixMode && linesToRemove.size > 0) {
+    const fixedLines = lines.filter((_, idx) => !linesToRemove.has(idx));
+    // Remove consecutive blank lines left by removals
+    const cleaned = fixedLines.filter((line, idx) => {
+      if (idx === 0) return true;
+      return !(line.trim() === "" && fixedLines[idx - 1]?.trim() === "");
+    });
+    writeFileSync(filePath, cleaned.join("\n"), "utf-8");
+  }
 }
 
 function discoverFiles(target) {
@@ -180,11 +209,13 @@ function discoverFiles(target) {
 
 // ── Main ──
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 if (args.length === 0) {
-  console.log("Usage: tasks-lint <file|directory> [file|directory...]");
+  console.log("Usage: tasks-lint [--fix] <file|directory> [file|directory...]");
   console.log("");
   console.log("Validates TASKS.md files against the spec.");
+  console.log("Options:");
+  console.log("  --fix    Auto-fix removable issues (completed tasks)");
   console.log("Exits 0 on success, 1 on validation errors, 2 on usage errors.");
   process.exit(2);
 }
@@ -211,6 +242,10 @@ for (const ref of allBlockedBy) {
 }
 
 console.log("");
-console.log(`Checked ${filesChecked} file(s), found ${errors} error(s)`);
+if (fixMode && fixed > 0) {
+  console.log(`Checked ${filesChecked} file(s), fixed ${fixed} issue(s), ${errors} remaining error(s)`);
+} else {
+  console.log(`Checked ${filesChecked} file(s), found ${errors} error(s)`);
+}
 
 process.exit(errors > 0 ? 1 : 0);

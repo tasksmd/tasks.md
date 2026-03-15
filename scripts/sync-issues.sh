@@ -16,14 +16,16 @@ set -euo pipefail
 REPO=""
 LABEL="tasks.md"
 OUTPUT=""
+MERGE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo)   REPO="$2"; shift 2 ;;
     --label)  LABEL="$2"; shift 2 ;;
     --output) OUTPUT="$2"; shift 2 ;;
+    --merge)  MERGE=true; shift ;;
     -h|--help)
-      echo "Usage: sync-issues.sh [--repo OWNER/REPO] [--label LABEL] [--output FILE]"
+      echo "Usage: sync-issues.sh [--repo OWNER/REPO] [--label LABEL] [--output FILE] [--merge]"
       echo ""
       echo "Generates a TASKS.md from GitHub Issues with the specified label."
       echo ""
@@ -31,6 +33,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --repo    GitHub repo (default: current repo from gh)"
       echo "  --label   Issue label to filter by (default: tasks.md)"
       echo "  --output  Output file (default: stdout)"
+      echo "  --merge   Preserve existing manual tasks; only add/remove issue-synced tasks"
       exit 0
       ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
@@ -164,7 +167,121 @@ generate() {
   fi
 }
 
-if [[ -n "$OUTPUT" ]]; then
+# ── Merge mode: preserve manual tasks, add/remove synced ones ────
+merge_into_existing() {
+  local target="$1"
+  if [[ ! -f "$target" ]]; then
+    # No existing file — just generate fresh
+    generate > "$target"
+    return
+  fi
+
+  local existing
+  existing=$(cat "$target")
+
+  # Collect issue IDs from the new sync
+  local new_issue_ids=()
+  for p in 0 1 2 3; do
+    local -n bucket="P${p}_TASKS"
+    for task in "${bucket[@]}"; do
+      local id
+      id=$(echo "$task" | grep -o 'issue-[0-9]*' | head -1)
+      [[ -n "$id" ]] && new_issue_ids+=("$id")
+    done
+  done
+
+  # Remove tasks with issue-* IDs that are no longer in the sync (closed issues)
+  # and tasks with issue-* IDs that will be re-added (updated issues)
+  local cleaned
+  cleaned=$(echo "$existing" | python3 -c "
+import sys, re
+
+new_ids = set('${new_issue_ids[*]}'.split())
+lines = sys.stdin.read().split('\\n')
+result = []
+skip_block = False
+
+for line in lines:
+    # Check if this is a task line with an issue-* ID following it
+    if re.match(r'^- \\[[ x]\\]', line):
+        skip_block = False
+    if skip_block:
+        # Check if we're still in the metadata block
+        if re.match(r'^\\s{2,}', line) or line.strip() == '':
+            continue
+        else:
+            skip_block = False
+    # Check for issue ID in this task's metadata
+    id_match = re.search(r'issue-\\d+', line)
+    if re.match(r'^- \\[[ x]\\]', line):
+        # Look ahead for ID in metadata
+        idx = lines.index(line) if line in lines else -1
+        task_has_issue_id = False
+        task_issue_id = None
+        for j in range(idx + 1, min(idx + 10, len(lines))):
+            if re.match(r'^\\s+-\\s+\\*\\*ID\\*\\*:', lines[j]):
+                m = re.search(r'issue-\\d+', lines[j])
+                if m:
+                    task_has_issue_id = True
+                    task_issue_id = m.group()
+                break
+            if not re.match(r'^\\s', lines[j]) and lines[j].strip() != '':
+                break
+        if task_has_issue_id:
+            # Skip this task block — it will be re-added from sync
+            skip_block = True
+            continue
+    result.append(line)
+
+print('\\n'.join(result))
+")
+
+  # Now append new issue tasks into the right priority sections
+  # Write the cleaned content + new tasks
+  local temp
+  temp=$(mktemp)
+  echo "$cleaned" > "$temp"
+
+  # For each priority, append new issue tasks
+  for p in 0 1 2 3; do
+    local -n bucket="P${p}_TASKS"
+    [[ ${#bucket[@]} -eq 0 ]] && continue
+
+    # Check if the priority section exists
+    if ! grep -q "^## P${p}$" "$temp"; then
+      # Find where to insert (before next higher priority or at end)
+      local inserted=false
+      for np in $(seq $((p + 1)) 3); do
+        if grep -q "^## P${np}$" "$temp"; then
+          sed -i '' "/^## P${np}$/i\\\n## P${p}\n" "$temp"
+          inserted=true
+          break
+        fi
+      done
+      if ! $inserted; then
+        echo "" >> "$temp"
+        echo "## P${p}" >> "$temp"
+        echo "" >> "$temp"
+      fi
+    fi
+
+    # Append tasks after the priority heading
+    for task in "${bucket[@]}"; do
+      # Insert after ## P<n> heading
+      local escaped
+      escaped=$(echo "$task" | sed 's/[&/\\]/\\&/g')
+      sed -i '' "/^## P${p}$/a\\\n${escaped}\n" "$temp"
+    done
+  done
+
+  cat "$temp" > "$target"
+  rm -f "$temp"
+}
+
+if $MERGE && [[ -n "$OUTPUT" ]]; then
+  merge_into_existing "$OUTPUT"
+  echo "Merged ${issue_count} issue(s) into ${OUTPUT} (manual tasks preserved)" >&2
+elif [[ -n "$OUTPUT" ]]; then
   generate > "$OUTPUT"
   echo "Wrote ${issue_count} issue(s) to ${OUTPUT}" >&2
 else
