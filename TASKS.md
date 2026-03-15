@@ -27,13 +27,4 @@
 - [ ] Set up custom domain tasks.md for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md domain for a cleaner URL.
 
-## P3
-
-- [ ] Add `sync-linear` bridge script (Linear → TASKS.md)
-  - **ID**: sync-linear
-  - **Tags**: integration, linear
-  - **Details**: Same bridge pattern as `sync-issues.sh` and `sync-jira.sh` but
-    for Linear. Map Linear priority (Urgent/High/Medium/Low/No priority) to P-levels.
-    Use Linear API with `LINEAR_API_KEY`. Support `--merge` mode.
-  - **Files**: `scripts/sync-linear.sh`
 
