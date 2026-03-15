@@ -1,23 +1,19 @@
 # User Stories
 
-How agents and people use TASKS.md — one doc per workflow.
+How people use TASKS.md — one doc per workflow.
 
-TASKS.md is a spec, not a product. The user stories below cover both **spec users** (developers adding TASKS.md to their repos) and **tooling users** (agents and people using the MCP server, linter, and CLI commands shipped with this repo). Most workflows assume an agent-driven or CLI-automated approach as the default.
+TASKS.md is a spec, not a product. The user stories below cover both **spec users** (developers adding TASKS.md to their repos) and **tooling users** (people using the CLI, linter, and sync scripts shipped with this repo).
 
-| # | Story | Who | How |
-|---|-------|-----|-----|
-| 1 | [Agents know what to work on](01-create-task-queue.md) | CLI / Agent | `tasks init` scaffolds TASKS.md + AGENTS.md |
-| 2 | [Tasks agents complete without asking](02-write-good-tasks.md) | Agent / Human | One-liners vs. rich metadata |
-| 3 | [Agents work through the queue autonomously](03-install-next-task.md) | CLI | `tasks install` auto-detects agents |
-| 4 | [The queue drains itself](04-autonomous-loop.md) | Agent | `/next-task` → pick → claim → work → remove → loop |
-| 5 | [Agents work in the right order](05-blockers.md) | Agent / Human | IDs, `Blocked by`, unblocking impact |
-| 6 | [Each team member has their own queue](06-multi-file.md) | Agent / Human | Monorepo with multiple TASKS.md files |
-| 7 | [Agents work in parallel without conflicts](07-multi-agent.md) | Agent | Claiming, stale claims, conflict resolution |
-| 8 | [Agents manage tasks programmatically](08-mcp-server.md) | Agent | `tasks-mcp` structured API for task operations |
-| 9 | [Invalid task files never reach main](09-lint-in-ci.md) | CI / CLI | `tasks-lint` validates format on every push |
-| 10 | [Issue tracker decisions flow to agents](10-sync-issues.md) | CI / CLI | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
-| 11 | [An orchestrator plans, agents execute](11-orchestrator.md) | Orchestrator | Tag-based routing, planner/executor pattern |
-| 12 | [See what TASKS.md looks like for my stack](12-add-example.md) | Contributor | Realistic examples per ecosystem |
+| # | Story | How |
+|---|-------|-----|
+| 1 | [Agents know what to work on](01-create-task-queue.md) | `tasks init` scaffolds TASKS.md + AGENTS.md |
+| 2 | [Tasks agents complete without asking](02-write-good-tasks.md) | One-liners vs. rich metadata |
+| 3 | [Agents work through the queue autonomously](03-install-next-task.md) | `tasks install` auto-detects agents |
+| 5 | [Agents work in the right order](05-blockers.md) | IDs, `Blocked by`, unblocking impact |
+| 6 | [Each team member has their own queue](06-multi-file.md) | Monorepo with multiple TASKS.md files |
+| 9 | [Invalid task files never reach main](09-lint-in-ci.md) | `tasks-lint` validates format on every push |
+| 10 | [Issue tracker decisions flow to agents](10-sync-issues.md) | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
+| 12 | [See what TASKS.md looks like for my stack](12-add-example.md) | Realistic examples per ecosystem |
 
 ## Automation Status
 
@@ -28,7 +24,7 @@ All originally-identified automation gaps have been implemented:
 | `tasks init` scaffolding | [01](01-create-task-queue.md) | ✅ `scripts/tasks init` |
 | `tasks install` auto-detect | [03](03-install-next-task.md) | ✅ `scripts/tasks install` |
 | Write-once commands (canonical + generate) | [03](03-install-next-task.md) | ✅ `scripts/generate-commands.sh` + CI drift check |
-| Deterministic `pick_task` MCP tool | [08](08-mcp-server.md) | ✅ `mcp/src/operations.ts` |
+| Deterministic `pick_task` MCP tool | — | ✅ `mcp/src/operations.ts` |
 | Linter `--fix` mode | [09](09-lint-in-ci.md) | ✅ `node lint/index.js --fix` |
 | sync-issues `--merge` mode | [10](10-sync-issues.md) | ✅ `scripts/sync-issues.sh --merge` |
 | sync-jira (Jira bridge) | [10](10-sync-issues.md#jira-sync) | ✅ `scripts/sync-jira.sh` |
