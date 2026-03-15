@@ -1,6 +1,6 @@
-# User Story: Use the MCP Server
+# User Story: Agents Manage Tasks Programmatically
 
-> As an agent, I want to manage tasks programmatically — list, claim, complete, and add — without parsing Markdown myself.
+> Agents list, claim, complete, and add tasks through a structured API — no Markdown parsing needed.
 
 ## What It Is
 

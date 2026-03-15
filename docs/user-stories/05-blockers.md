@@ -1,6 +1,6 @@
-# User Story: Use Blockers and Dependencies
+# User Story: Agents Work in the Right Order
 
-> As a developer, I want to express task dependencies so agents work in the right order without me sequencing manually.
+> I want agents to respect dependencies automatically — no manual sequencing, no wasted work on blocked tasks.
 
 ## How It Works
 

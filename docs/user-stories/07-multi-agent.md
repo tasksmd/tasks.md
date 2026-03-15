@@ -1,6 +1,6 @@
-# User Story: Multi-Agent Coordination
+# User Story: Agents Work in Parallel Without Conflicts
 
-> As a team running multiple agents, I want them to work in parallel without duplicating effort or stepping on each other.
+> Multiple agents work the same queue simultaneously — no duplicate effort, no stepping on each other.
 
 ## How Claiming Works
 

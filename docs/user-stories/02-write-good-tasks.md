@@ -1,6 +1,6 @@
-# User Story: Write Good Tasks
+# User Story: Tasks That Agents Complete Without Asking
 
-> As a developer or agent, I want to write tasks that can be completed autonomously — without follow-up questions.
+> I want every task to be clear enough that agents complete it autonomously — no follow-up questions, no guessing.
 
 ## The Principle
 

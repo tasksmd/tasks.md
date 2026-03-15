@@ -1,6 +1,6 @@
-# User Story: Run the Autonomous Loop
+# User Story: The Queue Drains Itself
 
-> As an agent, I read TASKS.md, pick a task, do the work, remove it, and loop — no human prompting needed.
+> Agents read TASKS.md, pick a task, do the work, remove it, and loop — no human prompting needed.
 
 ## The Workflow
 

@@ -1,6 +1,6 @@
-# User Story: Sync from Issue Trackers
+# User Story: Issue Tracker Decisions Flow to Agents Automatically
 
-> As a team using an issue tracker for product work, I want to auto-generate a TASKS.md from issues so agents can execute without needing API access.
+> Decisions made in GitHub Issues, Jira, or Linear flow into TASKS.md automatically — agents execute without needing API access.
 
 ## How It Works
 

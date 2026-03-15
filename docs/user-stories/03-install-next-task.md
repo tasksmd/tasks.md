@@ -1,6 +1,6 @@
-# User Story: Install /next-task
+# User Story: Agents Work Through the Queue Autonomously
 
-> As a developer, I want to install the `/next-task` command so my agent can autonomously work through the queue.
+> I want agents to pick up tasks, do the work, and loop — without me prompting each step.
 
 ## What It Does
 

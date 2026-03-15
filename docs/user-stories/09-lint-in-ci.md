@@ -1,6 +1,6 @@
-# User Story: Lint in CI
+# User Story: Invalid Task Files Never Reach Main
 
-> As a team lead, I want CI to catch TASKS.md formatting issues before they hit main — so agents always see a valid queue.
+> CI catches TASKS.md formatting issues before they hit main — agents always see a valid queue.
 
 ## What It Catches
 

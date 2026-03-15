@@ -6,18 +6,18 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 
 | # | Story | Who | How |
 |---|-------|-----|-----|
-| 1 | [Create a task queue](01-create-task-queue.md) | CLI / Agent | `tasks init` scaffolds TASKS.md + AGENTS.md |
-| 2 | [Write good tasks](02-write-good-tasks.md) | Agent / Human | One-liners vs. rich metadata |
-| 3 | [Install /next-task](03-install-next-task.md) | CLI | `tasks install` auto-detects agents |
-| 4 | [Run the autonomous loop](04-autonomous-loop.md) | Agent | `/next-task` → pick → claim → work → remove → loop |
-| 5 | [Use blockers and dependencies](05-blockers.md) | Agent / Human | IDs, `Blocked by`, unblocking impact |
-| 6 | [Multi-file setup](06-multi-file.md) | Agent / Human | Monorepo with multiple TASKS.md files |
-| 7 | [Multi-agent coordination](07-multi-agent.md) | Agent | Claiming, stale claims, conflict resolution |
-| 8 | [Use the MCP server](08-mcp-server.md) | Agent | `tasks-mcp` for programmatic task management |
-| 9 | [Lint in CI](09-lint-in-ci.md) | CI / CLI | `tasks-lint` validates format on every push |
-| 10 | [Sync from issue trackers](10-sync-issues.md) | CI / CLI | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
-| 11 | [Integrate with an orchestrator](11-orchestrator.md) | Orchestrator | Tag-based routing, planner/executor pattern |
-| 12 | [Add an example](12-add-example.md) | Contributor | Add a new stack example to `examples/` |
+| 1 | [Agents know what to work on](01-create-task-queue.md) | CLI / Agent | `tasks init` scaffolds TASKS.md + AGENTS.md |
+| 2 | [Tasks agents complete without asking](02-write-good-tasks.md) | Agent / Human | One-liners vs. rich metadata |
+| 3 | [Agents work through the queue autonomously](03-install-next-task.md) | CLI | `tasks install` auto-detects agents |
+| 4 | [The queue drains itself](04-autonomous-loop.md) | Agent | `/next-task` → pick → claim → work → remove → loop |
+| 5 | [Agents work in the right order](05-blockers.md) | Agent / Human | IDs, `Blocked by`, unblocking impact |
+| 6 | [Each team member has their own queue](06-multi-file.md) | Agent / Human | Monorepo with multiple TASKS.md files |
+| 7 | [Agents work in parallel without conflicts](07-multi-agent.md) | Agent | Claiming, stale claims, conflict resolution |
+| 8 | [Agents manage tasks programmatically](08-mcp-server.md) | Agent | `tasks-mcp` structured API for task operations |
+| 9 | [Invalid task files never reach main](09-lint-in-ci.md) | CI / CLI | `tasks-lint` validates format on every push |
+| 10 | [Issue tracker decisions flow to agents](10-sync-issues.md) | CI / CLI | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
+| 11 | [An orchestrator plans, agents execute](11-orchestrator.md) | Orchestrator | Tag-based routing, planner/executor pattern |
+| 12 | [See what TASKS.md looks like for my stack](12-add-example.md) | Contributor | Realistic examples per ecosystem |
 
 ## Automation Status
 

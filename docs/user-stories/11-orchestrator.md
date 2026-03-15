@@ -1,6 +1,6 @@
-# User Story: Integrate with an Orchestrator
+# User Story: An Orchestrator Plans, Agents Execute
 
-> As an orchestrator, I decompose work into tasks, write them to TASKS.md, and let agents execute — using the file as the interface between planning and coding.
+> The orchestrator decomposes work into tasks, writes them to TASKS.md, and agents execute — the file is the interface between planning and coding.
 
 ## The Pattern
 

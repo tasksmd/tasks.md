@@ -1,6 +1,6 @@
-# User Story: Create a Task Queue
+# User Story: Agents Know What to Work On
 
-> As a developer, I want to create a task queue for my project so agents can start working immediately without asking me what to do.
+> I want agents to start working immediately without asking me what to do — they read TASKS.md and go.
 
 ## Quick Start ✓
 

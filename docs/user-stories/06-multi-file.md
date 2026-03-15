@@ -1,6 +1,6 @@
-# User Story: Multi-File Setup
+# User Story: Each Team Member Has Their Own Queue
 
-> As a monorepo maintainer, I want separate task queues per package so teams can manage their own work without stepping on each other.
+> In a monorepo, each team member or team owns their own task queue — agents work across all of them, prioritizing globally.
 
 ## When to Split
 

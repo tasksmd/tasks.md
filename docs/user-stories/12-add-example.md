@@ -1,6 +1,6 @@
-# User Story: Add an Example
+# User Story: See What TASKS.md Looks Like for My Stack
 
-> As a contributor, I want to add a TASKS.md example for my stack so other developers can see what the format looks like in practice.
+> I want to see a realistic TASKS.md example for my stack — and contribute one if it's missing.
 
 ## Existing Examples
 
