@@ -93,46 +93,113 @@ case "${1:-help}" in
     shift
     git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
 
-    echo "📊 Task Completion Stats"
+    # Discover all TASKS.md files
+    task_files=()
+    while IFS= read -r f; do
+      task_files+=("$f")
+    done < <(fd -t f "^TASKS\\.md$" "$git_root" --no-ignore-vcs 2>/dev/null)
+
+    if [ ${#task_files[@]} -eq 0 ]; then
+      echo "No TASKS.md files found" >&2
+      exit 1
+    fi
+
+    # Concatenate all task files for parsing
+    all_content=$(cat "${task_files[@]}")
+
+    # ── Queue Overview ──
+    echo "📋 Queue Overview"
     echo ""
 
-    # Count completed tasks from git log (removed lines starting with "- [ ]")
-    total_completed=$(git -C "$git_root" log --all --diff-filter=D -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
-      | grep -c '^-\- \[ \]' 2>/dev/null || echo 0)
+    # Count tasks by priority
+    current_priority=""
+    p0=0; p1=0; p2=0; p3=0; total=0
+    blocked=0; claimed=0
 
-    # This week
-    week_completed=$(git -C "$git_root" log --all --since="1 week ago" --diff-filter=D -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
-      | grep -c '^-\- \[ \]' 2>/dev/null || echo 0)
+    while IFS= read -r line; do
+      case "$line" in
+        "## P0"*) current_priority="P0" ;;
+        "## P1"*) current_priority="P1" ;;
+        "## P2"*) current_priority="P2" ;;
+        "## P3"*) current_priority="P3" ;;
+        "## "*|"# "*) current_priority="" ;;
+        "- [ ] "*)
+          total=$((total + 1))
+          case "$current_priority" in
+            P0) p0=$((p0 + 1)) ;; P1) p1=$((p1 + 1)) ;;
+            P2) p2=$((p2 + 1)) ;; P3) p3=$((p3 + 1)) ;;
+          esac
+          # Check if claimed (has @agent tag)
+          if echo "$line" | grep -qE '\(@[^)]+\)'; then
+            claimed=$((claimed + 1))
+          fi
+          ;;
+        *"**Blocked by**"*)
+          blocked=$((blocked + 1))
+          ;;
+      esac
+    done <<< "$all_content"
 
-    # This month
-    month_completed=$(git -C "$git_root" log --all --since="1 month ago" --diff-filter=D -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
-      | grep -c '^-\- \[ \]' 2>/dev/null || echo 0)
+    # Display priority breakdown
+    printf "  %-4s %-4s %-4s %-4s  Total\n" "P0" "P1" "P2" "P3"
+    printf "  %-4s %-4s %-4s %-4s  %s\n" "$p0" "$p1" "$p2" "$p3" "$total"
+    echo ""
+    echo "  Blocked: $blocked"
+    echo "  Claimed: $claimed"
+    echo "  Available: $((total - blocked - claimed))"
 
-    # Agent breakdown (from claim tags in removed lines)
-    echo "  Completed (all time): $total_completed"
+    # Oldest task — find the earliest commit that added the first task line still present
+    echo ""
+    oldest_age=""
+    for task_file in "${task_files[@]}"; do
+      first_task=$(grep -m1 '^- \[ \]' "$task_file" 2>/dev/null || true)
+      [ -z "$first_task" ] && continue
+      # Find when this line was added (git log -S)
+      added_date=$(git -C "$git_root" log --all --diff-filter=A --format='%ai' -1 -- "$task_file" 2>/dev/null || true)
+      if [ -n "$added_date" ]; then
+        days_ago=$(( ( $(date +%s) - $(date -jf '%Y-%m-%d %H:%M:%S %z' "$added_date" +%s 2>/dev/null || date -d "$added_date" +%s 2>/dev/null || echo 0) ) / 86400 ))
+        if [ -z "$oldest_age" ] || [ "$days_ago" -gt "$oldest_age" ]; then
+          oldest_age="$days_ago"
+        fi
+      fi
+    done
+    if [ -n "$oldest_age" ] && [ "$oldest_age" -gt 0 ]; then
+      echo "  Oldest file: ${oldest_age}d ago"
+    fi
+
+    # Files summary
+    echo "  Files: ${#task_files[@]}"
+
+    # ── Throughput ──
+    echo ""
+    echo "📊 Throughput"
+    echo ""
+
+    # Count completed tasks from git diffs (removed "- [ ]" lines)
+    total_completed=$(git -C "$git_root" log --all -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
+      | grep -c '^-- \[ \]' || true)
+    week_completed=$(git -C "$git_root" log --all --since="1 week ago" -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
+      | grep -c '^-- \[ \]' || true)
+    month_completed=$(git -C "$git_root" log --all --since="1 month ago" -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
+      | grep -c '^-- \[ \]' || true)
+
+    echo "  Completed (all time):  $total_completed"
     echo "  Completed (this month): $month_completed"
-    echo "  Completed (this week): $week_completed"
-    echo ""
+    echo "  Completed (this week):  $week_completed"
 
-    # Most active agents
-    agents=$(git -C "$git_root" log --all --diff-filter=D -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
-      | grep '^-\- \[ \].*(@' 2>/dev/null \
+    # Top agents
+    agents=$(git -C "$git_root" log --all -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
+      | grep '^-- \[ \].*(@' \
       | grep -oE '\(@[^)]+\)' \
-      | sort | uniq -c | sort -rn | head -5)
+      | sort | uniq -c | sort -rn | head -5 || true)
 
     if [ -n "$agents" ]; then
+      echo ""
       echo "  Top agents:"
       echo "$agents" | while read -r count agent; do
         echo "    $agent: $count task(s)"
       done
     fi
-
-    # Current queue size
-    current_tasks=$(fd -t f "^TASKS\\.md$" "$git_root" --no-ignore-vcs 2>/dev/null \
-      | xargs grep -c '^\- \[ \]' 2>/dev/null \
-      | awk -F: '{s+=$2} END {print s+0}')
-    echo ""
-    echo "  Current queue: $current_tasks task(s)"
     ;;
 
   generate-commands)

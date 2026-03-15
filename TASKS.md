@@ -27,14 +27,6 @@
 - [ ] Set up custom domain tasks.md for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md domain for a cleaner URL.
 
-- [ ] Add `tasks stats` command — queue overview dashboard
-  - **ID**: tasks-stats
-  - **Tags**: cli, ux
-  - **Details**: Show task count by priority (P0:2, P1:5...), blocked count, claimed
-    count, and oldest task age. Useful for orchestrators and humans to quickly assess
-    queue health without parsing the file. Implement in `scripts/tasks stats`.
-  - **Files**: `scripts/tasks`
-
 - [ ] Add pre-commit hook for TASKS.md validation
   - **ID**: tasks-precommit
   - **Tags**: ci, lint
