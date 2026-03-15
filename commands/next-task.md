@@ -1,8 +1,3 @@
----
-name: next-task
-description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
----
-
 # Next Task
 
 Pick the highest-priority unblocked task from TASKS.md and work on it.
@@ -71,7 +66,7 @@ If all tasks at every priority level are blocked, claimed, or unmatched — tell
 
 ## 5. Claim and do the work
 
-Append your identity to the task line. Use the format `@<tool>-<instance>` (e.g., `@codex, @codex-2`):
+Append your identity to the task line. Use the format `@<tool>-<instance>` (e.g., `{{AGENT_EXAMPLE}}`):
 
 ```markdown
 - [ ] The task description (@your-agent-id)
