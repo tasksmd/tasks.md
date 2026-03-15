@@ -1,0 +1,153 @@
+#!/bin/bash
+# tasks — unified CLI for TASKS.md task queue management.
+#
+# Usage: tasks <command> [options]
+#
+# Commands:
+#   init [--install]          Initialize a task queue in the current repo
+#   install [--all]           Install /next-task for detected agents
+#   lint [--fix] <files...>   Validate TASKS.md files
+#   pick [--tags TAGS]        Pick the best task to work on next
+#   sync-issues [options]     Sync GitHub Issues into TASKS.md
+#   stats                     Show task completion throughput from git history
+#   generate-commands         Regenerate agent command files from canonical source
+#   help                      Show this help
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+show_help() {
+  cat << 'EOF'
+tasks — unified CLI for TASKS.md task queue management
+
+Usage: tasks <command> [options]
+
+Commands:
+  init [--install]          Initialize a task queue in the current repo
+  install [--all]           Install /next-task for detected agents
+  lint [--fix] <files...>   Validate TASKS.md files against the spec
+  pick [--tags TAGS]        Pick the best task to work on next (requires tasks-mcp)
+  sync-issues [options]     Sync GitHub Issues into TASKS.md
+  stats                     Show task completion throughput from git history
+  generate-commands         Regenerate agent command files from canonical source
+  help                      Show this help
+
+Examples:
+  tasks init                Create TASKS.md + AGENTS.md section
+  tasks lint TASKS.md       Validate a file
+  tasks lint --fix .        Fix issues in all .md files in current dir
+  tasks install --all       Install /next-task for all agents
+  tasks stats               Show completion history
+EOF
+}
+
+case "${1:-help}" in
+  init)
+    shift
+    exec bash "$SCRIPT_DIR/init.sh" "${PWD}" "$@"
+    ;;
+
+  install)
+    shift
+    exec bash "$SCRIPT_DIR/install.sh" "${PWD}" "$@"
+    ;;
+
+  lint)
+    shift
+    exec node "$REPO_DIR/lint/index.js" "$@"
+    ;;
+
+  pick)
+    shift
+    # Use tasks-mcp pick_task via node if available
+    if [ -f "$REPO_DIR/mcp/dist/index.js" ]; then
+      tags_arg=""
+      while [ $# -gt 0 ]; do
+        case "$1" in
+          --tags) tags_arg="$2"; shift 2 ;;
+          *) shift ;;
+        esac
+      done
+      node -e "
+        import { loadAllTasks } from '$REPO_DIR/mcp/dist/parser.js';
+        import { pickTask } from '$REPO_DIR/mcp/dist/tools.js';
+        const files = await loadAllTasks(process.cwd());
+        const tags = '${tags_arg}'.split(',').filter(Boolean);
+        const result = pickTask(files, { tags: tags.length ? tags : undefined });
+        console.log(result.text);
+      "
+    else
+      echo "Error: tasks-mcp not built. Run: cd mcp && npm run build" >&2
+      exit 1
+    fi
+    ;;
+
+  sync-issues)
+    shift
+    exec bash "$SCRIPT_DIR/sync-issues.sh" "$@"
+    ;;
+
+  stats)
+    shift
+    git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+
+    echo "📊 Task Completion Stats"
+    echo ""
+
+    # Count completed tasks from git log (removed lines starting with "- [ ]")
+    total_completed=$(git -C "$git_root" log --all --diff-filter=D -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
+      | grep -c '^-\- \[ \]' 2>/dev/null || echo 0)
+
+    # This week
+    week_completed=$(git -C "$git_root" log --all --since="1 week ago" --diff-filter=D -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
+      | grep -c '^-\- \[ \]' 2>/dev/null || echo 0)
+
+    # This month
+    month_completed=$(git -C "$git_root" log --all --since="1 month ago" --diff-filter=D -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
+      | grep -c '^-\- \[ \]' 2>/dev/null || echo 0)
+
+    # Agent breakdown (from claim tags in removed lines)
+    echo "  Completed (all time): $total_completed"
+    echo "  Completed (this month): $month_completed"
+    echo "  Completed (this week): $week_completed"
+    echo ""
+
+    # Most active agents
+    agents=$(git -C "$git_root" log --all --diff-filter=D -p -- "*/TASKS.md" "TASKS.md" 2>/dev/null \
+      | grep '^-\- \[ \].*(@' 2>/dev/null \
+      | grep -oE '\(@[^)]+\)' \
+      | sort | uniq -c | sort -rn | head -5)
+
+    if [ -n "$agents" ]; then
+      echo "  Top agents:"
+      echo "$agents" | while read -r count agent; do
+        echo "    $agent: $count task(s)"
+      done
+    fi
+
+    # Current queue size
+    current_tasks=$(fd -t f "^TASKS\\.md$" "$git_root" --no-ignore-vcs 2>/dev/null \
+      | xargs grep -c '^\- \[ \]' 2>/dev/null \
+      | awk -F: '{s+=$2} END {print s+0}')
+    echo ""
+    echo "  Current queue: $current_tasks task(s)"
+    ;;
+
+  generate-commands)
+    shift
+    exec bash "$SCRIPT_DIR/generate-commands.sh" "$@"
+    ;;
+
+  help|--help|-h)
+    show_help
+    ;;
+
+  *)
+    echo "Unknown command: $1" >&2
+    echo "" >&2
+    echo "Run 'tasks help' for usage." >&2
+    exit 1
+    ;;
+esac
