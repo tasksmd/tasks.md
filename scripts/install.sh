@@ -1,8 +1,9 @@
 #!/bin/bash
-# Install /next-task command for detected agents.
-# Usage: ./scripts/install.sh [target-dir] [--all | --agent NAME]
+# Install /next-task command for detected agents and optional pre-commit hook.
+# Usage: ./scripts/install.sh [target-dir] [--all | --agent NAME] [--hooks]
 #
 # Auto-detects which agent directories exist and copies the right command files.
+# With --hooks, installs a pre-commit hook that validates staged TASKS.md files.
 # Reports what was installed and skips agents that aren't present.
 
 set -euo pipefail
@@ -12,12 +13,14 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 TARGET_DIR="${1:-.}"
 FILTER_AGENT=""
 INSTALL_ALL=false
+INSTALL_HOOKS=false
 
 # Parse flags
 for arg in "$@"; do
   case "$arg" in
     --all) INSTALL_ALL=true ;;
     --agent) shift; FILTER_AGENT="${2:-}" ;;
+    --hooks) INSTALL_HOOKS=true ;;
   esac
 done
 
@@ -74,9 +77,68 @@ if [ -d "$TARGET_DIR/.windsurf" ] || $INSTALL_ALL; then
 fi
 
 echo ""
-if [ $installed -eq 0 ]; then
+if [ $installed -eq 0 ] && ! $INSTALL_HOOKS; then
   echo "No agent directories detected in $TARGET_DIR"
   echo "Use --all to install for all agents, or create agent dirs first."
 else
   echo "✓ Installed for $installed agent(s)"
+fi
+
+# ── Pre-commit hook ──────────────────────────────────────────────
+if $INSTALL_HOOKS; then
+  git_dir=$(git -C "$TARGET_DIR" rev-parse --git-dir 2>/dev/null || true)
+  if [ -z "$git_dir" ]; then
+    echo "⚠ Not a git repository — skipping hook install"
+  else
+    hooks_dir="$git_dir/hooks"
+    hook_file="$hooks_dir/pre-commit"
+    mkdir -p "$hooks_dir"
+
+    # Marker to identify our hook content
+    MARKER="# tasks-lint pre-commit hook"
+
+    hook_body='#!/bin/bash
+'"$MARKER"'
+# Validates staged TASKS.md files before commit.
+# Skip with: git commit --no-verify
+
+staged_tasks=$(git diff --cached --name-only --diff-filter=ACM | grep -E "(^|/)TASKS\.md$" || true)
+
+if [ -n "$staged_tasks" ]; then
+  # Try npx tasks-lint first, fall back to local install
+  if command -v tasks-lint >/dev/null 2>&1; then
+    lint_cmd="tasks-lint"
+  else
+    lint_cmd="npx --yes tasks-lint@latest"
+  fi
+
+  errors=0
+  for f in $staged_tasks; do
+    if ! $lint_cmd "$f" 2>/dev/null; then
+      errors=$((errors + 1))
+    fi
+  done
+
+  if [ "$errors" -gt 0 ]; then
+    echo ""
+    echo "Fix TASKS.md issues or skip with: git commit --no-verify"
+    exit 1
+  fi
+fi'
+
+    if [ -f "$hook_file" ]; then
+      if grep -q "$MARKER" "$hook_file" 2>/dev/null; then
+        echo "⊘ Pre-commit hook already has tasks-lint — skipping"
+      else
+        # Append to existing hook (remove shebang from our addition)
+        echo "" >> "$hook_file"
+        echo "$hook_body" | tail -n +2 >> "$hook_file"
+        echo "✓ Appended tasks-lint to existing pre-commit hook"
+      fi
+    else
+      echo "$hook_body" > "$hook_file"
+      chmod +x "$hook_file"
+      echo "✓ Installed pre-commit hook: $hook_file"
+    fi
+  fi
 fi

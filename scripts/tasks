@@ -5,7 +5,7 @@
 #
 # Commands:
 #   init [--install]          Initialize a task queue in the current repo
-#   install [--all]           Install /next-task for detected agents
+#   install [--all] [--hooks] Install /next-task for detected agents
 #   lint [--fix] <files...>   Validate TASKS.md files
 #   pick [--tags TAGS]        Pick the best task to work on next
 #   sync-issues [options]     Sync GitHub Issues into TASKS.md
@@ -26,7 +26,7 @@ Usage: tasks <command> [options]
 
 Commands:
   init [--install]          Initialize a task queue in the current repo
-  install [--all]           Install /next-task for detected agents
+  install [--all] [--hooks] Install /next-task for detected agents
   lint [--fix] <files...>   Validate TASKS.md files against the spec
   pick [--tags TAGS]        Pick the best task to work on next (requires tasks-mcp)
   sync-issues [options]     Sync GitHub Issues into TASKS.md

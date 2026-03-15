@@ -27,14 +27,6 @@
 - [ ] Set up custom domain tasks.md for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md domain for a cleaner URL.
 
-- [ ] Add pre-commit hook for TASKS.md validation
-  - **ID**: tasks-precommit
-  - **Tags**: ci, lint
-  - **Details**: A git hook that runs `tasks-lint` on any staged TASKS.md files before
-    commit. Catches formatting errors locally before CI. Add to `scripts/tasks install`
-    as an optional step. Skippable with `--no-verify`.
-  - **Files**: `scripts/tasks`, `docs/user-stories/09-lint-in-ci.md`
-
 ## P3
 
 - [ ] Add Jira sync script (complement to GitHub Issues sync)
