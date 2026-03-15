@@ -12,7 +12,6 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 | 5 | [Agents work in the right order](05-blockers.md) | IDs, `Blocked by`, unblocking impact |
 | 6 | [Each team member has their own queue](06-multi-file.md) | Monorepo with multiple TASKS.md files |
 | 10 | [Issue tracker decisions flow to agents](10-sync-issues.md) | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
-| 12 | [See what TASKS.md looks like for my stack](12-add-example.md) | Realistic examples per ecosystem |
 
 ## Automation Status
 
