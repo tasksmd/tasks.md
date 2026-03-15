@@ -205,6 +205,71 @@ export async function completeTask(
   };
 }
 
+// ── pick_task ──
+
+export interface PickTaskOptions {
+  tags?: string[];
+  agent_name?: string;
+}
+
+function unblocksCount(task: Task, allTasks: Task[]): number {
+  if (!task.metadata.id) return 0;
+  return allTasks.filter(
+    (t) => t.metadata.blockedBy?.includes(task.metadata.id!)
+  ).length;
+}
+
+export function pickTask(
+  taskFiles: TaskFile[],
+  options: PickTaskOptions = {}
+): ToolResult {
+  const allIds = getAllTaskIds(taskFiles);
+  const allTasks: Task[] = taskFiles.flatMap((file) => file.tasks);
+
+  // Filter: unclaimed, unblocked
+  let candidates = allTasks.filter(
+    (task) => !task.claimed && !isBlocked(task, allIds)
+  );
+
+  // Filter by agent tags if provided
+  if (options.tags?.length) {
+    const tagFiltered = candidates.filter((task) =>
+      task.metadata.tags?.some((t) =>
+        options.tags!.some((at) => at.toLowerCase() === t.toLowerCase())
+      )
+    );
+    // Fall back to all candidates if no tag matches
+    if (tagFiltered.length > 0) candidates = tagFiltered;
+  }
+
+  if (candidates.length === 0) {
+    return {
+      text: JSON.stringify({
+        summary: "No eligible tasks found (all claimed, blocked, or empty queue).",
+        task: null,
+      }, null, 2),
+    };
+  }
+
+  // Sort: P0 before P1 before P2 before P3, then by unblocking impact (desc)
+  candidates.sort((a, b) => {
+    const priorityDiff = a.priority.localeCompare(b.priority);
+    if (priorityDiff !== 0) return priorityDiff;
+    return unblocksCount(b, allTasks) - unblocksCount(a, allTasks);
+  });
+
+  const picked = candidates[0];
+  const formatted = formatTask(picked, allIds);
+
+  return {
+    text: JSON.stringify({
+      summary: `Picked "${picked.summary}" (${picked.priority}) — unblocks ${unblocksCount(picked, allTasks)} other task(s).`,
+      task: formatted,
+      candidates_count: candidates.length,
+    }, null, 2),
+  };
+}
+
 // ── add_task ──
 
 export interface AddTaskParams {

@@ -11,6 +11,7 @@ import {
   claimTask,
   completeTask,
   addTask,
+  pickTask,
 } from "./tools.js";
 
 const server = new McpServer({
@@ -114,6 +115,36 @@ server.registerTool(
     return {
       content: [{ type: "text" as const, text: result.text }],
       ...(result.isError ? { isError: true } : {}),
+    };
+  }
+);
+
+// ── pick_task ──
+
+server.registerTool(
+  "pick_task",
+  {
+    title: "Pick Task",
+    description:
+      "Pick the highest-priority unblocked, unclaimed task using a deterministic algorithm. " +
+      "Walks P0→P3, skips blocked and claimed tasks, scores by unblocking impact " +
+      "(tasks that unblock others are preferred). Returns the single best task to work on next.",
+    inputSchema: z.object({
+      tags: z
+        .string()
+        .optional()
+        .describe("Comma-separated tags to prefer (e.g. 'tooling,mcp'). Falls back to all if no match."),
+    }),
+    annotations: { readOnlyHint: true },
+  },
+  async ({ tags }) => {
+    const directory = getWorkingDirectory();
+    const taskFiles = await loadAllTasks(directory);
+    const parsedTags = tags?.split(",").map((t) => t.trim()).filter(Boolean);
+    const result = pickTask(taskFiles, { tags: parsedTags });
+
+    return {
+      content: [{ type: "text" as const, text: result.text }],
     };
   }
 );
