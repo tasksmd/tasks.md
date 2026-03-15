@@ -9,13 +9,16 @@
 
 - [ ] Publish tasks-mcp to npm
   - **ID**: publish-mcp
+  - **Tags**: tooling, mcp
   - **Details**: The MCP server exists in `mcp/` with 21 parser tests and CI. Add prepublish build step, verify bin entry works, publish to npm as `tasks-mcp`.
   - **Files**: `mcp/`
 
 - [ ] Publish tasks-lint to npm
   - **ID**: publish-lint
+  - **Tags**: tooling, lint
   - **Details**: The linter exists in `lint/` with 22 tests and CI. Package as `tasks-lint` CLI. Needs npm auth.
   - **Files**: `lint/`
 
 - [ ] Set up custom domain tasks.md for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md domain for a cleaner URL.
+
