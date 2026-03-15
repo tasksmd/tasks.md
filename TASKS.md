@@ -29,14 +29,6 @@
 
 ## P3
 
-- [ ] Add GitHub Actions reusable workflow for TASKS.md validation
-  - **ID**: ci-action
-  - **Tags**: tooling, ci
-  - **Details**: Create `.github/workflows/tasks-lint.yml` as a reusable workflow
-    that repos can reference. Story 09 shows inline YAML but a reusable workflow
-    is easier to adopt. Publish alongside the npm packages.
-  - **Files**: `.github/workflows/tasks-lint.yml`
-
 - [ ] Add `sync-linear` bridge script (Linear → TASKS.md)
   - **ID**: sync-linear
   - **Tags**: integration, linear

@@ -43,6 +43,23 @@ Monorepo variant:
   run: npx tasks-lint TASKS.md packages/
 ```
 
+### Reusable workflow
+
+Reference the shared workflow from the tasks.md repo — no local setup needed:
+
+```yaml
+name: Lint TASKS.md
+on: [push, pull_request]
+
+jobs:
+  lint:
+    uses: tasksmd/tasks.md/.github/workflows/tasks-lint.yml@main
+    # Optional inputs:
+    # with:
+    #   paths: 'TASKS.md packages/'
+    #   fix: true
+```
+
 ### Add to a pre-commit hook
 
 ```bash

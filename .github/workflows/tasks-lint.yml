@@ -1,0 +1,38 @@
+name: Lint TASKS.md
+
+on:
+  workflow_call:
+    inputs:
+      paths:
+        description: 'Space-separated list of files or directories to lint (default: TASKS.md)'
+        required: false
+        type: string
+        default: 'TASKS.md'
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '22'
+      fix:
+        description: 'Run in --fix mode (auto-fix deterministic issues)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Lint TASKS.md files
+        run: |
+          args="${{ inputs.paths }}"
+          if [ "${{ inputs.fix }}" = "true" ]; then
+            args="--fix $args"
+          fi
+          npx tasks-lint@latest $args
