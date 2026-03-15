@@ -121,8 +121,22 @@ They complement each other. One issue often becomes multiple tasks. `sync-issues
 - `gh` CLI installed and authenticated
 - Issues labeled with your filter label (default: `tasks.md`)
 
+## Jira Sync
+
+A companion script syncs from Jira using the same pattern:
+
+```bash
+scripts/sync-jira.sh --project PROJ --output TASKS.md
+scripts/sync-jira.sh --project PROJ --merge --output TASKS.md
+```
+
+Jira priority mapping: Highest/Blocker/Critical → P0, High → P1, Medium → P2, Low/Lowest → P3. Labels become tags, issue keys become IDs (`jira-PROJ-123`). Requires `JIRA_URL` and `JIRA_TOKEN` environment variables.
+
+Both scripts implement the same bridge pattern — import the "what" from your tracker so agents can execute the "how".
+
 ## Files Involved
 
 | File | Purpose |
 |------|---------|
-| `scripts/sync-issues.sh` | Issue sync script |
+| `scripts/sync-issues.sh` | GitHub Issues sync script |
+| `scripts/sync-jira.sh` | Jira sync script |

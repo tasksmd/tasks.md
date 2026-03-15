@@ -31,6 +31,7 @@ All originally-identified automation gaps have been implemented:
 | Deterministic `pick_task` MCP tool | [08](08-mcp-server.md) | ✅ `mcp/src/operations.ts` |
 | Linter `--fix` mode | [09](09-lint-in-ci.md) | ✅ `node lint/index.js --fix` |
 | sync-issues `--merge` mode | [10](10-sync-issues.md) | ✅ `scripts/sync-issues.sh --merge` |
+| sync-jira (Jira bridge) | [10](10-sync-issues.md#jira-sync) | ✅ `scripts/sync-jira.sh` |
 
 ## Design Philosophy
 
