@@ -6,12 +6,12 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 
 | # | Story | How |
 |---|-------|-----|
-| 1 | [Agents know what to work on](01-create-task-queue.md) | `tasks init` scaffolds TASKS.md + AGENTS.md |
-| 2 | [Tasks agents complete without asking](02-write-good-tasks.md) | One-liners vs. rich metadata |
-| 3 | [Agents work through the queue autonomously](03-install-next-task.md) | `tasks install` auto-detects agents |
-| 5 | [Agents work in the right order](05-blockers.md) | IDs, `Blocked by`, unblocking impact |
-| 6 | [Each team member has their own queue](06-multi-file.md) | Monorepo with multiple TASKS.md files |
-| 10 | [Issue tracker decisions flow to agents](10-sync-issues.md) | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
+| 1 | [Agents know what to work on](01-agents-know-what-to-work-on.md) | `tasks init` scaffolds TASKS.md + AGENTS.md |
+| 2 | [Tasks agents complete without asking](02-tasks-agents-complete-without-asking.md) | One-liners vs. rich metadata |
+| 3 | [Agents work through the queue autonomously](03-agents-work-through-queue.md) | `tasks install` auto-detects agents |
+| 4 | [Agents work in the right order](04-agents-work-in-right-order.md) | IDs, `Blocked by`, unblocking impact |
+| 5 | [Each team member has their own queue](05-separate-queues-per-member.md) | Monorepo with multiple TASKS.md files |
+| 6 | [Issue tracker decisions flow to agents](06-issue-tracker-flows-to-agents.md) | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
 
 ## Automation Status
 
@@ -19,16 +19,16 @@ All originally-identified automation gaps have been implemented:
 
 | Feature | Story | Status |
 |---------|-------|--------|
-| `tasks init` scaffolding | [01](01-create-task-queue.md) | ✅ `scripts/tasks init` |
-| `tasks install` auto-detect | [03](03-install-next-task.md) | ✅ `scripts/tasks install` |
-| Write-once commands (canonical + generate) | [03](03-install-next-task.md) | ✅ `scripts/generate-commands.sh` + CI drift check |
+| `tasks init` scaffolding | [01](01-agents-know-what-to-work-on.md) | ✅ `scripts/tasks init` |
+| `tasks install` auto-detect | [03](03-agents-work-through-queue.md) | ✅ `scripts/tasks install` |
+| Write-once commands (canonical + generate) | [03](03-agents-work-through-queue.md) | ✅ `scripts/generate-commands.sh` + CI drift check |
 | Deterministic `pick_task` MCP tool | — | ✅ `mcp/src/operations.ts` |
-| Linter `--fix` mode | [01](01-create-task-queue.md#keeping-the-queue-valid) | ✅ `node lint/index.js --fix` |
-| sync-issues `--merge` mode | [10](10-sync-issues.md) | ✅ `scripts/sync-issues.sh --merge` |
-| sync-jira (Jira bridge) | [10](10-sync-issues.md#jira-sync) | ✅ `scripts/sync-jira.sh` |
-| sync-linear (Linear bridge) | [10](10-sync-issues.md#linear-sync) | ✅ `scripts/sync-linear.sh` |
-| `tasks watch` (auto-lint) | [01](01-create-task-queue.md#watch-mode) | ✅ `scripts/watch.sh` |
-| Reusable CI workflow | [01](01-create-task-queue.md#add-to-ci) | ✅ `.github/workflows/tasks-lint.yml` |
+| Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `node lint/index.js --fix` |
+| sync-issues `--merge` mode | [06](06-issue-tracker-flows-to-agents.md) | ✅ `scripts/sync-issues.sh --merge` |
+| sync-jira (Jira bridge) | [06](06-issue-tracker-flows-to-agents.md#jira-sync) | ✅ `scripts/sync-jira.sh` |
+| sync-linear (Linear bridge) | [06](06-issue-tracker-flows-to-agents.md#linear-sync) | ✅ `scripts/sync-linear.sh` |
+| `tasks watch` (auto-lint) | [01](01-agents-know-what-to-work-on.md#watch-mode) | ✅ `scripts/watch.sh` |
+| Reusable CI workflow | [01](01-agents-know-what-to-work-on.md#add-to-ci) | ✅ `.github/workflows/tasks-lint.yml` |
 
 ## Design Philosophy
 
