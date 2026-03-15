@@ -2,21 +2,26 @@
 
 ## P1
 
-- [ ] Write a blog post: "Why your AI agent needs a backlog"
-  - **Details**: Lead with the two core ideas: (1) you think faster than agents code — TASKS.md is your async buffer, (2) planning first leads to better results — writing it down before the agent starts is the key habit. Cover the fragmentation problem, the AGENTS.md parallel, and how TASKS.md solves it. Include a personal story about how TASKS.md proved invaluable while building a large AI orchestrator project (multi-agent pipelines, personas, background execution) — the kind of complex project where ideas and tasks pile up faster than any single agent can handle.
+- [ ] Publish and promote blog post: "Why your AI agent needs a backlog"
+  - **Details**: Draft is at `docs/blog/why-your-ai-agent-needs-a-backlog.md`. Review,
+    add to site navigation, and publish. Consider cross-posting to dev.to / HN.
 
 ## P2
 
 - [ ] Publish tasks-mcp to npm
   - **ID**: publish-mcp
   - **Tags**: tooling, mcp
-  - **Details**: The MCP server exists in `mcp/` with 21 parser tests and CI. Add prepublish build step, verify bin entry works, publish to npm as `tasks-mcp`.
+  - **Details**: Package is publish-ready: prepublishOnly runs build+test (104 tests),
+    bin entry has shebang, test files excluded, README updated. Just needs `npm login`
+    then `npm publish` from `mcp/`.
   - **Files**: `mcp/`
 
 - [ ] Publish tasks-lint to npm
   - **ID**: publish-lint
   - **Tags**: tooling, lint
-  - **Details**: The linter exists in `lint/` with 22 tests and CI. Package as `tasks-lint` CLI. Needs npm auth.
+  - **Details**: Package is publish-ready: prepublishOnly runs test (22 tests),
+    bin entry has shebang, README updated with --fix docs. Just needs `npm login`
+    then `npm publish` from `lint/`.
   - **Files**: `lint/`
 
 - [ ] Set up custom domain tasks.md for GitHub Pages
