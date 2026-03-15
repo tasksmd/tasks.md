@@ -29,11 +29,4 @@
 
 ## P3
 
-- [ ] Add Jira sync script (complement to GitHub Issues sync)
-  - **ID**: jira-sync
-  - **Tags**: integration, jira
-  - **Details**: Similar to `sync-issues.sh` but for Jira. Map Jira priorities to P-levels,
-    use issue keys as IDs (`jira-PROJ-123`), map labels to tags. Support `--merge` mode.
-    Could use `gh` equivalent or Jira REST API. Extends the bridge pattern from story 10.
-  - **Files**: `scripts/sync-jira.sh`
 
