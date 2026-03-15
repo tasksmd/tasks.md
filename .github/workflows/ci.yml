@@ -38,6 +38,25 @@ jobs:
             node lint/index.js TASKS.md
           fi
 
+  commands-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerate command files
+        run: bash scripts/generate-commands.sh
+
+      - name: Check for drift
+        run: |
+          if ! git diff --exit-code commands/; then
+            echo ""
+            echo "ERROR: Generated command files are out of date."
+            echo "Run: bash scripts/generate-commands.sh"
+            echo "Then commit the updated files."
+            exit 1
+          fi
+          echo "✓ Generated commands match canonical source"
+
   test:
     runs-on: ubuntu-latest
     steps:
