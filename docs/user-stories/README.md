@@ -11,7 +11,6 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 | 3 | [Agents work through the queue autonomously](03-install-next-task.md) | `tasks install` auto-detects agents |
 | 5 | [Agents work in the right order](05-blockers.md) | IDs, `Blocked by`, unblocking impact |
 | 6 | [Each team member has their own queue](06-multi-file.md) | Monorepo with multiple TASKS.md files |
-| 9 | [Invalid task files never reach main](09-lint-in-ci.md) | `tasks-lint` validates format on every push |
 | 10 | [Issue tracker decisions flow to agents](10-sync-issues.md) | `sync-issues.sh`, `sync-jira.sh`, `sync-linear.sh` |
 | 12 | [See what TASKS.md looks like for my stack](12-add-example.md) | Realistic examples per ecosystem |
 
@@ -25,12 +24,12 @@ All originally-identified automation gaps have been implemented:
 | `tasks install` auto-detect | [03](03-install-next-task.md) | ✅ `scripts/tasks install` |
 | Write-once commands (canonical + generate) | [03](03-install-next-task.md) | ✅ `scripts/generate-commands.sh` + CI drift check |
 | Deterministic `pick_task` MCP tool | — | ✅ `mcp/src/operations.ts` |
-| Linter `--fix` mode | [09](09-lint-in-ci.md) | ✅ `node lint/index.js --fix` |
+| Linter `--fix` mode | [01](01-create-task-queue.md#keeping-the-queue-valid) | ✅ `node lint/index.js --fix` |
 | sync-issues `--merge` mode | [10](10-sync-issues.md) | ✅ `scripts/sync-issues.sh --merge` |
 | sync-jira (Jira bridge) | [10](10-sync-issues.md#jira-sync) | ✅ `scripts/sync-jira.sh` |
 | sync-linear (Linear bridge) | [10](10-sync-issues.md#linear-sync) | ✅ `scripts/sync-linear.sh` |
-| `tasks watch` (auto-lint) | — | ✅ `scripts/watch.sh` |
-| Reusable CI workflow | [09](09-lint-in-ci.md#reusable-workflow) | ✅ `.github/workflows/tasks-lint.yml` |
+| `tasks watch` (auto-lint) | [01](01-create-task-queue.md#watch-mode) | ✅ `scripts/watch.sh` |
+| Reusable CI workflow | [01](01-create-task-queue.md#add-to-ci) | ✅ `.github/workflows/tasks-lint.yml` |
 
 ## Design Philosophy
 

@@ -95,10 +95,75 @@ All metadata is optional. A bare checkbox is a valid task.
 
 When a task is done, the agent **removes the entire block** — task line, metadata, sub-tasks. No checking the box. Git log is the history.
 
+## Keeping the Queue Valid
+
+`tasks-lint` validates TASKS.md files against the spec — run it locally, in CI, or on file save.
+
+### What it catches
+
+| Rule | What it checks |
+|------|---------------|
+| Header | First line must be `# Tasks` |
+| Priority order | `## P0` through `## P3`, in ascending order |
+| Valid priorities | Only P0–P3 (P4+ is an error) |
+| Checkbox format | Tasks must use `- [ ]` syntax |
+| No completed tasks | `- [x]` on top-level tasks = remove it, don't check it off |
+| Task placement | Tasks must appear after a priority heading |
+| ID format | `**ID**:` values must be kebab-case |
+| Unique IDs | No duplicate IDs within a file or across files |
+| Valid blockers | `**Blocked by**:` must reference IDs that exist somewhere |
+| No orphaned metadata | Metadata fields must be nested under a task |
+
+### Run locally
+
+```bash
+node lint/index.js TASKS.md                    # single file
+node lint/index.js TASKS.md packages/          # monorepo
+node lint/index.js --fix TASKS.md              # auto-fix deterministic issues
+```
+
+Auto-fix handles: removing completed tasks, empty priority sections, normalizing ID casing, and removing orphaned metadata.
+
+### Watch mode
+
+```bash
+tasks watch          # auto-lint on every save
+tasks watch --fix    # auto-lint and auto-fix on every save
+```
+
+### Add to CI
+
+Use the reusable workflow — no local setup needed:
+
+```yaml
+name: Lint TASKS.md
+on: [push, pull_request]
+
+jobs:
+  lint:
+    uses: tasksmd/tasks.md/.github/workflows/tasks-lint.yml@main
+```
+
+Or inline:
+
+```yaml
+- name: Lint TASKS.md
+  run: npx tasks-lint TASKS.md
+```
+
+### Pre-commit hook
+
+```bash
+#!/bin/bash
+node lint/index.js TASKS.md || exit 1
+```
+
 ## Files Involved
 
 | File | Purpose |
 |------|---------|
 | `TASKS.md` | The task queue |
 | `AGENTS.md` | Tell agents to read TASKS.md |
+| `lint/index.js` | Linter implementation |
+| [lint/README.md](../../lint/README.md) | Full lint documentation |
 | [spec.md](../../spec.md) | Full specification |
