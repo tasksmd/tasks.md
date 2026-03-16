@@ -4,7 +4,7 @@
 
 A lightweight spec for AI agent task queues — the companion to [AGENTS.md](https://agents.md/).
 
-**[Website](https://tasksmd.github.io/tasks.md/)** · **[Spec](spec.md)** · **[Examples](examples/)** · **[MCP Server](mcp/)** · **[Linter](lint/)**
+**[Website](https://tasksmd.github.io/tasks.md/)** · **[Spec](spec.md)** · **[Examples](examples/)** · **[MCP Server](packages/mcp/)** · **[Linter](packages/lint/)**
 
 AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
@@ -179,14 +179,14 @@ You're always adding to the queue. The agent is always draining it. This is the 
 
 ### MCP Server
 
-The [`tasks-mcp`](mcp/) server lets MCP-compatible agents (Claude Code, Cursor, Windsurf) manage TASKS.md files programmatically — list, claim, complete, and add tasks without file parsing.
+The [`tasks-mcp`](packages/mcp/) server lets MCP-compatible agents (Claude Code, Cursor, Windsurf) manage TASKS.md files programmatically — list, claim, complete, and add tasks without file parsing.
 
 ```json
 {
   "mcpServers": {
     "tasks": {
       "command": "node",
-      "args": ["/path/to/tasks.md/mcp/dist/index.js"]
+      "args": ["/path/to/tasks.md/packages/mcp/dist/index.js"]
     }
   }
 }
@@ -194,11 +194,11 @@ The [`tasks-mcp`](mcp/) server lets MCP-compatible agents (Claude Code, Cursor, 
 
 ### Linter
 
-The [`tasks-lint`](lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references.
+The [`tasks-lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references.
 
 ```bash
-node lint/index.js TASKS.md           # lint one file
-node lint/index.js TASKS.md examples/ # lint multiple files/directories
+node packages/lint/index.js TASKS.md           # lint one file
+node packages/lint/index.js TASKS.md examples/ # lint multiple files/directories
 ```
 
 Add it to CI to catch formatting issues before merge.

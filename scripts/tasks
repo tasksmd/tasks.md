@@ -64,13 +64,13 @@ case "${1:-help}" in
 
   lint)
     shift
-    exec node "$REPO_DIR/lint/index.js" "$@"
+    exec node "$REPO_DIR/packages/lint/index.js" "$@"
     ;;
 
   pick)
     shift
     # Use tasks-mcp pick_task via node if available
-    if [ -f "$REPO_DIR/mcp/dist/index.js" ]; then
+    if [ -f "$REPO_DIR/packages/mcp/dist/index.js" ]; then
       tags_arg=""
       while [ $# -gt 0 ]; do
         case "$1" in
@@ -79,15 +79,15 @@ case "${1:-help}" in
         esac
       done
       node -e "
-        import { loadAllTasks } from '$REPO_DIR/mcp/dist/parser.js';
-        import { pickTask } from '$REPO_DIR/mcp/dist/tools.js';
+        import { loadAllTasks } from '$REPO_DIR/packages/mcp/dist/parser.js';
+        import { pickTask } from '$REPO_DIR/packages/mcp/dist/tools.js';
         const files = await loadAllTasks(process.cwd());
         const tags = '${tags_arg}'.split(',').filter(Boolean);
         const result = pickTask(files, { tags: tags.length ? tags : undefined });
         console.log(result.text);
       "
     else
-      echo "Error: tasks-mcp not built. Run: cd mcp && npm run build" >&2
+      echo "Error: tasks-mcp not built. Run: npm run build" >&2
       exit 1
     fi
     ;;

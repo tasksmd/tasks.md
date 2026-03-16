@@ -30,12 +30,12 @@ jobs:
           node-version: 22
 
       - name: Lint examples
-        run: node lint/index.js examples/*.md
+        run: node packages/lint/index.js examples/*.md
 
       - name: Lint TASKS.md
         run: |
           if [ -f TASKS.md ]; then
-            node lint/index.js TASKS.md
+            node packages/lint/index.js TASKS.md
           fi
 
   commands-drift:
@@ -65,18 +65,11 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install MCP dependencies
+      - name: Install dependencies
         run: npm ci
-        working-directory: mcp
 
-      - name: Build MCP server
+      - name: Build all packages
         run: npm run build
-        working-directory: mcp
 
-      - name: Run MCP tests
+      - name: Run all tests
         run: npm test
-        working-directory: mcp
-
-      - name: Run lint tests
-        run: npm test
-        working-directory: lint

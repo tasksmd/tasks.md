@@ -21,7 +21,7 @@ lint() {
   local file="$1"
   echo ""
   echo -e "${DIM}[$(date '+%H:%M:%S')] Change detected: $(basename "$file")${NC}"
-  if node "$REPO_DIR/lint/index.js" "$file" 2>&1; then
+  if node "$REPO_DIR/packages/lint/index.js" "$file" 2>&1; then
     echo -e "${GREEN}✓ No issues${NC}"
   else
     echo -e "${RED}✗ Lint errors found${NC}"

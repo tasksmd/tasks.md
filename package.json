@@ -1,0 +1,18 @@
+{
+  "name": "tasks-md",
+  "private": true,
+  "description": "A spec and tooling for TASKS.md — the AI-native task queue format",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "lint": "node packages/lint/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tasksmd/tasks.md"
+  },
+  "license": "MIT"
+}
