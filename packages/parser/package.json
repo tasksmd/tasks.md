@@ -1,10 +1,15 @@
 {
-  "name": "tasks-mcp",
+  "name": "@tasks-md/parser",
   "version": "0.1.0",
-  "description": "MCP server for reading and writing TASKS.md files",
+  "description": "Parser for TASKS.md files — extracts tasks, metadata, priorities, and blockers",
   "type": "module",
-  "bin": {
-    "tasks-mcp": "./dist/index.js"
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "files": [
     "dist/**/*.js",
@@ -13,31 +18,24 @@
   ],
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
-    "mcp",
     "tasks",
+    "parser",
+    "markdown",
     "ai-agents",
-    "task-queue",
-    "model-context-protocol"
+    "task-queue"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/tasksmd/tasks.md",
-    "directory": "mcp"
+    "directory": "packages/parser"
   },
   "homepage": "https://tasks.md",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
-    "@tasks-md/parser": "file:../packages/parser",
-    "zod": "^3.24.0"
-  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0",
