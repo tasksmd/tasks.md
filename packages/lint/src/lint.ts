@@ -81,7 +81,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       }
 
       // Completed task (should be removed)
-      if (/^-\s+\[x\]\s/.test(line)) {
+      if (/^-\s+\[x\]\s/i.test(line)) {
         if (fixMode) {
           linesToRemove.add(i);
           for (let j = i + 1; j < lines.length; j++) {

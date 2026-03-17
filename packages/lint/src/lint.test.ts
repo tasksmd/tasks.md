@@ -156,6 +156,12 @@ describe("tasks-lint", () => {
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toMatch(/completed task should be removed/);
     });
+
+    it("fails on completed tasks with uppercase [X]", () => {
+      const result = lint("# Tasks\n\n## P1\n\n- [X] Done task\n");
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/completed task should be removed/);
+    });
   });
 
   describe("priority errors", () => {
