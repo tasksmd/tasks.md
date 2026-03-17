@@ -9,6 +9,21 @@
     Run `npm adduser` then `scripts/publish-all.sh`. Order: `@tasks-md/parser` →
     `tasks-lint` → `tasks-mcp` → `@tasks-md/cli`.
   - **Acceptance**: All 4 packages installable via npm/npx
+- [ ] Improve `complete_task` MCP tool description to warn against `[x]` on top-level tasks
+  - **ID**: mcp-complete-description
+  - **Tags**: mcp
+  - **Details**: The `complete_task` tool description says "Remove a completed task from TASKS.md" but doesn't warn agents that top-level tasks should NEVER be marked `[x]`. Agents doing ad-hoc work (not via `/next-task`) may manually edit `[ ]` → `[x]` instead of calling this tool. Add to the description: "Per spec, top-level tasks are removed on completion — never marked [x]. Always use this tool instead of manually editing the checkbox."
+  - **Files**: `packages/mcp/src/index.ts`
+
+
+
+## P2
+
+- [ ] Add MCP-aware step to next-task commands: prefer `complete_task` tool over manual file edits
+  - **ID**: next-task-mcp-aware
+  - **Tags**: mcp, commands
+  - **Details**: The next-task commands (claude, cursor, windsurf, codex, gemini) all instruct agents to manually edit TASKS.md for claim/complete operations. If `tasks-mcp` is available, agents should prefer its tools (`claim_task`, `complete_task`, `pick_task`) over manual file edits — they handle block removal, empty section cleanup, and format compliance automatically. Add a note to step 5 (claim) and step 6 (complete) in all command variants: "If tasks-mcp is available, use its `claim_task`/`complete_task` tools instead of manual edits."
+  - **Files**: `commands/next-task.md`, `commands/claude/skills/next-task/SKILL.md`, `commands/windsurf/next-task.md`, `commands/cursor/next-task.md`, `commands/codex/skills/next-task/SKILL.md`
 
 ## P3
 
