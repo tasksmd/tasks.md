@@ -1,6 +1,7 @@
 {
   "name": "tasks-md",
   "private": true,
+  "type": "module",
   "description": "A spec and tooling for TASKS.md — the AI-native task queue format",
   "workspaces": [
     "packages/*"
