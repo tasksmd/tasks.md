@@ -197,7 +197,7 @@ npx @tasks-md/cli lint TASKS.md     # validate against spec
 
 ### MCP Server
 
-The [`tasks-mcp`](packages/mcp/) server lets MCP-compatible agents (Claude Code, Cursor, Windsurf) manage TASKS.md files programmatically — list, claim, complete, and add tasks without file parsing.
+The [`tasks-mcp`](packages/mcp/) server lets MCP-compatible agents (Claude Code, Cursor, Windsurf) manage TASKS.md files programmatically — list, pick, claim, unclaim, complete, and add tasks without file parsing.
 
 ```json
 {

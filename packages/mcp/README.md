@@ -19,8 +19,9 @@ npx tasks-mcp
 | Tool | Description |
 |------|-------------|
 | `list_tasks` | List all tasks with filtering by priority, tag, claim status, and blocker status |
-| `pick_task` | Deterministically select the best task to work on next (priority walk, blocker resolution, unblocking impact) |
+| `pick_task` | Deterministically select the best task to work on next (priority walk, unblocking impact, tag overlap scoring). Resumes prior claims when `agent_name` is provided. |
 | `claim_task` | Claim a task by appending `(@agent-name)` to the task line |
+| `unclaim_task` | Remove a claim from a task for stale claim recovery |
 | `complete_task` | Remove a completed task block from the file |
 | `add_task` | Add a new task under the specified priority heading |
 
@@ -62,8 +63,9 @@ npm start
 The server discovers all `TASKS.md` files from the git root down using `fd`. It parses each file into structured task data including priority, metadata (ID, tags, details, files, acceptance, blocked-by), claim status, and line numbers.
 
 - **`list_tasks`** returns all tasks sorted by priority with optional filters
-- **`pick_task`** walks P0→P3, skips blocked/claimed tasks, scores by unblocking impact, and returns the single best task
+- **`pick_task`** walks P0→P3, skips blocked/claimed tasks, scores by unblocking impact then tag overlap count. When `agent_name` is provided, resumes prior claims before picking a new task and auto-claims the selected task.
 - **`claim_task`** matches by ID or summary substring and appends `(@agent-name)`
+- **`unclaim_task`** matches by ID or summary substring and removes the `(@agent-name)` claim tag for stale claim recovery
 - **`complete_task`** matches by ID or summary substring and removes the entire task block
 - **`add_task`** inserts under the correct priority heading, creating the section if needed
 
