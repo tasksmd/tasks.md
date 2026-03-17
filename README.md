@@ -212,12 +212,12 @@ The [`tasks-mcp`](packages/mcp/) server lets MCP-compatible agents (Claude Code,
 
 ### Linter
 
-The [`tasks-lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references.
+The [`tasks-lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, dangling blocker references, and tag casing.
 
 ```bash
 npx tasks-lint TASKS.md           # lint one file
 npx tasks-lint TASKS.md examples/ # lint multiple files/directories
-npx tasks-lint --fix TASKS.md     # auto-fix (removes completed tasks)
+npx tasks-lint --fix TASKS.md     # auto-fix (completed tasks, tag casing)
 ```
 
 ### GitHub Action
