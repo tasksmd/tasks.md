@@ -1,54 +1,41 @@
-#!/usr/bin/env node
-
-import { describe, it } from "node:test";
-import { strict as assert } from "node:assert";
-import { execFileSync } from "node:child_process";
+import { describe, it, expect } from "vitest";
+import { spawnSync } from "node:child_process";
 import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const LINT = join(import.meta.dirname, "index.js");
+const CLI = join(import.meta.dirname, "..", "dist", "cli.js");
 
-function lint(content, filename = "TASKS.md") {
+function lint(content: string, filename = "TASKS.md") {
   const dir = mkdtempSync(join(tmpdir(), "tasks-lint-test-"));
   const file = join(dir, filename);
   writeFileSync(file, content);
   try {
-    const output = execFileSync("node", [LINT, file], {
-      encoding: "utf-8",
-      stderr: "pipe",
-    });
-    return { exitCode: 0, stdout: output, stderr: "" };
-  } catch (error) {
+    const result = spawnSync("node", [CLI, file], { encoding: "utf-8" });
     return {
-      exitCode: error.status,
-      stdout: error.stdout || "",
-      stderr: error.stderr || "",
+      exitCode: result.status ?? 1,
+      stdout: result.stdout,
+      stderr: result.stderr,
     };
   } finally {
     rmSync(dir, { recursive: true });
   }
 }
 
-function lintMultiple(files) {
+function lintMultiple(files: Record<string, string>) {
   const dir = mkdtempSync(join(tmpdir(), "tasks-lint-test-"));
-  const paths = [];
+  const paths: string[] = [];
   for (const [name, content] of Object.entries(files)) {
     const file = join(dir, name);
     writeFileSync(file, content);
     paths.push(file);
   }
   try {
-    const output = execFileSync("node", [LINT, ...paths], {
-      encoding: "utf-8",
-      stderr: "pipe",
-    });
-    return { exitCode: 0, stdout: output, stderr: "" };
-  } catch (error) {
+    const result = spawnSync("node", [CLI, ...paths], { encoding: "utf-8" });
     return {
-      exitCode: error.status,
-      stdout: error.stdout || "",
-      stderr: error.stderr || "",
+      exitCode: result.status ?? 1,
+      stdout: result.stdout,
+      stderr: result.stderr,
     };
   } finally {
     rmSync(dir, { recursive: true });
@@ -59,15 +46,15 @@ describe("tasks-lint", () => {
   describe("valid files", () => {
     it("passes a minimal valid file", () => {
       const result = lint("# Tasks\n\n## P1\n\n- [ ] Do something\n");
-      assert.equal(result.exitCode, 0);
-      assert.match(result.stdout, /0 error/);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/0 error/);
     });
 
     it("passes a file with all priority levels", () => {
       const result = lint(
         "# Tasks\n\n## P0\n\n- [ ] Critical\n\n## P1\n\n- [ ] High\n\n## P2\n\n- [ ] Medium\n\n## P3\n\n- [ ] Low\n"
       );
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     });
 
     it("passes a file with metadata", () => {
@@ -86,7 +73,7 @@ describe("tasks-lint", () => {
           "",
         ].join("\n")
       );
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     });
 
     it("passes a file with subtasks", () => {
@@ -103,7 +90,7 @@ describe("tasks-lint", () => {
           "",
         ].join("\n")
       );
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     });
 
     it("passes a file with valid blocker references", () => {
@@ -123,51 +110,51 @@ describe("tasks-lint", () => {
           "",
         ].join("\n")
       );
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     });
 
     it("passes an empty task queue", () => {
       const result = lint("# Tasks\n\n## P1\n");
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     });
 
     it("passes a file with claimed tasks", () => {
       const result = lint(
         "# Tasks\n\n## P1\n\n- [ ] Do work (@cascade)\n"
       );
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     });
   });
 
   describe("structural errors", () => {
     it("fails when first line is not # Tasks", () => {
       const result = lint("# TODO\n\n## P1\n\n- [ ] Something\n");
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /first line must be '# Tasks'/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/first line must be '# Tasks'/);
     });
 
     it("fails on empty file", () => {
       const result = lint("");
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /first line must be '# Tasks'/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/first line must be '# Tasks'/);
     });
 
     it("fails on task before any priority heading", () => {
       const result = lint("# Tasks\n\n- [ ] Orphan task\n");
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /task found before any priority heading/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/task found before any priority heading/);
     });
 
     it("fails on non-checkbox list item under priority", () => {
       const result = lint("# Tasks\n\n## P1\n\n- Something without checkbox\n");
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /must use checkbox format/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/must use checkbox format/);
     });
 
     it("fails on completed (checked) tasks", () => {
       const result = lint("# Tasks\n\n## P1\n\n- [x] Done task\n");
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /completed task should be removed/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/completed task should be removed/);
     });
   });
 
@@ -176,14 +163,14 @@ describe("tasks-lint", () => {
       const result = lint(
         "# Tasks\n\n## P2\n\n- [ ] Medium\n\n## P1\n\n- [ ] High\n"
       );
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /out of order/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/out of order/);
     });
 
     it("fails on invalid priority P4+", () => {
       const result = lint("# Tasks\n\n## P5\n\n- [ ] Something\n");
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /invalid priority heading/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/invalid priority heading/);
     });
   });
 
@@ -192,8 +179,8 @@ describe("tasks-lint", () => {
       const result = lint(
         "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **ID**: Fix_Bug\n"
       );
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /must be kebab-case/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/must be kebab-case/);
     });
 
     it("fails on duplicate IDs within a file", () => {
@@ -211,8 +198,8 @@ describe("tasks-lint", () => {
           "",
         ].join("\n")
       );
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /duplicate ID/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/duplicate ID/);
     });
   });
 
@@ -229,8 +216,8 @@ describe("tasks-lint", () => {
           "",
         ].join("\n")
       );
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /unknown ID 'nonexistent-task'/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/unknown ID 'nonexistent-task'/);
     });
   });
 
@@ -240,8 +227,8 @@ describe("tasks-lint", () => {
         "a.md": "# Tasks\n\n## P1\n\n- [ ] Task A\n  - **ID**: shared-id\n",
         "b.md": "# Tasks\n\n## P1\n\n- [ ] Task B\n  - **ID**: shared-id\n",
       });
-      assert.equal(result.exitCode, 1);
-      assert.match(result.stderr, /duplicate ID/);
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/duplicate ID/);
     });
 
     it("resolves blockers across files", () => {
@@ -250,29 +237,21 @@ describe("tasks-lint", () => {
         "b.md":
           "# Tasks\n\n## P1\n\n- [ ] Build\n  - **Blocked by**: setup\n",
       });
-      assert.equal(result.exitCode, 0);
+      expect(result.exitCode).toBe(0);
     });
   });
 
   describe("CLI behavior", () => {
     it("exits 2 with no arguments", () => {
-      try {
-        execFileSync("node", [LINT], { encoding: "utf-8" });
-        assert.fail("should have exited non-zero");
-      } catch (error) {
-        assert.equal(error.status, 2);
-      }
+      const result = spawnSync("node", [CLI], { encoding: "utf-8" });
+      expect(result.status).toBe(2);
     });
 
     it("exits 2 for nonexistent file", () => {
-      try {
-        execFileSync("node", [LINT, "/tmp/nonexistent-tasks-file.md"], {
-          encoding: "utf-8",
-        });
-        assert.fail("should have exited non-zero");
-      } catch (error) {
-        assert.equal(error.status, 2);
-      }
+      const result = spawnSync("node", [CLI, "/tmp/nonexistent-tasks-file.md"], {
+        encoding: "utf-8",
+      });
+      expect(result.status).toBe(2);
     });
 
     it("can lint a directory of files", () => {
@@ -286,10 +265,8 @@ describe("tasks-lint", () => {
         "# Tasks\n\n## P1\n\n- [ ] Task B\n"
       );
       try {
-        const output = execFileSync("node", [LINT, dir], {
-          encoding: "utf-8",
-        });
-        assert.match(output, /2 file/);
+        const result = spawnSync("node", [CLI, dir], { encoding: "utf-8" });
+        expect(result.stdout).toMatch(/2 file/);
       } finally {
         rmSync(dir, { recursive: true });
       }

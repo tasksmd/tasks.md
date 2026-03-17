@@ -2,14 +2,6 @@
 
 ## P1
 
-- [ ] Rewrite linter in TypeScript consuming shared parser
-  - **ID**: typed-lint
-  - **Tags**: architecture, lint
-  - **Details**: `lint/index.js` already imports `@tasks-md/parser` for ID/blocker validation.
-    Rewrite remaining structural validation in TypeScript. Priority order check can operate
-    on parsed task priorities. Should shrink to ~80 lines of validation logic + ~30 lines CLI.
-  - **Files**: `packages/lint/index.js` → `packages/lint/src/index.ts`
-
 - [ ] Replace bash CLI with Node.js CLI
   - **ID**: node-cli
   - **Tags**: architecture, cli
@@ -57,7 +49,6 @@
 
 - [ ] Publish tasks-lint to npm
   - **ID**: publish-lint
-  - **Blocked by**: typed-lint
   - **Tags**: tooling, lint
   - **Details**: Package is publish-ready: prepublishOnly runs test (22 tests),
     bin entry has shebang, README updated with --fix docs. After TypeScript rewrite,

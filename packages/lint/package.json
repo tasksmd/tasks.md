@@ -3,15 +3,27 @@
   "version": "0.1.0",
   "description": "Validate TASKS.md files against the spec",
   "type": "module",
+  "main": "./dist/lint.js",
+  "types": "./dist/lint.d.ts",
   "bin": {
-    "tasks-lint": "./index.js"
+    "tasks-lint": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/lint.js",
+      "types": "./dist/lint.d.ts"
+    }
   },
   "files": [
-    "index.js"
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!dist/**/*.test.*"
   ],
   "scripts": {
-    "test": "node --test test.js",
-    "prepublishOnly": "npm test"
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
     "tasks",
@@ -29,6 +41,11 @@
   "homepage": "https://tasks.md",
   "dependencies": {
     "@tasks-md/parser": "file:../parser"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "4.0.18"
   },
   "engines": {
     "node": ">=18"
