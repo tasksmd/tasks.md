@@ -164,7 +164,7 @@ program
 program
   .command("lint")
   .description("Validate TASKS.md files against the spec")
-  .option("--fix", "Auto-fix removable issues (completed tasks)")
+  .option("--fix", "Auto-fix deterministic issues (completed tasks, tag casing)")
   .argument("<paths...>", "Files or directories to lint")
   .action((paths: string[], opts: { fix?: boolean }) => {
     const allFiles = paths.flatMap(discoverFiles);
