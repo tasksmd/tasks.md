@@ -54,6 +54,7 @@ When multiple files are passed, IDs are checked for uniqueness across all files 
 | **ID format** | `**ID**:` values must be kebab-case (`auth-fix`, not `Auth Fix`) |
 | **Unique IDs** | No duplicate IDs within a file or across files |
 | **Lowercase tags** | `**Tags**:` values must be lowercase |
+| **Metadata ordering** | Metadata fields must come before sub-tasks in a task block |
 | **Valid blockers** | `**Blocked by**:` must reference IDs that exist somewhere |
 | **No orphaned metadata** | `**ID**:`, `**Tags**:`, etc. must be nested under a task |
 

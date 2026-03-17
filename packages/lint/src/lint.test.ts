@@ -235,6 +235,67 @@ describe("tasks-lint", () => {
     });
   });
 
+  describe("metadata ordering", () => {
+    it("fails when metadata appears after sub-tasks", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Implement feature",
+          "  - [x] Design schema",
+          "  - [ ] Write code",
+          "  - **ID**: impl-feature",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/metadata must come before sub-tasks/);
+    });
+
+    it("passes when metadata comes before sub-tasks", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Implement feature",
+          "  - **ID**: impl-feature",
+          "  - **Details**: Build the thing",
+          "  - [x] Design schema",
+          "  - [ ] Write code",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("passes when task has only metadata and no sub-tasks", () => {
+      const result = lint(
+        "# Tasks\n\n## P1\n\n- [ ] Simple task\n  - **ID**: simple\n  - **Tags**: backend\n"
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("passes when task has only sub-tasks and no metadata", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Parent task",
+          "  - [x] Step one",
+          "  - [ ] Step two",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+  });
+
   describe("blocker validation", () => {
     it("fails on unknown blocker reference", () => {
       const result = lint(

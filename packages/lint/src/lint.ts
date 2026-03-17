@@ -51,6 +51,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     const linesToRemove = new Set<number>();
     let lastPriority = -1;
     let inTask = false;
+    let seenSubtask = false;
 
     // Line 1: must be "# Tasks"
     if (lines.length < 1 || lines[0] !== "# Tasks") {
@@ -71,6 +72,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         }
         lastPriority = priority;
         inTask = false;
+        seenSubtask = false;
         continue;
       }
 
@@ -104,6 +106,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
           reportError(filePath, lineNum, "task found before any priority heading");
         }
         inTask = true;
+        seenSubtask = false;
         continue;
       }
 
@@ -117,6 +120,13 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       if (/^\s{2,}/.test(line)) {
         if (!inTask && /^\s+-\s+\*\*/.test(line)) {
           reportError(filePath, lineNum, "orphaned metadata (no parent task)");
+        }
+        if (inTask) {
+          if (/^\s+-\s+\[.\]\s/.test(line)) {
+            seenSubtask = true;
+          } else if (seenSubtask && /^\s+-\s+\*\*/.test(line)) {
+            reportError(filePath, lineNum, "metadata must come before sub-tasks");
+          }
         }
         continue;
       }
