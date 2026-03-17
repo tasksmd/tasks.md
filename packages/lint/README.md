@@ -1,4 +1,6 @@
-# tasks-lint
+# @tasks-md/lint
+
+[![npm](https://img.shields.io/npm/v/@tasks-md/lint)](https://www.npmjs.com/package/@tasks-md/lint)
 
 Validates [TASKS.md](https://github.com/tasksmd/tasks.md) files against the spec.
 

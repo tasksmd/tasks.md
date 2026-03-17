@@ -87,7 +87,7 @@ Declare agent capabilities in AGENTS.md:
 Pass all files to the linter for cross-file validation:
 
 ```bash
-npx tasks-lint TASKS.md packages/*/TASKS.md
+npx @tasks-md/lint TASKS.md packages/*/TASKS.md
 ```
 
 This checks:

@@ -1,4 +1,4 @@
-# tasks-lint GitHub Action
+# @tasks-md/lint GitHub Action
 
 Validate `TASKS.md` files against the [tasks.md spec](https://github.com/tasksmd/tasks.md).
 

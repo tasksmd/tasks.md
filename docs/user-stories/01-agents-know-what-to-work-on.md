@@ -97,7 +97,7 @@ When a task is done, the agent **removes the entire block** — task line, metad
 
 ## Keeping the Queue Valid
 
-`tasks-lint` validates TASKS.md files against the spec — run it locally, in CI, or on file save.
+`@tasks-md/lint` validates TASKS.md files against the spec — run it locally, in CI, or on file save.
 
 ### What it catches
 
@@ -117,9 +117,9 @@ When a task is done, the agent **removes the entire block** — task line, metad
 ### Run locally
 
 ```bash
-npx tasks-lint TASKS.md                        # single file
-npx tasks-lint TASKS.md packages/              # monorepo
-npx tasks-lint --fix TASKS.md                  # auto-fix deterministic issues
+npx @tasks-md/lint TASKS.md                    # single file
+npx @tasks-md/lint TASKS.md packages/          # monorepo
+npx @tasks-md/lint --fix TASKS.md              # auto-fix deterministic issues
 tasks lint TASKS.md                            # via the tasks CLI
 ```
 
@@ -149,14 +149,14 @@ Or inline:
 
 ```yaml
 - name: Lint TASKS.md
-  run: npx tasks-lint TASKS.md
+  run: npx @tasks-md/lint TASKS.md
 ```
 
 ### Pre-commit hook
 
 ```bash
 #!/bin/bash
-npx tasks-lint TASKS.md || exit 1
+npx @tasks-md/lint TASKS.md || exit 1
 ```
 
 ## Files Involved
@@ -165,6 +165,6 @@ npx tasks-lint TASKS.md || exit 1
 |------|---------|
 | `TASKS.md` | The task queue |
 | `AGENTS.md` | Tell agents to read TASKS.md |
-| [`packages/lint/`](../../packages/lint/) | Linter (TypeScript, `tasks-lint` CLI) |
+| [`packages/lint/`](../../packages/lint/) | Linter (TypeScript, [`@tasks-md/lint`](https://www.npmjs.com/package/@tasks-md/lint)) |
 | [`packages/cli/`](../../packages/cli/) | Unified CLI (`tasks lint`, `tasks pick`, etc.) |
 | [spec.md](../../spec.md) | Full specification |

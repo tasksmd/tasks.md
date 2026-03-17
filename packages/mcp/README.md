@@ -1,5 +1,7 @@
 # tasks-mcp
 
+[![npm](https://img.shields.io/npm/v/tasks-mcp)](https://www.npmjs.com/package/tasks-mcp)
+
 An MCP server for reading and writing [TASKS.md](https://github.com/tasksmd/tasks.md) files. Works with Claude Code, Cursor, Windsurf, and any MCP-compatible client.
 
 ## Install
@@ -59,7 +61,7 @@ npm start
 
 ## How it works
 
-The server discovers all `TASKS.md` files from the git root down using `fd`. It parses each file into structured task data including priority, metadata (ID, tags, details, files, acceptance, blocked-by), claim status, and line numbers.
+The server discovers all `TASKS.md` files from the git root down. It parses each file into structured task data including priority, metadata (ID, tags, details, files, acceptance, blocked-by), claim status, and line numbers.
 
 - **`list_tasks`** returns all tasks sorted by priority with optional filters
 - **`pick_task`** walks P0→P3, skips blocked/claimed tasks, scores by unblocking impact, and returns the single best task

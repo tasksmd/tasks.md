@@ -24,7 +24,7 @@ All originally-identified automation gaps have been implemented:
 | `tasks install` auto-detect | [03](03-agents-work-through-queue.md) | ✅ `tasks install` |
 | Write-once commands (canonical + generate) | [03](03-agents-work-through-queue.md) | ✅ `tasks generate-commands` + CI drift check |
 | Deterministic `pick_task` | [07](07-monitor-queue-health.md) | ✅ `tasks pick` + `tasks-mcp` MCP tool |
-| Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `tasks lint --fix` / `npx tasks-lint --fix` |
+| Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `tasks lint --fix` / `npx @tasks-md/lint --fix` |
 | sync-issues `--merge` mode | [06](06-issue-tracker-flows-to-agents.md) | ✅ `tasks sync-issues --merge` |
 | sync-jira (Jira bridge) | [06](06-issue-tracker-flows-to-agents.md#jira-sync) | ✅ `tasks sync-jira` |
 | sync-linear (Linear bridge) | [06](06-issue-tracker-flows-to-agents.md#linear-sync) | ✅ `tasks sync-linear` |

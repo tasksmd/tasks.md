@@ -1,6 +1,10 @@
 # TASKS.md
 
 [![CI](https://github.com/tasksmd/tasks.md/actions/workflows/ci.yml/badge.svg)](https://github.com/tasksmd/tasks.md/actions/workflows/ci.yml)
+[![npm @tasks-md/parser](https://img.shields.io/npm/v/@tasks-md/parser?label=parser)](https://www.npmjs.com/package/@tasks-md/parser)
+[![npm @tasks-md/lint](https://img.shields.io/npm/v/@tasks-md/lint?label=lint)](https://www.npmjs.com/package/@tasks-md/lint)
+[![npm @tasks-md/cli](https://img.shields.io/npm/v/@tasks-md/cli?label=cli)](https://www.npmjs.com/package/@tasks-md/cli)
+[![npm tasks-mcp](https://img.shields.io/npm/v/tasks-mcp?label=mcp)](https://www.npmjs.com/package/tasks-mcp)
 
 A lightweight spec for AI agent task queues — the companion to [AGENTS.md](https://agents.md/).
 
@@ -212,7 +216,7 @@ The [`tasks-mcp`](packages/mcp/) server lets MCP-compatible agents (Claude Code,
 
 ### Linter
 
-The [`tasks-lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, dangling blocker references, and tag casing.
+The [`@tasks-md/lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, dangling blocker references, and tag casing.
 
 ```bash
 npx @tasks-md/lint TASKS.md           # lint one file
@@ -308,7 +312,7 @@ Yes — that's what the claiming mechanism is for. Each agent appends `(@agent-i
 
 ### Should I keep completed tasks in the file?
 
-No. Remove them. Git log is your history. Keeping completed tasks in the file adds noise and makes it harder for agents to scan the queue. The spec enforces this — `tasks-lint` will flag checked-off tasks as errors.
+No. Remove them. Git log is your history. Keeping completed tasks in the file adds noise and makes it harder for agents to scan the queue. The spec enforces this — `@tasks-md/lint` will flag checked-off tasks as errors.
 
 ### How does TASKS.md relate to AGENTS.md?
 

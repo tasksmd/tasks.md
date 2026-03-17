@@ -102,10 +102,10 @@ The agent searches all TASKS.md files when resolving blockers.
 
 ## Linter Support
 
-`tasks-lint` catches common mistakes:
+`@tasks-md/lint` catches common mistakes:
 
 ```bash
-npx tasks-lint TASKS.md
+npx @tasks-md/lint TASKS.md
 ```
 
 - Flags duplicate IDs

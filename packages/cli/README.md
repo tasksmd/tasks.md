@@ -1,5 +1,7 @@
 # @tasks-md/cli
 
+[![npm](https://img.shields.io/npm/v/@tasks-md/cli)](https://www.npmjs.com/package/@tasks-md/cli)
+
 A unified CLI for [TASKS.md](https://github.com/tasksmd/tasks.md) task queue management — pick tasks, lint files, sync from issue trackers, and monitor queue health.
 
 ## Install

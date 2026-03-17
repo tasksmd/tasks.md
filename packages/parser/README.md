@@ -1,5 +1,7 @@
 # @tasks-md/parser
 
+[![npm](https://img.shields.io/npm/v/@tasks-md/parser)](https://www.npmjs.com/package/@tasks-md/parser)
+
 Parser for [TASKS.md](https://github.com/tasksmd/tasks.md) files — extracts tasks, metadata, priorities, and blockers.
 
 ## Install
