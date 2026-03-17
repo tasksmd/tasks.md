@@ -209,6 +209,32 @@ describe("tasks-lint", () => {
     });
   });
 
+  describe("tag validation", () => {
+    it("fails on uppercase tags", () => {
+      const result = lint(
+        "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **Tags**: Backend, Auth\n"
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/tag 'Backend' must be lowercase/);
+      expect(result.stderr).toMatch(/tag 'Auth' must be lowercase/);
+    });
+
+    it("passes on lowercase tags", () => {
+      const result = lint(
+        "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **Tags**: backend, auth\n"
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("fails on mixed-case tags", () => {
+      const result = lint(
+        "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **Tags**: backend, frontEnd\n"
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/tag 'frontEnd' must be lowercase.*'frontend'/);
+    });
+  });
+
   describe("blocker validation", () => {
     it("fails on unknown blocker reference", () => {
       const result = lint(

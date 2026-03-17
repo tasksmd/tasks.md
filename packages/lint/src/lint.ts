@@ -155,6 +155,15 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         }
       }
 
+      if (task.metadata.tags) {
+        const tagLine = findMetadataLine(task, /^\s+-\s+\*\*Tags\*\*:/);
+        for (const tag of task.metadata.tags) {
+          if (tag !== tag.toLowerCase()) {
+            reportError(filePath, tagLine, `tag '${tag}' must be lowercase (use '${tag.toLowerCase()}')`);
+          }
+        }
+      }
+
       if (task.metadata.blockedBy) {
         const blockerLine = findMetadataLine(task, /^\s+-\s+\*\*Blocked by\*\*:/);
         for (const ref of task.metadata.blockedBy) {
