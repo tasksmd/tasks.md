@@ -66,6 +66,7 @@ export function createLinearSource(options: LinearOptions): SyncSource {
     nodes {
       identifier
       title
+      description
       priority
       labels { nodes { name } }
     }
@@ -106,6 +107,7 @@ export function createLinearSource(options: LinearOptions): SyncSource {
         tags: issue.labels.nodes
           .map((l) => l.name.toLowerCase().replace(/\s+/g, "-"))
           .filter(Boolean),
+        description: issue.description || undefined,
       }));
     },
   };

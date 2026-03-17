@@ -3,6 +3,7 @@ export interface SyncIssue {
   title: string;
   priority: number;
   tags: string[];
+  description?: string;
 }
 
 export interface SyncOptions {

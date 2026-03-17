@@ -55,6 +55,39 @@ describe("generateTasksMarkdown", () => {
     const result = generateTasksMarkdown(issues);
     expect(result).not.toContain("**Tags**");
   });
+
+  it("includes Details when description is provided", () => {
+    const issues: SyncIssue[] = [
+      { id: "issue-1", title: "Has description", priority: 1, tags: [], description: "Fix the login flow" },
+    ];
+    const result = generateTasksMarkdown(issues);
+    expect(result).toContain("  - **Details**: Fix the login flow");
+  });
+
+  it("uses only first line of multiline description", () => {
+    const issues: SyncIssue[] = [
+      { id: "issue-1", title: "Multiline desc", priority: 1, tags: [], description: "First line\nSecond line\nThird line" },
+    ];
+    const result = generateTasksMarkdown(issues);
+    expect(result).toContain("  - **Details**: First line");
+    expect(result).not.toContain("Second line");
+  });
+
+  it("omits Details when description is empty", () => {
+    const issues: SyncIssue[] = [
+      { id: "issue-1", title: "No desc", priority: 1, tags: [], description: "" },
+    ];
+    const result = generateTasksMarkdown(issues);
+    expect(result).not.toContain("**Details**");
+  });
+
+  it("omits Details when description is undefined", () => {
+    const issues: SyncIssue[] = [
+      { id: "issue-1", title: "No desc", priority: 1, tags: [] },
+    ];
+    const result = generateTasksMarkdown(issues);
+    expect(result).not.toContain("**Details**");
+  });
 });
 
 describe("mergeIntoExisting", () => {

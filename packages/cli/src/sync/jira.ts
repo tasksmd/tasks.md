@@ -4,6 +4,7 @@ interface JiraIssue {
   key: string;
   fields: {
     summary: string;
+    description?: string;
     priority?: { name: string };
     labels?: string[];
   };
@@ -61,7 +62,7 @@ export function createJiraSource(options: JiraOptions): SyncSource {
       const params = new URLSearchParams({
         jql,
         maxResults: String(maxResults),
-        fields: "summary,priority,labels,issuetype,status,key",
+        fields: "summary,description,priority,labels,issuetype,status,key",
       });
 
       const authHeader =
@@ -89,6 +90,7 @@ export function createJiraSource(options: JiraOptions): SyncSource {
         title: issue.fields.summary,
         priority: mapPriority(issue.fields.priority?.name ?? "Medium"),
         tags: (issue.fields.labels ?? []).map((l) => l.toLowerCase()),
+        description: issue.fields.description || undefined,
       }));
     },
   };

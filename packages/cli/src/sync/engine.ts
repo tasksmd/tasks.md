@@ -7,6 +7,12 @@ function buildTaskBlock(issue: SyncIssue): string {
   if (issue.tags.length > 0) {
     lines.push(`  - **Tags**: ${issue.tags.join(", ")}`);
   }
+  if (issue.description) {
+    const firstLine = issue.description.split("\n")[0].trim();
+    if (firstLine) {
+      lines.push(`  - **Details**: ${firstLine}`);
+    }
+  }
   return lines.join("\n");
 }
 

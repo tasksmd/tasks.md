@@ -65,7 +65,7 @@ export function createGitHubSource(options: GitHubOptions = {}): SyncSource {
       let output: string;
       try {
         output = execSync(
-          `gh issue list ${repoFlag} --label "${label}" --state open --limit 200 --json number,title,labels`,
+          `gh issue list ${repoFlag} --label "${label}" --state open --limit 200 --json number,title,body,labels`,
           { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
         ).trim();
       } catch {
@@ -80,6 +80,7 @@ export function createGitHubSource(options: GitHubOptions = {}): SyncSource {
         title: issue.title,
         priority: mapPriority(issue.labels, label),
         tags: mapTags(issue.labels, label),
+        description: issue.body || undefined,
       }));
     },
   };
