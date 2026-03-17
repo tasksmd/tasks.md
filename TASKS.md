@@ -26,13 +26,6 @@
     Ensure bin entry, prepublishOnly, and README are ready.
   - **Files**: `packages/cli/`
 
-- [ ] Update README.md lint/tooling references
-  - **Tags**: docs
-  - **Details**: README still references `node packages/lint/index.js` in the Linter
-    section. Update to `npx tasks-lint` / `tasks lint`. Also update MCP server setup
-    example if paths changed.
-  - **Files**: `README.md`
-
 - [ ] Set up custom domain tasks.md for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md
     domain for a cleaner URL.

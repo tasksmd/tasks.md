@@ -185,8 +185,8 @@ The [`tasks-mcp`](packages/mcp/) server lets MCP-compatible agents (Claude Code,
 {
   "mcpServers": {
     "tasks": {
-      "command": "node",
-      "args": ["/path/to/tasks.md/packages/mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["tasks-mcp"]
     }
   }
 }
@@ -197,8 +197,9 @@ The [`tasks-mcp`](packages/mcp/) server lets MCP-compatible agents (Claude Code,
 The [`tasks-lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references.
 
 ```bash
-node packages/lint/index.js TASKS.md           # lint one file
-node packages/lint/index.js TASKS.md examples/ # lint multiple files/directories
+npx tasks-lint TASKS.md           # lint one file
+npx tasks-lint TASKS.md examples/ # lint multiple files/directories
+npx tasks-lint --fix TASKS.md     # auto-fix (removes completed tasks)
 ```
 
 Add it to CI to catch formatting issues before merge.
