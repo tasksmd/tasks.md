@@ -7,20 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate example files
-        run: bash scripts/validate-examples.sh examples
-
-      - name: Validate TASKS.md (if exists)
-        run: |
-          if [ -f TASKS.md ]; then
-            bash scripts/validate-examples.sh TASKS.md
-          fi
-
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -29,13 +15,19 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build linter
+        run: npm run build --workspace packages/parser --workspace packages/lint
+
       - name: Lint examples
-        run: node packages/lint/index.js examples/*.md
+        run: node packages/lint/dist/cli.js examples/*.md
 
       - name: Lint TASKS.md
         run: |
           if [ -f TASKS.md ]; then
-            node packages/lint/index.js TASKS.md
+            node packages/lint/dist/cli.js TASKS.md
           fi
 
   commands-drift:

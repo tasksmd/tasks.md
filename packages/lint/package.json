@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --exclude dist",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"
   },

@@ -71,16 +71,35 @@
   - **Blocked by**: ts-init, ts-install, ts-generate-commands, ts-watch
   - **Acceptance**: `scripts/` contains only `build-site.js`, CLI has no execFileSync to bash
 
-- [ ] Fix CI workflow
-  - **ID**: fix-ci
+- [ ] Update CI commands-drift job for TypeScript generate-commands
+  - **ID**: fix-ci-drift
   - **Tags**: ci
-  - **Details**: Current CI has stale references: `node packages/lint/index.js` (wrong path),
-    `bash scripts/validate-examples.sh` (redundant with tasks-lint). Fix the lint job to use
-    the built linter. Remove the `validate` job entirely (tasks-lint covers it). Update
-    commands-drift to use TypeScript generate-commands instead of bash script.
+  - **Details**: The commands-drift CI job still runs `bash scripts/generate-commands.sh`.
+    After ts-generate-commands is done, update to use the TypeScript CLI instead. The lint
+    job and validate job have already been fixed (validate removed, lint uses dist/cli.js).
   - **Files**: `.github/workflows/ci.yml`
-  - **Blocked by**: remove-bash
-  - **Acceptance**: All CI jobs pass, no references to deleted scripts
+  - **Blocked by**: ts-generate-commands
+  - **Acceptance**: commands-drift job uses TypeScript CLI, no bash script references remain
+
+- [ ] Fix docs ghost references to deleted sync scripts
+  - **ID**: fix-docs-sync
+  - **Tags**: docs
+  - **Details**: `docs/user-stories/06-issue-tracker-flows-to-agents.md` lines 153-155
+    reference `scripts/sync-issues.sh`, `scripts/sync-jira.sh`, `scripts/sync-linear.sh`
+    in its Files table. These were replaced by TypeScript adapters in
+    `packages/cli/src/sync/`. Update the table to reference the new file paths.
+  - **Files**: `docs/user-stories/06-issue-tracker-flows-to-agents.md`
+  - **Acceptance**: No docs reference deleted script paths
+
+- [ ] Fix lock file drift in packages/mcp
+  - **ID**: fix-mcp-lockfile
+  - **Tags**: tooling
+  - **Details**: `packages/mcp/package-lock.json` still contains
+    `"@tasks-md/parser": "file:../packages/parser"` even though `package.json` was updated
+    to `"^0.1.0"`. The workspace resolution masks this locally, but it will cause issues
+    when publishing. Regenerate the lock file after npm publish of parser, or delete it
+    since workspace root lock file handles resolution.
+  - **Acceptance**: No `file:` references in any package-lock.json
 
 - [ ] Add type:module to root package.json
   - **ID**: root-esm
@@ -97,15 +116,22 @@
   - **Details**: Publish in dependency order: `@tasks-md/parser` → `tasks-lint` →
     `tasks-mcp` → `tasks-cli`. All packages have prepublishOnly scripts, README files,
     bin entries (where applicable), and `file:` references already converted to version
-    specifiers. Requires `npm adduser` authentication first.
-    Run: `npm publish --workspace packages/parser --access public`,
-    then `npm publish --workspace packages/lint`,
-    then `npm publish --workspace packages/mcp`,
-    then `npm publish --workspace packages/cli`.
-  - **Blocked by**: remove-bash, fix-ci
+    specifiers. Requires `npm adduser` authentication first. Verify name availability
+    with `npm view tasks-mcp`, `npm view tasks-lint`, `npm view tasks-cli` before publish.
+  - **Blocked by**: remove-bash, fix-mcp-lockfile
   - **Acceptance**: All 4 packages installable via npm/npx
 
 ## P3
+
+- [ ] Create GitHub Action for tasks-lint
+  - **ID**: github-action
+  - **Tags**: tooling, growth
+  - **Details**: Create a reusable GitHub Action that runs tasks-lint on TASKS.md files.
+    Users would add one line to their CI workflow. Major adoption lever — lowers barrier to
+    entry for the spec. Could be as simple as a composite action that runs `npx tasks-lint`.
+  - **Files**: `.github/actions/lint/action.yml` (new)
+  - **Blocked by**: publish-all
+  - **Acceptance**: Users can add `uses: tasksmd/tasks.md/.github/actions/lint@main` to CI
 
 - [ ] Set up custom domain for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md
