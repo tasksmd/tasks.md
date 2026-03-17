@@ -10,6 +10,10 @@ import {
   getQueueStats,
   getQueueDiff,
 } from "./lib.js";
+import { runSync } from "./sync/engine.js";
+import { createGitHubSource } from "./sync/github.js";
+import { createJiraSource } from "./sync/jira.js";
+import { createLinearSource } from "./sync/linear.js";
 
 const SCRIPTS_DIR = join(import.meta.dirname, "..", "..", "..", "scripts");
 
@@ -38,9 +42,6 @@ const program = new Command()
 for (const { name, description, script, prependCwd } of [
   { name: "init", description: "Initialize a task queue in the current repo", script: "init.sh", prependCwd: true },
   { name: "install", description: "Install /next-task for detected agents", script: "install.sh", prependCwd: true },
-  { name: "sync-issues", description: "Sync GitHub Issues into TASKS.md", script: "sync-issues.sh", prependCwd: false },
-  { name: "sync-jira", description: "Sync Jira issues into TASKS.md", script: "sync-jira.sh", prependCwd: false },
-  { name: "sync-linear", description: "Sync Linear issues into TASKS.md", script: "sync-linear.sh", prependCwd: false },
   { name: "watch", description: "Watch TASKS.md files and auto-lint on change", script: "watch.sh", prependCwd: false },
   { name: "generate-commands", description: "Regenerate agent command files", script: "generate-commands.sh", prependCwd: false },
 ]) {
@@ -54,6 +55,51 @@ for (const { name, description, script, prependCwd } of [
       delegateToScript(script, prependCwd ? [process.cwd(), ...args] : args);
     });
 }
+
+// ── sync-issues ──
+
+program
+  .command("sync-issues")
+  .description("Sync GitHub Issues into TASKS.md")
+  .option("--repo <repo>", "GitHub repo (default: current repo from gh)")
+  .option("--label <label>", "Issue label to filter by", "tasks.md")
+  .option("--output <file>", "Output file (default: stdout)")
+  .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
+  .action(async (opts: { repo?: string; label?: string; output?: string; merge?: boolean }) => {
+    const source = createGitHubSource({ repo: opts.repo, label: opts.label });
+    await runSync(source, { output: opts.output, merge: opts.merge });
+  });
+
+// ── sync-jira ──
+
+program
+  .command("sync-jira")
+  .description("Sync Jira issues into TASKS.md")
+  .option("--project <key>", "Jira project key")
+  .option("--jql <query>", "Custom JQL query (overrides --project)")
+  .option("--output <file>", "Output file (default: stdout)")
+  .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
+  .option("--max <n>", "Maximum results to fetch", "200")
+  .action(async (opts: { project?: string; jql?: string; output?: string; merge?: boolean; max?: string }) => {
+    const source = createJiraSource({ project: opts.project, jql: opts.jql, maxResults: Number(opts.max) });
+    await runSync(source, { output: opts.output, merge: opts.merge });
+  });
+
+// ── sync-linear ──
+
+program
+  .command("sync-linear")
+  .description("Sync Linear issues into TASKS.md")
+  .requiredOption("--team <key>", "Linear team key (e.g. ENG)")
+  .option("--project <name>", "Filter by Linear project name")
+  .option("--filter <json>", "Custom Linear issue filter as JSON")
+  .option("--output <file>", "Output file (default: stdout)")
+  .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
+  .option("--max <n>", "Maximum results to fetch", "200")
+  .action(async (opts: { team: string; project?: string; filter?: string; output?: string; merge?: boolean; max?: string }) => {
+    const source = createLinearSource({ team: opts.team, project: opts.project, filter: opts.filter, maxResults: Number(opts.max) });
+    await runSync(source, { output: opts.output, merge: opts.merge });
+  });
 
 // ── lint ──
 

@@ -2,17 +2,6 @@
 
 ## P2
 
-- [ ] Consolidate sync scripts into adapter pattern
-  - **ID**: sync-adapters
-  - **Tags**: architecture, DRY
-  - **Details**: `sync-issues.sh` (290 lines), `sync-jira.sh` (315 lines), and
-    `sync-linear.sh` (340 lines) all follow the same pattern: auth → fetch → map priority
-    → map labels to tags → generate markdown → merge. Each reimplements priority mapping,
-    markdown generation, and merge mode independently. Define a `SyncSource` interface with
-    `fetchIssues()`, `mapPriority()`, `mapTags()`. Each source is a thin adapter. Shared
-    sync engine handles markdown generation and merge. Adding Asana/Notion = one file.
-  - **Files**: `scripts/sync-*.sh` → `packages/cli/src/sync/`
-
 - [ ] Auto-generate website from spec.md
   - **ID**: site-gen
   - **Tags**: docs, build
