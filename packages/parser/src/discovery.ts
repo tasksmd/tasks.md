@@ -20,13 +20,15 @@ export function findGitRoot(startDir: string): string {
 export function discoverTaskFiles(directory: string): string[] {
   const gitRoot = findGitRoot(directory);
   try {
-    const output = execSync('fd --no-ignore-vcs -t f "^TASKS\\.md$"', {
-      cwd: gitRoot,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
+    const output = execSync(
+      'fd --no-ignore-vcs --exclude node_modules -t f "^TASKS\\.md$"',
+      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
+    ).trim();
     if (!output) return [];
-    return output.split("\n").map((file) => join(gitRoot, file));
+    return output
+      .split("\n")
+      .map((file) => join(gitRoot, file))
+      .sort();
   } catch {
     const fallback = join(gitRoot, "TASKS.md");
     return existsSync(fallback) ? [fallback] : [];

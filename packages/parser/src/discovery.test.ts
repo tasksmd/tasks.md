@@ -62,6 +62,33 @@ describe("discoverTaskFiles", () => {
     expect(normalized).toContain("TASKS.md");
   });
 
+  it("excludes TASKS.md inside node_modules", () => {
+    initGitRepo(tempDir);
+    writeFileSync(join(tempDir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Root\n");
+    const nmDir = join(tempDir, "node_modules", "some-pkg");
+    mkdirSync(nmDir, { recursive: true });
+    writeFileSync(join(nmDir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Dep\n");
+    const files = discoverTaskFiles(tempDir);
+    expect(files).toHaveLength(1);
+    expect(files[0]).toBe(join(tempDir, "TASKS.md"));
+  });
+
+  it("returns files sorted by path for deterministic order", () => {
+    initGitRepo(tempDir);
+    const zDir = join(tempDir, "z-pkg");
+    const aDir = join(tempDir, "a-pkg");
+    mkdirSync(zDir, { recursive: true });
+    mkdirSync(aDir, { recursive: true });
+    writeFileSync(join(zDir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Z\n");
+    writeFileSync(join(aDir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] A\n");
+    writeFileSync(join(tempDir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Root\n");
+    const files = discoverTaskFiles(tempDir);
+    expect(files.length).toBe(3);
+    // Should be sorted lexicographically by path
+    const relativePaths = files.map((f) => f.replace(tempDir + "/", ""));
+    expect(relativePaths).toEqual([...relativePaths].sort());
+  });
+
   it("returns fallback when no TASKS.md exists", () => {
     initGitRepo(tempDir);
     const files = discoverTaskFiles(tempDir);
