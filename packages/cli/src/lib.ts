@@ -26,6 +26,13 @@ function countUnblocks(task: Task, allTasks: Task[]): number {
   ).length;
 }
 
+function tagOverlapCount(task: Task, tags: string[]): number {
+  if (!task.metadata.tags?.length) return 0;
+  return task.metadata.tags.filter((t) =>
+    tags.some((at) => at.toLowerCase() === t.toLowerCase())
+  ).length;
+}
+
 export function pickBestTask(
   taskFiles: TaskFile[],
   tags?: string[]
@@ -48,10 +55,13 @@ export function pickBestTask(
 
   if (candidates.length === 0) return undefined;
 
+  const sortTags = tags ?? [];
   candidates.sort((a, b) => {
     const priorityDiff = a.priority.localeCompare(b.priority);
     if (priorityDiff !== 0) return priorityDiff;
-    return countUnblocks(b, allTasks) - countUnblocks(a, allTasks);
+    const unblockDiff = countUnblocks(b, allTasks) - countUnblocks(a, allTasks);
+    if (unblockDiff !== 0) return unblockDiff;
+    return tagOverlapCount(b, sortTags) - tagOverlapCount(a, sortTags);
   });
 
   const picked = candidates[0];
