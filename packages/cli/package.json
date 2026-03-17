@@ -1,5 +1,5 @@
 {
-  "name": "tasks-cli",
+  "name": "@tasks-md/cli",
   "version": "0.1.0",
   "description": "Unified CLI for TASKS.md task queue management",
   "type": "module",
