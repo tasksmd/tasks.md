@@ -3,6 +3,7 @@ import type { SyncIssue, SyncSource } from "./types.js";
 interface LinearIssue {
   identifier: string;
   title: string;
+  description?: string;
   priority: number;
   labels: { nodes: Array<{ name: string }> };
 }

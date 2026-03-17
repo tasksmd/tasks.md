@@ -188,23 +188,28 @@ program
   .command("pick")
   .description("Pick the best task to work on next")
   .option("--tags <tags>", "Filter by tags (comma-separated)")
-  .action((opts: { tags?: string }) => {
+  .option("--agent <name>", "Agent name — resumes prior claims before picking new")
+  .action((opts: { tags?: string; agent?: string }) => {
     const taskFiles = loadAllTasks(process.cwd());
     const tags = opts.tags?.split(",").filter(Boolean);
-    const result = pickBestTask(taskFiles, tags);
+    const result = pickBestTask(taskFiles, tags, opts.agent);
 
     if (!result) {
       console.log("No eligible tasks found (all claimed, blocked, or empty queue).");
       return;
     }
 
-    const { task, candidateCount, unblocksCount } = result;
-    console.log(`Picked "${task.summary}" (${task.priority})`);
+    const { task, candidateCount, unblocksCount, resumed } = result;
+    if (resumed) {
+      console.log(`Resuming "${task.summary}" (${task.priority}) — already claimed by ${task.claimed}`);
+    } else {
+      console.log(`Picked "${task.summary}" (${task.priority})`);
+    }
     console.log(`  File: ${task.file}:${task.startLine}`);
     if (task.metadata.id) console.log(`  ID: ${task.metadata.id}`);
     if (task.metadata.tags?.length) console.log(`  Tags: ${task.metadata.tags.join(", ")}`);
     if (unblocksCount > 0) console.log(`  Unblocks: ${unblocksCount} task(s)`);
-    console.log(`  Candidates: ${candidateCount}`);
+    if (!resumed) console.log(`  Candidates: ${candidateCount}`);
   });
 
 // ── stats ──

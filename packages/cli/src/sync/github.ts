@@ -8,6 +8,7 @@ interface GitHubLabel {
 interface GitHubIssue {
   number: number;
   title: string;
+  body?: string;
   labels: GitHubLabel[];
 }
 

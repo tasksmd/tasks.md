@@ -17,6 +17,7 @@ export interface PickResult {
   task: Task;
   candidateCount: number;
   unblocksCount: number;
+  resumed?: boolean;
 }
 
 function countUnblocks(task: Task, allTasks: Task[]): number {
@@ -35,10 +36,29 @@ function tagOverlapCount(task: Task, tags: string[]): number {
 
 export function pickBestTask(
   taskFiles: TaskFile[],
-  tags?: string[]
+  tags?: string[],
+  agentName?: string
 ): PickResult | undefined {
   const allIds = getAllTaskIds(taskFiles);
   const allTasks = taskFiles.flatMap((f) => f.tasks);
+
+  // Resume prior claim if agent already has one
+  if (agentName) {
+    const normalizedAgent = agentName.replace(/^@/, "").toLowerCase();
+    const priorClaim = allTasks.find(
+      (t) =>
+        t.claimed?.replace(/^@/, "").toLowerCase().startsWith(normalizedAgent) &&
+        !isBlocked(t, allIds)
+    );
+    if (priorClaim) {
+      return {
+        task: priorClaim,
+        candidateCount: 1,
+        unblocksCount: countUnblocks(priorClaim, allTasks),
+        resumed: true,
+      };
+    }
+  }
 
   let candidates = allTasks.filter(
     (t) => !t.claimed && !isBlocked(t, allIds)
