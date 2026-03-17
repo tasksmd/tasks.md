@@ -35,7 +35,7 @@
   "homepage": "https://tasks.md",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "@tasks-md/parser": "file:../parser",
+    "@tasks-md/parser": "^0.1.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
