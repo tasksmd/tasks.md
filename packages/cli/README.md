@@ -23,16 +23,18 @@ Pick the highest-priority unblocked, unclaimed task. Uses a deterministic algori
 ```bash
 tasks pick                    # pick best task
 tasks pick --tags backend     # prefer tasks tagged "backend"
+tasks pick --agent cascade    # resume prior claims first
+tasks pick --json             # output as JSON for scripting
 ```
 
 ### `tasks lint`
 
-Validate TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references.
+Validate TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, dangling blocker references, and tag casing.
 
 ```bash
 tasks lint TASKS.md                    # lint one file
 tasks lint TASKS.md examples/          # lint multiple paths
-tasks lint --fix TASKS.md              # auto-fix (removes completed tasks)
+tasks lint --fix TASKS.md              # auto-fix (completed tasks, tag casing)
 ```
 
 ### `tasks stats`
@@ -40,7 +42,8 @@ tasks lint --fix TASKS.md              # auto-fix (removes completed tasks)
 Show queue overview and throughput metrics.
 
 ```bash
-tasks stats
+tasks stats                   # human-readable output
+tasks stats --json            # output as JSON for scripting
 ```
 
 ```
@@ -68,6 +71,7 @@ Show queue changes since a git reference.
 ```bash
 tasks diff              # changes since HEAD
 tasks diff HEAD~5       # changes in the last 5 commits
+tasks diff --json       # output as JSON for scripting
 ```
 
 ### `tasks init`

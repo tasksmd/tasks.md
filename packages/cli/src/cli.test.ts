@@ -286,4 +286,93 @@ describe("CLI", () => {
       rmSync(dir, { recursive: true });
     }
   });
+
+  it("pick --json outputs structured JSON", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P1\n\n- [ ] JSON task\n  - **ID**: json-test\n  - **Tags**: backend\n"
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    spawnSync("git", ["add", "."], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.picked).toBe(true);
+      expect(parsed.summary).toBe("JSON task");
+      expect(parsed.priority).toBe("P1");
+      expect(parsed.metadata.id).toBe("json-test");
+      expect(parsed.metadata.tags).toEqual(["backend"]);
+      expect(parsed.line).toBeTypeOf("number");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("pick --json outputs {picked: false} for empty queue", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.picked).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("stats --json outputs structured JSON", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P0\n\n- [ ] Urgent\n\n## P1\n\n- [ ] Normal\n"
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    spawnSync("git", ["add", "."], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "stats", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.total).toBe(2);
+      expect(parsed.byPriority.P0).toBe(1);
+      expect(parsed.byPriority.P1).toBe(1);
+      expect(parsed.available).toBe(2);
+      expect(parsed.fileCount).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("diff --json outputs structured JSON", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Initial\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    spawnSync("git", ["add", "."], { cwd: dir });
+    spawnSync("git", ["-c", "user.name=test", "-c", "user.email=test@test.com", "commit", "--no-verify", "-m", "feat: init"], { cwd: dir });
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Initial\n\n- [ ] New task\n");
+    try {
+      const result = spawnSync("node", [CLI, "diff", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.hasChanges).toBe(true);
+      expect(parsed.added.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
 });

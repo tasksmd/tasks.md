@@ -189,17 +189,38 @@ program
   .description("Pick the best task to work on next")
   .option("--tags <tags>", "Filter by tags (comma-separated)")
   .option("--agent <name>", "Agent name — resumes prior claims before picking new")
-  .action((opts: { tags?: string; agent?: string }) => {
+  .option("--json", "Output as JSON for scripting")
+  .action((opts: { tags?: string; agent?: string; json?: boolean }) => {
     const taskFiles = loadAllTasks(process.cwd());
     const tags = opts.tags?.split(",").filter(Boolean);
     const result = pickBestTask(taskFiles, tags, opts.agent);
 
     if (!result) {
-      console.log("No eligible tasks found (all claimed, blocked, or empty queue).");
+      if (opts.json) {
+        console.log(JSON.stringify({ picked: false }));
+      } else {
+        console.log("No eligible tasks found (all claimed, blocked, or empty queue).");
+      }
       return;
     }
 
     const { task, candidateCount, unblocksCount, resumed } = result;
+
+    if (opts.json) {
+      console.log(JSON.stringify({
+        picked: true,
+        resumed: resumed ?? false,
+        summary: task.summary,
+        priority: task.priority,
+        file: task.file,
+        line: task.startLine,
+        metadata: task.metadata,
+        candidates: candidateCount,
+        unblocks: unblocksCount,
+      }));
+      return;
+    }
+
     if (resumed) {
       console.log(`Resuming "${task.summary}" (${task.priority}) — already claimed by ${task.claimed}`);
     } else {
@@ -217,8 +238,14 @@ program
 program
   .command("stats")
   .description("Show task queue stats and throughput")
-  .action(() => {
+  .option("--json", "Output as JSON for scripting")
+  .action((opts: { json?: boolean }) => {
     const stats = getQueueStats(process.cwd());
+
+    if (opts.json) {
+      console.log(JSON.stringify(stats));
+      return;
+    }
 
     console.log("📋 Queue Overview");
     console.log("");
@@ -253,8 +280,14 @@ program
   .command("diff")
   .description("Show queue changes since last commit")
   .argument("[ref]", "Git reference to compare against", "HEAD")
-  .action((ref: string) => {
+  .option("--json", "Output as JSON for scripting")
+  .action((ref: string, opts: { json?: boolean }) => {
     const diff = getQueueDiff(process.cwd(), ref);
+
+    if (opts.json) {
+      console.log(JSON.stringify(diff));
+      return;
+    }
 
     if (!diff.hasChanges) {
       console.log(`No TASKS.md changes since ${ref}`);
