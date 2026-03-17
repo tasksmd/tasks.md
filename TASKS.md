@@ -2,34 +2,13 @@
 
 ## P1
 
-- [ ] Fix lock file drift in packages/mcp
-  - **ID**: fix-mcp-lockfile
-  - **Tags**: tooling
-  - **Details**: `packages/mcp/package-lock.json` still contains
-    `"@tasks-md/parser": "file:../packages/parser"` even though `package.json` was updated
-    to `"^0.1.0"`. The workspace resolution masks this locally, but it will cause issues
-    when publishing. Regenerate the lock file after npm publish of parser, or delete it
-    since workspace root lock file handles resolution.
-  - **Acceptance**: No `file:` references in any package-lock.json
-
-- [ ] Add type:module to root package.json
-  - **ID**: root-esm
-  - **Tags**: tooling
-  - **Details**: `scripts/build-site.js` uses ES module features but root package.json
-    lacks `"type": "module"`, causing a Node.js MODULE_TYPELESS_PACKAGE_JSON warning.
-    Add the field and verify nothing breaks.
-  - **Files**: `package.json`
-  - **Acceptance**: `node scripts/build-site.js` runs without warnings
-
 - [ ] Publish all packages to npm
   - **ID**: publish-all
   - **Tags**: tooling
   - **Details**: Publish in dependency order: `@tasks-md/parser` → `tasks-lint` →
     `tasks-mcp` → `tasks-cli`. All packages have prepublishOnly scripts, README files,
-    bin entries (where applicable), and `file:` references already converted to version
-    specifiers. Requires `npm adduser` authentication first. Verify name availability
-    with `npm view tasks-mcp`, `npm view tasks-lint`, `npm view tasks-cli` before publish.
-  - **Blocked by**: remove-bash, fix-mcp-lockfile
+    bin entries (where applicable), and version specifiers. Requires `npm adduser`
+    authentication first. Verify name availability with `npm view` before publish.
   - **Acceptance**: All 4 packages installable via npm/npx
 
 ## P3
