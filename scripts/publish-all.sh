@@ -5,7 +5,7 @@
 # Prerequisites:
 #   npm adduser   (authenticate first)
 #
-# Order: @tasks-md/parser → tasks-lint → tasks-mcp → @tasks-md/cli
+# Order: @tasks-md/parser → @tasks-md/lint → tasks-mcp → @tasks-md/cli
 
 set -euo pipefail
 

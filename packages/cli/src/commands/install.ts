@@ -108,7 +108,7 @@ if [ -n "$staged_tasks" ]; then
   if command -v tasks-lint >/dev/null 2>&1; then
     lint_cmd="tasks-lint"
   else
-    lint_cmd="npx --yes tasks-lint@latest"
+    lint_cmd="npx --yes @tasks-md/lint@latest"
   fi
 
   errors=0

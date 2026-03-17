@@ -2,7 +2,7 @@
 
 import { Command } from "commander";
 import { join } from "node:path";
-import { lintFiles, discoverFiles } from "tasks-lint";
+import { lintFiles, discoverFiles } from "@tasks-md/lint";
 import {
   loadAllTasks,
   pickBestTask,

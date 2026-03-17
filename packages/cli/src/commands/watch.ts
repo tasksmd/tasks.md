@@ -1,7 +1,7 @@
 import { watch } from "node:fs";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, basename } from "node:path";
-import { lintFiles } from "tasks-lint";
+import { lintFiles } from "@tasks-md/lint";
 
 export interface LintResult {
   success: boolean;

@@ -36,4 +36,4 @@ jobs:
           if [ "${{ inputs.fix }}" = "true" ]; then
             args="--fix $args"
           fi
-          npx tasks-lint@latest $args
+          npx @tasks-md/lint@latest $args

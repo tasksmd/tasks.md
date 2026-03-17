@@ -5,13 +5,13 @@ Validates [TASKS.md](https://github.com/tasksmd/tasks.md) files against the spec
 ## Install
 
 ```bash
-npm install -g tasks-lint
+npm install -g @tasks-md/lint
 ```
 
 Or run directly with npx:
 
 ```bash
-npx tasks-lint TASKS.md
+npx @tasks-md/lint TASKS.md
 ```
 
 ## Usage
@@ -69,14 +69,14 @@ Add to GitHub Actions:
 
 ```yaml
 - name: Lint TASKS.md
-  run: npx tasks-lint TASKS.md
+  run: npx @tasks-md/lint TASKS.md
 ```
 
 Or validate all task files in a monorepo:
 
 ```yaml
 - name: Lint all task files
-  run: npx tasks-lint TASKS.md packages/
+  run: npx @tasks-md/lint TASKS.md packages/
 ```
 
 ## Example Output

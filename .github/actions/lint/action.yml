@@ -10,7 +10,7 @@ inputs:
     required: false
     default: "TASKS.md"
   version:
-    description: "Version of tasks-lint to use"
+    description: "Version of @tasks-md/lint to use"
     required: false
     default: "latest"
 
@@ -24,4 +24,4 @@ runs:
 
     - name: Run tasks-lint
       shell: bash
-      run: npx tasks-lint@${{ inputs.version }} ${{ inputs.paths }}
+      run: npx @tasks-md/lint@${{ inputs.version }} ${{ inputs.paths }}
