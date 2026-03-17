@@ -1,22 +1,9 @@
 # Tasks
 
-## P0
-
-- [ ] Add root package.json with npm workspaces
-  - **ID**: workspaces
-  - **Tags**: architecture, build
-  - **Details**: No root-level coordination exists. Each sub-package (`mcp/`, `lint/`,
-    `scripts/`) is independent with separate build/test. Add a root `package.json` with
-    `workspaces: ["packages/*"]` and scripts for `npm test` (runs all), `npm run build`
-    (builds all), `npm run lint` (lints all). Move `mcp/` and `lint/` into `packages/`.
-  - **Files**: new root `package.json`, `mcp/` → `packages/mcp/`,
-    `lint/` → `packages/lint/`
-
 ## P1
 
 - [ ] Rewrite linter in TypeScript consuming shared parser
   - **ID**: typed-lint
-  - **Blocked by**: workspaces
   - **Tags**: architecture, lint
   - **Details**: `lint/index.js` already imports `@tasks-md/parser` for ID/blocker validation.
     Rewrite remaining structural validation in TypeScript. Priority order check can operate
@@ -25,7 +12,6 @@
 
 - [ ] Replace bash CLI with Node.js CLI
   - **ID**: node-cli
-  - **Blocked by**: workspaces
   - **Tags**: architecture, cli
   - **Details**: `scripts/tasks` is a 305-line bash case statement. The `pick` command
     shells out to `node -e` with inline JS importing from MCP dist (breaks if not built).
@@ -63,7 +49,6 @@
 
 - [ ] Publish tasks-mcp to npm
   - **ID**: publish-mcp
-  - **Blocked by**: workspaces
   - **Tags**: tooling, mcp
   - **Details**: Package is publish-ready: prepublishOnly runs build+test (104 tests),
     bin entry has shebang, test files excluded, README updated. After workspace migration,
