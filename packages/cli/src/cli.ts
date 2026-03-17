@@ -10,6 +10,7 @@ import {
   getQueueStats,
   getQueueDiff,
 } from "./lib.js";
+import { initTaskQueue } from "./commands/init.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
@@ -37,10 +38,29 @@ const program = new Command()
   .description("Unified CLI for TASKS.md task queue management")
   .version("0.1.0");
 
+// ── init (TypeScript-native) ──
+
+program
+  .command("init")
+  .description("Initialize a task queue in the current repo")
+  .option("--install", "Also install /next-task for detected agents")
+  .action((opts: { install?: boolean }) => {
+    const result = initTaskQueue(process.cwd());
+    for (const message of result.messages) {
+      console.log(message);
+    }
+    if (opts.install) {
+      delegateToScript("install.sh", [process.cwd()]);
+    }
+    console.log("");
+    console.log("✓ Task queue initialized. Add tasks with:");
+    console.log("  ## P1");
+    console.log("  - [ ] Your first task");
+  });
+
 // ── Delegate commands (bash scripts) ──
 
 for (const { name, description, script, prependCwd } of [
-  { name: "init", description: "Initialize a task queue in the current repo", script: "init.sh", prependCwd: true },
   { name: "install", description: "Install /next-task for detected agents", script: "install.sh", prependCwd: true },
   { name: "watch", description: "Watch TASKS.md files and auto-lint on change", script: "watch.sh", prependCwd: false },
   { name: "generate-commands", description: "Regenerate agent command files", script: "generate-commands.sh", prependCwd: false },
