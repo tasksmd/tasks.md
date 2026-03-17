@@ -8,9 +8,9 @@ Before anything else, assess the current state:
 git status --short
 git branch --show-current
 git log --oneline -5
-- Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
-- Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, the branch may be leftover — switch to main after stashing any dirty state.
-- Clean + on main?** — Pull latest and proceed to step 2.
+- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
+- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, the branch may be leftover — switch to main after stashing any dirty state.
+- **Clean + on main?** — Pull latest and proceed to step 2.
 git checkout main 2>/dev/null || git checkout master
 git pull --rebase
 2. Find the queue
@@ -29,10 +29,10 @@ Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)
 4. Pick a task
 Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each priority level, evaluate the tasks and select one.
 Priority decision guidelines
-- P0 (critical)** — Always pick these first. They're blocking the project.
-- P1 (high)** — Pick these next. Important work that should be done soon.
-- P2 (medium)** — Standard work. Pick from here when P0 and P1 are empty or all blocked.
-- P3 (low)** — Nice-to-haves. Only pick these when nothing higher is available.
+- **P0 (critical)** — Always pick these first. They're blocking the project.
+- **P1 (high)** — Pick these next. Important work that should be done soon.
+- **P2 (medium)** — Standard work. Pick from here when P0 and P1 are empty or all blocked.
+- **P3 (low)** — Nice-to-haves. Only pick these when nothing higher is available.
 Within a priority level, select by:
 1. **Unblocking impact** — prefer tasks whose **ID** appears in another task's **Blocked by** field (completing it unblocks other work)
 2. **Unblocked status** — skip tasks where **Blocked by** references an ID that still exists in any TASKS.md

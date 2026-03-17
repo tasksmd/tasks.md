@@ -11,6 +11,7 @@ import {
   getQueueDiff,
 } from "./lib.js";
 import { initTaskQueue } from "./commands/init.js";
+import { generateCommands } from "./commands/generate-commands.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
@@ -58,12 +59,32 @@ program
     console.log("  - [ ] Your first task");
   });
 
+// ── generate-commands (TypeScript-native) ──
+
+program
+  .command("generate-commands")
+  .description("Regenerate agent command files from canonical source")
+  .action(() => {
+    console.log("Generating commands from canonical source...");
+    const result = generateCommands(process.cwd());
+    if (result.errors.length > 0) {
+      for (const error of result.errors) {
+        console.error(`Error: ${error}`);
+      }
+      process.exit(1);
+    }
+    for (const message of result.messages) {
+      console.log(message);
+    }
+    console.log("");
+    console.log(`✓ All ${result.generated.length} command files generated from commands/next-task.md`);
+  });
+
 // ── Delegate commands (bash scripts) ──
 
 for (const { name, description, script, prependCwd } of [
   { name: "install", description: "Install /next-task for detected agents", script: "install.sh", prependCwd: true },
   { name: "watch", description: "Watch TASKS.md files and auto-lint on change", script: "watch.sh", prependCwd: false },
-  { name: "generate-commands", description: "Regenerate agent command files", script: "generate-commands.sh", prependCwd: false },
 ]) {
   program
     .command(name)
