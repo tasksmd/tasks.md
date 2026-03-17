@@ -130,7 +130,9 @@ server.registerTool(
     title: "Complete Task",
     description:
       "Remove a completed task from TASKS.md. " +
-      "Identifies the task by summary substring or ID, then removes the entire task block.",
+      "Identifies the task by summary substring or ID, then removes the entire task block. " +
+      "Per spec, top-level tasks are removed on completion — never marked [x]. " +
+      "Always use this tool instead of manually editing the checkbox.",
     inputSchema: z.object({
       query: z
         .string()
