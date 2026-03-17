@@ -138,7 +138,13 @@ The most useful thing about TASKS.md is a single command: "pick the next task an
 
 ### Install
 
-Copy the command file into your project (commit it so your team gets it too):
+Auto-detect your agents and install the command:
+
+```bash
+npx @tasks-md/cli install
+```
+
+Or copy manually into your project (commit it so your team gets it too):
 
 | Agent | Install |
 |-------|---------|
@@ -177,6 +183,18 @@ You're always adding to the queue. The agent is always draining it. This is the 
 
 ## Tooling
 
+### CLI
+
+The [`@tasks-md/cli`](packages/cli/) provides task queue management — pick tasks, lint files, sync from issue trackers, and install agent commands.
+
+```bash
+npx @tasks-md/cli pick              # pick highest-priority unblocked task
+npx @tasks-md/cli init              # create TASKS.md in current repo
+npx @tasks-md/cli install           # install /next-task for detected agents
+npx @tasks-md/cli stats             # queue overview and throughput
+npx @tasks-md/cli lint TASKS.md     # validate against spec
+```
+
 ### MCP Server
 
 The [`tasks-mcp`](packages/mcp/) server lets MCP-compatible agents (Claude Code, Cursor, Windsurf) manage TASKS.md files programmatically — list, claim, complete, and add tasks without file parsing.
@@ -202,7 +220,15 @@ npx tasks-lint TASKS.md examples/ # lint multiple files/directories
 npx tasks-lint --fix TASKS.md     # auto-fix (removes completed tasks)
 ```
 
-Add it to CI to catch formatting issues before merge.
+### GitHub Action
+
+Add one line to your CI workflow to validate TASKS.md on every push:
+
+```yaml
+- uses: tasksmd/tasks.md/.github/actions/lint@main
+```
+
+See [.github/actions/lint/](.github/actions/lint/) for options.
 
 ## FAQ
 
