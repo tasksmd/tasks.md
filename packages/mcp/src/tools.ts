@@ -224,16 +224,17 @@ export async function pickTask(
 
   // Resume prior claim: if agent_name is provided, check for already-claimed task
   if (options.agent_name) {
-    const normalizedName = `@${options.agent_name.replace(/^@/, "")}`;
+    const normalizedName = options.agent_name.replace(/^@/, "").toLowerCase();
     const priorClaim = allTasks.find(
       (task) =>
-        task.claimed === normalizedName && !isBlocked(task, allIds)
+        task.claimed?.replace(/^@/, "").toLowerCase().startsWith(normalizedName) &&
+        !isBlocked(task, allIds)
     );
     if (priorClaim) {
       const formatted = formatTask(priorClaim, allIds);
       return {
         text: JSON.stringify({
-          summary: `Resuming previously claimed "${priorClaim.summary}" (${priorClaim.priority}) for ${normalizedName}.`,
+          summary: `Resuming previously claimed "${priorClaim.summary}" (${priorClaim.priority}) for @${normalizedName}.`,
           task: formatted,
           resumed: true,
         }, null, 2),

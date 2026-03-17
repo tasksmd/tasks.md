@@ -595,6 +595,27 @@ describe("pickTask", () => {
     expect(data.summary).toContain("@cascade");
   });
 
+  it("resumes prior claim with 'in progress' suffix", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] In progress task (@cascade - in progress)",
+      "  - **ID**: ip-task",
+      "",
+      "- [ ] Unclaimed task",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { agent_name: "cascade" });
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("In progress task");
+    expect(data.resumed).toBe(true);
+    expect(data.summary).toContain("Resuming");
+  });
+
   it("skips blocked prior claims and picks new task", async () => {
     let tmpDir: string;
     tmpDir = await mkdtemp(join(tmpdir(), "tasks-pick-"));
