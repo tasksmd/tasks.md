@@ -308,10 +308,21 @@ export interface AddTaskParams {
   blocked_by?: string;
 }
 
+const VALID_PRIORITIES = new Set(["P0", "P1", "P2", "P3"]);
+
 export async function addTask(
   targetFile: string,
   params: AddTaskParams
 ): Promise<ToolResult> {
+  const normalizedPriority = (params.priority || "P2").toUpperCase();
+  if (!VALID_PRIORITIES.has(normalizedPriority)) {
+    return { text: `Invalid priority '${params.priority}' — must be P0, P1, P2, or P3`, isError: true };
+  }
+
+  if (params.id && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(params.id)) {
+    return { text: `Invalid ID '${params.id}' — must be kebab-case (lowercase letters, numbers, hyphens)`, isError: true };
+  }
+
   let fileContent: string;
   try {
     fileContent = await readFile(targetFile, "utf-8");
@@ -319,16 +330,18 @@ export async function addTask(
     return { text: `Cannot read ${targetFile}`, isError: true };
   }
 
+  const normalizedTags = params.tags
+    ? params.tags.split(",").map((t) => t.trim().toLowerCase()).join(", ")
+    : undefined;
+
   const taskLines: string[] = [`- [ ] ${params.summary}`];
   if (params.id) taskLines.push(`  - **ID**: ${params.id}`);
-  if (params.tags) taskLines.push(`  - **Tags**: ${params.tags}`);
+  if (normalizedTags) taskLines.push(`  - **Tags**: ${normalizedTags}`);
   if (params.details) taskLines.push(`  - **Details**: ${params.details}`);
   if (params.files) taskLines.push(`  - **Files**: ${params.files}`);
   if (params.acceptance) taskLines.push(`  - **Acceptance**: ${params.acceptance}`);
   if (params.blocked_by) taskLines.push(`  - **Blocked by**: ${params.blocked_by}`);
   const taskBlock = taskLines.join("\n");
-
-  const normalizedPriority = (params.priority || "P2").toUpperCase();
   const lines = fileContent.split("\n");
 
   let sectionStart = -1;

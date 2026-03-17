@@ -841,6 +841,50 @@ describe("addTask", () => {
     expect(result.text).toContain("Cannot read");
   });
 
+  it("rejects invalid priority", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    await writeFile(filePath, "# Tasks\n\n## P1\n\n- [ ] Existing\n", "utf-8");
+
+    const result = await addTask(filePath, {
+      summary: "Bad priority",
+      priority: "P5",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("Invalid priority");
+    expect(result.text).toContain("P0, P1, P2, or P3");
+  });
+
+  it("rejects non-kebab-case ID", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    await writeFile(filePath, "# Tasks\n\n## P1\n\n- [ ] Existing\n", "utf-8");
+
+    const result = await addTask(filePath, {
+      summary: "Bad ID",
+      priority: "P1",
+      id: "Bad_ID",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("Invalid ID");
+    expect(result.text).toContain("kebab-case");
+  });
+
+  it("lowercases tags automatically", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    await writeFile(filePath, "# Tasks\n\n## P1\n\n- [ ] Existing\n", "utf-8");
+
+    await addTask(filePath, {
+      summary: "Tagged task",
+      priority: "P1",
+      tags: "Backend, API",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("**Tags**: backend, api");
+    expect(updated).not.toContain("Backend");
+  });
+
   it("preserves existing tasks when adding", async () => {
     const filePath = join(tmpDir, "TASKS.md");
     const content = [
