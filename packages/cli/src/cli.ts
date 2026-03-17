@@ -12,6 +12,7 @@ import {
 } from "./lib.js";
 import { initTaskQueue } from "./commands/init.js";
 import { generateCommands } from "./commands/generate-commands.js";
+import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
@@ -80,10 +81,40 @@ program
     console.log(`✓ All ${result.generated.length} command files generated from commands/next-task.md`);
   });
 
+// ── install (TypeScript-native) ──
+
+program
+  .command("install")
+  .description("Install /next-task for detected agents")
+  .option("--all", "Install for all agents (even if directories don't exist)")
+  .option("--agent <name>", "Install for a specific agent only")
+  .option("--hooks", "Install pre-commit hook that validates TASKS.md")
+  .action((opts: { all?: boolean; agent?: string; hooks?: boolean }) => {
+    const commandsSourceDir = join(import.meta.dirname, "..", "..", "..");
+    console.log("Installing /next-task commands...");
+    const result = installCommands(process.cwd(), commandsSourceDir, {
+      all: opts.all,
+      agent: opts.agent,
+    });
+    for (const message of result.messages) {
+      console.log(message);
+    }
+    console.log("");
+    if (result.installed.length === 0 && !opts.hooks) {
+      console.log(`No agent directories detected in ${process.cwd()}`);
+      console.log("Use --all to install for all agents, or create agent dirs first.");
+    } else {
+      console.log(`✓ Installed for ${result.installed.length} agent(s)`);
+    }
+    if (opts.hooks) {
+      const hookResult = installPreCommitHook(process.cwd());
+      console.log(hookResult.message);
+    }
+  });
+
 // ── Delegate commands (bash scripts) ──
 
 for (const { name, description, script, prependCwd } of [
-  { name: "install", description: "Install /next-task for detected agents", script: "install.sh", prependCwd: true },
   { name: "watch", description: "Watch TASKS.md files and auto-lint on change", script: "watch.sh", prependCwd: false },
 ]) {
   program
