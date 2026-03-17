@@ -76,6 +76,23 @@ Throughput is measured from **git history** — every time a `- [ ]` line is rem
 - History survives even though completed tasks are deleted from the file
 - `git log` is the source of truth for what was done and when
 
+## JSON Output for Scripting
+
+Both commands support `--json` for structured output:
+
+```bash
+tasks stats --json          # machine-readable queue stats
+tasks diff --json           # machine-readable queue changes
+tasks pick --json           # machine-readable task selection
+```
+
+Pipe into `jq`, feed to dashboards, or use in CI scripts:
+
+```bash
+tasks stats --json | jq '.available'          # how many tasks are ready
+tasks diff --json | jq '.removed | length'    # how many completed since last commit
+```
+
 ## How Stats Are Computed
 
 | Metric | Source |

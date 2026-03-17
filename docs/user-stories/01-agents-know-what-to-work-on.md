@@ -113,6 +113,8 @@ When a task is done, the agent **removes the entire block** — task line, metad
 | Unique IDs | No duplicate IDs within a file or across files |
 | Valid blockers | `**Blocked by**:` must reference IDs that exist somewhere |
 | No orphaned metadata | Metadata fields must be nested under a task |
+| Tag casing | `**Tags**:` values must be lowercase |
+| Metadata ordering | Metadata fields must come before sub-tasks |
 
 ### Run locally
 
@@ -123,7 +125,7 @@ npx tasks-lint --fix TASKS.md                  # auto-fix deterministic issues
 tasks lint TASKS.md                            # via the tasks CLI
 ```
 
-Auto-fix handles: removing completed tasks, empty priority sections, normalizing ID casing, and removing orphaned metadata.
+Auto-fix handles: removing completed tasks, empty priority sections, normalizing ID casing, lowercasing tags, and removing orphaned metadata.
 
 ### Watch mode
 
