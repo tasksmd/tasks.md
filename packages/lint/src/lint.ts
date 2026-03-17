@@ -51,7 +51,6 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     const linesToRemove = new Set<number>();
     let lastPriority = -1;
     let inTask = false;
-    let seenSubtask = false;
 
     // Line 1: must be "# Tasks"
     if (lines.length < 1 || lines[0] !== "# Tasks") {
@@ -59,7 +58,6 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     }
 
     for (let i = 1; i < lines.length; i++) {
-      if (linesToRemove.has(i)) continue;
       const line = lines[i];
       const lineNum = i + 1;
 
@@ -72,7 +70,6 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         }
         lastPriority = priority;
         inTask = false;
-        seenSubtask = false;
         continue;
       }
 
@@ -83,7 +80,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       }
 
       // Completed task (should be removed)
-      if (/^-\s+\[x\]\s/i.test(line)) {
+      if (/^-\s+\[x\]\s/.test(line)) {
         if (fixMode) {
           linesToRemove.add(i);
           for (let j = i + 1; j < lines.length; j++) {
@@ -106,7 +103,6 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
           reportError(filePath, lineNum, "task found before any priority heading");
         }
         inTask = true;
-        seenSubtask = false;
         continue;
       }
 
@@ -120,13 +116,6 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       if (/^\s{2,}/.test(line)) {
         if (!inTask && /^\s+-\s+\*\*/.test(line)) {
           reportError(filePath, lineNum, "orphaned metadata (no parent task)");
-        }
-        if (inTask) {
-          if (/^\s+-\s+\[.\]\s/.test(line)) {
-            seenSubtask = true;
-          } else if (seenSubtask && /^\s+-\s+\*\*/.test(line)) {
-            reportError(filePath, lineNum, "metadata must come before sub-tasks");
-          }
         }
         continue;
       }
@@ -142,13 +131,8 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       writeFileSync(filePath, cleaned.join("\n"), "utf-8");
     }
 
-    // Semantic validation via shared parser — IDs, tags, and blockers
-    let currentContent = fixMode && linesToRemove.size > 0
-      ? readFileSync(filePath, "utf-8")
-      : content;
-    let tagFixesApplied = false;
-    const currentLines = currentContent.split("\n");
-    const tasks = parseTasksContent(currentContent, filePath);
+    // Semantic validation via shared parser — IDs and blockers
+    const tasks = parseTasksContent(content, filePath);
     for (const task of tasks) {
       if (task.metadata.id) {
         const id = task.metadata.id;
@@ -170,43 +154,12 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         }
       }
 
-      if (task.metadata.tags) {
-        const tagLine = findMetadataLine(task, /^\s+-\s+\*\*Tags\*\*:/);
-        const hasUppercase = task.metadata.tags.some((tag) => tag !== tag.toLowerCase());
-        if (hasUppercase) {
-          if (fixMode) {
-            const tagLineIndex = tagLine - 1;
-            const originalLine = currentLines[tagLineIndex];
-            if (originalLine) {
-              currentLines[tagLineIndex] = originalLine.replace(
-                /(\*\*Tags\*\*:\s*)(.+)/,
-                (_, prefix, tagsStr) => prefix + tagsStr.toLowerCase()
-              );
-              tagFixesApplied = true;
-              fixed++;
-              console.log(`FIX: ${filePath}:${tagLine}: lowercased tags`);
-            }
-          } else {
-            for (const tag of task.metadata.tags) {
-              if (tag !== tag.toLowerCase()) {
-                reportError(filePath, tagLine, `tag '${tag}' must be lowercase (use '${tag.toLowerCase()}')`);
-              }
-            }
-          }
-        }
-      }
-
       if (task.metadata.blockedBy) {
         const blockerLine = findMetadataLine(task, /^\s+-\s+\*\*Blocked by\*\*:/);
         for (const ref of task.metadata.blockedBy) {
           allBlockedBy.push({ id: ref, file: filePath, line: blockerLine });
         }
       }
-    }
-
-    // Write tag fixes if any were applied
-    if (tagFixesApplied) {
-      writeFileSync(filePath, currentLines.join("\n"), "utf-8");
     }
   }
 

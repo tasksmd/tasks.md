@@ -25,13 +25,11 @@ All originally-identified automation gaps have been implemented:
 | Write-once commands (canonical + generate) | [03](03-agents-work-through-queue.md) | ✅ `tasks generate-commands` + CI drift check |
 | Deterministic `pick_task` | [07](07-monitor-queue-health.md) | ✅ `tasks pick` + `tasks-mcp` MCP tool |
 | Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `tasks lint --fix` / `npx tasks-lint --fix` |
-| Tag casing + metadata ordering lint | [01](01-agents-know-what-to-work-on.md#what-it-catches) | ✅ Validates lowercase tags, metadata-before-subtasks |
 | sync-issues `--merge` mode | [06](06-issue-tracker-flows-to-agents.md) | ✅ `tasks sync-issues --merge` |
 | sync-jira (Jira bridge) | [06](06-issue-tracker-flows-to-agents.md#jira-sync) | ✅ `tasks sync-jira` |
 | sync-linear (Linear bridge) | [06](06-issue-tracker-flows-to-agents.md#linear-sync) | ✅ `tasks sync-linear` |
 | `tasks watch` (auto-lint) | [01](01-agents-know-what-to-work-on.md#watch-mode) | ✅ `tasks watch` |
 | Queue stats & diff | [07](07-monitor-queue-health.md) | ✅ `tasks stats` / `tasks diff` |
-| JSON output for scripting | [07](07-monitor-queue-health.md#json-output-for-scripting) | ✅ `--json` on `pick`, `stats`, `diff` |
 | Reusable CI workflow | [01](01-agents-know-what-to-work-on.md#add-to-ci) | ✅ `.github/workflows/tasks-lint.yml` |
 
 ## Design Philosophy

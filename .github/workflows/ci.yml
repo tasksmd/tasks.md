@@ -10,11 +10,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -22,22 +21,27 @@ jobs:
       - name: Build linter
         run: npm run build --workspace packages/parser --workspace packages/lint
 
-      - name: Lint examples and TASKS.md
-        run: node packages/lint/dist/cli.js examples/*.md TASKS.md
+      - name: Lint examples
+        run: node packages/lint/dist/cli.js examples/*.md
+
+      - name: Lint TASKS.md
+        run: |
+          if [ -f TASKS.md ]; then
+            node packages/lint/dist/cli.js TASKS.md
+          fi
 
   commands-drift:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build all packages
+      - name: Build CLI
         run: npm run build
 
       - name: Regenerate command files
@@ -48,7 +52,7 @@ jobs:
           if ! git diff --exit-code commands/; then
             echo ""
             echo "ERROR: Generated command files are out of date."
-            echo "Run: npx @tasks-md/cli generate-commands"
+            echo "Run: npx tasks-cli generate-commands"
             echo "Then commit the updated files."
             exit 1
           fi
@@ -57,11 +61,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
         run: npm ci

@@ -34,7 +34,6 @@ tasks-lint --fix TASKS.md              # auto-fix deterministic errors
 Use `--fix` to automatically correct deterministic errors in-place:
 
 - Removes completed (`[x]`) tasks and their metadata blocks
-- Lowercases uppercase tags (e.g. `Backend, API` → `backend, api`)
 - Cleans up consecutive blank lines left after removals
 
 Ambiguous cases (priority reordering, dangling blockers) are reported but not auto-fixed.
@@ -53,8 +52,6 @@ When multiple files are passed, IDs are checked for uniqueness across all files 
 | **Task placement** | Tasks must appear after a priority heading |
 | **ID format** | `**ID**:` values must be kebab-case (`auth-fix`, not `Auth Fix`) |
 | **Unique IDs** | No duplicate IDs within a file or across files |
-| **Lowercase tags** | `**Tags**:` values must be lowercase |
-| **Metadata ordering** | Metadata fields must come before sub-tasks in a task block |
 | **Valid blockers** | `**Blocked by**:` must reference IDs that exist somewhere |
 | **No orphaned metadata** | `**ID**:`, `**Tags**:`, etc. must be nested under a task |
 

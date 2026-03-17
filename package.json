@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace packages/parser && npm run build --workspace packages/lint --workspace packages/mcp && npm run build --workspace packages/cli",
+    "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
     "lint": "node packages/lint/dist/cli.js TASKS.md",
     "build:site": "node scripts/build-site.js"

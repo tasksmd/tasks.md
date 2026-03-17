@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -156,12 +156,6 @@ describe("tasks-lint", () => {
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toMatch(/completed task should be removed/);
     });
-
-    it("fails on completed tasks with uppercase [X]", () => {
-      const result = lint("# Tasks\n\n## P1\n\n- [X] Done task\n");
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toMatch(/completed task should be removed/);
-    });
   });
 
   describe("priority errors", () => {
@@ -209,93 +203,6 @@ describe("tasks-lint", () => {
     });
   });
 
-  describe("tag validation", () => {
-    it("fails on uppercase tags", () => {
-      const result = lint(
-        "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **Tags**: Backend, Auth\n"
-      );
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toMatch(/tag 'Backend' must be lowercase/);
-      expect(result.stderr).toMatch(/tag 'Auth' must be lowercase/);
-    });
-
-    it("passes on lowercase tags", () => {
-      const result = lint(
-        "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **Tags**: backend, auth\n"
-      );
-      expect(result.exitCode).toBe(0);
-    });
-
-    it("fails on mixed-case tags", () => {
-      const result = lint(
-        "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **Tags**: backend, frontEnd\n"
-      );
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toMatch(/tag 'frontEnd' must be lowercase.*'frontend'/);
-    });
-  });
-
-  describe("metadata ordering", () => {
-    it("fails when metadata appears after sub-tasks", () => {
-      const result = lint(
-        [
-          "# Tasks",
-          "",
-          "## P1",
-          "",
-          "- [ ] Implement feature",
-          "  - [x] Design schema",
-          "  - [ ] Write code",
-          "  - **ID**: impl-feature",
-          "",
-        ].join("\n")
-      );
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toMatch(/metadata must come before sub-tasks/);
-    });
-
-    it("passes when metadata comes before sub-tasks", () => {
-      const result = lint(
-        [
-          "# Tasks",
-          "",
-          "## P1",
-          "",
-          "- [ ] Implement feature",
-          "  - **ID**: impl-feature",
-          "  - **Details**: Build the thing",
-          "  - [x] Design schema",
-          "  - [ ] Write code",
-          "",
-        ].join("\n")
-      );
-      expect(result.exitCode).toBe(0);
-    });
-
-    it("passes when task has only metadata and no sub-tasks", () => {
-      const result = lint(
-        "# Tasks\n\n## P1\n\n- [ ] Simple task\n  - **ID**: simple\n  - **Tags**: backend\n"
-      );
-      expect(result.exitCode).toBe(0);
-    });
-
-    it("passes when task has only sub-tasks and no metadata", () => {
-      const result = lint(
-        [
-          "# Tasks",
-          "",
-          "## P1",
-          "",
-          "- [ ] Parent task",
-          "  - [x] Step one",
-          "  - [ ] Step two",
-          "",
-        ].join("\n")
-      );
-      expect(result.exitCode).toBe(0);
-    });
-  });
-
   describe("blocker validation", () => {
     it("fails on unknown blocker reference", () => {
       const result = lint(
@@ -331,164 +238,6 @@ describe("tasks-lint", () => {
           "# Tasks\n\n## P1\n\n- [ ] Build\n  - **Blocked by**: setup\n",
       });
       expect(result.exitCode).toBe(0);
-    });
-  });
-
-  describe("--fix mode", () => {
-    it("removes completed tasks when --fix is used", () => {
-      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
-      const file = join(dir, "TASKS.md");
-      writeFileSync(
-        file,
-        [
-          "# Tasks",
-          "",
-          "## P1",
-          "",
-          "- [x] Done task",
-          "  - **ID**: done-one",
-          "",
-          "- [ ] Active task",
-          "",
-        ].join("\n")
-      );
-      try {
-        const result = spawnSync("node", [CLI, "--fix", file], {
-          encoding: "utf-8",
-        });
-        expect(result.status).toBe(0);
-        expect(result.stdout).toMatch(/removed completed task/);
-        expect(result.stdout).toMatch(/fixed 1 issue/);
-
-        const fixed = readFileSync(file, "utf-8");
-        expect(fixed).not.toContain("Done task");
-        expect(fixed).not.toContain("done-one");
-        expect(fixed).toContain("- [ ] Active task");
-      } finally {
-        rmSync(dir, { recursive: true });
-      }
-    });
-
-    it("removes multiple completed tasks", () => {
-      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
-      const file = join(dir, "TASKS.md");
-      writeFileSync(
-        file,
-        [
-          "# Tasks",
-          "",
-          "## P1",
-          "",
-          "- [x] First done",
-          "",
-          "- [x] Second done",
-          "  - **ID**: second",
-          "",
-          "- [ ] Still open",
-          "",
-        ].join("\n")
-      );
-      try {
-        const result = spawnSync("node", [CLI, "--fix", file], {
-          encoding: "utf-8",
-        });
-        expect(result.status).toBe(0);
-        expect(result.stdout).toMatch(/fixed 2 issue/);
-
-        const fixed = readFileSync(file, "utf-8");
-        expect(fixed).not.toContain("First done");
-        expect(fixed).not.toContain("Second done");
-        expect(fixed).toContain("- [ ] Still open");
-      } finally {
-        rmSync(dir, { recursive: true });
-      }
-    });
-
-    it("fixes uppercase [X] completed tasks", () => {
-      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
-      const file = join(dir, "TASKS.md");
-      writeFileSync(
-        file,
-        "# Tasks\n\n## P1\n\n- [X] Uppercase done\n\n- [ ] Still open\n"
-      );
-      try {
-        const result = spawnSync("node", [CLI, "--fix", file], {
-          encoding: "utf-8",
-        });
-        expect(result.status).toBe(0);
-        expect(result.stdout).toMatch(/removed completed task/);
-        const fixed = readFileSync(file, "utf-8");
-        expect(fixed).not.toContain("Uppercase done");
-        expect(fixed).toContain("Still open");
-      } finally {
-        rmSync(dir, { recursive: true });
-      }
-    });
-
-    it("lowercases uppercase tags", () => {
-      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
-      const file = join(dir, "TASKS.md");
-      writeFileSync(
-        file,
-        "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **Tags**: Backend, Auth\n"
-      );
-      try {
-        const result = spawnSync("node", [CLI, "--fix", file], {
-          encoding: "utf-8",
-        });
-        expect(result.status).toBe(0);
-        expect(result.stdout).toMatch(/lowercased tags/);
-        const fixed = readFileSync(file, "utf-8");
-        expect(fixed).toContain("**Tags**: backend, auth");
-        expect(fixed).not.toContain("Backend");
-      } finally {
-        rmSync(dir, { recursive: true });
-      }
-    });
-
-    it("exits 0 when fix resolves all errors", () => {
-      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
-      const file = join(dir, "TASKS.md");
-      writeFileSync(file, "# Tasks\n\n## P1\n\n- [x] Only task\n");
-      try {
-        const result = spawnSync("node", [CLI, "--fix", file], {
-          encoding: "utf-8",
-        });
-        expect(result.status).toBe(0);
-        expect(result.stdout).toMatch(/0 remaining error/);
-      } finally {
-        rmSync(dir, { recursive: true });
-      }
-    });
-
-    it("still reports non-fixable errors alongside fixes", () => {
-      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
-      const file = join(dir, "TASKS.md");
-      writeFileSync(
-        file,
-        [
-          "# Tasks",
-          "",
-          "## P1",
-          "",
-          "- [x] Completed task",
-          "",
-          "- [ ] Bad ID task",
-          "  - **ID**: Bad_ID",
-          "",
-        ].join("\n")
-      );
-      try {
-        const result = spawnSync("node", [CLI, "--fix", file], {
-          encoding: "utf-8",
-        });
-        expect(result.status).toBe(1);
-        expect(result.stderr).toMatch(/must be kebab-case/);
-        expect(result.stdout).toMatch(/fixed 1 issue/);
-        expect(result.stdout).toMatch(/1 remaining error/);
-      } finally {
-        rmSync(dir, { recursive: true });
-      }
     });
   });
 

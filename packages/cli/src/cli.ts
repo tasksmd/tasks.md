@@ -164,7 +164,7 @@ program
 program
   .command("lint")
   .description("Validate TASKS.md files against the spec")
-  .option("--fix", "Auto-fix deterministic issues (completed tasks, tag casing)")
+  .option("--fix", "Auto-fix removable issues (completed tasks)")
   .argument("<paths...>", "Files or directories to lint")
   .action((paths: string[], opts: { fix?: boolean }) => {
     const allFiles = paths.flatMap(discoverFiles);
@@ -188,49 +188,23 @@ program
   .command("pick")
   .description("Pick the best task to work on next")
   .option("--tags <tags>", "Filter by tags (comma-separated)")
-  .option("--agent <name>", "Agent name — resumes prior claims before picking new")
-  .option("--json", "Output as JSON for scripting")
-  .action((opts: { tags?: string; agent?: string; json?: boolean }) => {
+  .action((opts: { tags?: string }) => {
     const taskFiles = loadAllTasks(process.cwd());
     const tags = opts.tags?.split(",").filter(Boolean);
-    const result = pickBestTask(taskFiles, tags, opts.agent);
+    const result = pickBestTask(taskFiles, tags);
 
     if (!result) {
-      if (opts.json) {
-        console.log(JSON.stringify({ picked: false }));
-      } else {
-        console.log("No eligible tasks found (all claimed, blocked, or empty queue).");
-      }
+      console.log("No eligible tasks found (all claimed, blocked, or empty queue).");
       return;
     }
 
-    const { task, candidateCount, unblocksCount, resumed } = result;
-
-    if (opts.json) {
-      console.log(JSON.stringify({
-        picked: true,
-        resumed: resumed ?? false,
-        summary: task.summary,
-        priority: task.priority,
-        file: task.file,
-        line: task.startLine,
-        metadata: task.metadata,
-        candidates: candidateCount,
-        unblocks: unblocksCount,
-      }));
-      return;
-    }
-
-    if (resumed) {
-      console.log(`Resuming "${task.summary}" (${task.priority}) — already claimed by ${task.claimed}`);
-    } else {
-      console.log(`Picked "${task.summary}" (${task.priority})`);
-    }
+    const { task, candidateCount, unblocksCount } = result;
+    console.log(`Picked "${task.summary}" (${task.priority})`);
     console.log(`  File: ${task.file}:${task.startLine}`);
     if (task.metadata.id) console.log(`  ID: ${task.metadata.id}`);
     if (task.metadata.tags?.length) console.log(`  Tags: ${task.metadata.tags.join(", ")}`);
     if (unblocksCount > 0) console.log(`  Unblocks: ${unblocksCount} task(s)`);
-    if (!resumed) console.log(`  Candidates: ${candidateCount}`);
+    console.log(`  Candidates: ${candidateCount}`);
   });
 
 // ── stats ──
@@ -238,14 +212,8 @@ program
 program
   .command("stats")
   .description("Show task queue stats and throughput")
-  .option("--json", "Output as JSON for scripting")
-  .action((opts: { json?: boolean }) => {
+  .action(() => {
     const stats = getQueueStats(process.cwd());
-
-    if (opts.json) {
-      console.log(JSON.stringify(stats));
-      return;
-    }
 
     console.log("📋 Queue Overview");
     console.log("");
@@ -280,14 +248,8 @@ program
   .command("diff")
   .description("Show queue changes since last commit")
   .argument("[ref]", "Git reference to compare against", "HEAD")
-  .option("--json", "Output as JSON for scripting")
-  .action((ref: string, opts: { json?: boolean }) => {
+  .action((ref: string) => {
     const diff = getQueueDiff(process.cwd(), ref);
-
-    if (opts.json) {
-      console.log(JSON.stringify(diff));
-      return;
-    }
 
     if (!diff.hasChanges) {
       console.log(`No TASKS.md changes since ${ref}`);
