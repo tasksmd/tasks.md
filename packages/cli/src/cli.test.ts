@@ -124,6 +124,70 @@ describe("pickBestTask", () => {
     expect(result!.task.summary).toBe("Only task");
   });
 
+  it("resumes prior claim when agent already has one", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] Unclaimed critical", "",
+        "## P1", "",
+        "- [ ] My claimed task (@cascade)", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files, undefined, "cascade");
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("My claimed task");
+    expect(result!.resumed).toBe(true);
+  });
+
+  it("skips blocked prior claims and picks new task", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P1", "",
+        "- [ ] Blocked claimed (@cascade)",
+        "  - **ID**: blocked-claim",
+        "  - **Blocked by**: some-blocker", "",
+        "- [ ] Some blocker",
+        "  - **ID**: some-blocker", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files, undefined, "cascade");
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Some blocker");
+    expect(result!.resumed).toBeUndefined();
+  });
+
+  it("picks normally when agent has no prior claims", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P1", "",
+        "- [ ] Available task", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files, undefined, "cascade");
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Available task");
+    expect(result!.resumed).toBeUndefined();
+  });
+
+  it("prefers tasks with more overlapping tags", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P1", "",
+        "- [ ] Single tag match",
+        "  - **Tags**: backend", "",
+        "- [ ] Double tag match",
+        "  - **Tags**: backend, api", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files, ["backend", "api"]);
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Double tag match");
+  });
+
   it("works across multiple files", () => {
     const files: TaskFile[] = [
       {
