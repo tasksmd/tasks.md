@@ -127,8 +127,10 @@ server.registerTool(
     title: "Pick Task",
     description:
       "Pick the highest-priority unblocked, unclaimed task using a deterministic algorithm. " +
+      "If agent_name is provided and that agent already has a claimed task, returns it " +
+      "with resumed=true instead of picking a new one (prevents orphaned claims). " +
       "Walks P0→P3, skips blocked and claimed tasks, scores by unblocking impact " +
-      "(tasks that unblock others are preferred). Returns the single best task to work on next.",
+      "then tag overlap count. Returns the single best task to work on next.",
     inputSchema: z.object({
       tags: z
         .string()
