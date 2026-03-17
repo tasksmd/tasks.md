@@ -38,4 +38,4 @@ jobs:
 | Input | Description | Default |
 |-------|-------------|---------|
 | `paths` | Space-separated paths to lint | `TASKS.md` |
-| `version` | Version of `tasks-lint` to use | `latest` |
+| `version` | Version of `@tasks-md/lint` to use | `latest` |
