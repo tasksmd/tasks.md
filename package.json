@@ -8,7 +8,8 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
-    "lint": "node packages/lint/dist/cli.js TASKS.md"
+    "lint": "node packages/lint/dist/cli.js TASKS.md",
+    "build:site": "node scripts/build-site.js"
   },
   "repository": {
     "type": "git",

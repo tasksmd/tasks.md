@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED from docs/template.html + spec.md — do not edit directly.
-     Run: node scripts/build-site.js -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,31 +31,7 @@
     <div class="container">
       <h2>Quick Start</h2>
       <p>Create a <code>TASKS.md</code> at your repo root:</p>
-      <pre><code># Tasks
-
-## P0
-
-- [ ] Fix authentication crash on token refresh
-  - **ID**: auth-fix
-  - **Tags**: backend, auth
-  - **Details**: JWT refresh returns 500 on expired tokens
-  - **Files**: `src/auth/refresh.ts`, `src/middleware/auth.ts`
-  - **Acceptance**: Refresh works, tests pass, regression test added
-
-## P1
-
-- [ ] Add rate limiting to public API endpoints (@cursor-1)
-  - **Tags**: backend
-  - **Details**: Use express-rate-limit, 100 req/min per IP
-  - **Blocked by**: auth-fix
-
-## P2
-
-- [ ] Update README with new API endpoints
-
-## P3
-
-- [ ] Support WebSocket connections</code></pre>
+      <pre><code>{{QUICK_START}}</code></pre>
       <p>Most tasks are just checkboxes under priority headings. Add metadata only when needed.</p>
     </div>
   </section>
@@ -184,36 +158,7 @@
             <td>P0&ndash;P3 headings (PagerDuty/SRE scale)</td>
             <td><code>## P1</code></td>
           </tr>
-          <tr>
-            <td>ID</td>
-            <td>Stable identifier for blocker references and cross-file linking</td>
-            <td><code>**ID**: auth-fix</code></td>
-          </tr>
-          <tr>
-            <td>Tags</td>
-            <td>Lowercase, comma-separated labels for filtering and orchestrator routing</td>
-            <td><code>**Tags**: backend, auth</code></td>
-          </tr>
-          <tr>
-            <td>Details</td>
-            <td>Implementation guidance, context, approach</td>
-            <td><code>**Details**: JWT returns 500</code></td>
-          </tr>
-          <tr>
-            <td>Files</td>
-            <td>Relevant file paths (backtick-quoted, comma-separated)</td>
-            <td><code>**Files**: `src/auth.ts`</code></td>
-          </tr>
-          <tr>
-            <td>Acceptance</td>
-            <td>Definition of done</td>
-            <td><code>**Acceptance**: Tests pass</code></td>
-          </tr>
-          <tr>
-            <td>Blocked by</td>
-            <td>Task ID(s) of blocking tasks — comma-separated if multiple</td>
-            <td><code>**Blocked by**: auth-fix</code></td>
-          </tr>
+{{FORMAT_TABLE}}
         </tbody>
       </table>
       <p style="margin-top:1rem; color:var(--text-muted); font-size:0.9rem">All metadata is optional. Most tasks are just a checkbox and a sentence.</p>
@@ -233,26 +178,7 @@
           <tr><th>Agent</th><th>Install</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Claude Code</td>
-            <td><code>cp -r commands/claude/skills/next-task .claude/skills/</code></td>
-          </tr>
-          <tr>
-            <td>Codex</td>
-            <td><code>cp -r commands/codex/skills/next-task .agents/skills/</code></td>
-          </tr>
-          <tr>
-            <td>Cursor</td>
-            <td><code>cp commands/cursor/next-task.md .cursor/commands/</code></td>
-          </tr>
-          <tr>
-            <td>Gemini CLI</td>
-            <td><code>cp commands/gemini/next-task.toml .gemini/commands/</code></td>
-          </tr>
-          <tr>
-            <td>Windsurf</td>
-            <td><code>cp commands/windsurf/next-task.md .windsurf/workflows/</code></td>
-          </tr>
+{{INSTALL_TABLE}}
         </tbody>
       </table>
 

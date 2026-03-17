@@ -2,15 +2,6 @@
 
 ## P2
 
-- [ ] Auto-generate website from spec.md
-  - **ID**: site-gen
-  - **Tags**: docs, build
-  - **Details**: `docs/index.html` (20KB) hand-duplicates content from `spec.md` and
-    `README.md`. Updating the spec requires editing two files. Add a build step that
-    generates the site from markdown sources. Could be as simple as marked + a template,
-    or a static site generator. The key requirement is that spec changes auto-update the site.
-  - **Files**: `docs/index.html`, `spec.md`, `README.md`
-
 - [ ] Publish tasks-mcp to npm
   - **ID**: publish-mcp
   - **Tags**: tooling, mcp
