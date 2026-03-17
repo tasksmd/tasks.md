@@ -134,14 +134,18 @@ server.registerTool(
         .string()
         .optional()
         .describe("Comma-separated tags to prefer (e.g. 'tooling,mcp'). Falls back to all if no match."),
+      agent_name: z
+        .string()
+        .optional()
+        .describe("Agent name to auto-claim the picked task (e.g. 'cascade', 'cursor'). If omitted, task is not claimed."),
     }),
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: false },
   },
-  async ({ tags }) => {
+  async ({ tags, agent_name }) => {
     const directory = getWorkingDirectory();
     const taskFiles = await loadAllTasks(directory);
     const parsedTags = tags?.split(",").map((t) => t.trim()).filter(Boolean);
-    const result = pickTask(taskFiles, { tags: parsedTags });
+    const result = await pickTask(taskFiles, { tags: parsedTags, agent_name });
 
     return {
       content: [{ type: "text" as const, text: result.text }],

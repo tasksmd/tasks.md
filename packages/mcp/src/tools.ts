@@ -36,51 +36,6 @@ export interface ListTasksOptions {
   unblocked_only?: boolean;
 }
 
-export async function listTasks(
-  directory: string,
-  options: ListTasksOptions = {}
-): Promise<ToolResult> {
-  const taskFiles = await loadAllTasks(directory);
-  const allIds = getAllTaskIds(taskFiles);
-
-  let allTasks: Task[] = taskFiles.flatMap((file) => file.tasks);
-
-  if (options.priority) {
-    allTasks = allTasks.filter(
-      (task) => task.priority.toUpperCase() === options.priority!.toUpperCase()
-    );
-  }
-
-  if (options.tag) {
-    allTasks = allTasks.filter((task) =>
-      task.metadata.tags?.some(
-        (t) => t.toLowerCase() === options.tag!.toLowerCase()
-      )
-    );
-  }
-
-  if (options.unclaimed_only) {
-    allTasks = allTasks.filter((task) => !task.claimed);
-  }
-
-  if (options.unblocked_only) {
-    allTasks = allTasks.filter((task) => !isBlocked(task, allIds));
-  }
-
-  allTasks.sort((a, b) => a.priority.localeCompare(b.priority));
-
-  const formatted = allTasks.map((task) => formatTask(task, allIds));
-
-  const summary =
-    allTasks.length === 0
-      ? "No tasks found matching the filters."
-      : `Found ${allTasks.length} task(s) across ${taskFiles.length} file(s).`;
-
-  return { text: JSON.stringify({ summary, tasks: formatted }, null, 2) };
-}
-
-// ── list_tasks (from pre-loaded files — no discovery) ──
-
 export function listTasksFromFiles(
   taskFiles: TaskFile[],
   options: ListTasksOptions = {}
@@ -219,10 +174,10 @@ function unblocksCount(task: Task, allTasks: Task[]): number {
   ).length;
 }
 
-export function pickTask(
+export async function pickTask(
   taskFiles: TaskFile[],
   options: PickTaskOptions = {}
-): ToolResult {
+): Promise<ToolResult> {
   const allIds = getAllTaskIds(taskFiles);
   const allTasks: Task[] = taskFiles.flatMap((file) => file.tasks);
 
@@ -261,9 +216,14 @@ export function pickTask(
   const picked = candidates[0];
   const formatted = formatTask(picked, allIds);
 
+  if (options.agent_name) {
+    await claimTask(taskFiles, picked.metadata.id || picked.summary, options.agent_name);
+    formatted.claimed = `@${options.agent_name.replace(/^@/, "")}`;
+  }
+
   return {
     text: JSON.stringify({
-      summary: `Picked "${picked.summary}" (${picked.priority}) — unblocks ${unblocksCount(picked, allTasks)} other task(s).`,
+      summary: `Picked "${picked.summary}" (${picked.priority}) — unblocks ${unblocksCount(picked, allTasks)} other task(s).${options.agent_name ? ` Claimed for @${options.agent_name.replace(/^@/, "")}.` : ""}`,
       task: formatted,
       candidates_count: candidates.length,
     }, null, 2),

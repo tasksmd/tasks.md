@@ -8,6 +8,7 @@ import {
   claimTask,
   completeTask,
   addTask,
+  pickTask,
 } from "./tools.js";
 
 // ── Helpers ──
@@ -411,6 +412,145 @@ describe("completeTask", () => {
     expect(updated).toContain("## P2");
     expect(updated).toContain("P2 task");
     expect(updated).not.toContain("First P1");
+  });
+});
+
+// ── pick_task ──
+
+describe("pickTask", () => {
+  it("picks highest priority unblocked unclaimed task", async () => {
+    const files = [makeTaskFile(FIXTURE, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task).not.toBeNull();
+    expect(data.task.summary).toBe("Fix critical auth crash");
+    expect(data.task.priority).toBe("P0");
+  });
+
+  it("skips claimed tasks", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Claimed P0 (@someone)",
+      "",
+      "## P1",
+      "",
+      "- [ ] Unclaimed P1",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("Unclaimed P1");
+  });
+
+  it("skips blocked tasks", async () => {
+    const files = [makeTaskFile(FIXTURE, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).not.toBe("Migrate database queries");
+  });
+
+  it("prefers tasks that unblock others", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Unblocking task",
+      "  - **ID**: blocker",
+      "",
+      "- [ ] Standalone task",
+      "",
+      "- [ ] Blocked downstream",
+      "  - **Blocked by**: blocker",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("Unblocking task");
+    expect(data.summary).toContain("unblocks 1");
+  });
+
+  it("filters by tags when provided", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Backend task",
+      "  - **Tags**: backend, api",
+      "",
+      "- [ ] Frontend task",
+      "  - **Tags**: frontend",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { tags: ["frontend"] });
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("Frontend task");
+  });
+
+  it("returns null task when no candidates", async () => {
+    const content = "# Tasks\n\n## P1\n\n- [ ] Only task (@claimed)\n";
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task).toBeNull();
+    expect(data.summary).toContain("No eligible tasks");
+  });
+
+  it("auto-claims when agent_name is provided", async () => {
+    let tmpDir: string;
+    tmpDir = await mkdtemp(join(tmpdir(), "tasks-pick-"));
+    try {
+      const filePath = join(tmpDir, "TASKS.md");
+      const content = "# Tasks\n\n## P1\n\n- [ ] Pick me\n  - **ID**: pick-me\n";
+      await writeFile(filePath, content, "utf-8");
+
+      const files = [makeTaskFile(content, filePath)];
+      const result = await pickTask(files, { agent_name: "cascade" });
+      const data = JSON.parse(result.text);
+
+      expect(data.task.summary).toBe("Pick me");
+      expect(data.task.claimed).toBe("@cascade");
+      expect(data.summary).toContain("Claimed for @cascade");
+
+      const updated = await readFile(filePath, "utf-8");
+      expect(updated).toContain("(@cascade)");
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not claim when agent_name is omitted", async () => {
+    let tmpDir: string;
+    tmpDir = await mkdtemp(join(tmpdir(), "tasks-pick-"));
+    try {
+      const filePath = join(tmpDir, "TASKS.md");
+      const content = "# Tasks\n\n## P1\n\n- [ ] Pick me\n  - **ID**: pick-me\n";
+      await writeFile(filePath, content, "utf-8");
+
+      const files = [makeTaskFile(content, filePath)];
+      const result = await pickTask(files);
+      const data = JSON.parse(result.text);
+
+      expect(data.task.claimed).toBeNull();
+
+      const updated = await readFile(filePath, "utf-8");
+      expect(updated).not.toContain("(@");
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
   });
 });
 
