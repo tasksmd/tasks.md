@@ -71,6 +71,8 @@ If all tasks at every priority level are blocked, claimed, or unmatched — tell
 
 ## 5. Claim and do the work
 
+> **MCP shortcut:** If `tasks-mcp` is available, use its `claim_task` tool instead of manually editing the file.
+
 Append your identity to the task line. Use the format `@<tool>-<instance>` (e.g., `@codex, @codex-2`):
 
 ```markdown
@@ -91,6 +93,8 @@ Then do the work:
 - Fix any issues before proceeding
 
 ## 6. Complete the task
+
+> **MCP shortcut:** If `tasks-mcp` is available, use its `complete_task` tool instead of manually editing the file — it handles block removal and empty section cleanup automatically.
 
 Remove the entire task block from TASKS.md — the task line, all metadata, and any sub-tasks. Completed task history lives in git log.
 
