@@ -4,7 +4,7 @@
   "description": "MCP server for reading and writing TASKS.md files",
   "type": "module",
   "bin": {
-    "tasks-mcp": "./dist/index.js"
+    "tasks-mcp": "dist/index.js"
   },
   "files": [
     "dist/**/*.js",
@@ -29,7 +29,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tasksmd/tasks.md",
+    "url": "git+https://github.com/tasksmd/tasks.md.git",
     "directory": "packages/mcp"
   },
   "homepage": "https://tasks.md",

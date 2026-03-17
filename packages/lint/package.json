@@ -6,7 +6,7 @@
   "main": "./dist/lint.js",
   "types": "./dist/lint.d.ts",
   "bin": {
-    "tasks-lint": "./dist/cli.js"
+    "tasks-lint": "dist/cli.js"
   },
   "exports": {
     ".": {
@@ -35,7 +35,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tasksmd/tasks.md",
+    "url": "git+https://github.com/tasksmd/tasks.md.git",
     "directory": "packages/lint"
   },
   "homepage": "https://tasks.md",

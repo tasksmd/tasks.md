@@ -32,7 +32,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tasksmd/tasks.md",
+    "url": "git+https://github.com/tasksmd/tasks.md.git",
     "directory": "packages/parser"
   },
   "homepage": "https://tasks.md",
@@ -40,6 +40,9 @@
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0",
     "vitest": "4.0.18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=18"
