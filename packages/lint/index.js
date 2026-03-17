@@ -2,6 +2,7 @@
 
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { parseTasksContent } from "@tasks-md/parser";
 
 let errors = 0;
 let fixed = 0;
@@ -32,9 +33,6 @@ function validateFile(filePath, allIds, allBlockedBy) {
   const linesToRemove = new Set();
   let lastPriority = -1;
   let inTask = false;
-  let taskStartLine = 0;
-  let hasMetadata = false;
-  const fileIds = new Map();
 
   // Line 1: must be "# Tasks"
   if (lines.length < 1 || lines[0] !== "# Tasks") {
@@ -54,7 +52,6 @@ function validateFile(filePath, allIds, allBlockedBy) {
       }
       lastPriority = priority;
       inTask = false;
-      hasMetadata = false;
       continue;
     }
 
@@ -68,7 +65,6 @@ function validateFile(filePath, allIds, allBlockedBy) {
     if (/^-\s+\[x\]\s/.test(line)) {
       if (fixMode) {
         linesToRemove.add(i);
-        // Also remove subsequent indented lines (metadata/subtasks)
         for (let j = i + 1; j < lines.length; j++) {
           if (/^\s{2,}/.test(lines[j]) || lines[j].trim() === "") {
             linesToRemove.add(j);
@@ -92,8 +88,6 @@ function validateFile(filePath, allIds, allBlockedBy) {
         error(filePath, lineNum, "task found before any priority heading");
       }
       inTask = true;
-      taskStartLine = lineNum;
-      hasMetadata = false;
       continue;
     }
 
@@ -105,64 +99,9 @@ function validateFile(filePath, allIds, allBlockedBy) {
 
     // Indented content (metadata or subtask)
     if (/^\s{2,}/.test(line)) {
-      if (!inTask) {
-        // Orphaned metadata
-        if (/^\s+-\s+\*\*/.test(line)) {
-          error(filePath, lineNum, "orphaned metadata (no parent task)");
-        }
-        continue;
+      if (!inTask && /^\s+-\s+\*\*/.test(line)) {
+        error(filePath, lineNum, "orphaned metadata (no parent task)");
       }
-
-      // ID metadata
-      const idMatch = line.match(/^\s+-\s+\*\*ID\*\*:\s*(.+)$/);
-      if (idMatch) {
-        hasMetadata = true;
-        const id = idMatch[1].trim();
-
-        // Check kebab-case
-        if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) {
-          error(filePath, lineNum, `ID '${id}' must be kebab-case (lowercase letters, numbers, hyphens)`);
-        }
-
-        // Check uniqueness within file
-        if (fileIds.has(id)) {
-          error(filePath, lineNum, `duplicate ID '${id}' (first defined at line ${fileIds.get(id)})`);
-        } else {
-          fileIds.set(id, lineNum);
-        }
-
-        // Track globally
-        if (allIds.has(id)) {
-          error(filePath, lineNum, `duplicate ID '${id}' (also defined in ${allIds.get(id).file}:${allIds.get(id).line})`);
-        } else {
-          allIds.set(id, { file: filePath, line: lineNum });
-        }
-        continue;
-      }
-
-      // Blocked by metadata
-      const blockedMatch = line.match(/^\s+-\s+\*\*Blocked by\*\*:\s*(.+)$/);
-      if (blockedMatch) {
-        hasMetadata = true;
-        const refs = blockedMatch[1].split(",").map((r) => r.trim());
-        for (const ref of refs) {
-          allBlockedBy.push({ id: ref, file: filePath, line: lineNum });
-        }
-        continue;
-      }
-
-      // Other metadata
-      if (/^\s+-\s+\*\*.+\*\*:/.test(line)) {
-        hasMetadata = true;
-        continue;
-      }
-
-      // Subtask
-      if (/^\s+-\s+\[.\]\s/.test(line)) {
-        continue;
-      }
-
-      // Continuation line (indented content under metadata)
       continue;
     }
   }
@@ -170,12 +109,44 @@ function validateFile(filePath, allIds, allBlockedBy) {
   // Apply fixes if in fix mode
   if (fixMode && linesToRemove.size > 0) {
     const fixedLines = lines.filter((_, idx) => !linesToRemove.has(idx));
-    // Remove consecutive blank lines left by removals
     const cleaned = fixedLines.filter((line, idx) => {
       if (idx === 0) return true;
       return !(line.trim() === "" && fixedLines[idx - 1]?.trim() === "");
     });
     writeFileSync(filePath, cleaned.join("\n"), "utf-8");
+  }
+
+  // Semantic validation via shared parser — IDs and blockers
+  const tasks = parseTasksContent(content, filePath);
+  for (const task of tasks) {
+    if (task.metadata.id) {
+      const id = task.metadata.id;
+      const idLineOffset = task.rawLines.findIndex((l) => /^\s+-\s+\*\*ID\*\*:/.test(l));
+      const idLine = idLineOffset >= 0 ? task.startLine + idLineOffset : task.startLine;
+
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id)) {
+        error(filePath, idLine, `ID '${id}' must be kebab-case (lowercase letters, numbers, hyphens)`);
+      }
+
+      if (allIds.has(id)) {
+        const existing = allIds.get(id);
+        if (existing.file === filePath) {
+          error(filePath, idLine, `duplicate ID '${id}' (first defined at line ${existing.line})`);
+        } else {
+          error(filePath, idLine, `duplicate ID '${id}' (also defined in ${existing.file}:${existing.line})`);
+        }
+      } else {
+        allIds.set(id, { file: filePath, line: idLine });
+      }
+    }
+
+    if (task.metadata.blockedBy) {
+      const blockerLineOffset = task.rawLines.findIndex((l) => /^\s+-\s+\*\*Blocked by\*\*:/.test(l));
+      const blockerLine = blockerLineOffset >= 0 ? task.startLine + blockerLineOffset : task.startLine;
+      for (const ref of task.metadata.blockedBy) {
+        allBlockedBy.push({ id: ref, file: filePath, line: blockerLine });
+      }
+    }
   }
 }
 

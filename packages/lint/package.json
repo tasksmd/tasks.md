@@ -27,6 +27,9 @@
     "directory": "packages/lint"
   },
   "homepage": "https://tasks.md",
+  "dependencies": {
+    "@tasks-md/parser": "file:../parser"
+  },
   "engines": {
     "node": ">=18"
   }

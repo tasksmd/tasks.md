@@ -2,16 +2,6 @@
 
 ## P0
 
-- [ ] Extract shared parser package from duplicated mcp/lint parsers
-  - **ID**: shared-parser
-  - **Tags**: architecture, DRY
-  - **Details**: `mcp/src/parser.ts` (223 lines) and `lint/index.js` (252 lines) both
-    parse TASKS.md line-by-line with separate implementations. They share zero code.
-    Extract `packages/parser/` with the MCP parser as the canonical implementation.
-    Export `Task`, `TaskMetadata`, `TaskFile`, `parseTasksContent`, `discoverTaskFiles`,
-    `getAllTaskIds`, `isBlocked`. Both MCP server and linter import from here.
-  - **Files**: `mcp/src/parser.ts`, `lint/index.js`, new `packages/parser/`
-
 - [ ] Add root package.json with npm workspaces
   - **ID**: workspaces
   - **Tags**: architecture, build
@@ -26,18 +16,16 @@
 
 - [ ] Rewrite linter in TypeScript consuming shared parser
   - **ID**: typed-lint
-  - **Blocked by**: shared-parser, workspaces
+  - **Blocked by**: workspaces
   - **Tags**: architecture, lint
-  - **Details**: `lint/index.js` is 252 lines of untyped JS with its own parser. Rewrite
-    as TypeScript that imports `@tasks-md/parser` and validates parsed structures instead
-    of raw text. Duplicate ID check becomes `Set<string>` on parsed IDs. Priority order
-    check operates on parsed task priorities. Dangling blocker check uses `getAllTaskIds()`.
-    Should shrink to ~80 lines of validation logic + ~30 lines CLI.
-  - **Files**: `lint/index.js` → `packages/lint/src/index.ts`
+  - **Details**: `lint/index.js` already imports `@tasks-md/parser` for ID/blocker validation.
+    Rewrite remaining structural validation in TypeScript. Priority order check can operate
+    on parsed task priorities. Should shrink to ~80 lines of validation logic + ~30 lines CLI.
+  - **Files**: `packages/lint/index.js` → `packages/lint/src/index.ts`
 
 - [ ] Replace bash CLI with Node.js CLI
   - **ID**: node-cli
-  - **Blocked by**: shared-parser, workspaces
+  - **Blocked by**: workspaces
   - **Tags**: architecture, cli
   - **Details**: `scripts/tasks` is a 305-line bash case statement. The `pick` command
     shells out to `node -e` with inline JS importing from MCP dist (breaks if not built).
@@ -75,7 +63,7 @@
 
 - [ ] Publish tasks-mcp to npm
   - **ID**: publish-mcp
-  - **Blocked by**: shared-parser, workspaces
+  - **Blocked by**: workspaces
   - **Tags**: tooling, mcp
   - **Details**: Package is publish-ready: prepublishOnly runs build+test (104 tests),
     bin entry has shebang, test files excluded, README updated. After workspace migration,
