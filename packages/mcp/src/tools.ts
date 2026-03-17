@@ -174,12 +174,38 @@ function unblocksCount(task: Task, allTasks: Task[]): number {
   ).length;
 }
 
+function tagOverlapCount(task: Task, tags: string[]): number {
+  if (!task.metadata.tags?.length) return 0;
+  return task.metadata.tags.filter((t) =>
+    tags.some((at) => at.toLowerCase() === t.toLowerCase())
+  ).length;
+}
+
 export async function pickTask(
   taskFiles: TaskFile[],
   options: PickTaskOptions = {}
 ): Promise<ToolResult> {
   const allIds = getAllTaskIds(taskFiles);
   const allTasks: Task[] = taskFiles.flatMap((file) => file.tasks);
+
+  // Resume prior claim: if agent_name is provided, check for already-claimed task
+  if (options.agent_name) {
+    const normalizedName = `@${options.agent_name.replace(/^@/, "")}`;
+    const priorClaim = allTasks.find(
+      (task) =>
+        task.claimed === normalizedName && !isBlocked(task, allIds)
+    );
+    if (priorClaim) {
+      const formatted = formatTask(priorClaim, allIds);
+      return {
+        text: JSON.stringify({
+          summary: `Resuming previously claimed "${priorClaim.summary}" (${priorClaim.priority}) for ${normalizedName}.`,
+          task: formatted,
+          resumed: true,
+        }, null, 2),
+      };
+    }
+  }
 
   // Filter: unclaimed, unblocked
   let candidates = allTasks.filter(
@@ -206,11 +232,15 @@ export async function pickTask(
     };
   }
 
-  // Sort: P0 before P1 before P2 before P3, then by unblocking impact (desc)
+  // Sort: P0 before P1 before P2 before P3, then by unblocking impact (desc),
+  // then by tag overlap count (desc) per spec §"Tag-Based Routing"
+  const sortTags = options.tags ?? [];
   candidates.sort((a, b) => {
     const priorityDiff = a.priority.localeCompare(b.priority);
     if (priorityDiff !== 0) return priorityDiff;
-    return unblocksCount(b, allTasks) - unblocksCount(a, allTasks);
+    const unblockDiff = unblocksCount(b, allTasks) - unblocksCount(a, allTasks);
+    if (unblockDiff !== 0) return unblockDiff;
+    return tagOverlapCount(b, sortTags) - tagOverlapCount(a, sortTags);
   });
 
   const picked = candidates[0];

@@ -509,6 +509,79 @@ describe("pickTask", () => {
     expect(data.summary).toContain("No eligible tasks");
   });
 
+  it("resumes prior claim when agent already has a claimed task", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Already claimed (@cascade)",
+      "  - **ID**: prior-claim",
+      "",
+      "- [ ] Unclaimed task",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { agent_name: "cascade" });
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("Already claimed");
+    expect(data.resumed).toBe(true);
+    expect(data.summary).toContain("Resuming");
+    expect(data.summary).toContain("@cascade");
+  });
+
+  it("skips blocked prior claims and picks new task", async () => {
+    let tmpDir: string;
+    tmpDir = await mkdtemp(join(tmpdir(), "tasks-pick-"));
+    try {
+      const filePath = join(tmpDir, "TASKS.md");
+      const content = [
+        "# Tasks",
+        "",
+        "## P1",
+        "",
+        "- [ ] Blocked claimed (@cascade)",
+        "  - **ID**: blocked-claim",
+        "  - **Blocked by**: some-blocker",
+        "",
+        "- [ ] Some blocker",
+        "  - **ID**: some-blocker",
+        "",
+      ].join("\n");
+      await writeFile(filePath, content, "utf-8");
+
+      const files = [makeTaskFile(content, filePath)];
+      const result = await pickTask(files, { agent_name: "cascade" });
+      const data = JSON.parse(result.text);
+
+      expect(data.task.summary).toBe("Some blocker");
+      expect(data.resumed).toBeUndefined();
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers tasks with more overlapping tags", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Single tag match",
+      "  - **Tags**: backend",
+      "",
+      "- [ ] Double tag match",
+      "  - **Tags**: backend, api",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { tags: ["backend", "api"] });
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("Double tag match");
+  });
+
   it("auto-claims when agent_name is provided", async () => {
     let tmpDir: string;
     tmpDir = await mkdtemp(join(tmpdir(), "tasks-pick-"));
