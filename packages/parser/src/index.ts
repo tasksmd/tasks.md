@@ -165,3 +165,10 @@ export function isBlocked(task: Task, allIds: Set<string>): boolean {
   if (!task.metadata.blockedBy?.length) return false;
   return task.metadata.blockedBy.some((id) => allIds.has(id));
 }
+
+export {
+  findGitRoot,
+  discoverTaskFiles,
+  loadAllTasks,
+  loadAllTasksAsync,
+} from "./discovery.js";

@@ -1,59 +1,15 @@
 import { execSync } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
 import {
-  parseTasksContent,
   getAllTaskIds,
   isBlocked,
+  findGitRoot,
+  loadAllTasks,
   type Task,
   type TaskFile,
 } from "@tasks-md/parser";
 
+export { findGitRoot, loadAllTasks };
 export type { Task, TaskFile };
-
-// ── Task Discovery & Loading ──
-
-export function findGitRoot(startDir: string): string {
-  try {
-    return execSync("git rev-parse --show-toplevel", {
-      cwd: startDir,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
-  } catch {
-    return startDir;
-  }
-}
-
-export function discoverTaskFiles(directory: string): string[] {
-  const gitRoot = findGitRoot(directory);
-  try {
-    const output = execSync('fd --no-ignore-vcs -t f "^TASKS\\.md$"', {
-      cwd: gitRoot,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
-    if (!output) return [];
-    return output.split("\n").map((file) => join(gitRoot, file));
-  } catch {
-    const fallback = join(gitRoot, "TASKS.md");
-    return existsSync(fallback) ? [fallback] : [];
-  }
-}
-
-export function loadAllTasks(directory: string): TaskFile[] {
-  const files = discoverTaskFiles(directory);
-  const results: TaskFile[] = [];
-  for (const file of files) {
-    try {
-      const content = readFileSync(file, "utf-8");
-      results.push({ path: file, tasks: parseTasksContent(content, file) });
-    } catch {
-      // Skip unreadable files
-    }
-  }
-  return results;
-}
 
 // ── Pick Task ──
 
