@@ -1,5 +1,0 @@
-#!/bin/bash
-# Thin wrapper — delegates to the TypeScript CLI.
-# See packages/cli/ for the actual implementation.
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-exec node "$SCRIPT_DIR/../packages/cli/dist/cli.js" "$@"
