@@ -1,0 +1,27 @@
+name: "tasks-lint"
+description: "Validate TASKS.md files against the tasks.md spec"
+branding:
+  icon: "check-square"
+  color: "green"
+
+inputs:
+  paths:
+    description: "Space-separated paths to TASKS.md files or directories to lint"
+    required: false
+    default: "TASKS.md"
+  version:
+    description: "Version of tasks-lint to use"
+    required: false
+    default: "latest"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+
+    - name: Run tasks-lint
+      shell: bash
+      run: npx tasks-lint@${{ inputs.version }} ${{ inputs.paths }}

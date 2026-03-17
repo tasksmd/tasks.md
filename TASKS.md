@@ -13,15 +13,14 @@
 
 ## P3
 
-- [ ] Create GitHub Action for tasks-lint
-  - **ID**: github-action
-  - **Tags**: tooling, growth
-  - **Details**: Create a reusable GitHub Action that runs tasks-lint on TASKS.md files.
-    Users would add one line to their CI workflow. Major adoption lever — lowers barrier to
-    entry for the spec. Could be as simple as a composite action that runs `npx tasks-lint`.
-  - **Files**: `.github/actions/lint/action.yml` (new)
+- [ ] Set up publish workflow for GitHub Actions
+  - **ID**: publish-action
+  - **Tags**: tooling
+  - **Details**: The `tasks-lint` GitHub Action at `.github/actions/lint/` is ready but
+    depends on `tasks-lint` being published to npm. Once publish-all is done, verify the
+    action works in a test repo.
   - **Blocked by**: publish-all
-  - **Acceptance**: Users can add `uses: tasksmd/tasks.md/.github/actions/lint@main` to CI
+  - **Acceptance**: `uses: tasksmd/tasks.md/.github/actions/lint@main` works in external repos
 
 - [ ] Set up custom domain for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md
