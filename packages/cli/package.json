@@ -1,0 +1,55 @@
+{
+  "name": "tasks-cli",
+  "version": "0.1.0",
+  "description": "Unified CLI for TASKS.md task queue management",
+  "type": "module",
+  "main": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "bin": {
+    "tasks": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/lib.js",
+      "types": "./dist/lib.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!dist/**/*.test.*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "tasks",
+    "cli",
+    "ai-agents",
+    "task-queue",
+    "markdown"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tasksmd/tasks.md",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://tasks.md",
+  "dependencies": {
+    "@tasks-md/parser": "file:../parser",
+    "commander": "^13.0.0",
+    "tasks-lint": "file:../lint"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "4.0.18"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

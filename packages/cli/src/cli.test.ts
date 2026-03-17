@@ -1,0 +1,225 @@
+import { describe, it, expect } from "vitest";
+import { spawnSync } from "node:child_process";
+import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { parseTasksContent, type TaskFile } from "@tasks-md/parser";
+import { pickBestTask } from "./lib.js";
+
+const CLI = join(import.meta.dirname, "..", "dist", "cli.js");
+
+function makeTaskFiles(content: string, path = "TASKS.md"): TaskFile[] {
+  return [{ path, tasks: parseTasksContent(content, path) }];
+}
+
+describe("pickBestTask", () => {
+  it("picks highest priority unblocked task", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] Critical fix", "",
+        "## P1", "",
+        "- [ ] Feature work", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files);
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Critical fix");
+    expect(result!.task.priority).toBe("P0");
+  });
+
+  it("skips blocked tasks", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] Blocker task",
+        "  - **ID**: blocker", "",
+        "- [ ] Blocked task",
+        "  - **Blocked by**: blocker", "",
+        "## P1", "",
+        "- [ ] Available task", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files);
+    expect(result).toBeDefined();
+    // Picks "Blocker task" (P0, unblocked) over "Blocked task" (P0, blocked) and "Available task" (P1)
+    expect(result!.task.summary).toBe("Blocker task");
+  });
+
+  it("skips claimed tasks", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] Claimed task (@someone)", "",
+        "## P1", "",
+        "- [ ] Free task", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files);
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Free task");
+  });
+
+  it("returns undefined for empty queue", () => {
+    const files = makeTaskFiles("# Tasks\n\n## P1\n");
+    expect(pickBestTask(files)).toBeUndefined();
+  });
+
+  it("returns undefined when all tasks are claimed", () => {
+    const files = makeTaskFiles(
+      "# Tasks\n\n## P1\n\n- [ ] Task (@agent)\n"
+    );
+    expect(pickBestTask(files)).toBeUndefined();
+  });
+
+  it("prefers tasks that unblock others", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P1", "",
+        "- [ ] Regular task", "",
+        "- [ ] Unblocking task",
+        "  - **ID**: unblocker", "",
+        "- [ ] Depends on unblocker",
+        "  - **Blocked by**: unblocker", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files);
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Unblocking task");
+    expect(result!.unblocksCount).toBe(1);
+  });
+
+  it("filters by tags", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] Backend task",
+        "  - **Tags**: backend", "",
+        "## P1", "",
+        "- [ ] Frontend task",
+        "  - **Tags**: frontend", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files, ["frontend"]);
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Frontend task");
+  });
+
+  it("falls back to all candidates when no tag matches", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P1", "",
+        "- [ ] Only task",
+        "  - **Tags**: backend", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files, ["nonexistent"]);
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Only task");
+  });
+
+  it("works across multiple files", () => {
+    const files: TaskFile[] = [
+      {
+        path: "a.md",
+        tasks: parseTasksContent(
+          "# Tasks\n\n## P1\n\n- [ ] Task A\n  - **ID**: task-a\n",
+          "a.md"
+        ),
+      },
+      {
+        path: "b.md",
+        tasks: parseTasksContent(
+          "# Tasks\n\n## P0\n\n- [ ] Task B\n",
+          "b.md"
+        ),
+      },
+    ];
+    const result = pickBestTask(files);
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Task B");
+  });
+});
+
+describe("CLI", () => {
+  it("shows help with --help", () => {
+    const result = spawnSync("node", [CLI, "--help"], { encoding: "utf-8" });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/lint/);
+    expect(result.stdout).toMatch(/pick/);
+    expect(result.stdout).toMatch(/stats/);
+    expect(result.stdout).toMatch(/diff/);
+  });
+
+  it("lint validates a valid file", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Test\n");
+    try {
+      const result = spawnSync("node", [CLI, "lint", join(dir, "TASKS.md")], {
+        encoding: "utf-8",
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/0 error/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("lint fails on invalid file", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Not Tasks\n");
+    try {
+      const result = spawnSync("node", [CLI, "lint", join(dir, "TASKS.md")], {
+        encoding: "utf-8",
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/first line must be/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("pick works with a valid TASKS.md", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P1\n\n- [ ] Do something\n  - **ID**: do-it\n"
+    );
+    // Need a git repo for discoverTaskFiles
+    spawnSync("git", ["init"], { cwd: dir });
+    spawnSync("git", ["add", "."], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/Picked "Do something"/);
+      expect(result.stdout).toMatch(/ID: do-it/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("pick reports empty queue", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/No eligible tasks/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+});

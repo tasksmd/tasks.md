@@ -2,16 +2,6 @@
 
 ## P1
 
-- [ ] Replace bash CLI with Node.js CLI
-  - **ID**: node-cli
-  - **Tags**: architecture, cli
-  - **Details**: `scripts/tasks` is a 305-line bash case statement. The `pick` command
-    shells out to `node -e` with inline JS importing from MCP dist (breaks if not built).
-    `stats` and `diff` reparse TASKS.md with yet more bash. Replace with a TypeScript CLI
-    using `commander` that directly calls `pickTask()`, the lint module, and sync adapters.
-    All in `packages/cli/`.
-  - **Files**: `scripts/tasks` → `packages/cli/src/index.ts`
-
 - [ ] Publish and promote blog post: "Why your AI agent needs a backlog"
   - **Details**: Draft is at `docs/blog/why-your-ai-agent-needs-a-backlog.md`. Review,
     add to site navigation, and publish. Consider cross-posting to dev.to / HN.
@@ -20,7 +10,6 @@
 
 - [ ] Consolidate sync scripts into adapter pattern
   - **ID**: sync-adapters
-  - **Blocked by**: node-cli
   - **Tags**: architecture, DRY
   - **Details**: `sync-issues.sh` (290 lines), `sync-jira.sh` (315 lines), and
     `sync-linear.sh` (340 lines) all follow the same pattern: auth → fetch → map priority
