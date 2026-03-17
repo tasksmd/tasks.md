@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { lintFiles, discoverFiles } from "tasks-lint";
 import {
@@ -13,27 +12,12 @@ import {
 import { initTaskQueue } from "./commands/init.js";
 import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
+import { startWatching } from "./commands/watch.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
 import { createLinearSource } from "./sync/linear.js";
 
-const SCRIPTS_DIR = join(import.meta.dirname, "..", "..", "..", "scripts");
-
-function rawArgsAfter(commandName: string): string[] {
-  const idx = process.argv.indexOf(commandName);
-  return idx >= 0 ? process.argv.slice(idx + 1) : [];
-}
-
-function delegateToScript(script: string, args: string[]): void {
-  try {
-    execFileSync("bash", [join(SCRIPTS_DIR, script), ...args], {
-      stdio: "inherit",
-    });
-  } catch (error: unknown) {
-    process.exit((error as { status?: number }).status ?? 1);
-  }
-}
 
 const program = new Command()
   .name("tasks")
@@ -52,7 +36,14 @@ program
       console.log(message);
     }
     if (opts.install) {
-      delegateToScript("install.sh", [process.cwd()]);
+      const commandsSourceDir = join(import.meta.dirname, "..", "..", "..");
+      const installResult = installCommands(process.cwd(), commandsSourceDir, { all: false });
+      for (const msg of installResult.messages) {
+        console.log(msg);
+      }
+      if (installResult.installed.length > 0) {
+        console.log(`✓ Installed for ${installResult.installed.length} agent(s)`);
+      }
     }
     console.log("");
     console.log("✓ Task queue initialized. Add tasks with:");
@@ -112,21 +103,16 @@ program
     }
   });
 
-// ── Delegate commands (bash scripts) ──
+// ── watch (TypeScript-native) ──
 
-for (const { name, description, script, prependCwd } of [
-  { name: "watch", description: "Watch TASKS.md files and auto-lint on change", script: "watch.sh", prependCwd: false },
-]) {
-  program
-    .command(name)
-    .description(description)
-    .allowUnknownOption()
-    .allowExcessArguments()
-    .action(() => {
-      const args = rawArgsAfter(name);
-      delegateToScript(script, prependCwd ? [process.cwd(), ...args] : args);
-    });
-}
+program
+  .command("watch")
+  .description("Watch TASKS.md files and auto-lint on change")
+  .argument("[directory]", "Directory to watch", ".")
+  .action((directory: string) => {
+    const watchDir = join(process.cwd(), directory);
+    startWatching(watchDir);
+  });
 
 // ── sync-issues ──
 
