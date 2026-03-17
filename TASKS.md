@@ -1,11 +1,5 @@
 # Tasks
 
-## P1
-
-- [ ] Publish and promote blog post: "Why your AI agent needs a backlog"
-  - **Details**: Draft is at `docs/blog/why-your-ai-agent-needs-a-backlog.md`. Review,
-    add to site navigation, and publish. Consider cross-posting to dev.to / HN.
-
 ## P2
 
 - [ ] Consolidate sync scripts into adapter pattern

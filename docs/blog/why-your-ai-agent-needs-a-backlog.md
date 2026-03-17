@@ -88,7 +88,7 @@ That took 15 seconds to write. It saved 15 minutes of mid-implementation scope c
 Create a `TASKS.md` at your repo root:
 
 ```bash
-npx tasks-md init
+tasks init
 ```
 
 Or just create the file manually — it's Markdown with priority headings:
@@ -105,7 +105,7 @@ Or just create the file manually — it's Markdown with priority headings:
 - [ ] Important but not urgent
 ```
 
-Add the [MCP server](https://github.com/tasksmd/tasks.md/tree/main/mcp) so agents can read and write tasks programmatically. Add the [linter](https://github.com/tasksmd/tasks.md/tree/main/lint) to CI to keep the file clean.
+Add the [MCP server](https://github.com/tasksmd/tasks.md/tree/main/packages/mcp) so agents can read and write tasks programmatically. Add the [linter](https://github.com/tasksmd/tasks.md/tree/main/packages/lint) to CI to keep the file clean. Use the [CLI](https://github.com/tasksmd/tasks.md/tree/main/packages/cli) for `tasks pick`, `tasks stats`, and `tasks lint`.
 
 Then build the habit. Every time you think of something — `add_task`. Every time an agent finishes — `complete_task`. Every time you start a session — `pick_task`.
 

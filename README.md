@@ -289,6 +289,7 @@ They're companions. AGENTS.md tells agents how your project works (build command
 
 ## See Also
 
+- [Why Your AI Agent Needs a Backlog](docs/blog/why-your-ai-agent-needs-a-backlog.md) — the motivation behind TASKS.md
 - [AGENTS.md](https://agents.md/) — the companion spec for agent instructions
 - [Proposal: TASKS.md as a companion standard](https://github.com/agentsmd/agents.md/issues/166) — discussion on the agents.md repo
 
