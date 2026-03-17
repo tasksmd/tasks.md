@@ -2,35 +2,6 @@
 
 ## P1
 
-- [ ] Remove bash scripts and legacy CLI
-  - **ID**: remove-bash
-  - **Tags**: cleanup
-  - **Details**: All commands are now TypeScript-native. Delete: `scripts/tasks` (legacy
-    bash CLI), `scripts/init.sh`, `scripts/install.sh`, `scripts/watch.sh`,
-    `scripts/generate-commands.sh`, `scripts/validate-examples.sh` (duplicates tasks-lint),
-    `scripts/sync-issues.sh`, `scripts/sync-jira.sh`, `scripts/sync-linear.sh` (replaced
-    by TypeScript adapters). Keep only `scripts/build-site.js` (repo-internal).
-  - **Acceptance**: `scripts/` contains only `build-site.js`, CLI has no execFileSync to bash
-
-- [ ] Update CI commands-drift job for TypeScript generate-commands
-  - **ID**: fix-ci-drift
-  - **Tags**: ci
-  - **Details**: The commands-drift CI job still runs `bash scripts/generate-commands.sh`.
-    Update to use `node packages/cli/dist/cli.js generate-commands` instead. The lint
-    job and validate job have already been fixed.
-  - **Files**: `.github/workflows/ci.yml`
-  - **Acceptance**: commands-drift job uses TypeScript CLI, no bash script references remain
-
-- [ ] Fix docs ghost references to deleted sync scripts
-  - **ID**: fix-docs-sync
-  - **Tags**: docs
-  - **Details**: `docs/user-stories/06-issue-tracker-flows-to-agents.md` lines 153-155
-    reference `scripts/sync-issues.sh`, `scripts/sync-jira.sh`, `scripts/sync-linear.sh`
-    in its Files table. These were replaced by TypeScript adapters in
-    `packages/cli/src/sync/`. Update the table to reference the new file paths.
-  - **Files**: `docs/user-stories/06-issue-tracker-flows-to-agents.md`
-  - **Acceptance**: No docs reference deleted script paths
-
 - [ ] Fix lock file drift in packages/mcp
   - **ID**: fix-mcp-lockfile
   - **Tags**: tooling

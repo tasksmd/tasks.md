@@ -150,6 +150,6 @@ All three commands implement the same bridge pattern — import the "what" from 
 | File | Purpose |
 |------|---------|
 | `packages/cli/` | Unified CLI (`tasks sync-issues`, `tasks sync-jira`, `tasks sync-linear`) |
-| `scripts/sync-issues.sh` | GitHub Issues sync adapter |
-| `scripts/sync-jira.sh` | Jira sync adapter |
-| `scripts/sync-linear.sh` | Linear sync adapter |
+| `packages/cli/src/sync/github.ts` | GitHub Issues sync adapter |
+| `packages/cli/src/sync/jira.ts` | Jira sync adapter |
+| `packages/cli/src/sync/linear.ts` | Linear sync adapter |
