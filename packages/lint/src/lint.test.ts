@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { writeFileSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -238,6 +238,122 @@ describe("tasks-lint", () => {
           "# Tasks\n\n## P1\n\n- [ ] Build\n  - **Blocked by**: setup\n",
       });
       expect(result.exitCode).toBe(0);
+    });
+  });
+
+  describe("--fix mode", () => {
+    it("removes completed tasks when --fix is used", () => {
+      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
+      const file = join(dir, "TASKS.md");
+      writeFileSync(
+        file,
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [x] Done task",
+          "  - **ID**: done-one",
+          "",
+          "- [ ] Active task",
+          "",
+        ].join("\n")
+      );
+      try {
+        const result = spawnSync("node", [CLI, "--fix", file], {
+          encoding: "utf-8",
+        });
+        expect(result.status).toBe(0);
+        expect(result.stdout).toMatch(/removed completed task/);
+        expect(result.stdout).toMatch(/fixed 1 issue/);
+
+        const fixed = readFileSync(file, "utf-8");
+        expect(fixed).not.toContain("Done task");
+        expect(fixed).not.toContain("done-one");
+        expect(fixed).toContain("- [ ] Active task");
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
+    });
+
+    it("removes multiple completed tasks", () => {
+      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
+      const file = join(dir, "TASKS.md");
+      writeFileSync(
+        file,
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [x] First done",
+          "",
+          "- [x] Second done",
+          "  - **ID**: second",
+          "",
+          "- [ ] Still open",
+          "",
+        ].join("\n")
+      );
+      try {
+        const result = spawnSync("node", [CLI, "--fix", file], {
+          encoding: "utf-8",
+        });
+        expect(result.status).toBe(0);
+        expect(result.stdout).toMatch(/fixed 2 issue/);
+
+        const fixed = readFileSync(file, "utf-8");
+        expect(fixed).not.toContain("First done");
+        expect(fixed).not.toContain("Second done");
+        expect(fixed).toContain("- [ ] Still open");
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
+    });
+
+    it("exits 0 when fix resolves all errors", () => {
+      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
+      const file = join(dir, "TASKS.md");
+      writeFileSync(file, "# Tasks\n\n## P1\n\n- [x] Only task\n");
+      try {
+        const result = spawnSync("node", [CLI, "--fix", file], {
+          encoding: "utf-8",
+        });
+        expect(result.status).toBe(0);
+        expect(result.stdout).toMatch(/0 remaining error/);
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
+    });
+
+    it("still reports non-fixable errors alongside fixes", () => {
+      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
+      const file = join(dir, "TASKS.md");
+      writeFileSync(
+        file,
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [x] Completed task",
+          "",
+          "- [ ] Bad ID task",
+          "  - **ID**: Bad_ID",
+          "",
+        ].join("\n")
+      );
+      try {
+        const result = spawnSync("node", [CLI, "--fix", file], {
+          encoding: "utf-8",
+        });
+        expect(result.status).toBe(1);
+        expect(result.stderr).toMatch(/must be kebab-case/);
+        expect(result.stdout).toMatch(/fixed 1 issue/);
+        expect(result.stdout).toMatch(/1 remaining error/);
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
     });
   });
 

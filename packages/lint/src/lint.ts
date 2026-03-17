@@ -58,6 +58,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     }
 
     for (let i = 1; i < lines.length; i++) {
+      if (linesToRemove.has(i)) continue;
       const line = lines[i];
       const lineNum = i + 1;
 
