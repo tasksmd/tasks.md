@@ -48,7 +48,7 @@ npx tasks-mcp   # starts the MCP server (includes init via add_task)
 
 That's it. Your agent reads TASKS.md on session start and works through the queue.
 
-> **Implemented**: `tasks init` scaffolds both files in one command. See `scripts/tasks`.
+> **Implemented**: `tasks init` scaffolds both files in one command. See `packages/cli/`.
 
 ## The Format
 
@@ -117,9 +117,10 @@ When a task is done, the agent **removes the entire block** — task line, metad
 ### Run locally
 
 ```bash
-node lint/index.js TASKS.md                    # single file
-node lint/index.js TASKS.md packages/          # monorepo
-node lint/index.js --fix TASKS.md              # auto-fix deterministic issues
+npx tasks-lint TASKS.md                        # single file
+npx tasks-lint TASKS.md packages/              # monorepo
+npx tasks-lint --fix TASKS.md                  # auto-fix deterministic issues
+tasks lint TASKS.md                            # via the tasks CLI
 ```
 
 Auto-fix handles: removing completed tasks, empty priority sections, normalizing ID casing, and removing orphaned metadata.
@@ -155,7 +156,7 @@ Or inline:
 
 ```bash
 #!/bin/bash
-node lint/index.js TASKS.md || exit 1
+npx tasks-lint TASKS.md || exit 1
 ```
 
 ## Files Involved
@@ -164,6 +165,6 @@ node lint/index.js TASKS.md || exit 1
 |------|---------|
 | `TASKS.md` | The task queue |
 | `AGENTS.md` | Tell agents to read TASKS.md |
-| `lint/index.js` | Linter implementation |
-| [lint/README.md](../../lint/README.md) | Full lint documentation |
+| [`packages/lint/`](../../packages/lint/) | Linter (TypeScript, `tasks-lint` CLI) |
+| [`packages/cli/`](../../packages/cli/) | Unified CLI (`tasks lint`, `tasks pick`, etc.) |
 | [spec.md](../../spec.md) | Full specification |

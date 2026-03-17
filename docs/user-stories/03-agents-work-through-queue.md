@@ -32,7 +32,7 @@ Or copy manually:
 
 All paths are **project-local** (inside your repo). Commit the file so your whole team gets the command.
 
-> **Implemented**: `tasks install` auto-detects agent directories and copies the right files. See `scripts/tasks`.
+> **Implemented**: `tasks install` auto-detects agent directories and copies the right files. See `packages/cli/`.
 
 ## Usage
 
@@ -78,7 +78,7 @@ All five commands contain the same logic — only the wrapper format differs:
 | Gemini CLI | TOML with `prompt` field | Prompt wrapped in TOML |
 | Windsurf | Markdown + YAML frontmatter | `description` in frontmatter |
 
-> **Implemented**: Commands are generated from a canonical source in `commands/canonical/`. The `scripts/generate-commands.sh` script produces all 5 agent-specific files, and CI verifies they never drift.
+> **Implemented**: Commands are generated from a canonical source in `commands/canonical/`. The `tasks generate-commands` command produces all 5 agent-specific files, and CI verifies they never drift.
 
 ## Files Involved
 

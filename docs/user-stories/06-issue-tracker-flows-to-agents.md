@@ -4,10 +4,10 @@
 
 ## How It Works
 
-The `sync-issues.sh` script fetches open GitHub Issues with a specific label and generates a valid TASKS.md file with proper priority headings, IDs, and tags.
+The `tasks sync-issues` command fetches open GitHub Issues with a specific label and generates a valid TASKS.md file with proper priority headings, IDs, and tags.
 
 ```bash
-scripts/sync-issues.sh --label tasks.md --output TASKS.md
+tasks sync-issues --label tasks.md --output TASKS.md
 ```
 
 ## Steps
@@ -27,7 +27,7 @@ scripts/sync-issues.sh --label tasks.md --output TASKS.md
 
 3. **Run the sync**:
    ```bash
-   scripts/sync-issues.sh --output TASKS.md
+   tasks sync-issues --output TASKS.md
    ```
 
 4. **Review and commit** the generated file.
@@ -64,7 +64,7 @@ Example output:
 ## Options
 
 ```bash
-scripts/sync-issues.sh [--repo OWNER/REPO] [--label LABEL] [--output FILE]
+tasks sync-issues [--repo OWNER/REPO] [--label LABEL] [--output FILE]
 ```
 
 | Flag | Default | Purpose |
@@ -79,7 +79,7 @@ Automate the sync with a GitHub Actions workflow:
 
 ```yaml
 - name: Sync issues to TASKS.md
-  run: scripts/sync-issues.sh --output TASKS.md
+  run: tasks sync-issues --output TASKS.md
   
 - name: Commit if changed
   run: |
@@ -95,7 +95,7 @@ Automate the sync with a GitHub Actions workflow:
 The `--merge` flag preserves existing tasks and only syncs changes:
 
 ```bash
-scripts/sync-issues.sh --merge --output TASKS.md
+tasks sync-issues --merge --output TASKS.md
 ```
 
 - **Add** tasks for new issues (not yet in the file)
@@ -114,7 +114,7 @@ Issue trackers and TASKS.md solve different problems:
 | **Granularity** | Features, bugs, epics | Implementation steps |
 | **Access** | API + auth | Read a file |
 
-They complement each other. One issue often becomes multiple tasks. `sync-issues.sh` is the bridge — it imports the "what" from your tracker so agents can execute the "how".
+They complement each other. One issue often becomes multiple tasks. `tasks sync-issues` is the bridge — it imports the "what" from your tracker so agents can execute the "how".
 
 ## Prerequisites
 
@@ -126,8 +126,8 @@ They complement each other. One issue often becomes multiple tasks. `sync-issues
 A companion script syncs from Jira using the same pattern:
 
 ```bash
-scripts/sync-jira.sh --project PROJ --output TASKS.md
-scripts/sync-jira.sh --project PROJ --merge --output TASKS.md
+tasks sync-jira --project PROJ --output TASKS.md
+tasks sync-jira --project PROJ --merge --output TASKS.md
 ```
 
 Jira priority mapping: Highest/Blocker/Critical → P0, High → P1, Medium → P2, Low/Lowest → P3. Labels become tags, issue keys become IDs (`jira-PROJ-123`). Requires `JIRA_URL` and `JIRA_TOKEN` environment variables.
@@ -137,18 +137,19 @@ Jira priority mapping: Highest/Blocker/Critical → P0, High → P1, Medium → 
 A companion script syncs from Linear using the same pattern:
 
 ```bash
-scripts/sync-linear.sh --team ENG --output TASKS.md
-scripts/sync-linear.sh --team ENG --project "Q1 Launch" --merge --output TASKS.md
+tasks sync-linear --team ENG --output TASKS.md
+tasks sync-linear --team ENG --project "Q1 Launch" --merge --output TASKS.md
 ```
 
 Linear priority mapping: Urgent → P0, High → P1, Medium → P2, Low/No priority → P3. Labels become tags, issue identifiers become IDs (`linear-ENG-123`). Requires `LINEAR_API_KEY` environment variable.
 
-All three scripts implement the same bridge pattern — import the "what" from your tracker so agents can execute the "how".
+All three commands implement the same bridge pattern — import the "what" from your tracker so agents can execute the "how".
 
 ## Files Involved
 
 | File | Purpose |
 |------|---------|
-| `scripts/sync-issues.sh` | GitHub Issues sync script |
-| `scripts/sync-jira.sh` | Jira sync script |
-| `scripts/sync-linear.sh` | Linear sync script |
+| `packages/cli/` | Unified CLI (`tasks sync-issues`, `tasks sync-jira`, `tasks sync-linear`) |
+| `scripts/sync-issues.sh` | GitHub Issues sync adapter |
+| `scripts/sync-jira.sh` | Jira sync adapter |
+| `scripts/sync-linear.sh` | Linear sync adapter |

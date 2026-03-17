@@ -105,7 +105,7 @@ The agent searches all TASKS.md files when resolving blockers.
 `tasks-lint` catches common mistakes:
 
 ```bash
-node lint/index.js TASKS.md
+npx tasks-lint TASKS.md
 ```
 
 - Flags duplicate IDs
