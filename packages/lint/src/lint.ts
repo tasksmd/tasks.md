@@ -132,8 +132,13 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       writeFileSync(filePath, cleaned.join("\n"), "utf-8");
     }
 
-    // Semantic validation via shared parser — IDs and blockers
-    const tasks = parseTasksContent(content, filePath);
+    // Semantic validation via shared parser — IDs, tags, and blockers
+    let currentContent = fixMode && linesToRemove.size > 0
+      ? readFileSync(filePath, "utf-8")
+      : content;
+    let tagFixesApplied = false;
+    const currentLines = currentContent.split("\n");
+    const tasks = parseTasksContent(currentContent, filePath);
     for (const task of tasks) {
       if (task.metadata.id) {
         const id = task.metadata.id;
@@ -157,9 +162,26 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
 
       if (task.metadata.tags) {
         const tagLine = findMetadataLine(task, /^\s+-\s+\*\*Tags\*\*:/);
-        for (const tag of task.metadata.tags) {
-          if (tag !== tag.toLowerCase()) {
-            reportError(filePath, tagLine, `tag '${tag}' must be lowercase (use '${tag.toLowerCase()}')`);
+        const hasUppercase = task.metadata.tags.some((tag) => tag !== tag.toLowerCase());
+        if (hasUppercase) {
+          if (fixMode) {
+            const tagLineIndex = tagLine - 1;
+            const originalLine = currentLines[tagLineIndex];
+            if (originalLine) {
+              currentLines[tagLineIndex] = originalLine.replace(
+                /(\*\*Tags\*\*:\s*)(.+)/,
+                (_, prefix, tagsStr) => prefix + tagsStr.toLowerCase()
+              );
+              tagFixesApplied = true;
+              fixed++;
+              console.log(`FIX: ${filePath}:${tagLine}: lowercased tags`);
+            }
+          } else {
+            for (const tag of task.metadata.tags) {
+              if (tag !== tag.toLowerCase()) {
+                reportError(filePath, tagLine, `tag '${tag}' must be lowercase (use '${tag.toLowerCase()}')`);
+              }
+            }
           }
         }
       }
@@ -170,6 +192,11 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
           allBlockedBy.push({ id: ref, file: filePath, line: blockerLine });
         }
       }
+    }
+
+    // Write tag fixes if any were applied
+    if (tagFixesApplied) {
+      writeFileSync(filePath, currentLines.join("\n"), "utf-8");
     }
   }
 

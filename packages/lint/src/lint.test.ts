@@ -364,6 +364,27 @@ describe("tasks-lint", () => {
       }
     });
 
+    it("lowercases uppercase tags", () => {
+      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
+      const file = join(dir, "TASKS.md");
+      writeFileSync(
+        file,
+        "# Tasks\n\n## P1\n\n- [ ] Fix bug\n  - **Tags**: Backend, Auth\n"
+      );
+      try {
+        const result = spawnSync("node", [CLI, "--fix", file], {
+          encoding: "utf-8",
+        });
+        expect(result.status).toBe(0);
+        expect(result.stdout).toMatch(/lowercased tags/);
+        const fixed = readFileSync(file, "utf-8");
+        expect(fixed).toContain("**Tags**: backend, auth");
+        expect(fixed).not.toContain("Backend");
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
+    });
+
     it("exits 0 when fix resolves all errors", () => {
       const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
       const file = join(dir, "TASKS.md");
