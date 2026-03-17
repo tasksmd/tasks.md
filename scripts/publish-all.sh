@@ -34,7 +34,7 @@ for pkg in "${PACKAGES[@]}"; do
     echo "  [dry-run] Would publish $name@$version"
     (cd "$dir" && npm publish --dry-run 2>&1 | sed 's/^/  /')
   else
-    (cd "$dir" && npm publish)
+    (cd "$dir" && npm publish --access=public)
     echo "  ✓ Published $name@$version"
   fi
   echo ""
