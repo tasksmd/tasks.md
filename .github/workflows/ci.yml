@@ -34,16 +34,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CLI
+        run: npm run build
 
       - name: Regenerate command files
-        run: bash scripts/generate-commands.sh
+        run: node packages/cli/dist/cli.js generate-commands
 
       - name: Check for drift
         run: |
           if ! git diff --exit-code commands/; then
             echo ""
             echo "ERROR: Generated command files are out of date."
-            echo "Run: bash scripts/generate-commands.sh"
+            echo "Run: npx tasks-cli generate-commands"
             echo "Then commit the updated files."
             exit 1
           fi
