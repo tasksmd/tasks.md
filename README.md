@@ -326,21 +326,50 @@ They're companions. AGENTS.md tells agents how your project works (build command
 
 ## Releasing
 
-All packages share a single version. To publish a new release:
+All four npm packages share a single version and are published together:
 
-1. Go to [GitHub Releases](https://github.com/tasksmd/tasks.md/releases/new)
-2. Create a tag like `v0.2.0` (semver with `v` prefix)
-3. Click **Publish release**
+| Package | npm |
+|---------|-----|
+| [`@tasks-md/parser`](packages/parser/) | [![npm](https://img.shields.io/npm/v/@tasks-md/parser)](https://www.npmjs.com/package/@tasks-md/parser) |
+| [`@tasks-md/lint`](packages/lint/) | [![npm](https://img.shields.io/npm/v/@tasks-md/lint)](https://www.npmjs.com/package/@tasks-md/lint) |
+| [`@tasks-md/cli`](packages/cli/) | [![npm](https://img.shields.io/npm/v/@tasks-md/cli)](https://www.npmjs.com/package/@tasks-md/cli) |
+| [`tasks-mcp`](packages/mcp/) | [![npm](https://img.shields.io/npm/v/tasks-mcp)](https://www.npmjs.com/package/tasks-mcp) |
 
-The [publish workflow](.github/workflows/publish.yml) will automatically:
-- Sync all `package.json` versions to match the tag
-- Build and test
-- Publish all 4 packages to npm
-- Commit the version bump back to `main`
+### How to release
 
-**Requires**: `NPM_TOKEN` secret in repo settings (npm automation token, no OTP needed).
+1. Go to [GitHub Releases → New](https://github.com/tasksmd/tasks.md/releases/new)
+2. Create a new tag with a `v` prefix (e.g. `v0.2.0`) targeting `main`
+3. Add release notes (GitHub can auto-generate them)
+4. Click **Publish release**
 
-For manual publishing: `scripts/publish-all.sh` (requires `npm adduser` + OTP).
+Or from the CLI:
+
+```bash
+gh release create v0.2.0 --generate-notes
+```
+
+The [publish workflow](.github/workflows/publish.yml) runs automatically and:
+1. Syncs all `package.json` versions to match the tag
+2. Builds and runs the full test suite
+3. Publishes all 4 packages to npm in dependency order
+4. Commits the version bump back to `main`
+
+### Setup (one-time)
+
+The workflow requires an `NPM_TOKEN` secret:
+
+1. Create an npm **Automation** token at [npmjs.com/settings → Access Tokens](https://www.npmjs.com/settings/) (automation tokens bypass 2FA/OTP)
+2. Add it as a repository secret named `NPM_TOKEN` at [Settings → Secrets → Actions](https://github.com/tasksmd/tasks.md/settings/secrets/actions)
+
+### Manual publishing
+
+If you need to publish without a GitHub Release (e.g. from a local machine):
+
+```bash
+npm adduser                        # authenticate once
+scripts/sync-versions.sh 0.2.0    # bump all package versions
+scripts/publish-all.sh             # publish in dependency order (requires OTP)
+```
 
 ## Contributing
 
