@@ -6,7 +6,7 @@
   - **ID**: publish-all
   - **Tags**: tooling
   - **Details**: Publish in dependency order: `@tasks-md/parser` → `tasks-lint` →
-    `tasks-mcp` → `tasks-cli`. All packages have prepublishOnly scripts, README files,
+    `tasks-mcp` → `@tasks-md/cli`. All packages have prepublishOnly scripts, README files,
     bin entries (where applicable), and version specifiers. Requires `npm adduser`
     authentication first. Verify name availability with `npm view` before publish.
   - **Acceptance**: All 4 packages installable via npm/npx

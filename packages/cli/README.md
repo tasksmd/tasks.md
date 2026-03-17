@@ -1,17 +1,17 @@
-# tasks-cli
+# @tasks-md/cli
 
 A unified CLI for [TASKS.md](https://github.com/tasksmd/tasks.md) task queue management — pick tasks, lint files, sync from issue trackers, and monitor queue health.
 
 ## Install
 
 ```bash
-npm install -g tasks-cli
+npm install -g @tasks-md/cli
 ```
 
 Or run directly with npx:
 
 ```bash
-npx tasks-cli pick
+npx @tasks-md/cli pick
 ```
 
 ## Commands
@@ -122,7 +122,7 @@ tasks sync-linear --output TASKS.md --merge
 The CLI also exports its core functions as a library:
 
 ```typescript
-import { loadAllTasks, pickBestTask, getQueueStats, getQueueDiff } from "tasks-cli";
+import { loadAllTasks, pickBestTask, getQueueStats, getQueueDiff } from "@tasks-md/cli";
 
 const tasks = loadAllTasks(process.cwd());
 const best = pickBestTask(tasks);
