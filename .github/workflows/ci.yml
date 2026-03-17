@@ -52,7 +52,7 @@ jobs:
           if ! git diff --exit-code commands/; then
             echo ""
             echo "ERROR: Generated command files are out of date."
-            echo "Run: npx tasks-cli generate-commands"
+            echo "Run: npx @tasks-md/cli generate-commands"
             echo "Then commit the updated files."
             exit 1
           fi
