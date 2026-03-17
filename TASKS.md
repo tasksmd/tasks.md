@@ -2,83 +2,23 @@
 
 ## P1
 
-- [ ] Consolidate file discovery into @tasks-md/parser
-  - **ID**: consolidate-discovery
-  - **Tags**: parser, refactor
-  - **Details**: `findGitRoot`, `discoverTaskFiles`, and `loadAllTasks` are duplicated
-    in `packages/mcp/src/parser.ts` (async) and `packages/cli/src/lib.ts` (sync). Move
-    a single canonical implementation into `@tasks-md/parser` with both sync and async
-    variants. Then simplify both mcp and cli to import from parser instead of maintaining
-    their own copies. This is the foundation — both packages share one discovery engine.
-  - **Files**: `packages/parser/src/index.ts`, `packages/mcp/src/parser.ts`, `packages/cli/src/lib.ts`
-  - **Acceptance**: Single discovery implementation in parser, mcp and cli import it,
-    all tests pass, no duplicate `findGitRoot` or `discoverTaskFiles` functions remain
-
-- [ ] Rewrite init command in TypeScript
-  - **ID**: ts-init
-  - **Tags**: cli, refactor
-  - **Details**: `tasks init` currently delegates to `scripts/init.sh` via execFileSync.
-    Rewrite as native TypeScript in `packages/cli/src/commands/init.ts`. Behavior: create
-    TASKS.md with P1/P2 sections, append Task Management section to AGENTS.md if present,
-    optionally run install with --install flag. Port the exact same logic — don't change behavior.
-  - **Files**: `packages/cli/src/commands/init.ts`, `scripts/init.sh`
-  - **Blocked by**: consolidate-discovery
-  - **Acceptance**: `npx tasks-cli init` works identically to `bash scripts/init.sh`, tests added
-
-- [ ] Rewrite install command in TypeScript
-  - **ID**: ts-install
-  - **Tags**: cli, refactor
-  - **Details**: `tasks install` currently delegates to `scripts/install.sh`. Rewrite in
-    TypeScript. Detect agent directories (.claude/, .cursor/, .windsurf/, .gemini/, .agents/),
-    copy command files, support --all and --hooks flags. The --hooks flag installs a
-    pre-commit hook that runs tasks-lint on staged TASKS.md files.
-  - **Files**: `packages/cli/src/commands/install.ts`, `scripts/install.sh`
-  - **Blocked by**: consolidate-discovery
-  - **Acceptance**: `npx tasks-cli install` works identically, tests added
-
-- [ ] Rewrite generate-commands in TypeScript
-  - **ID**: ts-generate-commands
-  - **Tags**: cli, refactor
-  - **Details**: `tasks generate-commands` delegates to `scripts/generate-commands.sh`.
-    Rewrite in TypeScript. Read `commands/next-task.md` (canonical), produce agent-specific
-    files for Claude Code, Codex, Cursor, Gemini CLI, and Windsurf with correct frontmatter
-    and {{AGENT_EXAMPLE}} substitution. This makes the command work as a published npm package.
-  - **Files**: `packages/cli/src/commands/generate-commands.ts`, `scripts/generate-commands.sh`
-  - **Acceptance**: Output matches current bash-generated files exactly, drift CI check passes
-
-- [ ] Rewrite watch command in TypeScript
-  - **ID**: ts-watch
-  - **Tags**: cli, refactor
-  - **Details**: `tasks watch` delegates to `scripts/watch.sh` which requires fswatch
-    (macOS) or inotifywait (Linux). Rewrite using `node:fs.watch` so it works cross-platform
-    with zero external dependencies. Watch all discovered TASKS.md files, auto-lint on change,
-    show colored output.
-  - **Files**: `packages/cli/src/commands/watch.ts`, `scripts/watch.sh`
-  - **Blocked by**: consolidate-discovery
-  - **Acceptance**: `npx tasks-cli watch` works on macOS and Linux without fswatch/inotifywait
-
-## P2
-
 - [ ] Remove bash scripts and legacy CLI
   - **ID**: remove-bash
   - **Tags**: cleanup
-  - **Details**: Once all commands are TypeScript-native, delete: `scripts/tasks` (legacy
+  - **Details**: All commands are now TypeScript-native. Delete: `scripts/tasks` (legacy
     bash CLI), `scripts/init.sh`, `scripts/install.sh`, `scripts/watch.sh`,
     `scripts/generate-commands.sh`, `scripts/validate-examples.sh` (duplicates tasks-lint),
     `scripts/sync-issues.sh`, `scripts/sync-jira.sh`, `scripts/sync-linear.sh` (replaced
-    by TypeScript adapters). Remove `SCRIPTS_DIR` constant and `delegateToScript` function
-    from `packages/cli/src/cli.ts`. Keep only `scripts/build-site.js` (repo-internal).
-  - **Blocked by**: ts-init, ts-install, ts-generate-commands, ts-watch
+    by TypeScript adapters). Keep only `scripts/build-site.js` (repo-internal).
   - **Acceptance**: `scripts/` contains only `build-site.js`, CLI has no execFileSync to bash
 
 - [ ] Update CI commands-drift job for TypeScript generate-commands
   - **ID**: fix-ci-drift
   - **Tags**: ci
   - **Details**: The commands-drift CI job still runs `bash scripts/generate-commands.sh`.
-    After ts-generate-commands is done, update to use the TypeScript CLI instead. The lint
-    job and validate job have already been fixed (validate removed, lint uses dist/cli.js).
+    Update to use `node packages/cli/dist/cli.js generate-commands` instead. The lint
+    job and validate job have already been fixed.
   - **Files**: `.github/workflows/ci.yml`
-  - **Blocked by**: ts-generate-commands
   - **Acceptance**: commands-drift job uses TypeScript CLI, no bash script references remain
 
 - [ ] Fix docs ghost references to deleted sync scripts
