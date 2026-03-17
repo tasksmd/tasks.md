@@ -1,5 +1,7 @@
 #!/bin/bash
-# Publish all packages to npm in dependency order.
+# Publish all packages to npm in dependency order (manual fallback).
+# Prefer: create a GitHub Release tagged vX.Y.Z — the publish workflow handles the rest.
+#
 # Usage: scripts/publish-all.sh [--dry-run]
 #
 # Prerequisites:

@@ -324,6 +324,24 @@ They're companions. AGENTS.md tells agents how your project works (build command
 - [AGENTS.md](https://agents.md/) — the companion spec for agent instructions
 - [Proposal: TASKS.md as a companion standard](https://github.com/agentsmd/agents.md/issues/166) — discussion on the agents.md repo
 
+## Releasing
+
+All packages share a single version. To publish a new release:
+
+1. Go to [GitHub Releases](https://github.com/tasksmd/tasks.md/releases/new)
+2. Create a tag like `v0.2.0` (semver with `v` prefix)
+3. Click **Publish release**
+
+The [publish workflow](.github/workflows/publish.yml) will automatically:
+- Sync all `package.json` versions to match the tag
+- Build and test
+- Publish all 4 packages to npm
+- Commit the version bump back to `main`
+
+**Requires**: `NPM_TOKEN` secret in repo settings (npm automation token, no OTP needed).
+
+For manual publishing: `scripts/publish-all.sh` (requires `npm adduser` + OTP).
+
 ## Contributing
 
 We track work in our own [TASKS.md](TASKS.md). Contributions welcome:
