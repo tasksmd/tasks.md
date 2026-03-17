@@ -6,6 +6,7 @@ import { parseTasksContent, type TaskFile } from "./parser.js";
 import {
   listTasksFromFiles,
   claimTask,
+  unclaimTask,
   completeTask,
   addTask,
   pickTask,
@@ -277,6 +278,69 @@ describe("claimTask", () => {
     expect(updated).toContain("- [ ] First task");
     expect(updated).toContain("- [ ] Second task (@cascade)");
     expect(updated).toContain("- [ ] Third task");
+  });
+});
+
+// ── unclaim_task ──
+
+describe("unclaimTask", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "tasks-unclaim-"));
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("removes claim from a claimed task", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = "# Tasks\n\n## P1\n\n- [ ] Fix auth bug (@cascade)\n  - **ID**: auth-fix\n";
+    await writeFile(filePath, content, "utf-8");
+
+    const files = [makeTaskFile(content, filePath)];
+    const result = await unclaimTask(files, "auth-fix");
+
+    expect(result.isError).toBeUndefined();
+    expect(result.text).toContain("Unclaimed");
+    expect(result.text).toContain("@cascade");
+
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("- [ ] Fix auth bug\n");
+    expect(updated).not.toContain("@cascade");
+  });
+
+  it("errors when task is not claimed", async () => {
+    const content = "# Tasks\n\n## P1\n\n- [ ] Unclaimed task\n  - **ID**: unclaimed\n";
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await unclaimTask(files, "unclaimed");
+
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("not claimed");
+  });
+
+  it("errors when task not found", async () => {
+    const content = "# Tasks\n\n## P1\n\n- [ ] Some task\n";
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await unclaimTask(files, "nonexistent");
+
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("No task found");
+  });
+
+  it("handles claim with 'in progress' suffix", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = "# Tasks\n\n## P1\n\n- [ ] Deploy service (@cursor-bg - in progress)\n";
+    await writeFile(filePath, content, "utf-8");
+
+    const files = [makeTaskFile(content, filePath)];
+    const result = await unclaimTask(files, "Deploy service");
+
+    expect(result.isError).toBeUndefined();
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("- [ ] Deploy service\n");
+    expect(updated).not.toContain("@cursor-bg");
   });
 });
 

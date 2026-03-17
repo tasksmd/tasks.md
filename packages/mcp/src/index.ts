@@ -9,6 +9,7 @@ import {
 import {
   listTasksFromFiles,
   claimTask,
+  unclaimTask,
   completeTask,
   addTask,
   pickTask,
@@ -84,6 +85,35 @@ server.registerTool(
     const directory = getWorkingDirectory();
     const taskFiles = await loadAllTasks(directory);
     const result = await claimTask(taskFiles, query, agent_name);
+
+    return {
+      content: [{ type: "text" as const, text: result.text }],
+      ...(result.isError ? { isError: true } : {}),
+    };
+  }
+);
+
+// ── unclaim_task ──
+
+server.registerTool(
+  "unclaim_task",
+  {
+    title: "Unclaim Task",
+    description:
+      "Remove a claim from a task, making it available for other agents. " +
+      "Use for stale claim recovery when an agent crashed or its session ended " +
+      "before completing the task. Per spec: check git log first — if no commits " +
+      "from the claiming agent in 30+ minutes, the claim is likely stale.",
+    inputSchema: z.object({
+      query: z
+        .string()
+        .describe("Task summary substring or task ID to match"),
+    }),
+  },
+  async ({ query }) => {
+    const directory = getWorkingDirectory();
+    const taskFiles = await loadAllTasks(directory);
+    const result = await unclaimTask(taskFiles, query);
 
     return {
       content: [{ type: "text" as const, text: result.text }],

@@ -128,6 +128,40 @@ export async function claimTask(
   };
 }
 
+// ── unclaim_task ──
+
+export async function unclaimTask(
+  taskFiles: TaskFile[],
+  query: string
+): Promise<ToolResult> {
+  const matchedTask = findTask(taskFiles, query);
+
+  if (!matchedTask) {
+    return { text: `No task found matching "${query}".`, isError: true };
+  }
+
+  if (!matchedTask.claimed) {
+    return {
+      text: `Task "${matchedTask.summary}" is not claimed by anyone.`,
+      isError: true,
+    };
+  }
+
+  const fileContent = await readFile(matchedTask.file, "utf-8");
+  const lines = fileContent.split("\n");
+  const taskLineIndex = matchedTask.startLine - 1;
+  const taskLine = lines[taskLineIndex];
+
+  // Remove the claim tag: " (@agent-name)" or " (@agent-name - in progress)"
+  lines[taskLineIndex] = taskLine.replace(/\s+\(@[^)]+\)\s*$/, "");
+
+  await writeFile(matchedTask.file, lines.join("\n"), "utf-8");
+
+  return {
+    text: `Unclaimed "${matchedTask.summary}" (was ${matchedTask.claimed}) in ${matchedTask.file}:${matchedTask.startLine}`,
+  };
+}
+
 // ── complete_task ──
 
 export async function completeTask(
