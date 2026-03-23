@@ -23,12 +23,22 @@ git pull --rebase
 
 ## 2. Find the queue
 
+Start with the **current repo** — look for TASKS.md at the git root:
+
 ```bash
 git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-find "$git_root" -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | sort | head -20
+cat "$git_root/TASKS.md" 2>/dev/null
 ```
 
-Read all discovered TASKS.md files.
+Read this file and proceed to step 3. Only this repo's tasks should be considered for picking.
+
+**If the current repo has no TASKS.md or all tasks are blocked/claimed**, tell the user and suggest checking other repos:
+
+```bash
+find ~/apps -maxdepth 3 -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | sort
+```
+
+Ask the user which repo they'd like to pick from before proceeding — never silently switch repos.
 
 ## 3. Finish unfinished work
 

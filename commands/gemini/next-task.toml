@@ -14,9 +14,13 @@ git log --oneline -5
 git checkout main 2>/dev/null || git checkout master
 git pull --rebase
 2. Find the queue
+Start with the current repo — look for TASKS.md at the git root:
 git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-find "$git_root" -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | sort | head -20
-Read all discovered TASKS.md files.
+cat "$git_root/TASKS.md" 2>/dev/null
+Read this file and proceed to step 3. Only this repo's tasks should be considered for picking.
+If the current repo has no TASKS.md or all tasks are blocked/claimed, tell the user and suggest checking other repos:
+find ~/apps -maxdepth 3 -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | sort
+Ask the user which repo they'd like to pick from before proceeding — never silently switch repos.
 3. Finish unfinished work
 Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)` on any task line.
 **If you find a claimed task:**
