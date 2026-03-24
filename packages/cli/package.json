@@ -1,6 +1,6 @@
 {
   "name": "@tasks-md/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Unified CLI for TASKS.md task queue management",
   "type": "module",
   "main": "./dist/lib.js",
@@ -17,10 +17,12 @@
   "files": [
     "dist/**/*.js",
     "dist/**/*.d.ts",
-    "!dist/**/*.test.*"
+    "!dist/**/*.test.*",
+    "commands/**"
   ],
   "scripts": {
-    "build": "tsc",
+    "copy-commands": "rm -rf commands && cp -r ../../commands commands",
+    "build": "tsc && npm run copy-commands",
     "test": "vitest run --exclude dist",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"
