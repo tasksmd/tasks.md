@@ -46,7 +46,7 @@ Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)
 2. Check `git log` and `git stash list` for related work
 3. If the work is done but not committed/removed — go to step 6 to complete it
 4. If the work is partially done — resume it at step 5
-5. If the claim is stale and no related work exists — unclaim it (remove your `(@agent-id)`) and continue to step 4
+5. If the claim is stale and no related work exists — **ask the user** before unclaiming it. Never silently drop a claim
 
 **If no claimed task exists**, proceed to step 4.
 
@@ -113,7 +113,15 @@ If `git pull --rebase` conflicts on TASKS.md, re-read the file, re-apply your ta
 
 ## 7. Loop
 
-Switch back to main and pull latest:
+Verify the workspace is clean before moving on:
+
+```bash
+git status --short
+```
+
+If there are uncommitted changes, **stop and ask the user** — never switch branches with dirty state.
+
+Once clean, switch back to main and pull latest:
 
 ```bash
 git checkout main 2>/dev/null || git checkout master
