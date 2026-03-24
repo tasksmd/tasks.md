@@ -51,8 +51,6 @@ jobs:
               echo "✓  Published $name@$version"
             fi
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Commit version bump
         run: |
