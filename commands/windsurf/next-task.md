@@ -6,8 +6,6 @@ description: Pick and work on the next task from TASKS.md
 
 Pick the highest-priority unblocked task from TASKS.md and work on it.
 
-> If the user provided extra context (e.g., "next task on the API" or "work on the auth feature"), use it to filter or prefer matching tasks. Otherwise, follow the priority queue as-is — don't ask for clarification, just pick confidently.
-
 ## 1. Check workspace
 
 Before anything else, assess the current state:
@@ -18,8 +16,8 @@ git branch --show-current
 git log --oneline -5
 ```
 
-- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or you're unsure, **stop and ask the user** what to do — never stash or discard uncommitted work.
-- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, **ask the user** whether to commit the current changes or abandon the branch — never silently stash or delete uncommitted work.
+- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
+- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, the branch may be leftover — switch to main after stashing any dirty state.
 - **Clean + on main?** — Pull latest and proceed to step 2.
 
 ```bash
@@ -55,13 +53,13 @@ Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)
 2. Check `git log` and `git stash list` for related work
 3. If the work is done but not committed/removed — go to step 6 to complete it
 4. If the work is partially done — resume it at step 5
-5. If the claim is stale and no related work exists — **ask the user** before unclaiming it. Never silently drop a claim
+5. If the claim is stale and no related work exists — unclaim it (remove your `(@agent-id)`) and continue to step 4
 
 **If no claimed task exists**, proceed to step 4.
 
 ## 4. Pick a task
 
-Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each priority level, evaluate tasks and **pick the first one that qualifies** — don't deliberate or ask for confirmation.
+Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each priority level, evaluate the tasks and select one.
 
 ### Priority decision guidelines
 
@@ -77,8 +75,6 @@ Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each prior
 3. **Unclaimed** — skip tasks with `(@agent-name)` — they're claimed by another agent
 4. **Tag match** — if the task has **Tags**, check whether they match your capabilities (e.g., skip `frontend` tags if you're working in a backend-only repo)
 5. **First available** — among equally qualified tasks, pick the first one in the list
-
-**Be decisive.** The algorithm above gives a deterministic answer — follow it and move on. Only ask the user if there is genuine ambiguity (e.g., multiple tasks at the same priority with identical unblocking impact and no way to distinguish them).
 
 If all tasks at every priority level are blocked, claimed, or unmatched — tell the user. Suggest unblocking actions if possible (e.g., "Task X blocks 3 others — should I work on its blocker instead?").
 
@@ -124,15 +120,7 @@ If `git pull --rebase` conflicts on TASKS.md, re-read the file, re-apply your ta
 
 ## 7. Loop
 
-Verify the workspace is clean before moving on:
-
-```bash
-git status --short
-```
-
-If there are uncommitted changes, **stop and ask the user** — never switch branches with dirty state.
-
-Once clean, switch back to main and pull latest:
+Switch back to main and pull latest:
 
 ```bash
 git checkout main 2>/dev/null || git checkout master
