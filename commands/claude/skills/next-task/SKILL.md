@@ -19,8 +19,8 @@ git branch --show-current
 git log --oneline -5
 ```
 
-- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or you're unsure, **stop and ask the user** what to do — never stash or discard uncommitted work.
-- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, **ask the user** whether to commit the current changes or abandon the branch — never silently stash or delete uncommitted work.
+- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
+- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, the branch may be leftover — switch to main after stashing any dirty state.
 - **Clean + on main?** — Pull latest and proceed to step 2.
 
 ```bash
@@ -30,12 +30,22 @@ git pull --rebase
 
 ## 2. Find the queue
 
+Start with the **current repo** — look for TASKS.md at the git root:
+
 ```bash
 git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-find "$git_root" -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | sort | head -20
+cat "$git_root/TASKS.md" 2>/dev/null
 ```
 
-Read all discovered TASKS.md files.
+Read this file and proceed to step 3. Only this repo's tasks should be considered for picking.
+
+**If the current repo has no TASKS.md or all tasks are blocked/claimed**, tell the user and suggest checking other repos:
+
+```bash
+find ~/apps -maxdepth 3 -name "TASKS.md" -not -path "*/.git/*" -not -path "*/node_modules/*" | sort
+```
+
+Ask the user which repo they'd like to pick from before proceeding — never silently switch repos.
 
 ## 3. Finish unfinished work
 
