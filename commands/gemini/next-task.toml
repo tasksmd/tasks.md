@@ -8,8 +8,8 @@ Before anything else, assess the current state:
 git status --short
 git branch --show-current
 git log --oneline -5
-- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
-- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, the branch may be leftover — switch to main after stashing any dirty state.
+- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or you're unsure, **stop and ask the user** what to do — never stash or discard uncommitted work.
+- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, **ask the user** whether to commit the current changes or abandon the branch — never silently stash or delete uncommitted work.
 - **Clean + on main?** — Pull latest and proceed to step 2.
 git checkout main 2>/dev/null || git checkout master
 git pull --rebase
