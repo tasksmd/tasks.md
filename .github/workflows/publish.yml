@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,8 +37,6 @@ jobs:
         run: npm test
 
       - name: Publish packages to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           PACKAGES=(parser lint mcp cli)
           for pkg in "${PACKAGES[@]}"; do
@@ -48,10 +47,12 @@ jobs:
             if npm view "$name@$version" >/dev/null 2>&1; then
               echo "⏭  $name@$version already published, skipping"
             else
-              (cd "$dir" && npm publish --access=public)
+              (cd "$dir" && npm publish --access=public --provenance)
               echo "✓  Published $name@$version"
             fi
           done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Commit version bump
         run: |
