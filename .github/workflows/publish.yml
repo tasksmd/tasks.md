@@ -37,6 +37,8 @@ jobs:
         run: npm test
 
       - name: Publish packages to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           PACKAGES=(parser lint mcp cli)
           for pkg in "${PACKAGES[@]}"; do
