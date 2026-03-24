@@ -42,9 +42,9 @@
   },
   "homepage": "https://tasks.md",
   "dependencies": {
-    "@tasks-md/parser": "^0.1.0",
+    "@tasks-md/parser": "^0.2.0",
     "commander": "^13.0.0",
-    "@tasks-md/lint": "^0.1.0"
+    "@tasks-md/lint": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

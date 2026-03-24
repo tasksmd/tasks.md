@@ -1,6 +1,6 @@
 {
   "name": "tasks-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for reading and writing TASKS.md files",
   "type": "module",
   "bin": {
@@ -35,7 +35,7 @@
   "homepage": "https://tasks.md",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "@tasks-md/parser": "^0.1.0",
+    "@tasks-md/parser": "^0.2.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
