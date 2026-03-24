@@ -7,6 +7,8 @@ description: Pick and work on the next task from TASKS.md. Use when the user say
 
 Pick the highest-priority unblocked task from TASKS.md and work on it.
 
+> If the user provided extra context (e.g., "next task on the API" or "work on the auth feature"), use it to filter or prefer matching tasks. Otherwise, follow the priority queue as-is — don't ask for clarification, just pick confidently.
+
 ## 1. Check workspace
 
 Before anything else, assess the current state:
@@ -60,7 +62,7 @@ Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)
 
 ## 4. Pick a task
 
-Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each priority level, evaluate the tasks and select one.
+Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each priority level, evaluate tasks and **pick the first one that qualifies** — don't deliberate or ask for confirmation.
 
 ### Priority decision guidelines
 
@@ -76,6 +78,8 @@ Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each prior
 3. **Unclaimed** — skip tasks with `(@agent-name)` — they're claimed by another agent
 4. **Tag match** — if the task has **Tags**, check whether they match your capabilities (e.g., skip `frontend` tags if you're working in a backend-only repo)
 5. **First available** — among equally qualified tasks, pick the first one in the list
+
+**Be decisive.** The algorithm above gives a deterministic answer — follow it and move on. Only ask the user if there is genuine ambiguity (e.g., multiple tasks at the same priority with identical unblocking impact and no way to distinguish them).
 
 If all tasks at every priority level are blocked, claimed, or unmatched — tell the user. Suggest unblocking actions if possible (e.g., "Task X blocks 3 others — should I work on its blocker instead?").
 
