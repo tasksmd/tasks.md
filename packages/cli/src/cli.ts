@@ -22,7 +22,7 @@ import { createLinearSource } from "./sync/linear.js";
 const program = new Command()
   .name("tasks")
   .description("Unified CLI for TASKS.md task queue management")
-  .version("0.2.0");
+  .version("0.1.0");
 
 // ── init (TypeScript-native) ──
 
@@ -36,7 +36,7 @@ program
       console.log(message);
     }
     if (opts.install) {
-      const commandsSourceDir = join(import.meta.dirname, "..");
+      const commandsSourceDir = join(import.meta.dirname, "..", "..", "..");
       const installResult = installCommands(process.cwd(), commandsSourceDir, { all: false });
       for (const msg of installResult.messages) {
         console.log(msg);
@@ -81,7 +81,7 @@ program
   .option("--agent <name>", "Install for a specific agent only")
   .option("--hooks", "Install pre-commit hook that validates TASKS.md")
   .action((opts: { all?: boolean; agent?: string; hooks?: boolean }) => {
-    const commandsSourceDir = join(import.meta.dirname, "..");
+    const commandsSourceDir = join(import.meta.dirname, "..", "..", "..");
     console.log("Installing /next-task commands...");
     const result = installCommands(process.cwd(), commandsSourceDir, {
       all: opts.all,
