@@ -81,6 +81,12 @@ Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each prior
 
 If all tasks at every priority level are blocked, claimed, or unmatched — tell the user. Suggest unblocking actions if possible (e.g., "Task X blocks 3 others — should I work on its blocker instead?").
 
+**If TASKS.md is empty or has no actionable tasks** — do not stop. Actively find work:
+
+1. Run the `project-audit` skill — a code-level audit across four lenses (no-brainer fixes, stability gaps, dependency modernization, docs drift). It will write prioritized tasks to TASKS.md.
+2. If architectural direction or strategic fit questions need answering first, run `strategic-review` before or alongside the audit.
+3. Once the audit completes and tasks are written to TASKS.md, return to step 4 and pick the top result.
+
 ## 5. Claim and do the work
 
 > **MCP shortcut:** If `tasks-mcp` is available, use its `claim_task` tool instead of manually editing the file.
@@ -131,3 +137,13 @@ git pull --rebase
 ```
 
 Read TASKS.md again and pick the next task (go to step 2). Continue until the queue is empty or the user stops you.
+
+## Constraints (Do NOT)
+
+- **Do NOT ask which task to pick** — walk P0→P1→P2→P3 and pick the first unblocked, unclaimed, automatable task; asking wastes the user's time and defeats the skill's purpose
+- **Do NOT ask for confirmation before starting** — announce the task in one line and begin immediately
+- **Do NOT switch repos silently** — if the current repo has no TASKS.md or all tasks are blocked, tell the user and ask which repo to pick from before proceeding
+- **Do NOT claim a task already claimed by another agent** — skip tasks with `(@agent-name)` unless it's your own stale claim
+- **Do NOT mark tasks complete by checking them off** — remove the entire task block from TASKS.md; history lives in git log; checked-off tasks clutter the queue and confuse other agents
+- **Do NOT stop after one task** — loop until the queue is empty or the user interrupts
+- **Do NOT respond with "nothing to do"** — if TASKS.md is empty, run `project-audit` (and optionally `strategic-review`) to find and queue new work, then pick the top result
