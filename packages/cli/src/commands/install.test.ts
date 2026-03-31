@@ -19,6 +19,8 @@ function setupCommandSources(dir: string): void {
   writeFileSync(join(cmds, "codex", "skills", "next-task", "SKILL.md"), "# Codex skill\n");
   mkdirSync(join(cmds, "cursor"), { recursive: true });
   writeFileSync(join(cmds, "cursor", "next-task.md"), "# Cursor\n");
+  mkdirSync(join(cmds, "devin", "skills", "next-task"), { recursive: true });
+  writeFileSync(join(cmds, "devin", "skills", "next-task", "SKILL.md"), "# Devin skill\n");
   mkdirSync(join(cmds, "gemini"), { recursive: true });
   writeFileSync(join(cmds, "gemini", "next-task.toml"), 'description = "test"\n');
   mkdirSync(join(cmds, "windsurf"), { recursive: true });
@@ -56,10 +58,11 @@ describe("installCommands", () => {
     mkdirSync(targetDir);
 
     const result = installCommands(targetDir, commandsDir, { all: true });
-    expect(result.installed).toHaveLength(5);
+    expect(result.installed).toHaveLength(6);
     expect(result.installed).toContain("claude");
     expect(result.installed).toContain("codex");
     expect(result.installed).toContain("cursor");
+    expect(result.installed).toContain("devin");
     expect(result.installed).toContain("gemini");
     expect(result.installed).toContain("windsurf");
   });

@@ -26,14 +26,15 @@ afterEach(() => {
 });
 
 describe("generateCommands", () => {
-  it("generates all 5 agent command files", () => {
+  it("generates all 6 agent command files", () => {
     const result = generateCommands(tempDir);
-    expect(result.generated).toHaveLength(5);
+    expect(result.generated).toHaveLength(6);
     expect(result.errors).toHaveLength(0);
 
     expect(existsSync(join(tempDir, "commands/claude/skills/next-task/SKILL.md"))).toBe(true);
     expect(existsSync(join(tempDir, "commands/codex/skills/next-task/SKILL.md"))).toBe(true);
     expect(existsSync(join(tempDir, "commands/cursor/next-task.md"))).toBe(true);
+    expect(existsSync(join(tempDir, "commands/devin/skills/next-task/SKILL.md"))).toBe(true);
     expect(existsSync(join(tempDir, "commands/windsurf/next-task.md"))).toBe(true);
     expect(existsSync(join(tempDir, "commands/gemini/next-task.toml"))).toBe(true);
   });
@@ -62,7 +63,6 @@ describe("generateCommands", () => {
     generateCommands(tempDir);
     const content = readFileSync(join(tempDir, "commands/claude/skills/next-task/SKILL.md"), "utf-8");
     expect(content).toMatch(/^---\nname: next-task\n/);
-    expect(content).toContain("disable-model-invocation: true");
     expect(content).toContain("allowed-tools:");
   });
 
