@@ -19,6 +19,13 @@
     Duplicate events are detected and skipped.
     Webhook endpoint p99 latency < 50ms.
     Existing integration tests pass.
+  - **Plan**:
+    - [x] Read stripe.ts and webhook-processor.ts to understand current flow
+    - [x] Design durable queue schema (webhook_events table with idempotency key)
+    - [ ] Write migration: add webhook_events table
+    - [ ] Refactor stripe.ts to write event to queue before returning 200
+    - [ ] Implement webhook-processor.ts worker loop with idempotency check
+    - [ ] Add load test at 500 events/sec, confirm no drops
 
 ## P1
 

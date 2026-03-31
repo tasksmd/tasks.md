@@ -162,14 +162,16 @@ All paths are **project-local** (inside your repo). See [commands/](commands/) f
 
 ### What it does
 
-When you type `/next-task`, the agent runs a 6-step loop:
+When you type `/next-task`, the agent runs a loop:
 
+0. **Sync & tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
 1. **Find** — Discovers all `TASKS.md` files from the git root down
-2. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first). Resumes previously claimed tasks if it finds its own `(@agent-id)`.
-3. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
-4. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
-5. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
-6. **Loop** — Reads TASKS.md again, picks the next task, continues until the queue is empty
+2. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones. Resumes previously claimed tasks if it finds its own `(@agent-id)`.
+3. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
+4. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
+5. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
+6. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
+7. **Loop** — Reads TASKS.md again, picks the next task, continues until the queue is empty
 
 ### The workflow
 
