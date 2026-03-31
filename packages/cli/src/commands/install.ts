@@ -36,6 +36,13 @@ const AGENT_MAPPINGS: AgentMapping[] = [
     isDirectory: false,
   },
   {
+    name: "devin",
+    detectDir: ".devin",
+    sourcePath: "commands/devin/skills/next-task",
+    destPath: ".devin/skills/next-task",
+    isDirectory: true,
+  },
+  {
     name: "gemini",
     detectDir: ".gemini",
     sourcePath: "commands/gemini/next-task.toml",

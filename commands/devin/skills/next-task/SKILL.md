@@ -1,6 +1,18 @@
 ---
 name: next-task
 description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
+allowed-tools:
+  - read
+  - edit
+  - grep
+  - glob
+  - exec
+permissions:
+  allow:
+    - Exec(git *)
+    - Exec(gh *)
+    - Exec(find *)
+    - Exec(cat *)
 ---
 
 # Next Task
@@ -111,7 +123,7 @@ A task is complex if it spans multiple files, involves architectural decisions, 
 Add your identity to the task line:
 
 ```markdown
-- [ ] The task description (@@codex, @codex-2)
+- [ ] The task description (@@devin, @devin-2)
 ```
 
 Create a branch and do the work:

@@ -38,7 +38,6 @@ function toGeminiToml(body: string): string {
 const CLAUDE_FRONTMATTER = `---
 name: next-task
 description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
-disable-model-invocation: true
 allowed-tools: Bash, Read, Write, Edit, MultiEdit, Grep, Glob, LS
 ---`;
 
@@ -48,7 +47,24 @@ description: Pick and work on the next task from TASKS.md. Use when the user say
 ---`;
 
 const WINDSURF_FRONTMATTER = `---
-description: Pick and work on the next task from TASKS.md
+description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
+---`;
+
+const DEVIN_FRONTMATTER = `---
+name: next-task
+description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
+allowed-tools:
+  - read
+  - edit
+  - grep
+  - glob
+  - exec
+permissions:
+  allow:
+    - Exec(git *)
+    - Exec(gh *)
+    - Exec(find *)
+    - Exec(cat *)
 ---`;
 
 const AGENTS: AgentConfig[] = [
@@ -69,6 +85,12 @@ const AGENTS: AgentConfig[] = [
     outputPath: "commands/cursor/next-task.md",
     agentExample: "@cursor, @cursor-2",
     transform: (body) => body,
+  },
+  {
+    name: "devin",
+    outputPath: "commands/devin/skills/next-task/SKILL.md",
+    agentExample: "@devin, @devin-2",
+    transform: (body) => withFrontmatter(DEVIN_FRONTMATTER, body),
   },
   {
     name: "windsurf",
