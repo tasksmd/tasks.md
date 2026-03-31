@@ -1,6 +1,6 @@
 {
   "name": "@tasks-md/lint",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Validate TASKS.md files against the spec",
   "type": "module",
   "main": "./dist/lint.js",
@@ -40,7 +40,7 @@
   },
   "homepage": "https://tasks.md",
   "dependencies": {
-    "@tasks-md/parser": "^0.3.0"
+    "@tasks-md/parser": "^0.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
