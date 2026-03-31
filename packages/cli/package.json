@@ -1,6 +1,6 @@
 {
   "name": "@tasks-md/cli",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "Unified CLI for TASKS.md task queue management",
   "type": "module",
   "main": "./dist/lib.js",
@@ -40,9 +40,9 @@
   },
   "homepage": "https://tasks.md",
   "dependencies": {
-    "@tasks-md/parser": "^0.3.1",
+    "@tasks-md/parser": "^0.3.3",
     "commander": "^13.0.0",
-    "@tasks-md/lint": "^0.3.1"
+    "@tasks-md/lint": "^0.3.3"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
