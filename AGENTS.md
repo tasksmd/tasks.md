@@ -22,7 +22,28 @@
 - All examples in `examples/` must be valid per `spec.md`
 - README examples must match spec format
 
+## Change Propagation Rule
+
+**Any change to the `next-task` command must be applied everywhere it lives, in the same commit:**
+
+- `commands/next-task.md` — shared canonical source
+- `commands/claude/skills/next-task/SKILL.md`
+- `commands/codex/skills/next-task/SKILL.md`
+- `commands/cursor/next-task.md`
+- `commands/windsurf/next-task.md`
+- `README.md` — "What it does" step list
+- `examples/complex-tasks.md` — if it illustrates a new format feature
+
+The same rule applies to any other content that exists in multiple places:
+- A spec change in `spec.md` → update README examples and all affected `examples/` files
+- A new metadata field → add it to spec, README, examples, and all command files that reference the format
+- A new step in the loop → update the step count/list in README and every command variant
+
+Never update one file without checking whether the change must propagate to others.
+After editing, run: `grep -r "<changed-term>" commands/ examples/ README.md spec.md` to catch missed spots.
+
 ## Task Management
+
 - Read TASKS.md for available work before asking the user
 - Claim tasks by appending (@your-agent-id) before starting work
 - Remove completed tasks from the file (history is in git log)
