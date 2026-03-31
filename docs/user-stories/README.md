@@ -23,6 +23,7 @@ All originally-identified automation gaps have been implemented:
 | `tasks init` scaffolding | [01](01-agents-know-what-to-work-on.md) | ✅ `tasks init` |
 | `tasks install` auto-detect | [03](03-agents-work-through-queue.md) | ✅ `tasks install` |
 | Write-once commands (canonical + generate) | [03](03-agents-work-through-queue.md) | ✅ `tasks generate-commands` + CI drift check |
+| Devin `/next-task` skill | [03](03-agents-work-through-queue.md) | ✅ `commands/devin/skills/next-task/SKILL.md` |
 | Deterministic `pick_task` | [07](07-monitor-queue-health.md) | ✅ `tasks pick` + `tasks-mcp` MCP tool |
 | Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `tasks lint --fix` / `npx @tasks-md/lint --fix` |
 | sync-issues `--merge` mode | [06](06-issue-tracker-flows-to-agents.md) | ✅ `tasks sync-issues --merge` |

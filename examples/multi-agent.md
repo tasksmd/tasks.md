@@ -1,5 +1,13 @@
 # Tasks
 
+<!-- Multi-agent setup: background agents work in parallel, each claiming tasks with their identity.
+     Example identities in use:
+       @cursor-bg     — Cursor background agent
+       @claude-code   — Claude Code
+       @devin         — Devin
+       @codex         — OpenAI Codex CLI
+     Each agent runs /next-task, claims the next unblocked unclaimed task, and loops. -->
+
 ## P0
 
 - [ ] Resolve race condition in job queue consumer (@cursor-bg)

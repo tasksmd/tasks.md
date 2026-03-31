@@ -239,6 +239,7 @@ The recommended format is `@<tool>-<instance>`:
 | `@claude-code` | Claude Code CLI |
 | `@codex` | OpenAI Codex CLI |
 | `@cursor-1` | Cursor, window 1 |
+| `@devin` | Devin |
 | `@gemini` | Gemini CLI |
 | `@cascade-bg` | Windsurf Cascade, background |
 | `@copilot-agent` | GitHub Copilot coding agent |
@@ -326,7 +327,7 @@ Reference TASKS.md from your AGENTS.md:
 
 ## Agent Commands
 
-Ready-made `/next-task` commands are available for [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://developers.openai.com/codex/skills), [Cursor](https://cursor.com/changelog/1-6), [Gemini CLI](https://geminicli.com/docs/cli/custom-commands/), and [Windsurf](https://docs.codeium.com/windsurf/workflows). Each implements the full pick → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
+Ready-made `/next-task` commands are available for [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://developers.openai.com/codex/skills), [Cursor](https://cursor.com/changelog/1-6), [Devin](https://windsurf.com/devin), [Gemini CLI](https://geminicli.com/docs/cli/custom-commands/), and [Windsurf](https://docs.codeium.com/windsurf/workflows). Each implements the full pick → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
 
 Invocation syntax varies by agent:
 
@@ -335,6 +336,7 @@ Invocation syntax varies by agent:
 | Claude Code | `/next-task` |
 | Codex | `$next-task` |
 | Cursor | `/next-task` |
+| Devin | `/next-task` |
 | Gemini CLI | `/next-task` |
 | Windsurf | `/next-task` |
 

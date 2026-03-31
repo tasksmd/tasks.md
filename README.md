@@ -155,6 +155,7 @@ Or copy manually into your project (commit it so your team gets it too):
 | Claude Code | `cp -r commands/claude/skills/next-task .claude/skills/` |
 | Codex | `cp -r commands/codex/skills/next-task .agents/skills/` |
 | Cursor | `cp commands/cursor/next-task.md .cursor/commands/` |
+| Devin | `cp -r commands/devin/skills/next-task .devin/skills/` |
 | Gemini CLI | `cp commands/gemini/next-task.toml .gemini/commands/` |
 | Windsurf | `cp commands/windsurf/next-task.md .windsurf/workflows/` |
 
@@ -164,14 +165,16 @@ All paths are **project-local** (inside your repo). See [commands/](commands/) f
 
 When you type `/next-task`, the agent runs a loop:
 
-0. **Sync & tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
-1. **Find** — Discovers all `TASKS.md` files from the git root down
-2. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones. Resumes previously claimed tasks if it finds its own `(@agent-id)`.
-3. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
-4. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
-5. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
-6. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
-7. **Loop** — Reads TASKS.md again, picks the next task, continues until the queue is empty
+1. **Snapshot** — Reads git status, current branch, and TASKS.md in one shot to orient without redundant tool calls
+2. **Tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
+3. **Find** — Discovers all `TASKS.md` files from the git root down
+4. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
+5. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
+6. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
+7. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
+8. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
+9. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
+10. **Loop** — Returns to step 3 and picks the next task, continues until the queue is empty
 
 ### The workflow
 
@@ -344,14 +347,14 @@ All four npm packages share a single version and are published together:
 ### How to release
 
 1. Go to [GitHub Releases → New](https://github.com/tasksmd/tasks.md/releases/new)
-2. Create a new tag with a `v` prefix (e.g. `v0.2.0`) targeting `main`
+2. Create a new tag with a `v` prefix (e.g. `v0.3.1`) targeting `main`
 3. Add release notes (GitHub can auto-generate them)
 4. Click **Publish release**
 
 Or from the CLI:
 
 ```bash
-gh release create v0.2.0 --generate-notes
+gh release create v0.3.1 --generate-notes
 ```
 
 The [publish workflow](.github/workflows/publish.yml) runs automatically and:
@@ -373,7 +376,7 @@ If you need to publish without a GitHub Release (e.g. from a local machine):
 
 ```bash
 npm adduser                        # authenticate once
-scripts/sync-versions.sh 0.2.0    # bump all package versions
+scripts/sync-versions.sh 0.3.1    # bump all package versions
 scripts/publish-all.sh             # publish in dependency order (requires OTP)
 ```
 
