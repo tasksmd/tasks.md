@@ -201,6 +201,23 @@ Rules:
 - Sub-tasks inherit priority from their parent
 - The agent who claims the parent owns all its sub-tasks. Other agents should not claim individual sub-tasks of a claimed parent. For parallel work, promote sub-tasks to top-level tasks with blocker relationships instead.
 
+### When to use sub-tasks vs. separate tasks
+
+**Default to sub-tasks.** Use them when steps are sequential, owned by one agent, and only valuable as part of the whole. Sub-tasks keep context (Details, Acceptance) in one place and show progress without cluttering the queue.
+
+**Promote to separate top-level tasks when:**
+- Two or more agents can work on the steps in parallel
+- A step spans multiple sessions or days
+- A step produces a shippable artifact on its own
+- Steps are in different parts of the codebase with no shared context
+
+**Decision rule:**
+
+> Can one agent complete all the steps in a single session? → Sub-tasks.
+> Does any step need a different agent, or could it ship independently? → Separate tasks with `**Blocked by**:`.
+
+When promoting, move the shared context (Details, Acceptance, Files) to whichever task needs it most, or repeat the essentials on each child. Add an `**ID**:` to each task so the blocker graph is explicit.
+
 ## Claiming
 
 An agent claims a task by appending its name in parentheses on the task line:

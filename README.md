@@ -119,7 +119,7 @@ The quality of your task description directly affects the quality of the agent's
 
 **Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields beyond these six.
 
-**Sub-tasks**: Nested checkboxes under a parent. The agent who claims the parent owns all sub-tasks. Remove the entire block when done.
+**Sub-tasks**: Nested checkboxes under a parent. The agent who claims the parent owns all sub-tasks. Remove the entire block when done. Use sub-tasks when steps are sequential and owned by one agent; promote to separate top-level tasks when steps can be parallelized or span multiple sessions.
 
 **Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Split when a file exceeds ~50 tasks.
 
@@ -294,7 +294,9 @@ Yes. It works as a personal backlog for any developer. The format is just priori
 
 ### How do I handle tasks that are too big for one session?
 
-Break them into sub-tasks or split them into separate tasks with dependencies. If a task takes more than one sentence to describe, it's probably two tasks. Use **Blocked by** to order them:
+**Default to sub-tasks** — nested checkboxes that one agent works through sequentially. Sub-tasks keep context (Details, Acceptance) in one place and show progress without cluttering the queue.
+
+**Promote to separate top-level tasks** when steps can be parallelized, span multiple sessions, or each produce a shippable artifact on their own. Use `**Blocked by**:` to express the dependency:
 
 ```markdown
 - [ ] Set up auth database schema
@@ -303,6 +305,8 @@ Break them into sub-tasks or split them into separate tasks with dependencies. I
 - [ ] Implement JWT token refresh
   - **Blocked by**: auth-schema
 ```
+
+Decision rule: can one agent finish everything in a single session? Use sub-tasks. Does any step need a different agent or could it ship alone? Separate tasks.
 
 ### What happens when an agent gets stuck?
 
