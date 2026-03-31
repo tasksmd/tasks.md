@@ -86,7 +86,7 @@ Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)
 **If you find a claimed task:**
 1. Read its details and check what state it's in
 2. Check `git log` and `git stash list` for related work
-3. If the work is done but not committed/removed — go to step 6 to complete it
+3. If the work is done but not committed/removed — go to step 7 to complete it
 4. If the work is partially done — resume it at step 5
 5. If the claim is stale and no related work exists — unclaim it (remove your `(@agent-id)`) and continue to step 4
 
@@ -171,16 +171,21 @@ Then do the work:
 
 Remove the entire task block from TASKS.md — the task line, all metadata, and any sub-tasks. Completed task history lives in git log.
 
-Commit everything together:
+**Include the TASKS.md removal in the same commit as your code changes** — this way the task is marked done when the PR lands, not as a separate follow-up step:
 
 ```bash
 git add <changed-files> TASKS.md
 git commit -m "<conventional commit for the actual work>"
-git pull --rebase
 git push
 ```
 
-If `git pull --rebase` conflicts on TASKS.md, re-read the file, re-apply your task removal, then `git add TASKS.md && git rebase --continue`. TASKS.md conflicts are usually trivial — another agent claimed or removed a different task.
+Then open a PR:
+
+```bash
+gh pr create --title "<same as commit message>" --body "<what changed and why>"
+```
+
+If `git pull --rebase` is needed and it conflicts on TASKS.md, re-read the file, re-apply your task removal, then `git add TASKS.md && git rebase --continue`. TASKS.md conflicts are usually trivial — another agent claimed or removed a different task.
 
 ## 8. Loop
 

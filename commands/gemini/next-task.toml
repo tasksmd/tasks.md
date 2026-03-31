@@ -43,7 +43,7 @@ Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)
 **If you find a claimed task:**
 1. Read its details and check what state it's in
 2. Check `git log` and `git stash list` for related work
-3. If the work is done but not committed/removed — go to step 6 to complete it
+3. If the work is done but not committed/removed — go to step 7 to complete it
 4. If the work is partially done — resume it at step 5
 5. If the claim is stale and no related work exists — unclaim it (remove your `(@agent-id)`) and continue to step 4
 **If no claimed task exists**, proceed to step 4.
