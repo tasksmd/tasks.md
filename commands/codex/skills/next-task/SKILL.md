@@ -56,8 +56,8 @@ git branch --show-current
 git log --oneline -5
 ```
 
-- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 6). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
-- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 6). If no task is claimed, the branch may be leftover — switch to main.
+- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
+- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, the branch may be leftover — switch to main.
 - **Clean + on main?** — Proceed to step 2.
 
 ## 2. Find the queue
@@ -86,8 +86,8 @@ Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)
 **If you find a claimed task:**
 1. Read its details and check what state it's in
 2. Check `git log` and `git stash list` for related work
-3. If the work is done but not committed/removed — go to step 7 to complete it
-4. If the work is partially done — resume it at step 6
+3. If the work is done but not committed/removed — go to step 6 to complete it
+4. If the work is partially done — resume it at step 5
 5. If the claim is stale and no related work exists — unclaim it (remove your `(@agent-id)`) and continue to step 4
 
 **If no claimed task exists**, proceed to step 4.
@@ -112,6 +112,12 @@ Walk the priority sections in order: **P0 → P1 → P2 → P3**. For each prior
 5. **Hardest first** — among equally qualified tasks, prefer the harder one (more files, more ambiguity, architectural decisions). Hard tasks are where agents add the most value; simple tasks are for humans.
 
 If all tasks at every priority level are blocked, claimed, or unmatched — tell the user. Suggest unblocking actions if possible (e.g., "Task X blocks 3 others — should I work on its blocker instead?").
+
+**If TASKS.md is empty or has no actionable tasks** — do not stop. Actively find work:
+
+1. Run the `project-audit` skill — a code-level audit across four lenses (no-brainer fixes, stability gaps, dependency modernization, docs drift). It will write prioritized tasks to TASKS.md.
+2. If architectural direction or strategic fit questions need answering first, run `strategic-review` before or alongside the audit.
+3. Once the audit completes and tasks are written to TASKS.md, return to step 4 and pick the top result.
 
 ## 5. Plan (if the task is complex)
 

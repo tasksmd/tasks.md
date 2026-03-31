@@ -58,8 +58,8 @@ git branch --show-current
 git log --oneline -5
 ```
 
-- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 6). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
-- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 6). If no task is claimed, the branch may be leftover — switch to main.
+- **Uncommitted changes?** — Check if they relate to a claimed task. If yes, finish that work first (skip to step 5). If the changes are unrelated or abandoned, stash them: `git stash push -m "next-task: stash unrelated changes"`.
+- **Not on main/master?** — You're on a feature branch. Check if it has an open task associated with it (look in TASKS.md for your `(@agent-id)` claim). If yes, finish it first (skip to step 5). If no task is claimed, the branch may be leftover — switch to main.
 - **Clean + on main?** — Proceed to step 2.
 
 ## 2. Find the queue
@@ -88,8 +88,8 @@ Scan TASKS.md for any task you previously claimed — look for your `(@agent-id)
 **If you find a claimed task:**
 1. Read its details and check what state it's in
 2. Check `git log` and `git stash list` for related work
-3. If the work is done but not committed/removed — go to step 7 to complete it
-4. If the work is partially done — resume it at step 6
+3. If the work is done but not committed/removed — go to step 6 to complete it
+4. If the work is partially done — resume it at step 5
 5. If the claim is stale and no related work exists — unclaim it (remove your `(@agent-id)`) and continue to step 4
 
 **If no claimed task exists**, proceed to step 4.
@@ -194,13 +194,3 @@ git pull --rebase
 ```
 
 Read TASKS.md again and pick the next task (go to step 2). Continue until the queue is empty or the user stops you.
-
-## Constraints (Do NOT)
-
-- **Do NOT ask which task to pick** — walk P0→P1→P2→P3 and pick the first unblocked, unclaimed, automatable task; asking wastes the user's time and defeats the skill's purpose
-- **Do NOT ask for confirmation before starting** — announce the task in one line and begin immediately
-- **Do NOT switch repos silently** — if the current repo has no TASKS.md or all tasks are blocked, tell the user and ask which repo to pick from before proceeding
-- **Do NOT claim a task already claimed by another agent** — skip tasks with `(@agent-name)` unless it's your own stale claim
-- **Do NOT mark tasks complete by checking them off** — remove the entire task block from TASKS.md; history lives in git log; checked-off tasks clutter the queue and confuse other agents
-- **Do NOT stop after one task** — loop until the queue is empty or the user interrupts
-- **Do NOT respond with "nothing to do"** — if TASKS.md is empty, run `project-audit` (and optionally `strategic-review`) to find and queue new work, then pick the top result
