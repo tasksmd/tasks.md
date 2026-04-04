@@ -175,6 +175,12 @@ When you type `/next-task`, the agent runs a loop:
 8. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
 9. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
 10. **Loop** — Returns to step 3 and picks the next task, continues until the queue is empty
+11. **Audit** — When the queue is empty, runs a 5-tier audit cascade to generate new work instead of stopping:
+    - **Code health**: typecheck, lint, security audit, dead code, swallowed errors, missing timeouts
+    - **Code smells**: large files, god modules, high-churn files, duplicate logic, test coverage gaps
+    - **Documentation**: README vs reality, stale counts, code comments describing deleted code
+    - **Dependencies**: outdated deps, deprecated APIs, unused devDependencies
+    - **DX/polish**: error messages, CLI output consistency, help text, performance, CI gaps
 
 ### The workflow
 
