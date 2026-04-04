@@ -88,10 +88,19 @@ Store detected config mentally — do NOT re-detect on every step.
    - Update AGENTS.md or README with recent changes
    - Clean up dead code, unused exports, stale imports
    - Switch to another repo and work there
-7. **If TASKS.md is empty or has no actionable tasks** — do not stop. Actively find work:
-   - Run the `project-audit` skill: code-level audit across four lenses (no-brainer fixes, stability, dependency modernization, docs drift). It will populate `TASKS.md` with prioritized tasks.
-   - If architecture direction or strategic fit questions need answering first, run `strategic-review` before (or alongside) the audit.
-   - Once the audit completes and tasks are written to `TASKS.md`, loop back to Step 4 and pick the top task.
+7. **If TASKS.md is empty or has no actionable tasks** — do not stop. Generate new work by running through the audit cascade:
+
+   **Tier 1 — Code health:** typecheck + lint + test (fix failures), biome auto-fix, security audit, dead code removal, swallowed errors, missing timeouts, consistency bugs.
+
+   **Tier 2 — Code smells:** large files >400 lines (split them), god modules, high-churn files, duplicate logic, magic numbers, test coverage gaps.
+
+   **Tier 3 — Documentation:** README vs reality, AGENTS.md vs codebase, VISION.md vs code, user stories vs CLI, stale counts in docs, code comments that describe deleted code.
+
+   **Tier 4 — Dependencies:** outdated deps (patch+minor), deprecated APIs, custom code with upstream replacements, unused devDependencies.
+
+   **Tier 5 — DX and polish:** error message quality, CLI output consistency, help text accuracy, shell completion, performance, CI pipeline completeness.
+
+   Work through tiers in order. Each fix is a separate branch + PR. Move to the next tier only when the current one is clean. Stop when all 5 tiers are clean or the user interrupts.
 
 ### Step 5: Plan before implementing (if the task is complex)
 

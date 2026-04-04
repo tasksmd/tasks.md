@@ -69,7 +69,58 @@ find ~/apps -maxdepth 3 -name "TASKS.md" ! -path "*/.git/*" ! -path "*/node_modu
 
 Ask the user which repo to pick from — never switch repos silently.
 
-**If TASKS.md is empty or has no actionable tasks** — do not stop. Run the `project-audit` skill to generate new work, then pick from the results.
+**If TASKS.md has no actionable tasks** — do not stop. Generate new work by running through the audit cascade below. Work through each tier in order, committing and shipping fixes as you go. Each tier generates tasks; pick and complete them before moving to the next tier.
+
+### Audit Cascade (when queue is empty)
+
+Run these in order. Each pass generates tasks → pick the best ones → implement → ship → loop.
+
+**Tier 1 — Code health (highest impact)**
+1. **Typecheck + lint + test** — run the full verify suite. Fix any failures immediately.
+2. **Biome/ESLint auto-fix** — run `biome check --write` or equivalent. Commit formatting fixes.
+3. **Security audit** — `npm audit`, `cargo audit`, `pip-audit`. Patch-level fixes are P2; major-version bumps are P3.
+4. **Dead code** — search for unused exports, unreachable branches, commented-out blocks. Delete them.
+5. **Swallowed errors** — `grep -r "catch {}" src/` and `catch { return` patterns. Add logging or proper handling.
+6. **Missing timeouts** — find `execFileSync`, `spawnSync`, `fetch` calls without timeout options. Add them.
+7. **Consistency bugs** — find patterns used in 5/6 places but missing in the 6th (e.g., auto-sync called after 5 mutations but not the 6th).
+
+**Tier 2 — Large files and code smells**
+8. **Large files** — find source files >400 lines. Split into focused modules if responsibilities are mixed.
+9. **God modules** — find files everything imports from. Check if they can be split.
+10. **High-churn files** — `git log --since="3 months ago" --name-only | sort | uniq -c | sort -rn | head -15`. If a file changes constantly, it may need refactoring.
+11. **Duplicate logic** — find copy-pasted patterns across files. Extract shared utilities.
+12. **Magic numbers/strings** — find hardcoded values that should be named constants.
+13. **Test coverage gaps** — find source files with no corresponding `.test.ts`. Write tests for the most critical ones.
+
+**Tier 3 — Documentation audit**
+14. **README vs reality** — verify every command in README actually works. Fix stale examples.
+15. **AGENTS.md vs codebase** — check repo layout, data flow, ownership boundary tables are current.
+16. **VISION.md vs code** — verify capability status table, agent counts, catalog counts match reality.
+17. **User stories vs CLI** — run every command in `docs/user-stories/` and verify output matches.
+18. **Stale doc counts** — grep for hardcoded numbers (agent counts, skill counts, etc.) across all docs. Update any that drifted.
+19. **CONTRIBUTING.md** — verify categories, fields, and verify commands match current code.
+20. **Code comments** — find comments that describe code that no longer exists or works differently.
+
+**Tier 4 — Dependency modernization**
+21. **Outdated dependencies** — `npm outdated` / `cargo update --dry-run`. Update patch+minor versions.
+22. **Deprecated APIs** — search for deprecated Node.js/library APIs. Migrate to replacements.
+23. **Custom code with upstream replacements** — check if any hand-written utilities now have well-maintained packages. Replace if simpler.
+24. **Dev dependency cleanup** — find devDependencies that are no longer used. Remove them.
+
+**Tier 5 — DX and polish**
+25. **Error message quality** — trace every user-facing error path. Ensure each says what went wrong AND what to do next.
+26. **CLI output consistency** — check that all commands use the same icon/color/formatting patterns.
+27. **Help text** — verify `--help` for every command is accurate and has examples.
+28. **Shell completion** — verify tab completion works for common commands.
+29. **Performance** — measure `time agentbrew sync` and `time agentbrew check`. If >2s, profile and optimize.
+30. **CI pipeline** — verify CI runs everything local verify does. Add missing gates.
+
+**How to use the cascade:**
+- Start at Tier 1. If it produces tasks, work them. If the tier is fully clean, move to Tier 2.
+- Each fix is a separate branch + PR. Don't batch unrelated fixes.
+- After completing a tier, re-run it to confirm it's clean before moving on.
+- If a tier is already clean (nothing to fix), say so in one line and move to the next.
+- Stop when all 5 tiers are clean OR the user interrupts.
 
 ## Resume unfinished work
 
