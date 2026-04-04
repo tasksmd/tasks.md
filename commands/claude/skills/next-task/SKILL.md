@@ -1,7 +1,15 @@
 ---
 name: next-task
 description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
-allowed-tools: Bash, Read, Write, Edit, MultiEdit, Grep, Glob, LS
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - MultiEdit
+  - Grep
+  - Glob
+  - LS
 ---
 
 # Next Task
