@@ -19,6 +19,8 @@ Create a `TASKS.md` at your repo root:
 ```markdown
 # Tasks
 
+<!-- policy: Run tests before every commit. Prefer fixing root causes over symptoms. -->
+
 ## P0
 
 - [ ] Fix authentication crash on token refresh
@@ -123,6 +125,8 @@ The quality of your task description directly affects the quality of the agent's
 
 **Multiple files**: One root `TASKS.md` for small repos. Subdirectory files for monorepos. Split when a file exceeds ~50 tasks.
 
+**Policies**: Project rules embedded in HTML comments that agents follow when picking and executing tasks. Use `<!-- policy: ... -->` between `# Tasks` and the first section for file-wide rules, or after a `## P*` heading for section-scoped rules. Policies are invisible in rendered Markdown but readable by agents. See the [spec](spec.md#policies) for details.
+
 See the [full specification](spec.md) for all rules and edge cases.
 
 ## Examples
@@ -168,14 +172,15 @@ When you type `/next-task`, the agent runs a loop:
 1. **Snapshot** — Reads git status, current branch, and TASKS.md in one shot to orient without redundant tool calls
 2. **Tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
 3. **Find** — Discovers all `TASKS.md` files from the git root down
-4. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
-5. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
-6. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
-7. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
-8. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
-9. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
-10. **Loop** — Returns to step 3 and picks the next task, continues until the queue is empty
-11. **Audit** — When the queue is empty, runs a 5-tier audit cascade to generate new work instead of stopping:
+4. **Policies** — Reads `<!-- policy: ... -->` comments from the file and follows them as project rules throughout the session
+5. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
+6. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
+7. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
+8. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
+9. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
+10. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
+11. **Loop** — Returns to step 3 and picks the next task, continues until the queue is empty
+12. **Audit** — When the queue is empty, runs a 5-tier audit cascade to generate new work instead of stopping:
     - **Code health**: typecheck, lint, security audit, dead code, swallowed errors, missing timeouts
     - **Code smells**: large files, god modules, high-churn files, duplicate logic, test coverage gaps
     - **Documentation**: README vs reality, stale counts, code comments describing deleted code

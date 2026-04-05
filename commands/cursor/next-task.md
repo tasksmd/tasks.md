@@ -67,13 +67,22 @@ Detect the repo's tooling stack by checking for config files. **Do not hardcode 
 
 Store detected config mentally — do NOT re-detect on every step.
 
-### Step 3: Quick health check (30 seconds max)
+### Step 3: Read policies
+
+After reading TASKS.md, check for `<!-- policy: ... -->` HTML comments. These are project rules you must follow throughout the session:
+
+- **File-level policies** (between `# Tasks` and first `## P*`) apply to every task
+- **Section-level policies** (after a `## P*` heading) apply only to tasks in that section
+
+Read all policies before picking a task. Follow them alongside the task's own metadata. If a policy conflicts with a task's instructions, the policy takes precedence — it's the project owner's rule.
+
+### Step 4: Quick health check (30 seconds max)
 
 1. `git status --short` — commit or discard stray changes
 2. Check Bosun pipeline summary (if server reachable) — note active pipelines and which files they touch
 3. If any pipelines are FAILED, delete and note for re-launch after your task
 
-### Step 4: Pick the next task
+### Step 5: Pick the next task
 
 **Bias toward hard tasks.** Easy tasks are for humans. Hard tasks — architectural changes, complex debugging, multi-file refactors, performance investigations, tricky integrations — are where AI agents add the most value. When in doubt, pick the task that looks scariest.
 
@@ -102,7 +111,7 @@ Store detected config mentally — do NOT re-detect on every step.
 
    Work through tiers in order. Each fix is a separate branch + PR. Move to the next tier only when the current one is clean. Stop when all 5 tiers are clean or the user interrupts.
 
-### Step 5: Plan before implementing (if the task is complex)
+### Step 6: Plan before implementing (if the task is complex)
 
 A task is complex if it involves any of: multiple subsystems, architectural decisions, unclear scope, unfamiliar code paths, or estimated effort > 1 hour. When in doubt, treat it as complex.
 
@@ -123,29 +132,29 @@ A task is complex if it involves any of: multiple subsystems, architectural deci
 
 **For simple tasks** (single file, obvious fix, < 30 min): skip planning and implement directly.
 
-### Step 6: Implement
+### Step 7: Implement
 
 - Make minimal, focused edits
 - Write tests before or alongside code
 - Commit incrementally with conventional commit messages
 
-### Step 7: Verify
+### Step 8: Verify
 
 Run the repo's full verification suite (detected in Step 2) before pushing.
 
-### Step 8: Commit & push
+### Step 9: Commit & push
 
 - `git add`, `git commit`, `git pull --rebase origin <default-branch>`, `git push`
 - If rebase conflicts: resolve, `GIT_EDITOR=true git rebase --continue`
 - **Never `git reset --hard` on main checkout**
 
-### Step 9: Update queue
+### Step 10: Update queue
 
 - Remove completed task from `tasks.md`
 - Add session note if needed
 - Do NOT update hardcoded counts in docs
 - Commit and push the queue update
 
-### Step 10: Re-launch failed pipelines
+### Step 11: Re-launch failed pipelines
 
 If any pipelines were FAILED in step 3, re-launch them now that there's a free slot.

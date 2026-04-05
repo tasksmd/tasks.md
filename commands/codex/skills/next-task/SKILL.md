@@ -18,6 +18,15 @@ git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".") && cat "$git_r
 
 Use this output to decide where to start — do not re-run these unless state changes.
 
+## Policies
+
+After reading TASKS.md, check for `<!-- policy: ... -->` HTML comments. These are project rules you must follow throughout the session:
+
+- **File-level policies** (between `# Tasks` and first `## P*`) apply to every task
+- **Section-level policies** (after a `## P*` heading) apply only to tasks in that section
+
+Read all policies before picking a task. Follow them alongside the task's own metadata. If a policy conflicts with a task's instructions, the policy takes precedence — it's the project owner's rule.
+
 ## Decision tree
 
 Read the context snapshot and follow the first matching branch:

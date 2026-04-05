@@ -20,9 +20,15 @@ export interface Task {
   rawLines: string[];
 }
 
+export interface Policy {
+  text: string;
+  scope: "file" | string; // "file" for file-level, or "P0"/"P1"/etc. for section-level
+}
+
 export interface TaskFile {
   path: string;
   tasks: Task[];
+  policies: Policy[];
 }
 
 function parseClaimant(summary: string): { cleanSummary: string; claimed?: string } {
@@ -42,6 +48,50 @@ function parseMetadataValue(key: string, value: string): string | string[] {
     return value.split(",").map((item) => item.replace(/`/g, "").trim());
   }
   return value;
+}
+
+const POLICY_PATTERN = /policy\s*:\s*(.+)/gi;
+
+/** Extract policy directives from HTML comments in a TASKS.md file. */
+export function parsePolicies(content: string): Policy[] {
+  const policies: Policy[] = [];
+  const lines = content.split("\n");
+  let currentScope: "file" | string = "file";
+  let inComment = false;
+  let commentBuffer = "";
+
+  for (const line of lines) {
+    // Track priority sections to determine scope
+    const priorityMatch = line.match(/^##\s+P([0-3])$/);
+    if (priorityMatch) {
+      currentScope = `P${priorityMatch[1]}`;
+      continue;
+    }
+
+    // Track HTML comments (may span multiple lines)
+    if (line.includes("<!--")) {
+      inComment = true;
+      commentBuffer = "";
+    }
+    if (inComment) {
+      commentBuffer += line + "\n";
+    }
+    if (line.includes("-->")) {
+      inComment = false;
+      // Extract all policy: directives from the comment block
+      let match;
+      POLICY_PATTERN.lastIndex = 0;
+      while ((match = POLICY_PATTERN.exec(commentBuffer)) !== null) {
+        const text = match[1].trim().replace(/\s*-->$/, "").trim();
+        if (text) {
+          policies.push({ text, scope: currentScope });
+        }
+      }
+      commentBuffer = "";
+    }
+  }
+
+  return policies;
 }
 
 export function parseTasksContent(content: string, filePath: string): Task[] {

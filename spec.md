@@ -50,6 +50,9 @@ Task IDs should be unique across all `TASKS.md` files in the repo so blocker ref
 ```markdown
 # Tasks
 
+<!-- policy: Run tests before every commit. Never skip CI checks.
+     policy: Prefer fixing root causes over symptoms. -->
+
 ## P0
 
 - [ ] Fix authentication crash on token refresh
@@ -74,6 +77,71 @@ Task IDs should be unique across all `TASKS.md` files in the repo so blocker ref
 
 - [ ] Support WebSocket connections
 ```
+
+### Policies
+
+Policies are project-level instructions embedded in TASKS.md that guide agent behavior when picking and executing tasks. They live in HTML comments so they're invisible in rendered Markdown but readable by agents and parsers.
+
+#### File-level policies
+
+Place an HTML comment between `# Tasks` and the first priority section:
+
+```markdown
+# Tasks
+
+<!-- policy: Before building ANY new feature, check if an upstream tool already does this.
+     policy: Codebase target is <20K non-test source lines. Shrinking is always a valid PR.
+     policy: Every PR must include tests. No exceptions.
+     policy: Never commit directly on main — create a feature branch. -->
+
+## P0
+
+- [ ] Fix the crash on startup
+```
+
+Each `policy:` line is a single directive. Agents should read all policies before picking a task and follow them throughout their work session. Policies are project context that applies to **every task** in the file.
+
+#### Section-level policies
+
+Place an HTML comment immediately after a priority heading to scope policies to that section:
+
+```markdown
+## P1
+
+<!-- policy: P1 tasks require a linked Jira ticket in the commit message.
+     policy: Get approval from @lead before starting any P1 work. -->
+
+- [ ] Add rate limiting to public API
+```
+
+Section-level policies apply only to tasks in that section. They are additive — agents should follow both file-level and section-level policies.
+
+#### Freeform comments
+
+HTML comments without `policy:` prefixes are treated as notes for humans — agents may read them for context but should not treat them as directives:
+
+```markdown
+# Tasks
+
+<!-- Last reviewed: 2026-04-01. Next quarterly review: 2026-07-01. -->
+<!-- policy: All database migrations must be backward-compatible. -->
+
+## P0
+```
+
+The first comment is a human note. The second is a policy directive. The `policy:` prefix is what distinguishes them.
+
+#### Policy format
+
+- Each policy starts with `policy:` (case-insensitive) followed by one directive
+- Multiple policies can share a single HTML comment block (one per line)
+- Policies are plain text — no special syntax, no keys, no values. Write them as instructions you'd give to a person.
+- Keep policies concise and actionable. A good policy is one sentence that changes agent behavior.
+
+| Scope | Location | Applies to |
+|-------|----------|-----------|
+| File-level | Between `# Tasks` and first `## P*` | All tasks in the file |
+| Section-level | Immediately after a `## P*` heading | Tasks in that section only |
 
 ### Priority Sections
 
@@ -406,6 +474,16 @@ Git log is the archive by design. A `## Done` section or `[x]` marker would grow
 ### Why does the complex example mix so many concepts?
 
 `examples/complex-tasks.md` is specifically the "everything together" example — multiline details, sub-tasks, blockers, tags, and claims in one file. The other examples (`web-app.md`, `cli-tool.md`) demonstrate simpler patterns. Having one example that shows how all features compose is important for users who need the full feature set.
+
+### Why use HTML comments for policies instead of a metadata section?
+
+HTML comments are invisible when rendered as Markdown — policies don't clutter the task list in GitHub, VS Code preview, or any Markdown viewer. They're still visible in the raw file, which is what agents and parsers read. Using a visible `## Policies` section would add visual noise to a file that should focus on pending work, and would break the `## P0`–`## P3` heading structure.
+
+The `policy:` prefix inside comments distinguishes actionable directives from freeform notes. Without a prefix, agents would need to guess whether a comment is context ("last reviewed: March") or a rule ("always run tests"). The prefix makes intent explicit.
+
+### Why not put policies in AGENTS.md instead?
+
+AGENTS.md is for project-wide agent instructions — build commands, code conventions, architecture. Policies in TASKS.md are scoped to the **task queue** — they guide how agents pick and execute tasks, not how the project works in general. A policy like "P1 tasks require a Jira ticket" belongs with the tasks, not with the build instructions. Teams that want both can: AGENTS.md for project conventions, TASKS.md policies for queue-specific rules.
 
 ## Spec Versioning
 
