@@ -1,5 +1,9 @@
 # Tasks
 
+<!-- policy: Run the full test suite before every commit. Never skip CI.
+     policy: Prefer fixing root causes over symptoms — add regression tests.
+     policy: Database migrations must be backward-compatible (no dropping columns). -->
+
 ## P0
 
 - [ ] Fix payment webhook losing events under load (@backend-agent)
@@ -28,6 +32,8 @@
     - [ ] Add load test at 500 events/sec, confirm no drops
 
 ## P1
+
+<!-- policy: P1 tasks require a linked ticket in the commit message (e.g., PROJ-123). -->
 
 - [ ] Implement user role-based access control
   - **ID**: rbac

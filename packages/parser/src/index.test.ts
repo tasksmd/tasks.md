@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTasksContent, getAllTaskIds, isBlocked, type Task, type TaskFile } from "./index.js";
+import { parseTasksContent, parsePolicies, getAllTaskIds, isBlocked, type Task, type TaskFile } from "./index.js";
 
 const TEST_FILE = "/test/TASKS.md";
 
@@ -314,3 +314,116 @@ function makeFakeTask(metadata: { id?: string; blockedBy?: string[] }): Task {
     rawLines: ["- [ ] fake task"],
   };
 }
+
+// ── parsePolicies ─────────────────────────────────────────────────────────────
+
+describe("parsePolicies", () => {
+  it("extracts file-level policies from HTML comments", () => {
+    const content = `# Tasks
+
+<!-- policy: Always run tests before committing.
+     policy: Never skip CI checks. -->
+
+## P0
+
+- [ ] Fix the bug
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(2);
+    expect(policies[0]).toEqual({ text: "Always run tests before committing.", scope: "file" });
+    expect(policies[1]).toEqual({ text: "Never skip CI checks.", scope: "file" });
+  });
+
+  it("extracts section-level policies scoped to priority", () => {
+    const content = `# Tasks
+
+## P1
+
+<!-- policy: P1 tasks need a Jira ticket. -->
+
+- [ ] Add feature
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(1);
+    expect(policies[0]).toEqual({ text: "P1 tasks need a Jira ticket.", scope: "P1" });
+  });
+
+  it("handles both file-level and section-level policies", () => {
+    const content = `# Tasks
+
+<!-- policy: Global rule applies everywhere. -->
+
+## P0
+
+- [ ] Urgent fix
+
+## P1
+
+<!-- policy: Section rule for P1 only. -->
+
+- [ ] Feature work
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(2);
+    expect(policies[0].scope).toBe("file");
+    expect(policies[1].scope).toBe("P1");
+  });
+
+  it("ignores comments without policy: prefix", () => {
+    const content = `# Tasks
+
+<!-- Last reviewed: 2026-04-01. Just a note. -->
+
+## P0
+
+- [ ] Task
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(0);
+  });
+
+  it("handles single-line HTML comments", () => {
+    const content = `# Tasks
+
+<!-- policy: Keep it simple. -->
+
+## P0
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(1);
+    expect(policies[0].text).toBe("Keep it simple.");
+  });
+
+  it("handles policy: with varying whitespace and casing", () => {
+    const content = `# Tasks
+
+<!-- Policy:  Uppercase P works too.
+     POLICY: ALL CAPS works.
+     policy:no space after colon works. -->
+
+## P0
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(3);
+    expect(policies[0].text).toBe("Uppercase P works too.");
+    expect(policies[1].text).toBe("ALL CAPS works.");
+    expect(policies[2].text).toBe("no space after colon works.");
+  });
+
+  it("returns empty array when no comments exist", () => {
+    const content = `# Tasks
+
+## P0
+
+- [ ] Do something
+`;
+    expect(parsePolicies(content)).toEqual([]);
+  });
+
+  it("strips trailing --> from policy text", () => {
+    const content = `# Tasks\n\n<!-- policy: Single line policy. -->\n`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(1);
+    expect(policies[0].text).not.toContain("-->");
+  });
+});
