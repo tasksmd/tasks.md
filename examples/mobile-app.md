@@ -1,5 +1,8 @@
 # Tasks
 
+<!-- policy: Test on both iOS simulator and Android emulator before merging.
+     policy: Native module changes require rebuilding with `npx pod-install` (iOS) and `cd android && ./gradlew clean` (Android). -->
+
 ## P0
 
 - [ ] Fix Android build crash on React Native 0.76 upgrade

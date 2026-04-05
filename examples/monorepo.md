@@ -1,5 +1,8 @@
 # Tasks
 
+<!-- policy: Run `pnpm -r build` from the root to verify all packages build together.
+     policy: Shared packages use `workspace:*` — never pin to a fixed version. -->
+
 ## P0
 
 - [ ] Fix shared @myorg/ui build breaking downstream packages

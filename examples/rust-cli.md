@@ -1,5 +1,8 @@
 # Tasks
 
+<!-- policy: No panics in release builds — use Result and proper error handling.
+     policy: Run `cargo clippy` and `cargo test` before every commit. -->
+
 ## P0
 
 - [ ] Fix panic on empty input when stdin is piped

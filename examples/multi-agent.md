@@ -8,6 +8,9 @@
        @codex         — OpenAI Codex CLI
      Each agent runs /next-task, claims the next unblocked unclaimed task, and loops. -->
 
+<!-- policy: Commit and push claims immediately — other agents need to see them.
+     policy: Never work on files another agent's task lists in its **Files** metadata. -->
+
 ## P0
 
 - [ ] Resolve race condition in job queue consumer (@cursor-bg)
