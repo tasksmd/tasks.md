@@ -1,5 +1,8 @@
 # Tasks
 
+<!-- policy: Run `pytest` and `mypy .` before every commit.
+     policy: All database changes need a reversible Alembic migration. -->
+
 ## P0
 
 - [ ] Fix SQLAlchemy session leak causing connection pool exhaustion

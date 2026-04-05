@@ -28,7 +28,7 @@ export interface Policy {
 export interface TaskFile {
   path: string;
   tasks: Task[];
-  policies: Policy[];
+  policies?: Policy[];
 }
 
 function parseClaimant(summary: string): { cleanSummary: string; claimed?: string } {

@@ -1,5 +1,8 @@
 # Tasks
 
+<!-- policy: All middleware changes require integration tests with supertest.
+     policy: Never hardcode origins or API keys — use environment variables. -->
+
 ## P0
 
 - [ ] Fix CORS headers blocking API requests from production domain

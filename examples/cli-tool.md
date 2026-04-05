@@ -1,5 +1,8 @@
 # Tasks
 
+<!-- policy: Every error must print a clear message and exit with a non-zero code.
+     policy: New flags require a help description and a test case. -->
+
 ## P0
 
 - [ ] Fix `--output` flag silently ignoring invalid paths
