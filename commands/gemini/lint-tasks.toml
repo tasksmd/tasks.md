@@ -1,0 +1,13 @@
+description = "Validate TASKS.md files against the tasks.md spec"
+
+prompt = """
+Validate all TASKS.md files in the current repo against the tasks.md spec.
+
+Steps:
+1. Find all TASKS.md files: fd TASKS.md . --type f --exclude node_modules --exclude .git
+2. Lint each file: npx @tasks-md/lint <file>
+3. To auto-fix formatting: npx @tasks-md/lint --fix <file>
+4. Show results and offer to fix any errors found
+
+The linter checks: # Tasks heading, P0-P3 section order, checkbox format, kebab-case IDs, dangling Blocked by references, bold metadata labels, no [x] completed tasks.
+"""
