@@ -122,6 +122,13 @@ Step 7: Implement
 - Make minimal, focused edits
 - Write tests before or alongside code
 - Commit incrementally with conventional commit messages
+- Scout while you work — while implementing, actively look for gaps in code you're reading:
+  - Bugs, edge cases, missing error handling
+  - Missing tests for critical code paths
+  - TODOs, FIXMEs, or HACKs in files you touch
+  - Stale comments or docs referencing changed/deleted code
+  - Code duplication, security concerns, convention inconsistencies
+- Record discoveries as new tasks in TASKS.md (P1 for bugs/security, P2 for tests/health, P3 for refactoring). Include Files and Details. Do NOT stop current work — just record and move on. Every completed task should leave the queue with more improvement opportunities than before.
 
 Step 8: Verify
 

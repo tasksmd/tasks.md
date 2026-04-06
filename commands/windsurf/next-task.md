@@ -184,6 +184,31 @@ git checkout -b <branch-name>
 - Make minimal, focused edits — fix the root cause, not the symptom
 - Run verification (test/lint/typecheck) before moving on
 
+## Scout while you work
+
+While implementing, you have deep context about the code you're touching. **Actively look for gaps and record them as new tasks.** This happens naturally as you read and modify code — don't treat it as a separate pass.
+
+**What to look for:**
+- Bugs, edge cases, missing error handling in code you're reading
+- Missing tests for critical code paths you discover
+- TODOs, FIXMEs, or HACKs in files you touch
+- Stale comments or docs referencing changed/deleted code
+- Code duplication near your changes
+- Security concerns (hardcoded secrets, missing validation, unsafe patterns)
+- Inconsistencies with project conventions from AGENTS.md
+
+**How to record:**
+- Add new tasks to TASKS.md under the appropriate priority:
+  - **P1** — bugs, security issues, broken behavior
+  - **P2** — missing tests, code health, stale docs
+  - **P3** — refactoring, nice-to-haves, minor DX improvements
+- Include **Files** and **Details** so the next agent has context
+- Keep descriptions actionable — "Fix X in Y" not "X seems wrong"
+- Do NOT stop current work to fix discoveries — just record and move on
+- Include TASKS.md additions in your commit when you ship the current task
+
+**Goal:** Every completed task should leave the queue with more queued improvements than when you started. You're not just executing tasks — you're scouting the terrain for future work.
+
 ## Finish the work {#finish-the-work}
 
 Verify the implementation is complete:
