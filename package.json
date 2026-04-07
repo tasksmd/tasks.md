@@ -2,15 +2,16 @@
   "name": "tasks-md",
   "private": true,
   "type": "module",
-  "description": "A spec and tooling for TASKS.md — the AI-native task queue format",
+  "description": "A spec and tooling for TASKS.md \u2014 the AI-native task queue format",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "build": "npm run build -w packages/parser && npm run build -w packages/lint -w packages/mcp -w packages/cli",
-    "test": "npm test --workspaces --if-present",
+    "build:site": "node scripts/build-site.js",
     "lint": "node packages/lint/dist/cli.js TASKS.md",
-    "build:site": "node scripts/build-site.js"
+    "test": "npm test --workspaces --if-present",
+    "test:cached": "cached-run npm test"
   },
   "repository": {
     "type": "git",
