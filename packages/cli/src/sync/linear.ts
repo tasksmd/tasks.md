@@ -84,6 +84,7 @@ export function createLinearSource(options: LinearOptions): SyncSource {
           query,
           variables: { filter: filterObj, first: maxResults },
         }),
+        signal: AbortSignal.timeout(30_000),
       });
 
       if (!response.ok) {

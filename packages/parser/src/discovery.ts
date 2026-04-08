@@ -11,6 +11,7 @@ export function findGitRoot(startDir: string): string {
       cwd: startDir,
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
+      timeout: 5_000,
     }).trim();
   } catch {
     return startDir;
@@ -47,7 +48,7 @@ export function discoverTaskFiles(directory: string): string[] {
   try {
     const output = execSync(
       'fd --no-ignore-vcs --exclude node_modules -t f "^TASKS\\.md$"',
-      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
+      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], timeout: 10_000 }
     ).trim();
     if (!output) return [];
     return output

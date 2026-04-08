@@ -75,6 +75,7 @@ export function createJiraSource(options: JiraOptions): SyncSource {
           Authorization: authHeader,
           "Content-Type": "application/json",
         },
+        signal: AbortSignal.timeout(30_000),
       });
 
       if (!response.ok) {

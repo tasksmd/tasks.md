@@ -57,7 +57,7 @@ export function createGitHubSource(options: GitHubOptions = {}): SyncSource {
     async fetchIssues(): Promise<SyncIssue[]> {
       // Validate gh CLI
       try {
-        execSync("gh auth status", { stdio: ["pipe", "pipe", "pipe"] });
+        execSync("gh auth status", { stdio: ["pipe", "pipe", "pipe"], timeout: 10_000 });
       } catch {
         throw new Error("gh CLI not authenticated. Run 'gh auth login'");
       }
@@ -67,7 +67,7 @@ export function createGitHubSource(options: GitHubOptions = {}): SyncSource {
       try {
         output = execSync(
           `gh issue list ${repoFlag} --label "${label}" --state open --limit 200 --json number,title,body,labels`,
-          { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
+          { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], timeout: 30_000 }
         ).trim();
       } catch {
         return [];
