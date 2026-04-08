@@ -74,3 +74,11 @@ jobs:
 
       - name: Run all tests
         run: npm test
+
+  action-dogfood:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/lint
+        with:
+          paths: "TASKS.md examples/"

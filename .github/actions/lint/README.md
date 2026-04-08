@@ -16,7 +16,7 @@ Add to your workflow:
 - uses: tasksmd/tasks.md/.github/actions/lint@main
   with:
     paths: "TASKS.md examples/"
-    version: "0.1.0"
+    version: "0.5.0"
 ```
 
 ### Full workflow example
