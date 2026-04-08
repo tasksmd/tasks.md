@@ -200,6 +200,8 @@ While implementing, you have deep context about the code you're touching. **Acti
 
 **Goal:** Every completed task should leave the queue with more queued improvements than when you started. You're not just executing tasks — you're scouting the terrain for future work.
 
+**HARD RULE:** Before shipping any PR, check: did you discover anything while working? If yes, add it to TASKS.md in the same commit. If you're not sure, you didn't look hard enough — re-read the files you touched and find at least one improvement. An empty scout log means you weren't paying attention.
+
 ## Finish the work {#finish-the-work}
 
 Verify the implementation is complete:
