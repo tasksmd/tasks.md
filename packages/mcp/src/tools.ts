@@ -4,6 +4,8 @@ import {
   parseTasksContent,
   getAllTaskIds,
   isBlocked,
+  countUnblocks,
+  pickBestTask,
   discoverTaskFiles,
   type Task,
   type TaskFile,
@@ -201,64 +203,13 @@ export interface PickTaskOptions {
   agent_name?: string;
 }
 
-function unblocksCount(task: Task, allTasks: Task[]): number {
-  if (!task.metadata.id) return 0;
-  return allTasks.filter(
-    (t) => t.metadata.blockedBy?.includes(task.metadata.id!)
-  ).length;
-}
-
-function tagOverlapCount(task: Task, tags: string[]): number {
-  if (!task.metadata.tags?.length) return 0;
-  return task.metadata.tags.filter((t) =>
-    tags.some((at) => at.toLowerCase() === t.toLowerCase())
-  ).length;
-}
-
 export async function pickTask(
   taskFiles: TaskFile[],
   options: PickTaskOptions = {}
 ): Promise<ToolResult> {
-  const allIds = getAllTaskIds(taskFiles);
-  const allTasks: Task[] = taskFiles.flatMap((file) => file.tasks);
+  const result = pickBestTask(taskFiles, options.tags, options.agent_name);
 
-  // Resume prior claim: if agent_name is provided, check for already-claimed task
-  if (options.agent_name) {
-    const normalizedName = options.agent_name.replace(/^@/, "").toLowerCase();
-    const priorClaim = allTasks.find(
-      (task) =>
-        task.claimed?.replace(/^@/, "").toLowerCase().startsWith(normalizedName) &&
-        !isBlocked(task, allIds)
-    );
-    if (priorClaim) {
-      const formatted = formatTask(priorClaim, allIds);
-      return {
-        text: JSON.stringify({
-          summary: `Resuming previously claimed "${priorClaim.summary}" (${priorClaim.priority}) for @${normalizedName}.`,
-          task: formatted,
-          resumed: true,
-        }, null, 2),
-      };
-    }
-  }
-
-  // Filter: unclaimed, unblocked
-  let candidates = allTasks.filter(
-    (task) => !task.claimed && !isBlocked(task, allIds)
-  );
-
-  // Filter by agent tags if provided
-  if (options.tags?.length) {
-    const tagFiltered = candidates.filter((task) =>
-      task.metadata.tags?.some((t) =>
-        options.tags!.some((at) => at.toLowerCase() === t.toLowerCase())
-      )
-    );
-    // Fall back to all candidates if no tag matches
-    if (tagFiltered.length > 0) candidates = tagFiltered;
-  }
-
-  if (candidates.length === 0) {
+  if (!result) {
     return {
       text: JSON.stringify({
         summary: "No eligible tasks found (all claimed, blocked, or empty queue).",
@@ -267,30 +218,30 @@ export async function pickTask(
     };
   }
 
-  // Sort: P0 before P1 before P2 before P3, then by unblocking impact (desc),
-  // then by tag overlap count (desc) per spec §"Tag-Based Routing"
-  const sortTags = options.tags ?? [];
-  candidates.sort((a, b) => {
-    const priorityDiff = a.priority.localeCompare(b.priority);
-    if (priorityDiff !== 0) return priorityDiff;
-    const unblockDiff = unblocksCount(b, allTasks) - unblocksCount(a, allTasks);
-    if (unblockDiff !== 0) return unblockDiff;
-    return tagOverlapCount(b, sortTags) - tagOverlapCount(a, sortTags);
-  });
+  const allIds = getAllTaskIds(taskFiles);
+  const formatted = formatTask(result.task, allIds);
 
-  const picked = candidates[0];
-  const formatted = formatTask(picked, allIds);
+  if (result.resumed) {
+    const normalizedName = (options.agent_name ?? "").replace(/^@/, "").toLowerCase();
+    return {
+      text: JSON.stringify({
+        summary: `Resuming previously claimed "${result.task.summary}" (${result.task.priority}) for @${normalizedName}.`,
+        task: formatted,
+        resumed: true,
+      }, null, 2),
+    };
+  }
 
   if (options.agent_name) {
-    await claimTask(taskFiles, picked.metadata.id || picked.summary, options.agent_name);
+    await claimTask(taskFiles, result.task.metadata.id || result.task.summary, options.agent_name);
     formatted.claimed = `@${options.agent_name.replace(/^@/, "")}`;
   }
 
   return {
     text: JSON.stringify({
-      summary: `Picked "${picked.summary}" (${picked.priority}) — unblocks ${unblocksCount(picked, allTasks)} other task(s).${options.agent_name ? ` Claimed for @${options.agent_name.replace(/^@/, "")}.` : ""}`,
+      summary: `Picked "${result.task.summary}" (${result.task.priority}) — unblocks ${result.unblocksCount} other task(s).${options.agent_name ? ` Claimed for @${options.agent_name.replace(/^@/, "")}.` : ""}`,
       task: formatted,
-      candidates_count: candidates.length,
+      candidates_count: result.candidateCount,
     }, null, 2),
   };
 }

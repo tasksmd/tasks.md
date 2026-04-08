@@ -4,93 +4,14 @@ import {
   isBlocked,
   findGitRoot,
   loadAllTasks,
+  pickBestTask,
   type Task,
   type TaskFile,
+  type PickResult,
 } from "@tasks-md/parser";
 
-export { findGitRoot, loadAllTasks };
-export type { Task, TaskFile };
-
-// ── Pick Task ──
-
-export interface PickResult {
-  task: Task;
-  candidateCount: number;
-  unblocksCount: number;
-  resumed?: boolean;
-}
-
-function countUnblocks(task: Task, allTasks: Task[]): number {
-  if (!task.metadata.id) return 0;
-  return allTasks.filter((t) =>
-    t.metadata.blockedBy?.includes(task.metadata.id!)
-  ).length;
-}
-
-function tagOverlapCount(task: Task, tags: string[]): number {
-  if (!task.metadata.tags?.length) return 0;
-  return task.metadata.tags.filter((t) =>
-    tags.some((at) => at.toLowerCase() === t.toLowerCase())
-  ).length;
-}
-
-export function pickBestTask(
-  taskFiles: TaskFile[],
-  tags?: string[],
-  agentName?: string
-): PickResult | undefined {
-  const allIds = getAllTaskIds(taskFiles);
-  const allTasks = taskFiles.flatMap((f) => f.tasks);
-
-  // Resume prior claim if agent already has one
-  if (agentName) {
-    const normalizedAgent = agentName.replace(/^@/, "").toLowerCase();
-    const priorClaim = allTasks.find(
-      (t) =>
-        t.claimed?.replace(/^@/, "").toLowerCase().startsWith(normalizedAgent) &&
-        !isBlocked(t, allIds)
-    );
-    if (priorClaim) {
-      return {
-        task: priorClaim,
-        candidateCount: 1,
-        unblocksCount: countUnblocks(priorClaim, allTasks),
-        resumed: true,
-      };
-    }
-  }
-
-  let candidates = allTasks.filter(
-    (t) => !t.claimed && !isBlocked(t, allIds)
-  );
-
-  if (tags?.length) {
-    const filtered = candidates.filter((t) =>
-      t.metadata.tags?.some((tag) =>
-        tags.some((at) => at.toLowerCase() === tag.toLowerCase())
-      )
-    );
-    if (filtered.length > 0) candidates = filtered;
-  }
-
-  if (candidates.length === 0) return undefined;
-
-  const sortTags = tags ?? [];
-  candidates.sort((a, b) => {
-    const priorityDiff = a.priority.localeCompare(b.priority);
-    if (priorityDiff !== 0) return priorityDiff;
-    const unblockDiff = countUnblocks(b, allTasks) - countUnblocks(a, allTasks);
-    if (unblockDiff !== 0) return unblockDiff;
-    return tagOverlapCount(b, sortTags) - tagOverlapCount(a, sortTags);
-  });
-
-  const picked = candidates[0];
-  return {
-    task: picked,
-    candidateCount: candidates.length,
-    unblocksCount: countUnblocks(picked, allTasks),
-  };
-}
+export { findGitRoot, loadAllTasks, pickBestTask };
+export type { Task, TaskFile, PickResult };
 
 // ── Stats ──
 
