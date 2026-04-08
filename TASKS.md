@@ -15,18 +15,6 @@
 
 ## P2
 
-- [ ] Add policy validation to linter
-  - **ID**: lint-policy-validation
-  - **Tags**: lint, parser, feature
-  - **Details**: Spec defines policies (spec.md lines 81-145) but the linter
-    doesn't validate them. Parser extracts policies correctly but linter
-    never checks format or scope. Add validation for:
-    (1) policies are in HTML comments, (2) `policy:` prefix format,
-    (3) file-level vs section-level placement is correct.
-  - **Files**: `packages/lint/src/lint.ts`, `packages/lint/src/lint.test.ts`
-  - **Acceptance**: Linter warns on malformed policies. Tests cover file-level
-    and section-level scope. `npm test` passes.
-
 - [ ] Fix stale precise counters in docs — use N+ approximations for volatile counts
   **ID**: fix-stale-counters
   **Details**: Scan README.md, AGENTS.md, and code comments for precise counts of things that change frequently (tests, lint rules, packages). Replace with `N+` approximations. Keep precise counts only for user-facing features under 11 items.

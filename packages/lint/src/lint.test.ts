@@ -241,6 +241,123 @@ describe("tasks-lint", () => {
     });
   });
 
+  describe("policy validation", () => {
+    it("passes a file with valid file-level policy", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "<!-- policy: Always run tests. -->",
+          "",
+          "## P1",
+          "",
+          "- [ ] Do something",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("passes a file with valid section-level policy", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "<!-- policy: P1 tasks need a ticket. -->",
+          "",
+          "- [ ] Add feature",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("passes a file with multiple policies in one comment", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "<!-- policy: Rule one.",
+          "     policy: Rule two. -->",
+          "",
+          "## P1",
+          "",
+          "- [ ] Task",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("fails on policy directive outside HTML comment", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "policy: This is not in a comment.",
+          "",
+          "## P1",
+          "",
+          "- [ ] Task",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/policy directive found outside HTML comment/);
+    });
+
+    it("fails on empty policy directive", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "<!-- policy: -->",
+          "",
+          "## P1",
+          "",
+          "- [ ] Task",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/empty text/);
+    });
+
+    it("fails on unclosed HTML comment", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "<!-- policy: This comment never closes",
+          "",
+          "## P1",
+          "",
+          "- [ ] Task",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/unclosed HTML comment/);
+    });
+
+    it("does not flag policy text in task metadata", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Update policy: documentation",
+          "  - **Details**: The policy: prefix in metadata is fine.",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+  });
+
   describe("CLI behavior", () => {
     it("exits 2 with no arguments", () => {
       const result = spawnSync("node", [CLI], { encoding: "utf-8" });
