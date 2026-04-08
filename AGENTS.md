@@ -30,11 +30,12 @@
 - `commands/claude/skills/next-task/SKILL.md`
 - `commands/codex/skills/next-task/SKILL.md`
 - `commands/cursor/next-task.md`
+- `commands/devin/skills/next-task/SKILL.md`
 - `commands/windsurf/next-task.md`
 - `README.md` — "What it does" step list
 - `examples/complex-tasks.md` — if it illustrates a new format feature
 
-The same rule applies to any other content that exists in multiple places:
+The same rule applies to `lint-tasks` and any other content that exists in multiple places:
 - A spec change in `spec.md` → update README examples and all affected `examples/` files
 - A new metadata field → add it to spec, README, examples, and all command files that reference the format
 - A new step in the loop → update the step count/list in README and every command variant
