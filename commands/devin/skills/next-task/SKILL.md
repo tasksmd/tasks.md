@@ -77,7 +77,7 @@ TASKS.md is already loaded from the context snapshot.
 
 **If TASKS.md has no actionable tasks** — meaning the queue is literally empty, or
 every remaining task is either claimed by another agent or has an unresolved
-`**Blocked by**:` — proceed to [Empty queue: audit and stop](#empty-queue). **Large or
+`**Blocked by**:` — proceed to [Empty queue: roam to the next repo](#empty-queue). **Large or
 complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is not
 "no actionable tasks" — it needs decomposition, not avoidance.
 
@@ -89,30 +89,45 @@ complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is no
 5. Implement the first sub-task
 6. Do NOT run the audit while decomposable tasks exist
 
-### Empty queue: audit and stop {#empty-queue}
+### Empty queue: roam to the next repo {#empty-queue}
 
-When the queue is truly empty (no unclaimed, unblocked tasks), **stay in the current repo**.
-Never search other repos (`~/apps`, etc.) or switch context without explicit user direction.
+When the current repo's queue is truly empty (no unclaimed, unblocked tasks):
 
-1. **Clean up the current repo:**
-   - The "Tidy open PRs" step above already handles merging PRs and deleting merged branches
+1. **Scan for work across repos:**
+
+```bash
+# Find all TASKS.md files in ~/apps/
+for repo in ~/apps/*/; do
+  tasks_file="$repo/TASKS.md"
+  [ -f "$tasks_file" ] || continue
+  # Count unclaimed, unblocked tasks per priority (P0 first)
+  p0=$(grep -c '^\- \[ \]' "$tasks_file" 2>/dev/null | head -1)
+  blocked=$(grep -c '\*\*Blocked by\*\*:' "$tasks_file" 2>/dev/null | head -1)
+  actionable=$((p0 - blocked))
+  [ "$actionable" -gt 0 ] && echo "$repo $actionable"
+done
+```
+
+2. **Pick the repo with the highest-priority work** (most P0 > most P1 > most total).
+   Read each candidate's TASKS.md to verify tasks are truly actionable (not just recurring/watch tasks).
+
+3. **Switch without asking:**
+   ```
+   Switching to ~/apps/<repo> (N actionable tasks)
+   ```
+   Then `cd` to that repo and restart the next-task loop from the top.
+
+4. **If ALL repos are empty/blocked**, clean up the current repo and run a project audit:
    - Prune stale worktrees: `git worktree list` → remove any that point to deleted branches
-   - Ensure main is up to date: `git pull --rebase`
-
-2. **Run a project audit** on the current repo to find improvement opportunities:
-   - **Typecheck + lint + test** — run the full verify suite, note any failures
-   - **Security audit** — `npm audit`, `cargo audit`, `pip-audit`, or equivalent
-   - **Dead code** — unused exports, unreachable branches, commented-out blocks
-   - **Test coverage gaps** — source files with no corresponding test file
-   - **Doc drift** — commands in README that don't match reality, stale AGENTS.md
-   - **Outdated dependencies** — `npm outdated` or equivalent
-   - **Code smells** — large files (>400 lines), duplicate logic, magic numbers
-
-3. **Present findings to the user** as candidate tasks. Format them as TASKS.md entries
-   but do **NOT** write them to the file. Let the user review and choose which to add.
-
-4. **Stop and wait** for user direction. Do not auto-implement audit findings.
-   The user may approve some tasks, reject others, or redirect to a different repo.
+   - `git pull --rebase`
+   - Run the full verify suite, note any failures
+   - Check for: dead code, test coverage gaps, doc drift, outdated deps, code smells
+   - **Write real tasks to TASKS.md** for anything actionable you find (low branch coverage, stale docs,
+     missing tests, security issues). Use proper format with ID, Tags, Details, Files, Acceptance.
+   - **Implement the first task you just created** — don't just report "tier clean" and stop.
+     The goal is to always make progress. If the audit found 3 issues, add them as tasks and start
+     working on the highest-priority one.
+   - Only stop and wait for the user if the audit genuinely found nothing to improve.
 
 ## Resume unfinished work
 
@@ -239,8 +254,8 @@ Go back to [Find the queue](#find-the-queue) and pick the next task. Continue un
 
 - **Do not ask which task to pick** — walk P0→P3 and pick the first unblocked, unclaimed task. Asking wastes the user's time.
 - **Do not ask for confirmation before starting** — announce the chosen task in one line and begin.
-- **Do not switch repos** — never search `~/apps` or other directories for TASKS.md files. Stay in the current repo. If the queue is empty, audit the current repo and present findings.
+- **Auto-roam when the queue is empty** — scan `~/apps/*/TASKS.md` for work in other repos. Only stop and audit when ALL repos are empty.
 - **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue.
 - **Do not stop after one task** — loop until the queue is empty or the user interrupts.
 - **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
-- **Do not auto-implement audit findings** — when the queue is empty, present findings to the user and wait. Only implement after approval.
+- **Do not auto-implement audit findings** — when all repos are empty, present findings to the user and wait. Only implement after approval.
