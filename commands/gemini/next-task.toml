@@ -61,24 +61,24 @@ done
 3. **Switch without asking:**
    Switching to ~/apps/<repo> (N actionable tasks)
    Then `cd` to that repo and restart the next-task loop from the top.
-4. **If ALL repos are empty/blocked**, clean up the current repo and run a project audit:
-   - Prune stale worktrees: `git worktree list` → remove any that point to deleted branches
-   - `git pull --rebase`
-   - Run the full verify suite, note any failures
-   - Check for: dead code, test coverage gaps, doc drift, outdated deps, code smells
-   - **Write real tasks to TASKS.md** for anything actionable you find (low branch coverage, stale docs,
-     missing tests, security issues). Use proper format with ID, Tags, Details, Files, Acceptance.
-   - **Implement the first task you just created** — don't just report "tier clean" and stop.
-     The goal is to always make progress. If the audit found 3 issues, add them as tasks and start
-     working on the highest-priority one.
-   - Only stop and wait for the user if the audit genuinely found nothing to improve.
-Resume unfinished work
-Scan TASKS.md for your `(@agent-id)` claim:
-- **Found + work is done but not committed** → skip to [Ship it](#ship-it)
-- **Found + work is in progress** → skip to [Finish the work](#finish-the-work)
-- **Found + stale (no related code)** → unclaim (remove `(@agent-id)`), pick fresh
-- **None found** → continue to [Pick a task](#pick-a-task)
-Pick a task
-Walk **P0 → P1 → P2 → P3** in order. Within each level, prefer:
-1. Tasks whose **ID** appears in another task's `**Blocked by**` — completing them unblocks others
+4. **If ALL repos are empty/blocked**, run the [audit cascade](#audit-cascade).
+Audit cascade {#audit-cascade}
+Run these tiers **in order** on the current repo. Stop as soon as any tier produces actionable findings — write them as tasks to TASKS.md and implement the highest-priority one immediately.
+**The audit is re-runnable.** Every time you reach this point (queue empty, all repos checked), run the full cascade from Tier 1. Code changes between sessions may introduce new findings. Never treat a previous audit as "permanently done."
+**Tier 1 — Verify**
+- `git pull --rebase` and prune stale worktrees (`git worktree list`)
+- Run the full verify suite: typecheck, lint, test, build
+- Any failure → write a task, fix it
+**Tier 2 — Security & dead code**
+- Hardcoded secrets, missing input validation, unsafe patterns
+- Dead exports, unused variables, unreachable code paths
+- Actionable `TODO`, `FIXME`, `HACK` comments
+**Tier 3 — Doc drift & stale references**
+- README examples vs actual behavior
+- AGENTS.md with outdated build/test commands
+- Stale comments referencing changed or deleted code
+- Broken links in docs
+**Tier 4 — Dependency modernization** *(applies to every repo type)*
+- Node.js: outdated packages, deprecated APIs, missing lockfile entries
+- Rust: `cargo outdated`, deprecated crate features
 """
