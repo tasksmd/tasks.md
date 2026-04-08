@@ -2,15 +2,6 @@
 
 ## P1
 
-- [ ] Document unclaim_task tool in MCP README
-  - **ID**: doc-unclaim-task
-  - **Tags**: docs, mcp
-  - **Details**: MCP server implements 6 tools but README only documents 5.
-    The `unclaim_task` tool (packages/mcp/src/index.ts:96-123) is missing from
-    the Tools table in packages/mcp/README.md.
-  - **Files**: `packages/mcp/README.md`
-  - **Acceptance**: README Tools table lists all 6 tools with descriptions.
-
 - [ ] Fix GitHub sync mapPriority — low/p3 labels ignored due to promote-only logic
   - **ID**: fix-github-priority-demotion
   - **Tags**: bug, cli, sync
