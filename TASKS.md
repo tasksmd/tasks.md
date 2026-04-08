@@ -36,15 +36,6 @@
   - **Acceptance**: Linter warns on malformed policies. Tests cover file-level
     and section-level scope. `npm test` passes.
 
-- [ ] Add tests for policy parsing
-  - **ID**: test-policy-parsing
-  - **Tags**: test, parser
-  - **Details**: `parsePolicies()` in `packages/parser/src/index.ts:56-95` has
-    no unit tests. Need tests for file-level vs section-level scope detection,
-    multiline comment blocks, and malformed policy syntax.
-  - **Files**: `packages/parser/src/index.test.ts`
-  - **Acceptance**: 10+ tests covering policy parsing edge cases. `npm test` passes.
-
 - [ ] Remove unused getRelativePath export from MCP parser
   - **ID**: remove-dead-code-mcp
   - **Tags**: cleanup, mcp
