@@ -81,7 +81,11 @@ find ~/apps -maxdepth 3 -name "TASKS.md" ! -path "*/.git/*" ! -path "*/node_modu
 
 Ask the user which repo to pick from — never switch repos silently.
 
-**If TASKS.md is empty or has no actionable tasks** — do not stop. Run the `project-audit` skill to generate new work, then pick from the results.
+**If TASKS.md is empty or has no actionable tasks** — meaning every remaining task
+is either claimed by another agent or has an unresolved `**Blocked by**:` — run
+the `project-audit` skill to generate new work, then pick from the results.
+**Large or complex tasks are still actionable** — decompose them into sub-tasks
+instead of auditing around them.
 
 ## Resume unfinished work
 

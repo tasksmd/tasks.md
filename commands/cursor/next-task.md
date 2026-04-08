@@ -97,13 +97,13 @@ Read all policies before picking a task. Follow them alongside the task's own me
    - Update AGENTS.md or README with recent changes
    - Clean up dead code, unused exports, stale imports
    - Switch to another repo and work there
-7. **If TASKS.md is empty or has no actionable tasks** — do not stop. Generate new work by running through the audit cascade:
+7. **If TASKS.md is empty or has no actionable tasks** — meaning every remaining task is claimed or has an unresolved `**Blocked by**:` — only then generate new work via the audit cascade. **Large or complex tasks are still actionable** — decompose them into 2-4 sub-tasks in TASKS.md and implement the first one. Do NOT audit around hard tasks.
 
    **Tier 1 — Code health:** typecheck + lint + test (fix failures), biome auto-fix, security audit, dead code removal, swallowed errors, missing timeouts, consistency bugs.
 
    **Tier 2 — Code smells:** large files >400 lines (split them), god modules, high-churn files, duplicate logic, magic numbers, test coverage gaps.
 
-   **Tier 3 — Documentation:** README vs reality, AGENTS.md vs codebase, VISION.md vs code, user stories vs CLI, stale counts in docs, code comments that describe deleted code.
+   **Tier 3 — Documentation:** README vs reality, AGENTS.md vs codebase, VISION.md vs code, user stories vs CLI, code comments that describe deleted code. Skip counter accuracy — `N+` approximations are self-maintaining.
 
    **Tier 4 — Dependencies:** outdated deps (patch+minor), deprecated APIs, custom code with upstream replacements, unused devDependencies.
 

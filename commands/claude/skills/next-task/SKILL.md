@@ -78,9 +78,21 @@ find ~/apps -maxdepth 3 -name "TASKS.md" ! -path "*/.git/*" ! -path "*/node_modu
 
 Ask the user which repo to pick from — never switch repos silently.
 
-**If TASKS.md has no actionable tasks** — do not stop. Generate new work by running through the audit cascade below. Work through each tier in order, committing and shipping fixes as you go. Each tier generates tasks; pick and complete them before moving to the next tier.
+**If TASKS.md has no actionable tasks** — meaning the queue is literally empty, or
+every remaining task is either claimed by another agent or has an unresolved
+`**Blocked by**:` — only then fall back to the audit cascade below. **Large or
+complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is not
+"no actionable tasks" — it needs decomposition, not avoidance.
 
-### Audit Cascade (when queue is empty)
+**When all remaining tasks are large/complex:** Decompose the highest-priority one:
+1. Pick the first unclaimed, unblocked task (P0 → P1 → P2 → P3)
+2. Break it into 2-4 sub-tasks in TASKS.md (same priority, add `**Parent**: <original-id>`)
+3. Each sub-task should be one-commit-sized (1-3 files)
+4. Commit: `chore: decompose <task-id> into sub-tasks`
+5. Implement the first sub-task
+6. Do NOT run the audit cascade while decomposable tasks exist
+
+### Audit Cascade (when queue is truly empty)
 
 Run these in order. Each pass generates tasks → pick the best ones → implement → ship → loop.
 
@@ -104,11 +116,10 @@ Run these in order. Each pass generates tasks → pick the best ones → impleme
 **Tier 3 — Documentation audit**
 14. **README vs reality** — verify every command in README actually works. Fix stale examples.
 15. **AGENTS.md vs codebase** — check repo layout, data flow, ownership boundary tables are current.
-16. **VISION.md vs code** — verify capability status table, agent counts, catalog counts match reality.
+16. **VISION.md vs code** — verify capability status table matches reality (skip counter accuracy — `N+` approximations are self-maintaining).
 17. **User stories vs CLI** — run every command in `docs/user-stories/` and verify output matches.
-18. **Stale doc counts** — grep for hardcoded numbers (agent counts, skill counts, etc.) across all docs. Update any that drifted.
-19. **CONTRIBUTING.md** — verify categories, fields, and verify commands match current code.
-20. **Code comments** — find comments that describe code that no longer exists or works differently.
+18. **CONTRIBUTING.md** — verify categories, fields, and verify commands match current code.
+19. **Code comments** — find comments that describe code that no longer exists or works differently.
 
 **Tier 4 — Dependency modernization**
 21. **Outdated dependencies** — `npm outdated` / `cargo update --dry-run`. Update patch+minor versions.
@@ -260,3 +271,4 @@ Go back to [Find the queue](#find-the-queue) and pick the next task. Continue un
 - **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue.
 - **Do not stop after one task** — loop until the queue is empty or the user interrupts.
 - **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
+- **Do not use the audit cascade while actionable tasks exist** — large tasks need decomposition, not avoidance. The cascade is ONLY for truly empty queues (no unclaimed, unblocked tasks).
