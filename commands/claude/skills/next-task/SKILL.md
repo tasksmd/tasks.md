@@ -1,15 +1,7 @@
 ---
 name: next-task
 description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - MultiEdit
-  - Grep
-  - Glob
-  - LS
+allowed-tools: Bash, Read, Write, Edit, MultiEdit, Grep, Glob, LS
 ---
 
 # Next Task
@@ -70,17 +62,11 @@ If there were no open PRs, skip the sync — you're already up to date from the 
 
 ## Find the queue
 
-TASKS.md is already loaded from the context snapshot. If it was empty or missing:
-
-```bash
-find ~/apps -maxdepth 3 -name "TASKS.md" ! -path "*/.git/*" ! -path "*/node_modules/*" | sort
-```
-
-Ask the user which repo to pick from — never switch repos silently.
+TASKS.md is already loaded from the context snapshot.
 
 **If TASKS.md has no actionable tasks** — meaning the queue is literally empty, or
 every remaining task is either claimed by another agent or has an unresolved
-`**Blocked by**:` — only then fall back to the audit cascade below. **Large or
+`**Blocked by**:` — proceed to [Empty queue: audit and stop](#empty-queue). **Large or
 complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is not
 "no actionable tasks" — it needs decomposition, not avoidance.
 
@@ -90,57 +76,32 @@ complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is no
 3. Each sub-task should be one-commit-sized (1-3 files)
 4. Commit: `chore: decompose <task-id> into sub-tasks`
 5. Implement the first sub-task
-6. Do NOT run the audit cascade while decomposable tasks exist
+6. Do NOT run the audit while decomposable tasks exist
 
-### Audit Cascade (when queue is truly empty)
+### Empty queue: audit and stop {#empty-queue}
 
-Run these in order. Each pass generates tasks → pick the best ones → implement → ship → loop.
+When the queue is truly empty (no unclaimed, unblocked tasks), **stay in the current repo**.
+Never search other repos (`~/apps`, etc.) or switch context without explicit user direction.
 
-**Tier 1 — Code health (highest impact)**
-1. **Typecheck + lint + test** — run the full verify suite. Fix any failures immediately.
-2. **Biome/ESLint auto-fix** — run `biome check --write` or equivalent. Commit formatting fixes.
-3. **Security audit** — `npm audit`, `cargo audit`, `pip-audit`. Patch-level fixes are P2; major-version bumps are P3.
-4. **Dead code** — search for unused exports, unreachable branches, commented-out blocks. Delete them.
-5. **Swallowed errors** — `grep -r "catch {}" src/` and `catch { return` patterns. Add logging or proper handling.
-6. **Missing timeouts** — find `execFileSync`, `spawnSync`, `fetch` calls without timeout options. Add them.
-7. **Consistency bugs** — find patterns used in 5/6 places but missing in the 6th (e.g., auto-sync called after 5 mutations but not the 6th).
+1. **Clean up the current repo:**
+   - The "Tidy open PRs" step above already handles merging PRs and deleting merged branches
+   - Prune stale worktrees: `git worktree list` → remove any that point to deleted branches
+   - Ensure main is up to date: `git pull --rebase`
 
-**Tier 2 — Large files and code smells**
-8. **Large files** — find source files >400 lines. Split into focused modules if responsibilities are mixed.
-9. **God modules** — find files everything imports from. Check if they can be split.
-10. **High-churn files** — `git log --since="3 months ago" --name-only | sort | uniq -c | sort -rn | head -15`. If a file changes constantly, it may need refactoring.
-11. **Duplicate logic** — find copy-pasted patterns across files. Extract shared utilities.
-12. **Magic numbers/strings** — find hardcoded values that should be named constants.
-13. **Test coverage gaps** — find source files with no corresponding `.test.ts`. Write tests for the most critical ones.
+2. **Run a project audit** on the current repo to find improvement opportunities:
+   - **Typecheck + lint + test** — run the full verify suite, note any failures
+   - **Security audit** — `npm audit`, `cargo audit`, `pip-audit`, or equivalent
+   - **Dead code** — unused exports, unreachable branches, commented-out blocks
+   - **Test coverage gaps** — source files with no corresponding test file
+   - **Doc drift** — commands in README that don't match reality, stale AGENTS.md
+   - **Outdated dependencies** — `npm outdated` or equivalent
+   - **Code smells** — large files (>400 lines), duplicate logic, magic numbers
 
-**Tier 3 — Documentation audit**
-14. **README vs reality** — verify every command in README actually works. Fix stale examples.
-15. **AGENTS.md vs codebase** — check repo layout, data flow, ownership boundary tables are current.
-16. **VISION.md vs code** — verify capability status table matches reality (skip counter accuracy — `N+` approximations are self-maintaining).
-17. **User stories vs CLI** — run every command in `docs/user-stories/` and verify output matches.
-18. **CONTRIBUTING.md** — verify categories, fields, and verify commands match current code.
-19. **Code comments** — find comments that describe code that no longer exists or works differently.
+3. **Present findings to the user** as candidate tasks. Format them as TASKS.md entries
+   but do **NOT** write them to the file. Let the user review and choose which to add.
 
-**Tier 4 — Dependency modernization**
-21. **Outdated dependencies** — `npm outdated` / `cargo update --dry-run`. Update patch+minor versions.
-22. **Deprecated APIs** — search for deprecated Node.js/library APIs. Migrate to replacements.
-23. **Custom code with upstream replacements** — check if any hand-written utilities now have well-maintained packages. Replace if simpler.
-24. **Dev dependency cleanup** — find devDependencies that are no longer used. Remove them.
-
-**Tier 5 — DX and polish**
-25. **Error message quality** — trace every user-facing error path. Ensure each says what went wrong AND what to do next.
-26. **CLI output consistency** — check that all commands use the same icon/color/formatting patterns.
-27. **Help text** — verify `--help` for every command is accurate and has examples.
-28. **Shell completion** — verify tab completion works for common commands.
-29. **Performance** — measure `time agentbrew sync` and `time agentbrew check`. If >2s, profile and optimize.
-30. **CI pipeline** — verify CI runs everything local verify does. Add missing gates.
-
-**How to use the cascade:**
-- Start at Tier 1. If it produces tasks, work them. If the tier is fully clean, move to Tier 2.
-- Each fix is a separate branch + PR. Don't batch unrelated fixes.
-- After completing a tier, re-run it to confirm it's clean before moving on.
-- If a tier is already clean (nothing to fix), say so in one line and move to the next.
-- Stop when all 5 tiers are clean OR the user interrupts.
+4. **Stop and wait** for user direction. Do not auto-implement audit findings.
+   The user may approve some tasks, reject others, or redirect to a different repo.
 
 ## Resume unfinished work
 
@@ -267,8 +228,8 @@ Go back to [Find the queue](#find-the-queue) and pick the next task. Continue un
 
 - **Do not ask which task to pick** — walk P0→P3 and pick the first unblocked, unclaimed task. Asking wastes the user's time.
 - **Do not ask for confirmation before starting** — announce the chosen task in one line and begin.
-- **Do not switch repos silently** — if this repo has no actionable tasks, tell the user and ask before switching.
+- **Do not switch repos** — never search `~/apps` or other directories for TASKS.md files. Stay in the current repo. If the queue is empty, audit the current repo and present findings.
 - **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue.
 - **Do not stop after one task** — loop until the queue is empty or the user interrupts.
 - **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
-- **Do not use the audit cascade while actionable tasks exist** — large tasks need decomposition, not avoidance. The cascade is ONLY for truly empty queues (no unclaimed, unblocked tasks).
+- **Do not auto-implement audit findings** — when the queue is empty, present findings to the user and wait. Only implement after approval.

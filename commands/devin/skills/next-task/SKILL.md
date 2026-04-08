@@ -73,19 +73,46 @@ If there were no open PRs, skip the sync — you're already up to date from the 
 
 ## Find the queue
 
-TASKS.md is already loaded from the context snapshot. If it was empty or missing:
+TASKS.md is already loaded from the context snapshot.
 
-```bash
-find ~/apps -maxdepth 3 -name "TASKS.md" ! -path "*/.git/*" ! -path "*/node_modules/*" | sort
-```
+**If TASKS.md has no actionable tasks** — meaning the queue is literally empty, or
+every remaining task is either claimed by another agent or has an unresolved
+`**Blocked by**:` — proceed to [Empty queue: audit and stop](#empty-queue). **Large or
+complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is not
+"no actionable tasks" — it needs decomposition, not avoidance.
 
-Ask the user which repo to pick from — never switch repos silently.
+**When all remaining tasks are large/complex:** Decompose the highest-priority one:
+1. Pick the first unclaimed, unblocked task (P0 → P1 → P2 → P3)
+2. Break it into 2-4 sub-tasks in TASKS.md (same priority, add `**Parent**: <original-id>`)
+3. Each sub-task should be one-commit-sized (1-3 files)
+4. Commit: `chore: decompose <task-id> into sub-tasks`
+5. Implement the first sub-task
+6. Do NOT run the audit while decomposable tasks exist
 
-**If TASKS.md is empty or has no actionable tasks** — meaning every remaining task
-is either claimed by another agent or has an unresolved `**Blocked by**:` — run
-the `project-audit` skill to generate new work, then pick from the results.
-**Large or complex tasks are still actionable** — decompose them into sub-tasks
-instead of auditing around them.
+### Empty queue: audit and stop {#empty-queue}
+
+When the queue is truly empty (no unclaimed, unblocked tasks), **stay in the current repo**.
+Never search other repos (`~/apps`, etc.) or switch context without explicit user direction.
+
+1. **Clean up the current repo:**
+   - The "Tidy open PRs" step above already handles merging PRs and deleting merged branches
+   - Prune stale worktrees: `git worktree list` → remove any that point to deleted branches
+   - Ensure main is up to date: `git pull --rebase`
+
+2. **Run a project audit** on the current repo to find improvement opportunities:
+   - **Typecheck + lint + test** — run the full verify suite, note any failures
+   - **Security audit** — `npm audit`, `cargo audit`, `pip-audit`, or equivalent
+   - **Dead code** — unused exports, unreachable branches, commented-out blocks
+   - **Test coverage gaps** — source files with no corresponding test file
+   - **Doc drift** — commands in README that don't match reality, stale AGENTS.md
+   - **Outdated dependencies** — `npm outdated` or equivalent
+   - **Code smells** — large files (>400 lines), duplicate logic, magic numbers
+
+3. **Present findings to the user** as candidate tasks. Format them as TASKS.md entries
+   but do **NOT** write them to the file. Let the user review and choose which to add.
+
+4. **Stop and wait** for user direction. Do not auto-implement audit findings.
+   The user may approve some tasks, reject others, or redirect to a different repo.
 
 ## Resume unfinished work
 
@@ -212,7 +239,8 @@ Go back to [Find the queue](#find-the-queue) and pick the next task. Continue un
 
 - **Do not ask which task to pick** — walk P0→P3 and pick the first unblocked, unclaimed task. Asking wastes the user's time.
 - **Do not ask for confirmation before starting** — announce the chosen task in one line and begin.
-- **Do not switch repos silently** — if this repo has no actionable tasks, tell the user and ask before switching.
+- **Do not switch repos** — never search `~/apps` or other directories for TASKS.md files. Stay in the current repo. If the queue is empty, audit the current repo and present findings.
 - **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue.
 - **Do not stop after one task** — loop until the queue is empty or the user interrupts.
 - **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
+- **Do not auto-implement audit findings** — when the queue is empty, present findings to the user and wait. Only implement after approval.
