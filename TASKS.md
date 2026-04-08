@@ -2,17 +2,6 @@
 
 ## P1
 
-- [ ] Fix GitHub sync mapPriority — low/p3 labels ignored due to promote-only logic
-  - **ID**: fix-github-priority-demotion
-  - **Tags**: bug, cli, sync
-  - **Details**: `mapPriority` in `packages/cli/src/sync/github.ts` starts at P2 (default)
-    and only picks priority labels with lower numbers (`mapped < priority`). This means
-    "low" (3) and "p3" (3) labels are silently ignored — issues with only a "low" label
-    get P2 instead of P3. Change the condition to also allow demotion.
-  - **Files**: `packages/cli/src/sync/github.ts`, `packages/cli/src/sync/github.test.ts`
-  - **Acceptance**: Issues with only "low" or "p3" label map to P3. Existing priority
-    promotion still works (multiple labels → pick highest). Tests updated.
-
 ## P2
 
 - [ ] Fix stale precise counters in docs — use N+ approximations for volatile counts

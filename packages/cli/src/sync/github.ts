@@ -24,16 +24,16 @@ const PRIORITY_LABELS: Record<string, number> = {
 };
 
 function mapPriority(labels: GitHubLabel[], filterLabel: string): number {
-  let priority = 2; // default P2
+  let priority: number | undefined;
   for (const label of labels) {
     const name = label.name.toLowerCase();
     if (name === filterLabel.toLowerCase()) continue;
     const mapped = PRIORITY_LABELS[name];
-    if (mapped !== undefined && mapped < priority) {
+    if (mapped !== undefined && (priority === undefined || mapped < priority)) {
       priority = mapped;
     }
   }
-  return priority;
+  return priority ?? 2; // default P2 when no priority labels found
 }
 
 function mapTags(labels: GitHubLabel[], filterLabel: string): string[] {
