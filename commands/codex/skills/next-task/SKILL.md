@@ -212,12 +212,13 @@ Verify the implementation is complete:
 - All acceptance criteria from the task are met
 - Tests pass, lint is clean
 - No unrelated changes are staged
+- **The completed task block is removed from TASKS.md** (task line + all metadata lines). This is not optional — a task is not done until it's gone from the file. History lives in git log.
 
 ## Ship it {#ship-it}
 
 > **MCP shortcut:** `complete_task` in `tasks-mcp` removes the task block automatically.
 
-Remove the entire task block from TASKS.md (task line + all metadata). Completed history lives in git log. Include this removal in the same commit as your code — the task is done when the PR lands:
+**Every commit that completes a task MUST also remove that task from TASKS.md.** No exceptions. If you forget, go back and amend the commit before pushing.
 
 ```bash
 git add <changed-files> TASKS.md
@@ -243,7 +244,7 @@ Go back to [Find the queue](#find-the-queue) and pick the next task. Continue un
 - **Do not ask which task to pick** — walk P0→P3 and pick the first unblocked, unclaimed task. Asking wastes the user's time.
 - **Do not ask for confirmation before starting** — announce the chosen task in one line and begin.
 - **Auto-roam when the queue is empty** — scan `~/apps/*/TASKS.md` for work in other repos. Only stop and audit when ALL repos are empty.
-- **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue.
+- **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue. A task with code changes committed but still present in TASKS.md is **not done**.
 - **Do not stop after one task** — loop until the queue is empty or the user interrupts.
 - **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
 - **Do not auto-implement audit findings** — when all repos are empty, present findings to the user and wait. Only implement after approval.
