@@ -1,73 +1,19 @@
+# Next Task
 
-## Workflow: Next Task
+Pick the highest-priority unblocked task from TASKS.md and work on it autonomously. Loop until the queue is empty or the user stops you.
 
-**CRITICAL: Always pick a task and implement it. Never respond with "nothing to do" or "waiting for pipelines". If pipelines occupy some files, pick a task that touches different files. If the user specifies a task name, work on that task. If all server files are busy, work on skills, tests, docs, config, or switch to another repo. If TASKS.md is empty, run `project-audit` (and optionally `strategic-review`) to actively find and queue new work, then pick the top result.**
+## Context snapshot
 
-### Step 0: Sync & tidy (always run first)
-
-Get to a clean, up-to-date baseline before picking any work.
-
-#### 0a — Land open PRs
+Before doing anything else, capture the current state:
 
 ```bash
-gh pr list --state open --json number,title,mergeable,statusCheckRollup
+git status --short && git branch --show-current && git log --oneline -5
+git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".") && cat "$git_root/TASKS.md" 2>/dev/null || echo "(no TASKS.md)"
 ```
 
-For each open PR:
-- If checks pass and there are no conflicts: merge it (`gh pr merge <number> --squash --delete-branch`)
-- If checks are failing or there are conflicts: note it and skip — don't block yourself on it
-- If the PR is stale (no activity in >7 days and no linked task in TASKS.md): close it (`gh pr close <number>`) and delete the branch
+Use this output to decide where to start — do not re-run these unless state changes.
 
-#### 0b — Delete stale remote branches
-
-```bash
-git fetch --prune                            # remove deleted-remote tracking refs
-git branch -r | grep -v 'HEAD\|main\|master' # list remote branches
-```
-
-For each remote branch that has a merged or closed PR (check with `gh pr list --head <branch> --state merged,closed`): delete it (`git push origin --delete <branch>`).
-
-Skip branches that have an open PR or are actively being worked on (recent commits in the last 48h).
-
-#### 0c — Sync main
-
-```bash
-git checkout <default-branch>
-git pull --rebase origin <default-branch>
-```
-
-If there are local uncommitted changes on main: stash them with a descriptive message (`git stash push -m "pre-next-task stash <date>"`), pull, then pop.
-
-#### 0d — Clean up local branches
-
-```bash
-git branch --merged <default-branch> | grep -v '^\*\|main\|master'
-```
-
-Delete any local branches that are fully merged into main.
-
----
-
-### Step 1: Determine repo
-
-Check the user's active document path or explicit instruction. Use the workspace root of the active file. If ambiguous, ask.
-
-### Step 2: Auto-detect repo tooling
-
-Detect the repo's tooling stack by checking for config files. **Do not hardcode commands — discover them.**
-
-1. **Default branch**: `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'` — falls back to `main` if unset
-2. **Package manager**: `yarn.lock` → yarn, `pnpm-lock.yaml` → pnpm, `package-lock.json` → npm, `Gemfile.lock` → bundler, `go.mod` → go
-3. **Test runner**: Read `scripts.test` from `package.json`, or `Makefile` test target, or `pytest.ini`/`setup.cfg`
-4. **Type check**: `tsconfig.json` exists → `npx tsc --noEmit` (or `--build` if workspaces), `mypy.ini` → `mypy .`
-5. **Linter**: `biome.json` → `npx biome check .`, `.eslintrc*` → `npx eslint .`, `Makefile` lint target → `make lint`
-6. **Formatter**: `biome.json` → biome, `.prettierrc*` → prettier
-7. **Verify command**: `scripts.verify` from `package.json` if present, otherwise chain: typecheck + lint + test
-8. **Monorepo**: `workspaces` in `package.json` or `nx.json` → run commands from monorepo root
-
-Store detected config mentally — do NOT re-detect on every step.
-
-### Step 3: Read policies
+## Policies
 
 After reading TASKS.md, check for `<!-- policy: ... -->` HTML comments. These are project rules you must follow throughout the session:
 
@@ -76,92 +22,208 @@ After reading TASKS.md, check for `<!-- policy: ... -->` HTML comments. These ar
 
 Read all policies before picking a task. Follow them alongside the task's own metadata. If a policy conflicts with a task's instructions, the policy takes precedence — it's the project owner's rule.
 
-### Step 4: Quick health check (30 seconds max)
+## Decision tree
 
-1. `git status --short` — commit or discard stray changes
-2. Check Bosun pipeline summary (if server reachable) — note active pipelines and which files they touch
-3. If any pipelines are FAILED, delete and note for re-launch after your task
+Read the context snapshot and follow the first matching branch:
 
-### Step 5: Pick the next task
+**Uncommitted changes on a feature branch** → check if they belong to a claimed task. If yes, skip to [Finish the work](#finish-the-work). If unrelated, stash: `git stash push -m "next-task: stash unrelated changes"` then continue.
 
-**Bias toward hard tasks.** Easy tasks are for humans. Hard tasks — architectural changes, complex debugging, multi-file refactors, performance investigations, tricky integrations — are where AI agents add the most value. When in doubt, pick the task that looks scariest.
+**On a feature branch, no uncommitted changes** → check if there's a claimed task for this branch in TASKS.md. If yes, skip to [Finish the work](#finish-the-work). If not, switch to main.
 
-1. Read `TASKS.md` in the repo root
-2. Find the highest-priority **unblocked** task
-3. If the user named a specific task, use that one
-4. If multiple tasks share the same priority, **prefer the harder one**: more files touched, more ambiguity, more skill required
-5. If a pipeline is actively modifying the same files, pick the **next** unblocked task that touches different files — again preferring harder tasks
-6. **Fallback priority** (if all queue tasks conflict with pipelines):
-   - Fix failing tests
-   - Fix type errors or lint issues
-   - Update AGENTS.md or README with recent changes
-   - Clean up dead code, unused exports, stale imports
-   - Switch to another repo and work there
-7. **If TASKS.md is empty or has no actionable tasks** — meaning every remaining task is claimed or has an unresolved `**Blocked by**:` — only then generate new work via the audit cascade. **Large or complex tasks are still actionable** — decompose them into 2-4 sub-tasks in TASKS.md and implement the first one. Do NOT audit around hard tasks.
+**On main, clean** → continue to [Tidy open PRs](#tidy-open-prs).
 
-   **Tier 1 — Code health:** typecheck + lint + test (fix failures), biome auto-fix, security audit, dead code removal, swallowed errors, missing timeouts, consistency bugs.
+## Tidy open PRs
 
-   **Tier 2 — Code smells:** large files >400 lines (split them), god modules, high-churn files, duplicate logic, magic numbers, test coverage gaps.
+Quickly land or close dangling PRs before picking new work:
 
-   **Tier 3 — Documentation:** README vs reality, AGENTS.md vs codebase, VISION.md vs code, user stories vs CLI, code comments that describe deleted code. Skip counter accuracy — `N+` approximations are self-maintaining.
+```bash
+gh pr list --state open --json number,title,mergeable,statusCheckRollup
+```
 
-   **Tier 4 — Dependencies:** outdated deps (patch+minor), deprecated APIs, custom code with upstream replacements, unused devDependencies.
+- Checks pass + no conflicts → `gh pr merge <number> --squash --delete-branch`
+- Checks failing or conflicts → skip
+- Stale (>7 days, no linked task) → `gh pr close <number>` + delete the branch
 
-   **Tier 5 — DX and polish:** error message quality, CLI output consistency, help text accuracy, shell completion, performance, CI pipeline completeness.
+Then sync:
 
-   Work through tiers in order. Each fix is a separate branch + PR. Move to the next tier only when the current one is clean. Stop when all 5 tiers are clean or the user interrupts.
+```bash
+git pull --rebase
+git branch --merged main | grep -v '^\*\|main\|master'
+# delete each merged local branch: git branch -d <branch>
+```
 
-### Step 6: Plan before implementing (if the task is complex)
+If there were no open PRs, skip the sync — you're already up to date from the context snapshot.
 
-A task is complex if it involves any of: multiple subsystems, architectural decisions, unclear scope, unfamiliar code paths, or estimated effort > 1 hour. When in doubt, treat it as complex.
+## Find the queue
 
-**For complex tasks — plan first, then implement:**
+TASKS.md is already loaded from the context snapshot.
 
-1. Explore the relevant code: read files, trace call paths, understand data flow
-2. Write a plan directly into the task's `**Details**:` field in `TASKS.md` as a nested sub-task checklist:
-   ```
-   - [ ] Task description (@agent-id)
-     **Details**: <original details if any>
-     **Plan**:
-     - [ ] Sub-step 1
-     - [ ] Sub-step 2
-     - [ ] Sub-step 3
-   ```
-3. Commit the updated `TASKS.md` with `chore: add implementation plan for <task-id>`
-4. Then execute the plan step by step, checking off sub-tasks as you go
+**If TASKS.md has no actionable tasks** — meaning the queue is literally empty, or
+every remaining task is either claimed by another agent or has an unresolved
+`**Blocked by**:` — proceed to [Empty queue: audit and stop](#empty-queue). **Large or
+complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is not
+"no actionable tasks" — it needs decomposition, not avoidance.
 
-**For simple tasks** (single file, obvious fix, < 30 min): skip planning and implement directly.
+**When all remaining tasks are large/complex:** Decompose the highest-priority one:
+1. Pick the first unclaimed, unblocked task (P0 → P1 → P2 → P3)
+2. Break it into 2-4 sub-tasks in TASKS.md (same priority, add `**Parent**: <original-id>`)
+3. Each sub-task should be one-commit-sized (1-3 files)
+4. Commit: `chore: decompose <task-id> into sub-tasks`
+5. Implement the first sub-task
+6. Do NOT run the audit while decomposable tasks exist
 
-### Step 7: Implement
+### Empty queue: audit and stop {#empty-queue}
 
-- Make minimal, focused edits
-- Write tests before or alongside code
-- Commit incrementally with conventional commit messages
-- **Scout while you work** — while implementing, actively look for gaps in code you're reading:
-  - Bugs, edge cases, missing error handling
-  - Missing tests for critical code paths
-  - TODOs, FIXMEs, or HACKs in files you touch
-  - Stale comments or docs referencing changed/deleted code
-  - Code duplication, security concerns, convention inconsistencies
-- Record discoveries as new tasks in TASKS.md (P1 for bugs/security, P2 for tests/health, P3 for refactoring). Include **Files** and **Details**. Do NOT stop current work — just record and move on. Every completed task should leave the queue with more improvement opportunities than before.
+When the queue is truly empty (no unclaimed, unblocked tasks), **stay in the current repo**.
+Never search other repos (`~/apps`, etc.) or switch context without explicit user direction.
 
-### Step 8: Verify
+1. **Clean up the current repo:**
+   - The "Tidy open PRs" step above already handles merging PRs and deleting merged branches
+   - Prune stale worktrees: `git worktree list` → remove any that point to deleted branches
+   - Ensure main is up to date: `git pull --rebase`
 
-Run the repo's full verification suite (detected in Step 2) before pushing.
+2. **Run a project audit** on the current repo to find improvement opportunities:
+   - **Typecheck + lint + test** — run the full verify suite, note any failures
+   - **Security audit** — `npm audit`, `cargo audit`, `pip-audit`, or equivalent
+   - **Dead code** — unused exports, unreachable branches, commented-out blocks
+   - **Test coverage gaps** — source files with no corresponding test file
+   - **Doc drift** — commands in README that don't match reality, stale AGENTS.md
+   - **Outdated dependencies** — `npm outdated` or equivalent
+   - **Code smells** — large files (>400 lines), duplicate logic, magic numbers
 
-### Step 9: Commit & push
+3. **Present findings to the user** as candidate tasks. Format them as TASKS.md entries
+   but do **NOT** write them to the file. Let the user review and choose which to add.
 
-- `git add`, `git commit`, `git pull --rebase origin <default-branch>`, `git push`
-- If rebase conflicts: resolve, `GIT_EDITOR=true git rebase --continue`
-- **Never `git reset --hard` on main checkout**
+4. **Stop and wait** for user direction. Do not auto-implement audit findings.
+   The user may approve some tasks, reject others, or redirect to a different repo.
 
-### Step 10: Update queue
+## Resume unfinished work
 
-- Remove completed task from `tasks.md`
-- Add session note if needed
-- Do NOT update hardcoded counts in docs
-- Commit and push the queue update
+Scan TASKS.md for your `(@agent-id)` claim:
 
-### Step 11: Re-launch failed pipelines
+- **Found + work is done but not committed** → skip to [Ship it](#ship-it)
+- **Found + work is in progress** → skip to [Finish the work](#finish-the-work)
+- **Found + stale (no related code)** → unclaim (remove `(@agent-id)`), pick fresh
+- **None found** → continue to [Pick a task](#pick-a-task)
 
-If any pipelines were FAILED in step 3, re-launch them now that there's a free slot.
+## Pick a task
+
+Walk **P0 → P1 → P2 → P3** in order. Within each level, prefer:
+
+1. Tasks whose **ID** appears in another task's `**Blocked by**` — completing them unblocks others
+2. Tasks with no `**Blocked by**`, or whose blockers no longer exist in any TASKS.md
+3. Unclaimed — skip tasks with `(@agent-name)` that isn't you
+4. **Hardest first** — architectural, multi-file, or ambiguous tasks over simple ones
+
+If everything is blocked or claimed, tell the user and suggest unblocking actions.
+
+> **MCP shortcut:** If `tasks-mcp` is available, use `pick_task` — it applies these rules automatically.
+
+## Plan (complex tasks only)
+
+A task is complex if it spans multiple files, involves architectural decisions, or will take > 1 hour. **When in doubt, treat it as complex.**
+
+1. Explore the code: read files, trace call paths, understand data flow
+2. Add a `**Plan**:` checklist to the task block in TASKS.md:
+
+```markdown
+- [ ] Task description (@your-agent-id)
+  - **Details**: original details
+  - **Plan**:
+    - [ ] Sub-step 1
+    - [x] Sub-step 2
+```
+
+3. `git add TASKS.md && git commit -m "chore: add plan for <task-id>"`
+4. Work through sub-steps, checking them off as you go
+
+**Simple tasks** (single file, obvious fix, < 30 min): skip planning, implement directly.
+
+## Claim and do the work
+
+> **MCP shortcut:** `claim_task` in `tasks-mcp` does this automatically.
+
+Add your identity to the task line:
+
+```markdown
+- [ ] The task description (@@cursor, @cursor-2)
+```
+
+Create a branch and do the work:
+
+```bash
+git checkout -b <branch-name>
+```
+
+- Follow **Details**, **Files**, and **Acceptance** in the task metadata
+- Check AGENTS.md for build, test, and lint commands
+- Make minimal, focused edits — fix the root cause, not the symptom
+- Run verification (test/lint/typecheck) before moving on
+
+## Scout while you work
+
+While implementing, you have deep context about the code you're touching. **Actively look for gaps and record them as new tasks.** This happens naturally as you read and modify code — don't treat it as a separate pass.
+
+**What to look for:**
+- Bugs, edge cases, missing error handling in code you're reading
+- Missing tests for critical code paths you discover
+- TODOs, FIXMEs, or HACKs in files you touch
+- Stale comments or docs referencing changed/deleted code
+- Code duplication near your changes
+- Security concerns (hardcoded secrets, missing validation, unsafe patterns)
+- Inconsistencies with project conventions from AGENTS.md
+
+**How to record:**
+- Add new tasks to TASKS.md under the appropriate priority:
+  - **P1** — bugs, security issues, broken behavior
+  - **P2** — missing tests, code health, stale docs
+  - **P3** — refactoring, nice-to-haves, minor DX improvements
+- Include **Files** and **Details** so the next agent has context
+- Keep descriptions actionable — "Fix X in Y" not "X seems wrong"
+- Do NOT stop current work to fix discoveries — just record and move on
+- Include TASKS.md additions in your commit when you ship the current task
+
+**Goal:** Every completed task should leave the queue with more queued improvements than when you started. You're not just executing tasks — you're scouting the terrain for future work.
+
+## Finish the work {#finish-the-work}
+
+Verify the implementation is complete:
+
+- All acceptance criteria from the task are met
+- Tests pass, lint is clean
+- No unrelated changes are staged
+
+## Ship it {#ship-it}
+
+> **MCP shortcut:** `complete_task` in `tasks-mcp` removes the task block automatically.
+
+Remove the entire task block from TASKS.md (task line + all metadata). Completed history lives in git log. Include this removal in the same commit as your code — the task is done when the PR lands:
+
+```bash
+git add <changed-files> TASKS.md
+git commit -m "<conventional commit message>"
+git push
+gh pr create --title "<same as commit message>" --body "<what changed and why>"
+```
+
+If rebase conflicts on TASKS.md: re-read the file, re-apply your removal, then `git add TASKS.md && git rebase --continue`.
+
+## Loop
+
+```bash
+git checkout main 2>/dev/null || git checkout master && git pull --rebase
+```
+
+Go back to [Find the queue](#find-the-queue) and pick the next task. Continue until the queue is empty or the user stops you.
+
+---
+
+## Constraints
+
+- **Do not ask which task to pick** — walk P0→P3 and pick the first unblocked, unclaimed task. Asking wastes the user's time.
+- **Do not ask for confirmation before starting** — announce the chosen task in one line and begin.
+- **Do not switch repos** — never search `~/apps` or other directories for TASKS.md files. Stay in the current repo. If the queue is empty, audit the current repo and present findings.
+- **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue.
+- **Do not stop after one task** — loop until the queue is empty or the user interrupts.
+- **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
+- **Do not auto-implement audit findings** — when the queue is empty, present findings to the user and wait. Only implement after approval.

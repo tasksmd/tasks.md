@@ -181,12 +181,11 @@ When you type `/next-task`, the agent runs a loop:
 10. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
 11. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
 12. **Loop** — Returns to step 3 and picks the next task, continues until the queue is empty
-13. **Audit** — When the queue is empty, runs a 5-tier audit cascade to generate new work instead of stopping:
-    - **Code health**: typecheck, lint, security audit, dead code, swallowed errors, missing timeouts
-    - **Code smells**: large files, god modules, high-churn files, duplicate logic, test coverage gaps
-    - **Documentation**: README vs reality, stale counts, code comments describing deleted code
-    - **Dependencies**: outdated deps, deprecated APIs, unused devDependencies
-    - **DX/polish**: error messages, CLI output consistency, help text, performance, CI gaps
+13. **Audit** — When the queue is empty, stays in the current repo and runs a project audit:
+    - Typecheck, lint, test, security audit, dead code, test coverage gaps
+    - Doc drift, outdated dependencies, code smells (large files, duplicate logic)
+    - **Presents findings** to the user as candidate tasks — does NOT auto-add or auto-implement them
+    - Stops and waits for user direction — never searches other repos or switches context
 
 ### The workflow
 
