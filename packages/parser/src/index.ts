@@ -216,6 +216,93 @@ export function isBlocked(task: Task, allIds: Set<string>): boolean {
   return task.metadata.blockedBy.some((id) => allIds.has(id));
 }
 
+// ── Task picking utilities (shared by CLI and MCP) ──
+
+/** Count how many other tasks this task unblocks by completing. */
+export function countUnblocks(task: Task, allTasks: Task[]): number {
+  if (!task.metadata.id) return 0;
+  return allTasks.filter((t) =>
+    t.metadata.blockedBy?.includes(task.metadata.id!)
+  ).length;
+}
+
+/** Count how many of the task's tags match the preferred tags list. */
+export function tagOverlapCount(task: Task, tags: string[]): number {
+  if (!task.metadata.tags?.length) return 0;
+  return task.metadata.tags.filter((t) =>
+    tags.some((at) => at.toLowerCase() === t.toLowerCase())
+  ).length;
+}
+
+export interface PickResult {
+  task: Task;
+  candidateCount: number;
+  unblocksCount: number;
+  resumed?: boolean;
+}
+
+/**
+ * Pick the highest-priority unblocked, unclaimed task using a deterministic algorithm.
+ * Walks P0-P3, skips blocked/claimed, scores by unblocking impact then tag overlap.
+ */
+export function pickBestTask(
+  taskFiles: TaskFile[],
+  tags?: string[],
+  agentName?: string
+): PickResult | undefined {
+  const allIds = getAllTaskIds(taskFiles);
+  const allTasks = taskFiles.flatMap((f) => f.tasks);
+
+  // Resume prior claim if agent already has one
+  if (agentName) {
+    const normalizedAgent = agentName.replace(/^@/, "").toLowerCase();
+    const priorClaim = allTasks.find(
+      (t) =>
+        t.claimed?.replace(/^@/, "").toLowerCase().startsWith(normalizedAgent) &&
+        !isBlocked(t, allIds)
+    );
+    if (priorClaim) {
+      return {
+        task: priorClaim,
+        candidateCount: 1,
+        unblocksCount: countUnblocks(priorClaim, allTasks),
+        resumed: true,
+      };
+    }
+  }
+
+  let candidates = allTasks.filter(
+    (t) => !t.claimed && !isBlocked(t, allIds)
+  );
+
+  if (tags?.length) {
+    const filtered = candidates.filter((t) =>
+      t.metadata.tags?.some((tag) =>
+        tags.some((at) => at.toLowerCase() === tag.toLowerCase())
+      )
+    );
+    if (filtered.length > 0) candidates = filtered;
+  }
+
+  if (candidates.length === 0) return undefined;
+
+  const sortTags = tags ?? [];
+  candidates.sort((a, b) => {
+    const priorityDiff = a.priority.localeCompare(b.priority);
+    if (priorityDiff !== 0) return priorityDiff;
+    const unblockDiff = countUnblocks(b, allTasks) - countUnblocks(a, allTasks);
+    if (unblockDiff !== 0) return unblockDiff;
+    return tagOverlapCount(b, sortTags) - tagOverlapCount(a, sortTags);
+  });
+
+  const picked = candidates[0];
+  return {
+    task: picked,
+    candidateCount: candidates.length,
+    unblocksCount: countUnblocks(picked, allTasks),
+  };
+}
+
 export {
   findGitRoot,
   discoverTaskFiles,

@@ -3,10 +3,13 @@ export {
   parseTasksContent,
   getAllTaskIds,
   isBlocked,
+  countUnblocks,
+  pickBestTask,
   discoverTaskFiles,
   findGitRoot,
   loadAllTasksAsync as loadAllTasks,
   type Task,
   type TaskFile,
   type TaskMetadata,
+  type PickResult,
 } from "@tasks-md/parser";
