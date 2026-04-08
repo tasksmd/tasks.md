@@ -16,10 +16,6 @@
 ## P2
 
 - [ ] Fix stale precise counters in docs — use N+ approximations for volatile counts
-  **ID**: fix-stale-counters
-  **Details**: Scan README.md, AGENTS.md, and code comments for precise counts of things that change frequently (tests, lint rules, packages). Replace with `N+` approximations. Keep precise counts only for user-facing features under 11 items.
-  **Acceptance**: No precise counts for volatile metrics in docs. `npm test` passes.
-
 ## P3
 
 - [ ] Set up publish workflow for GitHub Actions
