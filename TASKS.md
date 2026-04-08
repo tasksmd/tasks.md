@@ -1,10 +1,5 @@
 # Tasks
 
-## P1
-
-## P2
-
-- [ ] Fix stale precise counters in docs — use N+ approximations for volatile counts
 ## P3
 
 - [ ] Set up publish workflow for GitHub Actions
@@ -17,4 +12,3 @@
 - [ ] Set up custom domain for GitHub Pages
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md
     domain for a cleaner URL.
-
