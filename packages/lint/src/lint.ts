@@ -57,9 +57,32 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       reportError(filePath, 1, `first line must be '# Tasks', got '${lines[0] ?? ""}'`);
     }
 
+    let inComment = false;
+
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
       const lineNum = i + 1;
+
+      // Track HTML comments for policy validation
+      if (line.includes("<!--")) {
+        inComment = true;
+      }
+      if (line.includes("-->")) {
+        inComment = false;
+      }
+
+      // Policy outside HTML comment — likely a mistake
+      if (!inComment && !line.includes("<!--") && /policy\s*:/i.test(line)) {
+        // Skip if inside a task metadata block (e.g., "**Details**: ... policy: ...")
+        if (!/^\s+-\s+\*\*/.test(line) && !/^\s{4,}/.test(line) && !/^-\s+\[.\]/.test(line)) {
+          reportError(filePath, lineNum, "policy directive found outside HTML comment — wrap in <!-- policy: ... -->");
+        }
+      }
+
+      // Empty policy text inside HTML comment
+      if (/<!--\s*policy\s*:\s*-->/i.test(line)) {
+        reportError(filePath, lineNum, "policy directive has empty text — add a directive after 'policy:'");
+      }
 
       // Priority heading
       const priorityMatch = line.match(/^##\s+P([0-3])$/);
@@ -119,6 +142,11 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         }
         continue;
       }
+    }
+
+    // Check for unclosed HTML comments containing policy directives
+    if (inComment) {
+      reportError(filePath, lines.length, "unclosed HTML comment — missing '-->'");
     }
 
     // Apply fixes if in fix mode
