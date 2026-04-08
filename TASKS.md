@@ -2,16 +2,6 @@
 
 ## P1
 
-- [ ] Fix hardcoded version strings in CLI and MCP server
-  - **ID**: fix-hardcoded-versions
-  - **Tags**: bug, cli, mcp
-  - **Details**: Both CLI and MCP server hardcode "0.1.0" while package.json says "0.4.0".
-    `packages/cli/src/cli.ts:25` has `.version("0.1.0")` and
-    `packages/mcp/src/index.ts:20` has `version: "0.1.0"`.
-    Read version dynamically from package.json or use a build-time replacement.
-  - **Files**: `packages/cli/src/cli.ts`, `packages/mcp/src/index.ts`
-  - **Acceptance**: `tasks --version` shows 0.4.0. MCP server reports 0.4.0.
-
 - [ ] Document unclaim_task tool in MCP README
   - **ID**: doc-unclaim-task
   - **Tags**: docs, mcp
