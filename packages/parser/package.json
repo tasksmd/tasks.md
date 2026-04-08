@@ -1,6 +1,6 @@
 {
   "name": "@tasks-md/parser",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Parser for TASKS.md files — extracts tasks, metadata, priorities, and blockers",
   "type": "module",
   "main": "./dist/index.js",
