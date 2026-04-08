@@ -36,14 +36,6 @@
   - **Acceptance**: Linter warns on malformed policies. Tests cover file-level
     and section-level scope. `npm test` passes.
 
-- [ ] Remove unused getRelativePath export from MCP parser
-  - **ID**: remove-dead-code-mcp
-  - **Tags**: cleanup, mcp
-  - **Details**: `getRelativePath` exported from `packages/mcp/src/parser.ts:16-18`
-    but never imported anywhere.
-  - **Files**: `packages/mcp/src/parser.ts`
-  - **Acceptance**: Export removed. `npm test` passes. No imports break.
-
 - [ ] Fix stale precise counters in docs — use N+ approximations for volatile counts
   **ID**: fix-stale-counters
   **Details**: Scan README.md, AGENTS.md, and code comments for precise counts of things that change frequently (tests, lint rules, packages). Replace with `N+` approximations. Keep precise counts only for user-facing features under 11 items.
