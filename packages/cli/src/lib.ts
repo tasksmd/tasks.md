@@ -114,7 +114,7 @@ function countCompletedTasks(gitRoot: string, since?: string): number {
     const sinceArg = since ? ` --since="${since}"` : "";
     const output = execSync(
       `git log --all${sinceArg} -p -- "*/TASKS.md" "TASKS.md"`,
-      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
+      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], timeout: 30_000 }
     );
     return (output.match(/^-- \[ \]/gm) ?? []).length;
   } catch {
@@ -126,7 +126,7 @@ function extractTopAgents(gitRoot: string): Array<{ agent: string; count: number
   try {
     const output = execSync(
       'git log --all -p -- "*/TASKS.md" "TASKS.md"',
-      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
+      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], timeout: 30_000 }
     );
     const lines = output.match(/^-- \[ \].*\(@[^)]+\)/gm) ?? [];
     const counts = new Map<string, number>();
@@ -195,7 +195,7 @@ export function getQueueDiff(directory: string, ref = "HEAD"): QueueDiff {
   try {
     diffOutput = execSync(
       `git diff ${ref} -- "*/TASKS.md" "TASKS.md"`,
-      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }
+      { cwd: gitRoot, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], timeout: 30_000 }
     );
   } catch {
     diffOutput = "";
