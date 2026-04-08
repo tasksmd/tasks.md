@@ -33,12 +33,3 @@
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md
     domain for a cleaner URL.
 
-- [ ] Expand sync documentation with examples
-  - **ID**: doc-sync-examples
-  - **Tags**: docs, cli, sync
-  - **Details**: CLI README documents sync commands but doesn't explain priority
-    mapping (GitHub labels to P0-P3), tag extraction from issue trackers,
-    merge behavior on repeated syncs, or ID prefix usage.
-  - **Files**: `packages/cli/README.md`
-  - **Acceptance**: Sync section has examples for GitHub, Jira, and Linear
-    showing priority mapping and tag extraction.
