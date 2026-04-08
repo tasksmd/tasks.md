@@ -215,12 +215,12 @@ describe("priority mapping", () => {
     expect(await getPriority(["tasks.md", "medium"])).toBe(2);
   });
 
-  it("keeps default P2 for 'low' (only promotes, never demotes)", async () => {
-    expect(await getPriority(["tasks.md", "low"])).toBe(2);
+  it("maps 'low' to P3", async () => {
+    expect(await getPriority(["tasks.md", "low"])).toBe(3);
   });
 
-  it("keeps default P2 for 'p3' (only promotes, never demotes)", async () => {
-    expect(await getPriority(["tasks.md", "p3"])).toBe(2);
+  it("maps 'p3' to P3", async () => {
+    expect(await getPriority(["tasks.md", "p3"])).toBe(3);
   });
 
   it("picks highest priority when multiple priority labels exist", async () => {
