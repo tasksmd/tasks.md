@@ -426,4 +426,78 @@ describe("parsePolicies", () => {
     expect(policies).toHaveLength(1);
     expect(policies[0].text).not.toContain("-->");
   });
+
+  it("handles multiline comment with policy on a separate line", () => {
+    const content = `# Tasks
+
+<!--
+  policy: This policy spans multiple lines in the comment block.
+-->
+
+## P0
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(1);
+    expect(policies[0].text).toBe("This policy spans multiple lines in the comment block.");
+    expect(policies[0].scope).toBe("file");
+  });
+
+  it("scopes policies to different priority sections independently", () => {
+    const content = `# Tasks
+
+## P0
+
+<!-- policy: P0 rule. -->
+
+## P1
+
+<!-- policy: P1 rule. -->
+
+## P2
+
+<!-- policy: P2 rule. -->
+
+## P3
+
+<!-- policy: P3 rule. -->
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(4);
+    expect(policies[0]).toEqual({ text: "P0 rule.", scope: "P0" });
+    expect(policies[1]).toEqual({ text: "P1 rule.", scope: "P1" });
+    expect(policies[2]).toEqual({ text: "P2 rule.", scope: "P2" });
+    expect(policies[3]).toEqual({ text: "P3 rule.", scope: "P3" });
+  });
+
+  it("ignores empty policy text after prefix", () => {
+    const content = `# Tasks\n\n<!-- policy: -->\n\n## P0\n`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(0);
+  });
+
+  it("handles multiple separate comment blocks", () => {
+    const content = `# Tasks
+
+<!-- policy: First rule. -->
+<!-- policy: Second rule. -->
+
+## P0
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(2);
+    expect(policies[0].text).toBe("First rule.");
+    expect(policies[1].text).toBe("Second rule.");
+  });
+
+  it("does not extract policies from task metadata or body text", () => {
+    const content = `# Tasks
+
+## P1
+
+- [ ] Update policy: documentation
+  - **Details**: The policy: prefix in task text should not be extracted.
+`;
+    const policies = parsePolicies(content);
+    expect(policies).toHaveLength(0);
+  });
 });
