@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { lintFiles, discoverFiles } from "@tasks-md/lint";
 import {
   loadAllTasks,
@@ -19,10 +20,14 @@ import { createJiraSource } from "./sync/jira.js";
 import { createLinearSource } from "./sync/linear.js";
 
 
+const pkg = JSON.parse(
+  readFileSync(join(import.meta.dirname, "..", "package.json"), "utf-8")
+);
+
 const program = new Command()
   .name("tasks")
   .description("Unified CLI for TASKS.md task queue management")
-  .version("0.1.0");
+  .version(pkg.version);
 
 // ── init (TypeScript-native) ──
 

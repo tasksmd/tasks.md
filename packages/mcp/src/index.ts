@@ -2,6 +2,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   loadAllTasks,
   discoverTaskFiles,
@@ -15,9 +17,13 @@ import {
   pickTask,
 } from "./tools.js";
 
+const pkg = JSON.parse(
+  readFileSync(join(import.meta.dirname, "..", "package.json"), "utf-8")
+);
+
 const server = new McpServer({
   name: "tasks-mcp",
-  version: "0.1.0",
+  version: pkg.version,
 });
 
 function getWorkingDirectory(): string {
