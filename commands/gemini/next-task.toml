@@ -45,10 +45,33 @@ complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is no
 6. Do NOT run the audit while decomposable tasks exist
 Empty queue: roam to the next repo {#empty-queue}
 When the current repo's queue is truly empty (no unclaimed, unblocked tasks):
-1. **Scan for work across repos** — check all ~/apps/*/TASKS.md files, count actionable tasks per priority.
-2. **Pick the repo with the highest-priority work** (most P0 > most P1 > most total). Read each TASKS.md to verify tasks are truly actionable.
-3. **Switch without asking** — print "Switching to ~/apps/<repo> (N actionable tasks)" and cd there.
-4. **If ALL repos are empty/blocked**, run a project audit. Write real tasks to TASKS.md for anything found. Implement the first task you created. Only stop if the audit genuinely found nothing.
+1. **Scan for work across repos:**
+# Find all TASKS.md files in ~/apps/
+for repo in ~/apps/*/; do
+  tasks_file="$repo/TASKS.md"
+  [ -f "$tasks_file" ] || continue
+  # Count unclaimed, unblocked tasks per priority (P0 first)
+  p0=$(grep -c '^\- \[ \]' "$tasks_file" 2>/dev/null | head -1)
+  blocked=$(grep -c '\*\*Blocked by\*\*:' "$tasks_file" 2>/dev/null | head -1)
+  actionable=$((p0 - blocked))
+  [ "$actionable" -gt 0 ] && echo "$repo $actionable"
+done
+2. **Pick the repo with the highest-priority work** (most P0 > most P1 > most total).
+   Read each candidate's TASKS.md to verify tasks are truly actionable (not just recurring/watch tasks).
+3. **Switch without asking:**
+   Switching to ~/apps/<repo> (N actionable tasks)
+   Then `cd` to that repo and restart the next-task loop from the top.
+4. **If ALL repos are empty/blocked**, clean up the current repo and run a project audit:
+   - Prune stale worktrees: `git worktree list` → remove any that point to deleted branches
+   - `git pull --rebase`
+   - Run the full verify suite, note any failures
+   - Check for: dead code, test coverage gaps, doc drift, outdated deps, code smells
+   - **Write real tasks to TASKS.md** for anything actionable you find (low branch coverage, stale docs,
+     missing tests, security issues). Use proper format with ID, Tags, Details, Files, Acceptance.
+   - **Implement the first task you just created** — don't just report "tier clean" and stop.
+     The goal is to always make progress. If the audit found 3 issues, add them as tasks and start
+     working on the highest-priority one.
+   - Only stop and wait for the user if the audit genuinely found nothing to improve.
 Resume unfinished work
 Scan TASKS.md for your `(@agent-id)` claim:
 - **Found + work is done but not committed** → skip to [Ship it](#ship-it)
@@ -58,14 +81,4 @@ Scan TASKS.md for your `(@agent-id)` claim:
 Pick a task
 Walk **P0 → P1 → P2 → P3** in order. Within each level, prefer:
 1. Tasks whose **ID** appears in another task's `**Blocked by**` — completing them unblocks others
-2. Tasks with no `**Blocked by**`, or whose blockers no longer exist in any TASKS.md
-3. Unclaimed — skip tasks with `(@agent-name)` that isn't you
-4. **Hardest first** — architectural, multi-file, or ambiguous tasks over simple ones
-If everything is blocked or claimed, tell the user and suggest unblocking actions.
-> **MCP shortcut:** If `tasks-mcp` is available, use `pick_task` — it applies these rules automatically.
-Plan (complex tasks only)
-A task is complex if it spans multiple files, involves architectural decisions, or will take > 1 hour. **When in doubt, treat it as complex.**
-1. Explore the code: read files, trace call paths, understand data flow
-2. Add a `**Plan**:` checklist to the task block in TASKS.md:
-- [ ] Task description (@your-agent-id)
 """

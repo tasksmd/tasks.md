@@ -56,6 +56,9 @@ When multiple files are passed, IDs are checked for uniqueness across all files 
 | **Unique IDs** | No duplicate IDs within a file or across files |
 | **Valid blockers** | `**Blocked by**:` must reference IDs that exist somewhere |
 | **No orphaned metadata** | `**ID**:`, `**Tags**:`, etc. must be nested under a task |
+| **Policy in comment** | `policy:` directives must be inside `<!-- -->` HTML comments |
+| **Policy not empty** | `<!-- policy: -->` with no directive text is an error |
+| **Unclosed comments** | HTML comments must have a closing `-->` |
 
 ## Exit Codes
 
