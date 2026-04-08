@@ -21,19 +21,16 @@
   - **Files**: `packages/mcp/README.md`
   - **Acceptance**: README Tools table lists all 6 tools with descriptions.
 
-- [ ] Add tests for sync integrations (GitHub, Jira, Linear)
-  - **ID**: test-sync-integrations
-  - **Tags**: test, cli, sync
-  - **Details**: Three sync source files have zero test coverage:
-    `packages/cli/src/sync/github.ts` (88 lines),
-    `packages/cli/src/sync/jira.ts` (97 lines),
-    `packages/cli/src/sync/linear.ts` (115 lines).
-    Only `engine.ts` has tests. Need tests for priority mapping,
-    tag extraction, error handling, and auth validation.
-  - **Files**: `packages/cli/src/sync/github.test.ts`, `packages/cli/src/sync/jira.test.ts`,
-    `packages/cli/src/sync/linear.test.ts`
-  - **Acceptance**: Each sync source has 15+ tests covering happy path, error cases,
-    and priority mapping. `npm test` passes.
+- [ ] Fix GitHub sync mapPriority — low/p3 labels ignored due to promote-only logic
+  - **ID**: fix-github-priority-demotion
+  - **Tags**: bug, cli, sync
+  - **Details**: `mapPriority` in `packages/cli/src/sync/github.ts` starts at P2 (default)
+    and only picks priority labels with lower numbers (`mapped < priority`). This means
+    "low" (3) and "p3" (3) labels are silently ignored — issues with only a "low" label
+    get P2 instead of P3. Change the condition to also allow demotion.
+  - **Files**: `packages/cli/src/sync/github.ts`, `packages/cli/src/sync/github.test.ts`
+  - **Acceptance**: Issues with only "low" or "p3" label map to P3. Existing priority
+    promotion still works (multiple labels → pick highest). Tests updated.
 
 ## P2
 
