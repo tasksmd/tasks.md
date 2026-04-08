@@ -86,6 +86,25 @@ Install the `/next-task` command for detected agents (Claude Code, Cursor, Winds
 
 ```bash
 tasks install
+tasks install --all       # install for all agents, even if directories don't exist
+tasks install --hooks     # also install pre-commit hook for TASKS.md validation
+```
+
+### `tasks watch`
+
+Watch TASKS.md files for changes and auto-lint on save.
+
+```bash
+tasks watch               # watch current directory
+tasks watch ./packages    # watch a specific directory
+```
+
+### `tasks generate-commands`
+
+Regenerate agent-specific command files from the canonical source (`commands/next-task.md`). Used after editing the canonical command to propagate changes to all agent variants.
+
+```bash
+tasks generate-commands
 ```
 
 ### `tasks sync-issues`
