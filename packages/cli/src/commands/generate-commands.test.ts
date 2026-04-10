@@ -83,8 +83,8 @@ describe("generateCommands", () => {
     generateCommands(tempDir);
     const content = readFileSync(join(tempDir, "commands/gemini/next-task.toml"), "utf-8");
     expect(content).toMatch(/^description = "/);
-    expect(content).toContain('prompt = """');
-    expect(content).toMatch(/"""\s*$/);
+    expect(content).toContain("prompt = '''");
+    expect(content).toMatch(/'''\s*$/);
   });
 
   it("cursor file has no frontmatter", () => {

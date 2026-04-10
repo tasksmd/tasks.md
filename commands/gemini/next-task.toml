@@ -1,6 +1,6 @@
 description = "Pick and work on the next task from TASKS.md"
 
-prompt = """
+prompt = '''
 # Next Task
 Pick the highest-priority unblocked task from TASKS.md and work on it autonomously. Loop until the queue is empty or the user stops you.
 Context snapshot
@@ -81,4 +81,105 @@ Run these tiers **in order** on the current repo. Stop as soon as any tier produ
 **Tier 4 — Dependency modernization** *(applies to every repo type)*
 - Node.js: outdated packages, deprecated APIs, missing lockfile entries
 - Rust: `cargo outdated`, deprecated crate features
-"""
+- Python: pinned versions with known CVEs, deprecated stdlib usage
+- Shell/Markdown repos: outdated tool references, broken install instructions, stale CI action versions
+- Any repo: LICENSE accuracy, .gitignore completeness, CI config drift
+**Tier 5 — DX polish** *(applies to every repo type)*
+- Help text accuracy: do `--help` outputs match actual behavior?
+- Error message quality: are failures actionable or cryptic?
+- Naming consistency: file names, function names, CLI flags vs project conventions
+- Onboarding friction: can a new contributor clone → run in < 5 minutes?
+- Example accuracy: do code examples in docs actually work when copy-pasted?
+**After each tier:** if you found issues, write tasks to TASKS.md (with ID, Tags, Details, Files, Acceptance) and start working on the highest-priority one. Do not continue to the next tier — fixing a real issue is more valuable than completing the audit.
+Terminal state {#terminal-state}
+If ALL five tiers produce zero findings across ALL repos:
+1. Print a final summary exactly once:
+   All [N] repos scanned. Audit clean across 5 tiers. Nothing to do — stopping.
+   Repos checked: [list]
+2. **Stop the loop.** Do not print "nothing to do" again on subsequent invocations in the same session.
+3. If the user invokes `/next-task` again (new session), re-run the full loop from the top — starting with the context snapshot. The audit is fresh each session.
+Resume unfinished work
+Scan TASKS.md for your `(@agent-id)` claim:
+- **Found + work is done but not committed** → skip to [Ship it](#ship-it)
+- **Found + work is in progress** → skip to [Finish the work](#finish-the-work)
+- **Found + stale (no related code)** → unclaim (remove `(@agent-id)`), pick fresh
+- **None found** → continue to [Pick a task](#pick-a-task)
+Pick a task
+Walk **P0 → P1 → P2 → P3** in order. Within each level, prefer:
+1. Tasks whose **ID** appears in another task's `**Blocked by**` — completing them unblocks others
+2. Tasks with no `**Blocked by**`, or whose blockers no longer exist in any TASKS.md
+3. Unclaimed — skip tasks with `(@agent-name)` that isn't you
+4. **Hardest first** — architectural, multi-file, or ambiguous tasks over simple ones
+If everything is blocked or claimed, tell the user and suggest unblocking actions.
+> **MCP shortcut:** If `tasks-mcp` is available, use `pick_task` — it applies these rules automatically.
+Plan (complex tasks only)
+A task is complex if it spans multiple files, involves architectural decisions, or will take > 1 hour. **When in doubt, treat it as complex.**
+1. Explore the code: read files, trace call paths, understand data flow
+2. Add a `**Plan**:` checklist to the task block in TASKS.md:
+- [ ] Task description (@your-agent-id)
+  - **Details**: original details
+  - **Plan**:
+    - [ ] Sub-step 1
+    - [x] Sub-step 2
+3. `git add TASKS.md && git commit -m "chore: add plan for <task-id>"`
+4. Work through sub-steps, checking them off as you go
+**Simple tasks** (single file, obvious fix, < 30 min): skip planning, implement directly.
+Claim and do the work
+> **MCP shortcut:** `claim_task` in `tasks-mcp` does this automatically.
+Add your identity to the task line:
+- [ ] The task description (@@gemini, @gemini-2)
+Create a branch and do the work:
+git checkout -b <branch-name>
+- Follow **Details**, **Files**, and **Acceptance** in the task metadata
+- Check AGENTS.md for build, test, and lint commands
+- Make minimal, focused edits — fix the root cause, not the symptom
+- Run verification (test/lint/typecheck) before moving on
+Scout while you work
+While implementing, you have deep context about the code you're touching. **Actively look for gaps and record them as new tasks.** This happens naturally as you read and modify code — don't treat it as a separate pass.
+**What to look for:**
+- Bugs, edge cases, missing error handling in code you're reading
+- Missing tests for critical code paths you discover
+- TODOs, FIXMEs, or HACKs in files you touch
+- Stale comments or docs referencing changed/deleted code
+- Code duplication near your changes
+- Security concerns (hardcoded secrets, missing validation, unsafe patterns)
+- Inconsistencies with project conventions from AGENTS.md
+**How to record:**
+- Add new tasks to TASKS.md under the appropriate priority:
+  - **P1** — bugs, security issues, broken behavior
+  - **P2** — missing tests, code health, stale docs
+  - **P3** — refactoring, nice-to-haves, minor DX improvements
+- Include **Files** and **Details** so the next agent has context
+- Keep descriptions actionable — "Fix X in Y" not "X seems wrong"
+- Do NOT stop current work to fix discoveries — just record and move on
+- Include TASKS.md additions in your commit when you ship the current task
+**Goal:** Every completed task should leave the queue with more queued improvements than when you started. You're not just executing tasks — you're scouting the terrain for future work.
+**HARD RULE:** Before shipping any PR, check: did you discover anything while working? If yes, add it to TASKS.md in the same commit. If you're not sure, you didn't look hard enough — re-read the files you touched and find at least one improvement. An empty scout log means you weren't paying attention.
+Finish the work {#finish-the-work}
+Verify the implementation is complete:
+- All acceptance criteria from the task are met
+- Tests pass, lint is clean
+- No unrelated changes are staged
+- **The completed task block is removed from TASKS.md** (task line + all metadata lines). This is not optional — a task is not done until it's gone from the file. History lives in git log.
+Ship it {#ship-it}
+> **MCP shortcut:** `complete_task` in `tasks-mcp` removes the task block automatically.
+**Every commit that completes a task MUST also remove that task from TASKS.md.** No exceptions. If you forget, go back and amend the commit before pushing.
+**Jira ticket required:** Before creating a PR, find or create a Jira ticket. Check `git log --oneline -20` for the project key pattern (e.g. AIFN-XXX). If no ticket exists, ask the user — never push a PR without one. GHE repos enforce this via Jira PMC status checks.
+git add <changed-files> TASKS.md
+git commit -m "<type>: <description> <TICKET-XXX>"
+git push
+gh pr create --title "<type>: <description> <TICKET-XXX>" --body "<what changed and why>"
+If rebase conflicts on TASKS.md: re-read the file, re-apply your removal, then `git add TASKS.md && git rebase --continue`.
+Loop
+git checkout main 2>/dev/null || git checkout master && git pull --rebase
+Go back to [Find the queue](#find-the-queue) and pick the next task. Continue until the queue is empty or the user stops you.
+---
+Constraints
+- **Do not ask which task to pick** — walk P0→P3 and pick the first unblocked, unclaimed task. Asking wastes the user's time.
+- **Do not ask for confirmation before starting** — announce the chosen task in one line and begin.
+- **Auto-roam when the queue is empty** — scan `~/apps/*/TASKS.md` for work in other repos. Only stop and audit when ALL repos are empty.
+- **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue. A task with code changes committed but still present in TASKS.md is **not done**.
+- **Do not stop after one task** — loop until the queue is empty or the user interrupts.
+- **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
+- **Audit findings become tasks** — when all repos are empty, run the 5-tier cascade, write findings as tasks, and implement the highest-priority one. Only stop when all tiers are clean (terminal state).
+'''
