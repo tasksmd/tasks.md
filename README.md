@@ -170,19 +170,20 @@ All paths are **project-local** (inside your repo). See [commands/](commands/) f
 When you type `/next-task`, the agent runs a loop:
 
 1. **Snapshot** — Reads git status, current branch, and TASKS.md in one shot to orient without redundant tool calls
-2. **Tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
-3. **Find** — Discovers all `TASKS.md` files from the git root down
-4. **Policies** — Reads `<!-- policy: ... -->` comments from the file and follows them as project rules throughout the session
-5. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
-6. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
-7. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
-8. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
-9. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
-10. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
-11. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
-12. **Loop** — Returns to step 3 and picks the next task, continues until the queue is empty
-13. **Roam** — When the current repo's queue is empty, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
-14. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
+2. **Preserve** — If the worktree is dirty, keeps existing edits in place, avoids them when possible, and stages only its own hunks when it must touch a shared file
+3. **Tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
+4. **Find** — Discovers all `TASKS.md` files from the git root down
+5. **Policies** — Reads `<!-- policy: ... -->` comments from the file and follows them as project rules throughout the session
+6. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
+7. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
+8. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
+9. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
+10. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
+11. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
+12. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
+13. **Loop** — Returns to step 4 and picks the next task, continues until the queue is empty
+14. **Roam** — When the current repo's queue is empty, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
+15. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
     - Tier 1: Verify (typecheck, lint, test, build)
     - Tier 2: Security & dead code
     - Tier 3: Doc drift & stale references
