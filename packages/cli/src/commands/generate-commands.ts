@@ -22,15 +22,14 @@ function toGeminiToml(body: string): string {
     .replace(/^\s*$/gm, "")
     .split("\n")
     .filter((line) => line.trim() !== "")
-    .slice(0, 80)
     .join("\n");
 
   return [
     'description = "Pick and work on the next task from TASKS.md"',
     "",
-    'prompt = """',
+    "prompt = '''",
     prompt,
-    '"""',
+    "'''",
     "",
   ].join("\n");
 }
