@@ -241,7 +241,7 @@ The [`@tasks-md/lint`](packages/lint/) CLI validates TASKS.md files against the 
 ```bash
 npx @tasks-md/lint TASKS.md           # lint one file
 npx @tasks-md/lint TASKS.md examples/ # lint multiple files/directories
-npx @tasks-md/lint --fix TASKS.md     # auto-fix (completed tasks, tag casing)
+npx @tasks-md/lint --fix TASKS.md     # auto-fix (removes completed tasks)
 ```
 
 ### GitHub Action

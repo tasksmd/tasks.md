@@ -36,7 +36,7 @@ npx tasks-lint <file>
 
 ## Fix mode
 
-Auto-fix formatting issues (reorders sections, normalizes metadata indentation):
+Auto-fix: removes completed `[x]` task blocks and cleans up extra blank lines:
 
 ```bash
 npx @tasks-md/lint --fix <file>

@@ -48,7 +48,7 @@ npx tasks-mcp
 ### Build from source
 
 ```bash
-cd mcp
+cd packages/mcp
 npm install
 npm run build
 npm start

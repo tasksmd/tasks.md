@@ -205,7 +205,7 @@ A task is complex if it spans multiple files, involves architectural decisions, 
 Add your identity to the task line:
 
 ```markdown
-- [ ] The task description (@@cascade, @cascade-2)
+- [ ] The task description (@cascade, @cascade-2)
 ```
 
 Create a branch and do the work:
@@ -261,13 +261,11 @@ Verify the implementation is complete:
 
 **Every commit that completes a task MUST also remove that task from TASKS.md.** No exceptions. If you forget, go back and amend the commit before pushing.
 
-**Jira ticket required:** Before creating a PR, find or create a Jira ticket. Check `git log --oneline -20` for the project key pattern (e.g. AIFN-XXX). If no ticket exists, ask the user — never push a PR without one. GHE repos enforce this via Jira PMC status checks.
-
 ```bash
 git add <changed-files> TASKS.md
-git commit -m "<type>: <description> <TICKET-XXX>"
+git commit -m "<type>: <description>"
 git push
-gh pr create --title "<type>: <description> <TICKET-XXX>" --body "<what changed and why>"
+gh pr create --title "<type>: <description>" --body "<what changed and why>"
 ```
 
 If rebase conflicts on TASKS.md: re-read the file, re-apply your removal, then `git add TASKS.md && git rebase --continue`.

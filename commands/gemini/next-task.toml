@@ -127,7 +127,7 @@ A task is complex if it spans multiple files, involves architectural decisions, 
 Claim and do the work
 > **MCP shortcut:** `claim_task` in `tasks-mcp` does this automatically.
 Add your identity to the task line:
-- [ ] The task description (@@gemini, @gemini-2)
+- [ ] The task description (@gemini, @gemini-2)
 Create a branch and do the work:
 git checkout -b <branch-name>
 - Follow **Details**, **Files**, and **Acceptance** in the task metadata
@@ -164,11 +164,10 @@ Verify the implementation is complete:
 Ship it {#ship-it}
 > **MCP shortcut:** `complete_task` in `tasks-mcp` removes the task block automatically.
 **Every commit that completes a task MUST also remove that task from TASKS.md.** No exceptions. If you forget, go back and amend the commit before pushing.
-**Jira ticket required:** Before creating a PR, find or create a Jira ticket. Check `git log --oneline -20` for the project key pattern (e.g. AIFN-XXX). If no ticket exists, ask the user — never push a PR without one. GHE repos enforce this via Jira PMC status checks.
 git add <changed-files> TASKS.md
-git commit -m "<type>: <description> <TICKET-XXX>"
+git commit -m "<type>: <description>"
 git push
-gh pr create --title "<type>: <description> <TICKET-XXX>" --body "<what changed and why>"
+gh pr create --title "<type>: <description>" --body "<what changed and why>"
 If rebase conflicts on TASKS.md: re-read the file, re-apply your removal, then `git add TASKS.md && git rebase --continue`.
 Loop
 git checkout main 2>/dev/null || git checkout master && git pull --rebase
