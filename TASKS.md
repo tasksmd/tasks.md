@@ -31,6 +31,20 @@
 
 ## P2
 
+- [ ] tasks-mcp can target a known task ID so automation does not need custom file logic
+  - **ID**: tasks-mcp-targeted-task-parity
+  - **Tags**: mcp, workflow, queue
+  - **Details**: `/next-task` is gaining targeted task-ID routing and a reusable standing-loop
+    pattern, but agents that drive TASKS.md through `tasks-mcp` still only get the generic pick
+    flow or fuzzy query matching on claim and complete. Add an MCP-side exact-task entry point so
+    higher-level automation can run the same queue behavior through tools instead of re-implementing
+    file parsing and eligibility checks.
+  - **Files**: `packages/mcp/src/tools.ts`, `packages/mcp/src/tools.test.ts`, `packages/parser/src/index.ts`, `packages/mcp/README.md`, `README.md`
+  - **Blocked by**: `next-task-target-task-id`, `standing-loop-pattern`
+  - **Acceptance**: The MCP server exposes one documented way to fetch and optionally claim a
+    specific task by ID with clear missing, claimed, and blocked behavior, and the docs explain how
+    that path composes with standing loops once the shared pattern lands.
+
 - [ ] README shows when to use plain `/next-task`, targeted `/next-task <task-id>`, and any standing-loop pattern
   - **ID**: next-task-readme-routing
   - **Tags**: docs, workflow, onboarding
