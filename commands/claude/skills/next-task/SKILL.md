@@ -32,11 +32,20 @@ Read all policies before picking a task. Follow them alongside the task's own me
 
 Read the context snapshot and follow the first matching branch:
 
-**Uncommitted changes on a feature branch** → check if they belong to a claimed task. If yes, skip to [Finish the work](#finish-the-work). If unrelated, stash: `git stash push -m "next-task: stash unrelated changes"` then continue.
+**Uncommitted changes on a feature branch** → check if they belong to a claimed task. If yes, skip to [Finish the work](#finish-the-work). If unrelated, preserve them and continue:
+1. Inspect the dirty files with `git diff -- <path>`.
+2. If your task can avoid those files, leave them untouched and keep working.
+3. If you must touch a dirty file, edit on top of the current contents so both sets of changes survive.
+4. Stage only your paths or hunks. Never stage unrelated edits.
+5. Never `git stash`, `git reset --hard`, `git checkout --`, or ask the user what to do just because the tree is dirty.
+
+**On main, uncommitted changes** → preserve them too. If they belong to unfinished work, create or switch to that task branch and continue there. If they are unrelated or from another agent, leave main untouched and create a fresh branch or worktree from the current HEAD for your task. Do not stash or discard the existing changes.
 
 **On a feature branch, no uncommitted changes** → check if there's a claimed task for this branch in TASKS.md. If yes, skip to [Finish the work](#finish-the-work). If not, switch to main.
 
 **On main, clean** → continue to [Tidy open PRs](#tidy-open-prs).
+
+**Shared-file rule** → `TASKS.md`, `README.md`, and agent config files often contain unrelated edits from another agent. Do not treat that as a stop signal. Apply your change on top of the live file, then stage only your exact hunk so both changes survive.
 
 ## Tidy open PRs
 
@@ -195,7 +204,7 @@ A task is complex if it spans multiple files, involves architectural decisions, 
     - [x] Sub-step 2
 ```
 
-3. `git add TASKS.md && git commit -m "chore: add plan for <task-id>"`
+3. Stage only the TASKS.md hunk for your plan (never blindly `git add TASKS.md` if the file already has other edits), then `git commit -m "chore: add plan for <task-id>"`
 4. Work through sub-steps, checking them off as you go
 
 **Simple tasks** (single file, obvious fix, < 30 min): skip planning, implement directly.
@@ -264,13 +273,14 @@ Verify the implementation is complete:
 **Every commit that completes a task MUST also remove that task from TASKS.md.** No exceptions. If you forget, go back and amend the commit before pushing.
 
 ```bash
-git add <changed-files> TASKS.md
+git add <changed-files>
+# If TASKS.md has unrelated edits, stage only your task hunk before committing.
 git commit -m "<type>: <description>"
 git push
 gh pr create --title "<type>: <description>" --body "<what changed and why>"
 ```
 
-If rebase conflicts on TASKS.md: re-read the file, re-apply your removal, then `git add TASKS.md && git rebase --continue`.
+If rebase conflicts on TASKS.md: re-read the file, re-apply only your task change on top of the current contents, stage only that hunk, then `git rebase --continue`.
 
 ## Loop
 
