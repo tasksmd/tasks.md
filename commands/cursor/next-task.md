@@ -90,8 +90,10 @@ If there were no open PRs, skip the sync — you're already up to date from the 
 TASKS.md is already loaded from the context snapshot.
 
 **If TASKS.md has no actionable tasks** — meaning the queue is literally empty, or
-every remaining task is either claimed by another agent or has an unresolved
-`**Blocked by**:` — proceed to [Empty queue: roam to the next repo](#empty-queue). **Large or
+every remaining task is either claimed by another agent, has an unresolved
+`**Blocked by**:`, or has a non-empty `**Blocked**:` reason (see
+[Refuse forbidden work](#refuse-forbidden-work)) — proceed to
+[Empty queue: roam to the next repo](#empty-queue). **Large or
 complex tasks are still actionable.** A P0 epic with 5 acceptance criteria is not
 "no actionable tasks" — it needs decomposition, not avoidance.
 
@@ -116,8 +118,9 @@ for repo in ~/apps/*/; do
   [ -f "$tasks_file" ] || continue
   # Count unclaimed, unblocked tasks per priority (P0 first)
   p0=$(grep -c '^\- \[ \]' "$tasks_file" 2>/dev/null | head -1)
-  blocked=$(grep -c '\*\*Blocked by\*\*:' "$tasks_file" 2>/dev/null | head -1)
-  actionable=$((p0 - blocked))
+  blocked_by=$(grep -c '\*\*Blocked by\*\*:' "$tasks_file" 2>/dev/null | head -1)
+  blocked=$(grep -c '\*\*Blocked\*\*:' "$tasks_file" 2>/dev/null | head -1)
+  actionable=$((p0 - blocked_by - blocked))
   [ "$actionable" -gt 0 ] && echo "$repo $actionable"
 done
 ```
@@ -201,9 +204,53 @@ Walk **P0 → P1 → P2 → P3** in order. Within each level, prefer:
 3. Unclaimed — skip tasks with `(@agent-name)` that isn't you
 4. **Hardest first** — architectural, multi-file, or ambiguous tasks over simple ones
 
+Treat a task with a non-empty `**Blocked**:` line as blocked even if it has no `**Blocked by**` — that field is for external constraints (see [Refuse forbidden work](#refuse-forbidden-work)) and should be skipped until the reason is resolved.
+
 If everything is blocked or claimed, tell the user and suggest unblocking actions.
 
 > **MCP shortcut:** If `tasks-mcp` is available, use `pick_task` — it applies these rules automatically.
+
+## Refuse forbidden work {#refuse-forbidden-work}
+
+Before claiming a task, check whether completing it would require an action that is **blocked by default** for agents running autonomously. These actions must not happen unless the user explicitly approves them in the current session.
+
+**Blocked by default** (refuse unless the user approved this exact action in-session):
+
+- **Slack / Teams / Discord** — posting messages, DMs, thread replies, notifying reactions, channel creation, setting status on the user's behalf
+- **Jira / Linear / Asana issues** — creating issues, posting comments, changing status or assignee, editing watchers, creating linked issues
+- **GitHub issues** — `gh issue create`, `gh issue comment`, `gh issue edit|close|reopen`
+- **GitHub PR review-side writes** — `gh pr comment`, `gh pr review`, review-body comments, requesting reviewers, assignee changes, labels that trigger notifications or automation
+- **Public git writes** — `gh repo create`, `gh release create`, pushing to `main`/`master` of a public remote, force-pushing shared branches
+- **Package registries** — `npm publish`, `cargo publish`, `pip upload`, `gem push`, and equivalents
+- **Email / SMS / pager / ntfy / phone notifications** — anything that pages a real person
+
+**Allowed by default** (normal agent workflow — no extra approval needed):
+
+- **Opening pull requests** — `gh pr create` including title and body is OK. Pushing the feature branch the PR tracks is OK. Editing your own PR description and title after the fact is OK.
+- **Reading anything** — Slack search, Jira view, `gh pr|issue view`, browsing dashboards
+- **Local-only actions** — commits on feature branches, writing files, TASKS.md updates, local test runs
+
+When a task requires a blocked-by-default action that the user has not approved:
+
+1. **Do not claim and do not attempt the action.** An untasked "post to Slack" is still a post to Slack.
+2. Add a `**Blocked**:` metadata line to the task block with an actionable reason. Start the reason with a short code so future sessions can recognize the pattern at a glance. Recommended codes: `needs-user-approval`, `needs-credentials`, `policy-refused`, `needs-external-action`.
+
+   Example edit to TASKS.md:
+
+   ```markdown
+   - [ ] Post v1.2 release summary in #eng-announcements
+     - **ID**: slack-release-notes
+     - **Blocked**: needs-user-approval — posting publicly in Slack as the user
+       requires explicit per-session approval. Ask the user to post this themselves
+       or confirm before unblocking.
+   ```
+
+3. Stage only that hunk of `TASKS.md` and commit with a conventional message such as `chore: block <task-id> (<short-code>)`. Do not push an approval request anywhere public — the block lives in the file.
+4. Continue with the next highest-priority unblocked task. Future `/next-task` invocations will skip the blocked task automatically because the parser and task-picker treat a non-empty `**Blocked**:` as a block.
+
+Only unblock a task (remove the `**Blocked**:` line) when the user has explicitly approved the exact action in the current session — quoting the surface, recipient, and text if applicable — or when the external constraint has otherwise been resolved (credentials issued, legal sign-off received, etc.). Never reuse an approval across sessions.
+
+If the task is blocked purely because of a task-dependency (not an external constraint), use `**Blocked by**: <id>` instead; that mechanism is for the dependency graph and is resolved automatically when the blocker task is completed and removed.
 
 ## Plan (complex tasks only)
 
@@ -316,4 +363,5 @@ Go back to [Find the queue](#find-the-queue) and pick the next task. Continue un
 - **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue. A task with code changes committed but still present in TASKS.md is **not done**.
 - **Do not stop after one task** — loop until the queue is empty or the user interrupts.
 - **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
+- **Do not run blocked-by-default actions** — see [Refuse forbidden work](#refuse-forbidden-work). Instead of attempting a Slack/Jira/issue-comment/publish action, add `**Blocked**: <reason>` to the task so it's skipped in future sessions.
 - **Audit findings become tasks** — when all repos are empty, run the 5-tier cascade, write findings as tasks, and implement the highest-priority one. Only stop when all tiers are clean (terminal state).

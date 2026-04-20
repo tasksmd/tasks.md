@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTasksContent, parsePolicies, getAllTaskIds, isBlocked, type Task, type TaskFile } from "./index.js";
+import { parseTasksContent, parsePolicies, getAllTaskIds, isBlocked, pickBestTask, type Task, type TaskFile } from "./index.js";
 
 const TEST_FILE = "/test/TASKS.md";
 
@@ -240,6 +240,44 @@ describe("parseTasksContent", () => {
     const tasks = parseTasksContent(content, TEST_FILE);
     expect(tasks[0].metadata.blockedBy).toEqual(["step-a", "step-b", "step-c"]);
   });
+
+  it("parses **Blocked** as a free-form reason string", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Post release notes in #eng-announcements",
+      "  - **ID**: slack-release-notes",
+      "  - **Blocked**: needs-user-approval — posting publicly in Slack as the user requires explicit per-session approval",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].metadata.blocked).toBe(
+      "needs-user-approval — posting publicly in Slack as the user requires explicit per-session approval"
+    );
+    // **Blocked** must NOT leak into **Blocked by**
+    expect(tasks[0].metadata.blockedBy).toBeUndefined();
+  });
+
+  it("keeps **Blocked** and **Blocked by** as distinct fields on the same task", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Ship the deploy",
+      "  - **Blocked by**: prepare-release, sign-off",
+      "  - **Blocked**: needs-credentials — production deploy token not yet provisioned",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks[0].metadata.blockedBy).toEqual(["prepare-release", "sign-off"]);
+    expect(tasks[0].metadata.blocked).toBe(
+      "needs-credentials — production deploy token not yet provisioned"
+    );
+  });
 });
 
 describe("getAllTaskIds", () => {
@@ -297,15 +335,37 @@ describe("isBlocked", () => {
     const allIds = new Set(["still-open"]);
     expect(isBlocked(task, allIds)).toBe(true);
   });
+
+  it("returns true when **Blocked** has a non-empty reason, even without **Blocked by**", () => {
+    const task = makeFakeTask({
+      blocked: "needs-user-approval — posting publicly in Slack as the user requires explicit per-session approval",
+    });
+    expect(isBlocked(task, new Set())).toBe(true);
+  });
+
+  it("treats whitespace-only **Blocked** as not blocking", () => {
+    const task = makeFakeTask({ blocked: "   " });
+    expect(isBlocked(task, new Set())).toBe(false);
+  });
+
+  it("blocks when **Blocked** reason is set but **Blocked by** IDs are resolved", () => {
+    const task = makeFakeTask({
+      blocked: "policy-refused — posting publicly as the user is not pre-approved",
+      blockedBy: ["already-shipped"],
+    });
+    // No ID matches blockedBy, but blocked reason still blocks the task
+    expect(isBlocked(task, new Set())).toBe(true);
+  });
 });
 
-function makeFakeTask(metadata: { id?: string; blockedBy?: string[] }): Task {
+function makeFakeTask(metadata: { id?: string; blockedBy?: string[]; blocked?: string }): Task {
   return {
     summary: "fake task",
     priority: "P1",
     metadata: {
       id: metadata.id,
       blockedBy: metadata.blockedBy,
+      blocked: metadata.blocked,
     },
     subtasks: [],
     file: TEST_FILE,
@@ -499,5 +559,76 @@ describe("parsePolicies", () => {
 `;
     const policies = parsePolicies(content);
     expect(policies).toHaveLength(0);
+  });
+});
+
+// ── pickBestTask — picks skip tasks with **Blocked** reason ────────────────────
+
+describe("pickBestTask and **Blocked** tasks", () => {
+  it("skips tasks with a non-empty **Blocked** reason", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Post release notes in Slack",
+      "  - **ID**: slack-release-notes",
+      "  - **Blocked**: needs-user-approval — posting publicly as the user requires explicit approval",
+      "",
+      "- [ ] Ship the bug fix",
+      "  - **ID**: ship-fix",
+      "",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const result = pickBestTask([{ path: TEST_FILE, tasks }]);
+
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Ship the bug fix");
+  });
+
+  it("returns undefined when every task is blocked by reason", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Post in Slack",
+      "  - **ID**: slack-post",
+      "  - **Blocked**: needs-user-approval — posting publicly as the user",
+      "",
+      "- [ ] Create Jira ticket",
+      "  - **ID**: jira-create",
+      "  - **Blocked**: needs-user-approval — writing to Jira on behalf of the user",
+      "",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const result = pickBestTask([{ path: TEST_FILE, tasks }]);
+
+    expect(result).toBeUndefined();
+  });
+
+  it("picks a task again once the **Blocked** line is removed", () => {
+    const blocked = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Post release notes",
+      "  - **ID**: release-notes",
+      "  - **Blocked**: needs-user-approval — posting publicly as the user",
+      "",
+    ].join("\n");
+
+    const blockedTasks = parseTasksContent(blocked, TEST_FILE);
+    expect(pickBestTask([{ path: TEST_FILE, tasks: blockedTasks }])).toBeUndefined();
+
+    const unblocked = blocked.replace(/  - \*\*Blocked\*\*:.*\n/, "");
+    const unblockedTasks = parseTasksContent(unblocked, TEST_FILE);
+    const picked = pickBestTask([{ path: TEST_FILE, tasks: unblockedTasks }]);
+
+    expect(picked).toBeDefined();
+    expect(picked!.task.metadata.id).toBe("release-notes");
   });
 });

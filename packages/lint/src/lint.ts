@@ -84,6 +84,18 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         reportError(filePath, lineNum, "policy directive has empty text — add a directive after 'policy:'");
       }
 
+      // Empty **Blocked** reason — the parser won't record a value for
+      // "**Blocked**:" with nothing after the colon, so we scan the raw line
+      // directly. This keeps the field's "non-empty reason" contract visible
+      // even when the user forgot to fill it in.
+      if (/^\s+-\s+\*\*Blocked\*\*:\s*$/.test(line)) {
+        reportError(
+          filePath,
+          lineNum,
+          "**Blocked** must have a non-empty reason (e.g. 'needs-user-approval — ...'); remove the field if the task is no longer blocked"
+        );
+      }
+
       // Priority heading
       const priorityMatch = line.match(/^##\s+P([0-3])$/);
       if (priorityMatch) {

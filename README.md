@@ -117,9 +117,11 @@ The quality of your task description directly affects the quality of the agent's
 
 **Blockers**: `**Blocked by**: auth-fix, rate-limit` — references task IDs across all files. A task is unblocked when the referenced IDs no longer exist in any file.
 
+**Blocked for a reason**: `**Blocked**: needs-user-approval — ...` — free-form text for blocks that aren't another task. Use it when the agent can't complete the task without an external change (missing approval, refused policy, missing credentials). Any non-empty value marks the task as blocked; the lint keeps the reason field from going empty. Agents running `/next-task` add this field themselves when they detect an action that is blocked by default (see [Refuse forbidden work](#what-it-does)). See [the spec](spec.md#blocked-for-a-reason) for details.
+
 **Tags**: `**Tags**: backend, auth` — lowercase labels for filtering and routing to specialized agents.
 
-**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**. Teams can add custom fields beyond these six.
+**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**, **Blocked**. Teams can add custom fields beyond these seven.
 
 **Sub-tasks**: Nested checkboxes under a parent. The agent who claims the parent owns all sub-tasks. Remove the entire block when done. Use sub-tasks when steps are sequential and owned by one agent; promote to separate top-level tasks when steps can be parallelized or span multiple sessions.
 
@@ -176,15 +178,16 @@ When you type `/next-task`, the agent runs a loop:
 5. **Find** — Discovers all `TASKS.md` files from the git root down
 6. **Policies** — Reads `<!-- policy: ... -->` comments from the file and follows them as project rules throughout the session
 7. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
-8. **Pick** — Selects the highest-priority unblocked, unclaimed task. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
-9. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
-10. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
-11. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
-12. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
-13. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
-14. **Loop** — Returns to step 5 and picks the next task, continues until the queue is empty
-15. **Roam** — When the current repo's queue is empty, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
-16. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
+8. **Pick** — Selects the highest-priority unblocked, unclaimed task. Skips tasks with `**Blocked by**:` whose dependencies aren't resolved and tasks with a non-empty `**Blocked**:` reason. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
+9. **Refuse forbidden work** — Before claiming, checks whether the task requires a blocked-by-default action (posting in Slack / Teams / Discord, creating or commenting on Jira or GitHub issues, publishing packages, sending emails, pushing to protected branches, etc.). If so, adds `**Blocked**: <reason>` to the task with a short code like `needs-user-approval` and moves on. Opening pull requests with `gh pr create`, reading dashboards, and local-only actions stay allowed by default.
+10. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
+11. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
+12. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
+13. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
+14. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
+15. **Loop** — Returns to step 5 and picks the next task, continues until the queue is empty
+16. **Roam** — When the current repo's queue is empty, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
+17. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
     - Tier 1: Verify (typecheck, lint, test, build)
     - Tier 2: Security & dead code
     - Tier 3: Doc drift & stale references

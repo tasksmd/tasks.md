@@ -225,6 +225,7 @@ Metadata values can span multiple indented lines. Everything indented under the 
 | **Files** | Relevant file paths (backtick-quoted, comma-separated) |
 | **Acceptance** | Definition of done |
 | **Blocked by** | Task ID(s) of blocking tasks — comma-separated if multiple |
+| **Blocked** | Free-form reason why the task cannot be picked right now. Distinct from **Blocked by** — use when the block is external (missing approval, policy refusal, environment access) rather than another task ID |
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
@@ -246,6 +247,39 @@ An agent checking blockers searches all applicable `TASKS.md` files for the refe
 Agents should:
 1. Skip blocked tasks when selecting work
 2. Prioritize tasks that block other work — unblocking has the highest impact
+
+### Blocked for a reason
+
+Not every blocker is another task. Tasks can be blocked by an **external constraint** — a missing approval, a policy refusal, a credential the agent does not have, or a manual step the user needs to perform. Use the **Blocked** metadata field to record this with free-form text:
+
+```markdown
+- [ ] Post the v1.2 release summary in #eng-announcements
+  - **ID**: slack-release-notes
+  - **Blocked**: needs-user-approval — posting publicly in Slack as the user
+    requires explicit per-session approval. Ask the user to post this themselves
+    or confirm before unblocking.
+```
+
+Rules:
+
+- **Blocked** is plain text — any non-empty value marks the task as blocked for task-picking purposes
+- A task with a non-empty **Blocked** field is skipped by agents the same way a task with an unresolved **Blocked by** is skipped
+- **Blocked** and **Blocked by** can coexist on the same task — both must be clear before the task is picked
+- The reason should be actionable: it names what needs to happen before the task can be picked again (e.g., "user approval", "production credentials provisioned", "legal sign-off received")
+- Remove the **Blocked** line once the external blocker is resolved; the task then becomes eligible again
+- Agents that detect a forbidden action while picking a task (for example, posting publicly as the user without approval) should add this field with a clear reason instead of silently skipping — so future sessions see the block and don't re-attempt the same work
+
+When to use **Blocked** vs. **Blocked by**:
+
+| Situation | Field |
+|-----------|-------|
+| Another task must complete first | **Blocked by**: `<task-id>` |
+| Needs user approval or a manual step | **Blocked**: `needs-user-approval — ...` |
+| Requires credentials the agent doesn't have | **Blocked**: `needs-credentials — ...` |
+| Violates a project policy the agent follows | **Blocked**: `policy-refused — ...` |
+| Awaiting external dependency outside the queue | **Blocked**: `needs-external-action — ...` |
+
+Teams are free to pick their own short reason codes (the prefix before the `—`) or leave the reason as a single sentence. The spec only requires the field value to be non-empty.
 
 ### Sub-tasks
 
@@ -480,6 +514,19 @@ Git log is the archive by design. A `## Done` section or `[x]` marker would grow
 HTML comments are invisible when rendered as Markdown — policies don't clutter the task list in GitHub, VS Code preview, or any Markdown viewer. They're still visible in the raw file, which is what agents and parsers read. Using a visible `## Policies` section would add visual noise to a file that should focus on pending work, and would break the `## P0`–`## P3` heading structure.
 
 The `policy:` prefix inside comments distinguishes actionable directives from freeform notes. Without a prefix, agents would need to guess whether a comment is context ("last reviewed: March") or a rule ("always run tests"). The prefix makes intent explicit.
+
+### Why a separate `**Blocked**` field instead of overloading `**Blocked by**`?
+
+`**Blocked by**` references *other task IDs*. The algorithm for resolution is well-defined: search all `TASKS.md` files for the referenced IDs, and the task is unblocked when none are found.
+
+External blockers don't fit that model. "Needs user approval", "waiting on a credential from ops", or "agent refused because the action is posting publicly as the user" aren't task IDs and they don't resolve by task completion. Overloading `**Blocked by**` with free-form text would break tooling that validates blocker references as IDs, and it would make the **Blocked by** resolution algorithm ambiguous.
+
+A separate `**Blocked**` field keeps the two concerns distinct:
+
+- `**Blocked by**: auth-fix, rate-limit` — task dependency graph, resolved by task completion
+- `**Blocked**: needs-user-approval — ...` — external constraint, resolved by a human or a different system
+
+Both mark a task as not-pickable. Both can appear on the same task. Linters validate each independently — **Blocked by** refs must exist, **Blocked** text must be non-empty.
 
 ### Why not put policies in AGENTS.md instead?
 

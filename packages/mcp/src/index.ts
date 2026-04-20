@@ -217,13 +217,22 @@ server.registerTool(
         .string()
         .optional()
         .describe("Comma-separated task IDs this is blocked by"),
+      blocked: z
+        .string()
+        .optional()
+        .describe(
+          "Free-form reason why the task is blocked by an external constraint " +
+          "(e.g. 'needs-user-approval — posting publicly as the user needs approval'). " +
+          "Distinct from blocked_by, which references task IDs. Any non-empty value " +
+          "marks the task as blocked for picking purposes."
+        ),
       file: z
         .string()
         .optional()
         .describe("Target TASKS.md file path (defaults to root TASKS.md)"),
     }),
   },
-  async ({ summary, priority, id, tags, details, files, acceptance, blocked_by, file }) => {
+  async ({ summary, priority, id, tags, details, files, acceptance, blocked_by, blocked, file }) => {
     const directory = getWorkingDirectory();
     const targetFile = file || discoverTaskFiles(directory)[0];
 
@@ -240,7 +249,7 @@ server.registerTool(
     }
 
     const result = await addTask(targetFile, {
-      summary, priority, id, tags, details, files, acceptance, blocked_by,
+      summary, priority, id, tags, details, files, acceptance, blocked_by, blocked,
     });
 
     return {

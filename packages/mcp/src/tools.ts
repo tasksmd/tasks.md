@@ -257,6 +257,13 @@ export interface AddTaskParams {
   files?: string;
   acceptance?: string;
   blocked_by?: string;
+  /**
+   * Free-form reason why the task is blocked by an external constraint
+   * (missing approval, refused policy, credentials, etc.). Distinct from
+   * blocked_by, which references other task IDs. Any non-empty value marks
+   * the task as blocked for picking purposes.
+   */
+  blocked?: string;
 }
 
 const VALID_PRIORITIES = new Set(["P0", "P1", "P2", "P3"]);
@@ -292,6 +299,9 @@ export async function addTask(
   if (params.files) taskLines.push(`  - **Files**: ${params.files}`);
   if (params.acceptance) taskLines.push(`  - **Acceptance**: ${params.acceptance}`);
   if (params.blocked_by) taskLines.push(`  - **Blocked by**: ${params.blocked_by}`);
+  if (params.blocked && params.blocked.trim() !== "") {
+    taskLines.push(`  - **Blocked**: ${params.blocked.trim()}`);
+  }
   const taskBlock = taskLines.join("\n");
   const lines = fileContent.split("\n");
 

@@ -520,6 +520,51 @@ describe("pickTask", () => {
     expect(data.task.summary).not.toBe("Migrate database queries");
   });
 
+  it("skips tasks blocked with a free-form **Blocked** reason", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Post release notes in Slack",
+      "  - **ID**: slack-release",
+      "  - **Blocked**: needs-user-approval — posting publicly as the user",
+      "",
+      "## P1",
+      "",
+      "- [ ] Ship the bug fix",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("Ship the bug fix");
+  });
+
+  it("returns no task when every candidate has a **Blocked** reason", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Post in Slack",
+      "  - **ID**: slack-post",
+      "  - **Blocked**: needs-user-approval — posting publicly as the user",
+      "",
+      "- [ ] Create Jira ticket",
+      "  - **ID**: jira-create",
+      "  - **Blocked**: needs-user-approval — writing to Jira on behalf of the user",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task).toBeNull();
+    expect(data.summary).toMatch(/No eligible tasks/);
+  });
+
   it("prefers tasks that unblock others", async () => {
     const content = [
       "# Tasks",
@@ -767,6 +812,42 @@ describe("addTask", () => {
     expect(updated).toContain("  - **Files**: `src/api.ts`");
     expect(updated).toContain("  - **Acceptance**: Tests pass");
     expect(updated).toContain("  - **Blocked by**: other-task");
+  });
+
+  it("adds a task with a **Blocked** reason line", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = "# Tasks\n\n## P1\n\n- [ ] Existing\n";
+    await writeFile(filePath, content, "utf-8");
+
+    await addTask(filePath, {
+      summary: "Post release notes in Slack",
+      priority: "P1",
+      id: "slack-release",
+      blocked:
+        "needs-user-approval — posting publicly in Slack as the user requires explicit per-session approval",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("- [ ] Post release notes in Slack");
+    expect(updated).toContain(
+      "  - **Blocked**: needs-user-approval — posting publicly in Slack as the user requires explicit per-session approval"
+    );
+  });
+
+  it("omits the **Blocked** line when blocked is whitespace-only or missing", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = "# Tasks\n\n## P1\n\n- [ ] Existing\n";
+    await writeFile(filePath, content, "utf-8");
+
+    await addTask(filePath, {
+      summary: "Plain task",
+      priority: "P1",
+      blocked: "   ",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("- [ ] Plain task");
+    expect(updated).not.toMatch(/\*\*Blocked\*\*:/);
   });
 
   it("creates a new priority section when needed", async () => {

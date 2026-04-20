@@ -221,6 +221,77 @@ describe("tasks-lint", () => {
     });
   });
 
+  describe("**Blocked** reason validation", () => {
+    it("passes a task blocked with a real reason", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Post release notes in Slack",
+          "  - **ID**: slack-release",
+          "  - **Blocked**: needs-user-approval — posting publicly as the user requires explicit approval",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("fails on an empty **Blocked** line", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Blocked**:",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/\*\*Blocked\*\* must have a non-empty reason/);
+    });
+
+    it("fails on a whitespace-only **Blocked** line", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Blocked**:    ",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/\*\*Blocked\*\* must have a non-empty reason/);
+    });
+
+    it("allows **Blocked** and **Blocked by** on the same task", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P0",
+          "",
+          "- [ ] Prepare release",
+          "  - **ID**: prepare-release",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Blocked by**: prepare-release",
+          "  - **Blocked**: needs-credentials — prod deploy token not yet provisioned",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+  });
+
   describe("cross-file validation", () => {
     it("detects duplicate IDs across files", () => {
       const result = lintMultiple({

@@ -5,6 +5,13 @@ export interface TaskMetadata {
   files?: string[];
   acceptance?: string;
   blockedBy?: string[];
+  /**
+   * Free-form reason why the task is blocked by an external constraint
+   * (e.g. "needs-user-approval — ..."). Distinct from blockedBy, which
+   * references other task IDs. Any non-empty value marks the task as
+   * blocked for task-picking purposes.
+   */
+  blocked?: string;
   [key: string]: string | string[] | undefined;
 }
 
@@ -162,6 +169,9 @@ export function parseTasksContent(content: string, filePath: string): Task[] {
           case "blockedby":
             currentTask.metadata.blockedBy = parseMetadataValue("blockedby", value) as string[];
             break;
+          case "blocked":
+            currentTask.metadata.blocked = value;
+            break;
           default:
             currentTask.metadata[normalizedKey] = parseMetadataValue(normalizedKey, value);
         }
@@ -212,6 +222,8 @@ export function getAllTaskIds(taskFiles: TaskFile[]): Set<string> {
 }
 
 export function isBlocked(task: Task, allIds: Set<string>): boolean {
+  // Free-form reason blocker (external constraint) — any non-empty value blocks.
+  if (task.metadata.blocked && task.metadata.blocked.trim() !== "") return true;
   if (!task.metadata.blockedBy?.length) return false;
   return task.metadata.blockedBy.some((id) => allIds.has(id));
 }
