@@ -264,6 +264,17 @@ export interface AddTaskParams {
    * the task as blocked for picking purposes.
    */
   blocked?: string;
+  /**
+   * Free-form research notes accumulated by agents while the task is
+   * blocked. Distinct from `details` (author intent). Multi-line values are
+   * supported via the usual continuation indentation.
+   */
+  research?: string;
+  /**
+   * ISO date (YYYY-MM-DD) marking the last time an agent enriched the task.
+   * Used as an idempotency / cooldown gate for /next-task's enrichment loop.
+   */
+  last_enriched?: string;
 }
 
 const VALID_PRIORITIES = new Set(["P0", "P1", "P2", "P3"]);
@@ -301,6 +312,16 @@ export async function addTask(
   if (params.blocked_by) taskLines.push(`  - **Blocked by**: ${params.blocked_by}`);
   if (params.blocked && params.blocked.trim() !== "") {
     taskLines.push(`  - **Blocked**: ${params.blocked.trim()}`);
+  }
+  if (params.research && params.research.trim() !== "") {
+    taskLines.push(`  - **Research**: ${params.research.trim()}`);
+  }
+  if (params.last_enriched && params.last_enriched.trim() !== "") {
+    const trimmed = params.last_enriched.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return { text: `Invalid last_enriched '${params.last_enriched}' — must be an ISO date (YYYY-MM-DD)`, isError: true };
+    }
+    taskLines.push(`  - **Last-enriched**: ${trimmed}`);
   }
   const taskBlock = taskLines.join("\n");
   const lines = fileContent.split("\n");
@@ -350,4 +371,242 @@ export async function addTask(
   await writeFile(targetFile, lines.join("\n"), "utf-8");
 
   return { text: `Added "${params.summary}" (${normalizedPriority}) to ${targetFile}` };
+}
+
+// ── enrich_task ──
+
+export interface EnrichTaskParams {
+  /** Research notes to append under a dated subheading (`YYYY-MM-DD — <label>`). */
+  research: string;
+  /**
+   * Optional ISO date to stamp as Last-enriched. Defaults to today's UTC date.
+   * Must match YYYY-MM-DD if provided.
+   */
+  date?: string;
+  /** Optional short label appended to the dated subheading (e.g. "draft message"). */
+  label?: string;
+  /** Optional file paths to append to **Files** (comma-separated). */
+  add_files?: string;
+  /** Optional acceptance lines to append to **Acceptance** (single string, newlines preserved). */
+  add_acceptance?: string;
+}
+
+function isoDateToday(): string {
+  const now = new Date();
+  const yyyy = now.getUTCFullYear();
+  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(now.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function indentResearch(text: string, indent: string): string {
+  return text
+    .split("\n")
+    .map((line) => (line.length > 0 ? `${indent}${line}` : line))
+    .join("\n");
+}
+
+/**
+ * Append research notes to a task block without touching its **Blocked** or
+ * **Blocked by** lines. Stamps **Last-enriched** with today's UTC date (or the
+ * caller-provided `date`). Rewrites the task block in place.
+ *
+ * Rules enforced:
+ * - The referenced task must exist (matched by ID or summary substring).
+ * - `research` must be non-empty; whitespace-only values are rejected.
+ * - `date`, when provided, must match YYYY-MM-DD.
+ * - The task's existing **Blocked** / **Blocked by** lines are never moved or rewritten.
+ */
+export async function enrichTask(
+  taskFiles: TaskFile[],
+  query: string,
+  params: EnrichTaskParams
+): Promise<ToolResult> {
+  const matchedTask = findTask(taskFiles, query);
+
+  if (!matchedTask) {
+    return { text: `No task found matching "${query}".`, isError: true };
+  }
+
+  const research = (params.research ?? "").trim();
+  if (research === "") {
+    return { text: "enrich_task requires non-empty research notes.", isError: true };
+  }
+
+  const date = (params.date ?? isoDateToday()).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { text: `Invalid date '${params.date}' — must be an ISO date (YYYY-MM-DD)`, isError: true };
+  }
+
+  const fileContent = await readFile(matchedTask.file, "utf-8");
+  const lines = fileContent.split("\n");
+
+  const startIndex = matchedTask.startLine - 1;
+  const endIndex = matchedTask.endLine;
+
+  // Detect the block's nested-list indent ("  " by default for metadata lines).
+  let listIndent = "  ";
+  for (let i = startIndex + 1; i < endIndex; i++) {
+    const match = lines[i].match(/^(\s+)-\s+\*\*/);
+    if (match) {
+      listIndent = match[1];
+      break;
+    }
+  }
+  const continuationIndent = `${listIndent}  `;
+  const researchLineIndex = (() => {
+    for (let i = startIndex + 1; i < endIndex; i++) {
+      if (new RegExp(`^${listIndent}-\\s+\\*\\*Research\\*\\*:`).test(lines[i])) {
+        return i;
+      }
+    }
+    return -1;
+  })();
+  const lastEnrichedLineIndex = (() => {
+    for (let i = startIndex + 1; i < endIndex; i++) {
+      if (new RegExp(`^${listIndent}-\\s+\\*\\*Last-enriched\\*\\*:`).test(lines[i])) {
+        return i;
+      }
+    }
+    return -1;
+  })();
+
+  // Build the new research block content. When **Research** already exists we
+  // append a new dated subheading after a visual blank line; when it's fresh
+  // the first dated heading goes on the same line as the **Research**: label
+  // (the parser requires a non-empty first line per metadata field).
+  const heading = params.label ? `${date} — ${params.label.trim()}` : date;
+  const bodyLines = research.split("\n");
+  const indentedBody = bodyLines
+    .map((line) => (line.length > 0 ? `${continuationIndent}${line}` : line))
+    .join("\n");
+
+  const updatedLines = [...lines];
+
+  if (researchLineIndex >= 0) {
+    // Find the end of the existing Research field (last continuation line).
+    let researchEnd = researchLineIndex;
+    for (let i = researchLineIndex + 1; i < endIndex; i++) {
+      const line = lines[i];
+      if (
+        line.trim() === "" ||
+        /^\s*-\s+\*\*/.test(line) ||
+        /^\s*-\s+\[.\]/.test(line) ||
+        !/^\s{4,}/.test(line)
+      ) {
+        break;
+      }
+      researchEnd = i;
+    }
+    // Append a blank indented line + heading + body after the existing block.
+    // The blank line is a visual separator only — the parser drops blank
+    // lines between continuation lines, so the stored `research` value still
+    // flows as a single multi-section string.
+    const insertion = ["", `${continuationIndent}${heading}`, indentedBody];
+    updatedLines.splice(researchEnd + 1, 0, ...insertion);
+  } else {
+    // Fresh Research — put the heading inline with the field label.
+    const researchHeader = `${listIndent}- **Research**: ${heading}`;
+    const insertion = indentedBody.length > 0
+      ? [researchHeader, indentedBody]
+      : [researchHeader];
+    updatedLines.splice(endIndex, 0, ...insertion);
+  }
+
+  // Update or append Last-enriched.
+  const lastEnrichedLine = `${listIndent}- **Last-enriched**: ${date}`;
+  if (lastEnrichedLineIndex >= 0) {
+    // The index may have shifted if we inserted Research lines before it.
+    const shift = updatedLines.length - lines.length;
+    const adjusted = lastEnrichedLineIndex > (researchLineIndex >= 0 ? researchLineIndex : endIndex)
+      ? lastEnrichedLineIndex + shift
+      : lastEnrichedLineIndex;
+    updatedLines[adjusted] = lastEnrichedLine;
+  } else {
+    // Append Last-enriched at the current end of the block.
+    let insertAt = endIndex;
+    const shift = updatedLines.length - lines.length;
+    insertAt += shift;
+    updatedLines.splice(insertAt, 0, lastEnrichedLine);
+  }
+
+  // Optional: extend Files by appending new paths (dedup against existing).
+  if (params.add_files && params.add_files.trim() !== "") {
+    const newPaths = params.add_files
+      .split(",")
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+    if (newPaths.length > 0) {
+      const existingFiles = matchedTask.metadata.files ?? [];
+      const merged = [...existingFiles];
+      for (const path of newPaths) {
+        const normalized = path.replace(/`/g, "");
+        if (!merged.includes(normalized)) merged.push(normalized);
+      }
+      const filesValue = merged.map((p) => `\`${p}\``).join(", ");
+      const filesRegex = new RegExp(`^${listIndent}-\\s+\\*\\*Files\\*\\*:`);
+      const filesLineIndex = updatedLines.findIndex((line, i) =>
+        i > startIndex && filesRegex.test(line)
+      );
+      const newFilesLine = `${listIndent}- **Files**: ${filesValue}`;
+      if (filesLineIndex >= 0) {
+        updatedLines[filesLineIndex] = newFilesLine;
+      } else {
+        // Insert the new Files line before any Blocked / Research /
+        // Last-enriched lines (and before Acceptance, which typically sits
+        // near the end of author metadata). This keeps author-intent fields
+        // (ID, Tags, Details, Files, Acceptance) contiguous at the top of
+        // the block and agent-managed fields at the bottom.
+        const anchorRegex = new RegExp(
+          `^${listIndent}-\\s+\\*\\*(Acceptance|Blocked by|Blocked|Research|Last-enriched)\\*\\*:`
+        );
+        let anchor = updatedLines.findIndex((line, i) =>
+          i > startIndex && anchorRegex.test(line)
+        );
+        if (anchor < 0) anchor = startIndex + 1;
+        updatedLines.splice(anchor, 0, newFilesLine);
+      }
+    }
+  }
+
+  // Optional: append new acceptance lines under the existing Acceptance block
+  // (or create the field when missing). We preserve author phrasing; the
+  // agent adds its own bullets or sentences.
+  if (params.add_acceptance && params.add_acceptance.trim() !== "") {
+    const acceptanceBlock = indentResearch(params.add_acceptance.trim(), continuationIndent);
+    const acceptanceRegex = new RegExp(`^${listIndent}-\\s+\\*\\*Acceptance\\*\\*:`);
+    const acceptanceLineIndex = updatedLines.findIndex((line, i) =>
+      i > startIndex && acceptanceRegex.test(line)
+    );
+    if (acceptanceLineIndex >= 0) {
+      // Find end of acceptance block, append new lines.
+      let acceptanceEnd = acceptanceLineIndex;
+      for (let i = acceptanceLineIndex + 1; i < updatedLines.length; i++) {
+        const line = updatedLines[i];
+        if (
+          line.trim() === "" ||
+          /^\s*-\s+\*\*/.test(line) ||
+          /^\s*-\s+\[.\]/.test(line) ||
+          !/^\s{4,}/.test(line)
+        ) {
+          break;
+        }
+        acceptanceEnd = i;
+      }
+      updatedLines.splice(acceptanceEnd + 1, 0, acceptanceBlock);
+    } else {
+      updatedLines.splice(
+        startIndex + 1,
+        0,
+        `${listIndent}- **Acceptance**:`,
+        acceptanceBlock
+      );
+    }
+  }
+
+  await writeFile(matchedTask.file, updatedLines.join("\n"), "utf-8");
+
+  return {
+    text: `Enriched "${matchedTask.summary}" (${matchedTask.priority}) with research notes in ${matchedTask.file} (last-enriched: ${date})`,
+  };
 }

@@ -278,6 +278,62 @@ describe("parseTasksContent", () => {
       "needs-credentials — production deploy token not yet provisioned"
     );
   });
+
+  it("parses **Research** as a free-form string and supports multiline continuations", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Post release notes",
+      "  - **ID**: slack-release-notes",
+      "  - **Research**: Draft message — 2026-04-20",
+      "    Recipients: #eng-announcements (default), #customer-success (crosspost).",
+      "    Tone: short bullets + rollback link matches prior release posts.",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].metadata.research).toBe(
+      "Draft message — 2026-04-20\nRecipients: #eng-announcements (default), #customer-success (crosspost).\nTone: short bullets + rollback link matches prior release posts."
+    );
+  });
+
+  it("parses **Last-enriched** as an ISO date string", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Post release notes",
+      "  - **Last-enriched**: 2026-04-20",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks[0].metadata.lastEnriched).toBe("2026-04-20");
+  });
+
+  it("**Research** and **Last-enriched** coexist with **Blocked** without collision", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Post release notes",
+      "  - **ID**: slack-release-notes",
+      "  - **Blocked**: needs-user-approval — posting publicly as the user",
+      "  - **Research**: Draft text sampled from prior releases.",
+      "  - **Last-enriched**: 2026-04-20",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const meta = tasks[0].metadata;
+    expect(meta.blocked).toBe("needs-user-approval — posting publicly as the user");
+    expect(meta.research).toBe("Draft text sampled from prior releases.");
+    expect(meta.lastEnriched).toBe("2026-04-20");
+    // Enrichment fields must never accidentally unblock the task.
+    expect(meta.blockedBy).toBeUndefined();
+  });
 });
 
 describe("getAllTaskIds", () => {
@@ -354,6 +410,17 @@ describe("isBlocked", () => {
       blockedBy: ["already-shipped"],
     });
     // No ID matches blockedBy, but blocked reason still blocks the task
+    expect(isBlocked(task, new Set())).toBe(true);
+  });
+
+  it("still reports blocked after enrichment fields are added", () => {
+    const task = makeFakeTask({
+      blocked: "needs-user-approval — posting publicly as the user",
+    });
+    // Simulate an agent enriching the task — adding Research + Last-enriched
+    // must NOT flip the block status. Only removing **Blocked** unblocks it.
+    task.metadata.research = "Drafted the announcement text and listed recipients.";
+    task.metadata.lastEnriched = "2026-04-20";
     expect(isBlocked(task, new Set())).toBe(true);
   });
 });

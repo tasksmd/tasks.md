@@ -10,6 +10,7 @@ import {
   completeTask,
   addTask,
   pickTask,
+  enrichTask,
 } from "./tools.js";
 
 // ── Helpers ──
@@ -850,6 +851,41 @@ describe("addTask", () => {
     expect(updated).not.toMatch(/\*\*Blocked\*\*:/);
   });
 
+  it("adds a task with **Research** and **Last-enriched** fields", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = "# Tasks\n\n## P1\n\n- [ ] Existing\n";
+    await writeFile(filePath, content, "utf-8");
+
+    await addTask(filePath, {
+      summary: "Post release summary",
+      priority: "P1",
+      blocked: "needs-user-approval — posting publicly as the user",
+      research: "2026-04-20 — draft message sampled from prior releases",
+      last_enriched: "2026-04-20",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("  - **Research**: 2026-04-20 — draft message sampled from prior releases");
+    expect(updated).toContain("  - **Last-enriched**: 2026-04-20");
+  });
+
+  it("rejects last_enriched values that are not ISO dates", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = "# Tasks\n\n## P1\n\n- [ ] Existing\n";
+    await writeFile(filePath, content, "utf-8");
+
+    const result = await addTask(filePath, {
+      summary: "Post release summary",
+      priority: "P1",
+      last_enriched: "yesterday",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.text).toMatch(/Invalid last_enriched/);
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).not.toContain("Post release summary");
+  });
+
   it("creates a new priority section when needed", async () => {
     const filePath = join(tmpDir, "TASKS.md");
     const content = "# Tasks\n\n## P1\n\n- [ ] P1 task\n";
@@ -990,5 +1026,302 @@ describe("addTask", () => {
     expect(updated).toContain("First task");
     expect(updated).toContain("Second task");
     expect(updated).toContain("Third task");
+  });
+});
+
+// ── enrichTask ──
+
+describe("enrichTask", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "tasks-enrich-test-"));
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  async function seed(content: string): Promise<{ filePath: string; taskFiles: TaskFile[] }> {
+    const filePath = join(tmpDir, "TASKS.md");
+    await writeFile(filePath, content, "utf-8");
+    const taskFiles = [makeTaskFile(content, filePath)];
+    return { filePath, taskFiles };
+  }
+
+  it("adds **Research** and **Last-enriched** when neither exists yet", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P1",
+        "",
+        "- [ ] Post release notes in Slack",
+        "  - **ID**: slack-release",
+        "  - **Blocked**: needs-user-approval — posting publicly as the user",
+        "",
+      ].join("\n")
+    );
+
+    const result = await enrichTask(taskFiles, "slack-release", {
+      research: "Draft sampled from prior releases.",
+      date: "2026-04-20",
+      label: "draft message",
+    });
+
+    expect(result.isError).toBeUndefined();
+    const updated = await readFile(filePath, "utf-8");
+    // Research heading is inline with the field label so the parser keeps the
+    // first line non-empty; the body is indented 4 spaces (continuation form).
+    expect(updated).toContain("- **Research**: 2026-04-20 — draft message");
+    expect(updated).toContain("    Draft sampled from prior releases.");
+    expect(updated).toContain("- **Last-enriched**: 2026-04-20");
+    // Block lines must not be disturbed.
+    expect(updated).toContain("- **Blocked**: needs-user-approval");
+
+    // Re-parse the enriched file and confirm the parser extracts the research
+    // text with the heading preserved on the first line.
+    const refreshed = parseTasksContent(updated, filePath);
+    expect(refreshed[0].metadata.research).toBe(
+      "2026-04-20 — draft message\nDraft sampled from prior releases."
+    );
+    expect(refreshed[0].metadata.lastEnriched).toBe("2026-04-20");
+  });
+
+  it("appends a new dated subheading when **Research** already exists", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P1",
+        "",
+        "- [ ] Post release notes in Slack",
+        "  - **ID**: slack-release",
+        "  - **Blocked**: needs-user-approval — posting publicly as the user",
+        "  - **Research**: 2026-04-10 — initial draft",
+        "    First draft of the announcement.",
+        "  - **Last-enriched**: 2026-04-10",
+        "",
+      ].join("\n")
+    );
+
+    const result = await enrichTask(taskFiles, "slack-release", {
+      research: "Added rollout timing + crosspost channel.",
+      date: "2026-04-20",
+      label: "updated draft",
+    });
+
+    expect(result.isError).toBeUndefined();
+    const updated = await readFile(filePath, "utf-8");
+    // Original dated subheading preserved.
+    expect(updated).toContain("- **Research**: 2026-04-10 — initial draft");
+    expect(updated).toContain("    First draft of the announcement.");
+    // New dated subheading appended as an indented continuation.
+    expect(updated).toContain("    2026-04-20 — updated draft");
+    expect(updated).toContain("    Added rollout timing + crosspost channel.");
+    // Last-enriched is rewritten to the new date.
+    expect(updated).toContain("- **Last-enriched**: 2026-04-20");
+    expect(updated).not.toContain("- **Last-enriched**: 2026-04-10");
+
+    // Parser must still produce a contiguous research string.
+    const refreshed = parseTasksContent(updated, filePath);
+    expect(refreshed[0].metadata.research).toContain("2026-04-10 — initial draft");
+    expect(refreshed[0].metadata.research).toContain("2026-04-20 — updated draft");
+  });
+
+  it("never touches the **Blocked** or **Blocked by** lines", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P0",
+        "",
+        "- [ ] Prepare release",
+        "  - **ID**: prepare-release",
+        "",
+        "## P1",
+        "",
+        "- [ ] Ship release to production",
+        "  - **ID**: ship-prod",
+        "  - **Blocked by**: prepare-release",
+        "  - **Blocked**: needs-credentials — prod deploy token not yet provisioned",
+        "",
+      ].join("\n")
+    );
+
+    await enrichTask(taskFiles, "ship-prod", {
+      research: "Consumer sketch: read token from env, sign requests with HMAC.",
+      date: "2026-04-20",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    // Blocked metadata must stay exactly as it was.
+    expect(updated).toContain("- **Blocked by**: prepare-release");
+    expect(updated).toContain(
+      "- **Blocked**: needs-credentials — prod deploy token not yet provisioned"
+    );
+    // New enrichment must be present too.
+    expect(updated).toContain("- **Research**:");
+    expect(updated).toContain("- **Last-enriched**: 2026-04-20");
+  });
+
+  it("extends **Files** with de-duplicated paths when add_files is provided", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P1",
+        "",
+        "- [ ] Ship release",
+        "  - **ID**: ship",
+        "  - **Files**: `src/release.ts`, `src/deploy.ts`",
+        "  - **Blocked**: needs-credentials — ...",
+        "",
+      ].join("\n")
+    );
+
+    await enrichTask(taskFiles, "ship", {
+      research: "Found the rollback helper in runbooks/.",
+      date: "2026-04-20",
+      add_files: "runbooks/rate-limiter.md, src/release.ts",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    // Existing files preserved, new file appended, duplicate (src/release.ts) not re-added.
+    expect(updated).toMatch(
+      /- \*\*Files\*\*: `src\/release\.ts`, `src\/deploy\.ts`, `runbooks\/rate-limiter\.md`/
+    );
+  });
+
+  it("inserts a new **Files** line before Blocked / Research when the field is missing", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P1",
+        "",
+        "- [ ] Ship release",
+        "  - **ID**: ship",
+        "  - **Details**: Ship the release.",
+        "  - **Blocked**: needs-credentials — ...",
+        "",
+      ].join("\n")
+    );
+
+    await enrichTask(taskFiles, "ship", {
+      research: "Discovered the rollback runbook.",
+      date: "2026-04-20",
+      add_files: "runbooks/rate-limiter.md",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    // Files must be inserted after the author-intent metadata (ID, Details)
+    // and before **Blocked** so the field ordering stays readable.
+    const idIdx = updated.indexOf("- **ID**: ship");
+    const filesIdx = updated.indexOf("- **Files**:");
+    const blockedIdx = updated.indexOf("- **Blocked**:");
+    expect(filesIdx).toBeGreaterThan(idIdx);
+    expect(filesIdx).toBeLessThan(blockedIdx);
+  });
+
+  it("appends to **Acceptance** without overwriting author lines", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P1",
+        "",
+        "- [ ] Ship release",
+        "  - **ID**: ship",
+        "  - **Acceptance**: All tests pass.",
+        "  - **Blocked**: needs-credentials — ...",
+        "",
+      ].join("\n")
+    );
+
+    await enrichTask(taskFiles, "ship", {
+      research: "Added a rollout-timing acceptance criterion.",
+      date: "2026-04-20",
+      add_acceptance: "Rollout completes within 15 minutes of merge.",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    // Author line preserved.
+    expect(updated).toContain("- **Acceptance**: All tests pass.");
+    // New agent line appended under the same field.
+    expect(updated).toContain("    Rollout completes within 15 minutes of merge.");
+  });
+
+  it("rejects empty research notes", async () => {
+    const { taskFiles } = await seed(
+      "# Tasks\n\n## P1\n\n- [ ] Post in Slack\n  - **ID**: slack\n  - **Blocked**: needs-user-approval — ...\n"
+    );
+
+    const result = await enrichTask(taskFiles, "slack", {
+      research: "   ",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.text).toMatch(/non-empty research/);
+  });
+
+  it("rejects non-ISO date strings", async () => {
+    const { taskFiles } = await seed(
+      "# Tasks\n\n## P1\n\n- [ ] Post in Slack\n  - **ID**: slack\n  - **Blocked**: needs-user-approval — ...\n"
+    );
+
+    const result = await enrichTask(taskFiles, "slack", {
+      research: "Notes",
+      date: "yesterday",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.text).toMatch(/Invalid date/);
+  });
+
+  it("returns an error when the task cannot be found", async () => {
+    const { taskFiles } = await seed(
+      "# Tasks\n\n## P1\n\n- [ ] Existing\n  - **ID**: existing\n"
+    );
+
+    const result = await enrichTask(taskFiles, "missing-task", {
+      research: "Notes",
+      date: "2026-04-20",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.text).toMatch(/No task found/);
+  });
+
+  it("leaves the task reason-blocked so /next-task skips it on the next pick", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P0",
+        "",
+        "- [ ] Post in Slack",
+        "  - **ID**: slack-post",
+        "  - **Blocked**: needs-user-approval — posting publicly as the user",
+        "",
+        "- [ ] Unblock-able task",
+        "  - **ID**: fallback",
+        "",
+      ].join("\n")
+    );
+
+    await enrichTask(taskFiles, "slack-post", {
+      research: "Draft text + recipients.",
+      date: "2026-04-20",
+    });
+
+    // Re-parse from disk and feed pickTask — the enriched task must still be skipped.
+    const contents = await readFile(filePath, "utf-8");
+    const refreshedFiles: TaskFile[] = [
+      { path: filePath, tasks: parseTasksContent(contents, filePath) },
+    ];
+    const picked = await pickTask(refreshedFiles);
+    const data = JSON.parse(picked.text);
+    expect(data.task.summary).toBe("Unblock-able task");
   });
 });

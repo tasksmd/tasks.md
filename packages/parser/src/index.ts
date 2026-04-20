@@ -12,6 +12,19 @@ export interface TaskMetadata {
    * blocked for task-picking purposes.
    */
   blocked?: string;
+  /**
+   * Free-form research notes accumulated by agents while the task is
+   * blocked. Distinct from `details` (author intent) so reviewers can tell
+   * what came from the agent. Multiline values are supported through the
+   * usual continuation indentation.
+   */
+  research?: string;
+  /**
+   * ISO date (YYYY-MM-DD) marking the last time an agent enriched the task.
+   * Used as an idempotency / cooldown gate so agents don't re-enrich the
+   * same task every session.
+   */
+  lastEnriched?: string;
   [key: string]: string | string[] | undefined;
 }
 
@@ -171,6 +184,13 @@ export function parseTasksContent(content: string, filePath: string): Task[] {
             break;
           case "blocked":
             currentTask.metadata.blocked = value;
+            break;
+          case "research":
+            currentTask.metadata.research = value;
+            break;
+          case "last-enriched":
+          case "lastenriched":
+            currentTask.metadata.lastEnriched = value;
             break;
           default:
             currentTask.metadata[normalizedKey] = parseMetadataValue(normalizedKey, value);

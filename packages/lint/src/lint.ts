@@ -96,6 +96,38 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         );
       }
 
+      // Empty **Research** — same treatment as **Blocked**. An agent that
+      // enriches a task should always leave a non-empty note; an empty
+      // Research line is almost certainly a mistake.
+      if (/^\s+-\s+\*\*Research\*\*:\s*$/.test(line)) {
+        reportError(
+          filePath,
+          lineNum,
+          "**Research** must have a non-empty value (research notes or a dated subheading); remove the field if there are no notes yet"
+        );
+      }
+
+      // **Last-enriched** must be an ISO date (YYYY-MM-DD). This keeps the
+      // cooldown logic in /next-task honest and makes it easy to sort tasks
+      // by staleness.
+      const lastEnrichedMatch = line.match(/^\s+-\s+\*\*Last-enriched\*\*:\s*(.*)$/);
+      if (lastEnrichedMatch) {
+        const value = lastEnrichedMatch[1].trim();
+        if (value === "") {
+          reportError(
+            filePath,
+            lineNum,
+            "**Last-enriched** must be an ISO date (YYYY-MM-DD); remove the field if the task hasn't been enriched"
+          );
+        } else if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          reportError(
+            filePath,
+            lineNum,
+            `**Last-enriched** must be an ISO date (YYYY-MM-DD), got '${value}'`
+          );
+        }
+      }
+
       // Priority heading
       const priorityMatch = line.match(/^##\s+P([0-3])$/);
       if (priorityMatch) {

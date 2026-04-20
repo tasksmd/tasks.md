@@ -226,10 +226,12 @@ Metadata values can span multiple indented lines. Everything indented under the 
 | **Acceptance** | Definition of done |
 | **Blocked by** | Task ID(s) of blocking tasks — comma-separated if multiple |
 | **Blocked** | Free-form reason why the task cannot be picked right now. Distinct from **Blocked by** — use when the block is external (missing approval, policy refusal, environment access) rather than another task ID |
+| **Research** | Free-form research notes accumulated by agents while the task is blocked. Distinct from **Details** (author intent) so reviewers can tell what came from the agent. See [Enriching blocked tasks](#enriching-blocked-tasks) |
+| **Last-enriched** | ISO date (`YYYY-MM-DD`) marking the last time an agent added research notes to the task. Used as an idempotency / cooldown gate so agents don't re-enrich the same task every session |
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
-Teams can add custom metadata fields beyond these six (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
+Teams can add custom metadata fields beyond these eight (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
 
 Tags are lowercase, freeform labels. Teams should document their tag vocabulary in AGENTS.md to keep values consistent across tasks and agents.
 
@@ -399,6 +401,43 @@ When an agent discovers new work during implementation ("this function needs ref
 
 If an orchestrator manages the file (declared in AGENTS.md), the **orchestrator is the sole writer** of new tasks — agents report discovered work to the orchestrator instead of writing directly. This avoids merge conflicts from multiple agents appending to the same section simultaneously. Claiming and removing tasks is always done by the agent, regardless of setup.
 
+### Enriching blocked tasks {#enriching-blocked-tasks}
+
+A task blocked by `**Blocked**:` (external constraint) or an unresolved `**Blocked by**:` (task dependency) is not pickable, but it is not idle work. When an agent's turn comes up and every remaining task is blocked, the agent should spend that turn **enriching** the blocked tasks with read-only research so a human or the next agent has less discovery work to do once the block resolves.
+
+Rules:
+
+- Enrichment is **read-only** against the codebase and the outside world. No file edits, no shell side-effects, no network writes. The only file the agent modifies is `TASKS.md` — and only within the task's own block.
+- Enrichment **never touches** `**Blocked**:` or `**Blocked by**:` lines. Unblocking a task remains a human decision (for **Blocked**) or a task-completion event (for **Blocked by**).
+- Enrichment applies to both kinds of blocks. For a `**Blocked**: needs-user-approval — post in Slack`, the agent drafts the exact message text. For `**Blocked by**: schema-migration`, the agent reads the blocker's current state and sketches how this task will consume the migration's output.
+- The agent appends to `**Research**:` (use a dated subheading like `2026-04-20 — <label>` when accumulating over multiple sessions), may extend `**Files**:` and `**Acceptance**:`, and stamps `**Last-enriched**: YYYY-MM-DD` so future sessions can tell how fresh the notes are.
+- A cooldown prevents thrash: agents skip tasks whose `**Last-enriched**` is less than 7 days old. When every blocked task is fresh, the agent moves on (roam to another repo, run an audit, or stop).
+- One enrichment per agent turn is enough. The point is to land durable context, not to run a background loop.
+
+Example of a task enriched across sessions:
+
+````markdown
+- [ ] Post v1.2 release summary in #eng-announcements
+  - **ID**: slack-release-notes
+  - **Details**: Share the headline changes, deploy timing, and support channel
+    once the release PR lands.
+  - **Blocked**: needs-user-approval — posting publicly in Slack as the user
+    requires explicit per-session approval.
+  - **Research**: 2026-04-20 — draft message
+    ```
+    :rocket: v1.2 is live — highlights:
+    • Rate limiter now honors `X-Api-Key` headers (fixes the internal-tools 429s)
+    • Webhook processor is idempotent by event ID (no more dup charges)
+    • New `tasks pick --tag <tag>` flag in the CLI
+    Deploying 09:00 Pacific; rollback plan in runbooks/rate-limiter.md.
+    Questions → #support-eng or @on-call-lead.
+    ```
+    Recipients: #eng-announcements (default), #customer-success (crosspost).
+    Tone sampled from past releases in git log — short bullet list + rollback
+    link is the established format.
+  - **Last-enriched**: 2026-04-20
+````
+
 ### Disagreements
 
 An agent may encounter a task it believes is misprioritized, too vague, or should be split. Agents should **not** silently reprioritize or restructure tasks. Instead:
@@ -527,6 +566,19 @@ A separate `**Blocked**` field keeps the two concerns distinct:
 - `**Blocked**: needs-user-approval — ...` — external constraint, resolved by a human or a different system
 
 Both mark a task as not-pickable. Both can appear on the same task. Linters validate each independently — **Blocked by** refs must exist, **Blocked** text must be non-empty.
+
+### Why a separate `**Research**` field instead of appending to `**Details**`?
+
+`**Details**` is the **author's** intent — what the human queuer wanted the task to do. Keeping it clean makes the task queue human-friendly: a reviewer can see what was asked for without wading through agent-generated notes.
+
+`**Research**` is the **agent's** accumulated context — read-only findings from codebase exploration, drafted message text, sketched implementation approaches. Separating the two means:
+
+1. Reviewers can tell at a glance which parts came from a human vs. an agent, and can trust **Details** as the source of truth for intent.
+2. Agents can confidently overwrite or reorganize their own research over time without risking the author's original wording.
+3. Diffs stay small and focused — "enriched with research notes" commits touch only **Research**, **Last-enriched**, and maybe **Files**/**Acceptance** appendixes, never **Details**.
+4. The `**Last-enriched**` marker is tied naturally to **Research** — it answers "when did an agent last look at this?" without confusing the author-managed fields.
+
+When the task is unblocked and a developer picks it up, **Research** is the scratchpad they inherit from the last agent turn; **Details** is still the crisp brief they were given.
 
 ### Why not put policies in AGENTS.md instead?
 

@@ -15,6 +15,7 @@ import {
   completeTask,
   addTask,
   pickTask,
+  enrichTask,
 } from "./tools.js";
 
 const pkg = JSON.parse(
@@ -226,13 +227,29 @@ server.registerTool(
           "Distinct from blocked_by, which references task IDs. Any non-empty value " +
           "marks the task as blocked for picking purposes."
         ),
+      research: z
+        .string()
+        .optional()
+        .describe(
+          "Free-form research notes (distinct from details, which is the author's " +
+          "intent). Agents accumulate research in this field while the task is " +
+          "blocked so future sessions or humans inherit the context."
+        ),
+      last_enriched: z
+        .string()
+        .optional()
+        .describe(
+          "ISO date (YYYY-MM-DD) marking the last time an agent enriched the task. " +
+          "/next-task uses this as a cooldown so it does not re-enrich the same " +
+          "task every session."
+        ),
       file: z
         .string()
         .optional()
         .describe("Target TASKS.md file path (defaults to root TASKS.md)"),
     }),
   },
-  async ({ summary, priority, id, tags, details, files, acceptance, blocked_by, blocked, file }) => {
+  async ({ summary, priority, id, tags, details, files, acceptance, blocked_by, blocked, research, last_enriched, file }) => {
     const directory = getWorkingDirectory();
     const targetFile = file || discoverTaskFiles(directory)[0];
 
@@ -249,7 +266,74 @@ server.registerTool(
     }
 
     const result = await addTask(targetFile, {
-      summary, priority, id, tags, details, files, acceptance, blocked_by, blocked,
+      summary, priority, id, tags, details, files, acceptance, blocked_by, blocked, research, last_enriched,
+    });
+
+    return {
+      content: [{ type: "text" as const, text: result.text }],
+      ...(result.isError ? { isError: true } : {}),
+    };
+  }
+);
+
+// ── enrich_task ──
+
+server.registerTool(
+  "enrich_task",
+  {
+    title: "Enrich Task",
+    description:
+      "Append read-only research notes to a blocked task's **Research** field " +
+      "and stamp **Last-enriched** with today's UTC date (or a caller-provided " +
+      "ISO date). Never touches the task's **Blocked** or **Blocked by** lines — " +
+      "enrichment only adds context, never unblocks. Use when /next-task detects " +
+      "that every remaining task is blocked and wants to leave durable context " +
+      "for the next session.",
+    inputSchema: z.object({
+      query: z
+        .string()
+        .describe("Task summary substring or task ID to match"),
+      research: z
+        .string()
+        .describe(
+          "Research notes to append. Multi-line values are supported — the tool " +
+          "indents the body beneath a dated subheading automatically."
+        ),
+      date: z
+        .string()
+        .optional()
+        .describe(
+          "ISO date (YYYY-MM-DD) to use for **Last-enriched** and the Research " +
+          "subheading. Defaults to today's UTC date."
+        ),
+      label: z
+        .string()
+        .optional()
+        .describe(
+          "Short label appended to the dated subheading (e.g. 'draft message', " +
+          "'consumer sketch'). Helps reviewers scan accumulated research."
+        ),
+      add_files: z
+        .string()
+        .optional()
+        .describe(
+          "Comma-separated file paths to append to **Files** (dedup against " +
+          "existing entries). Backticks are optional — the tool adds them."
+        ),
+      add_acceptance: z
+        .string()
+        .optional()
+        .describe(
+          "Additional acceptance criteria to append to **Acceptance**. Multi-line " +
+          "values are supported. Author-written lines are preserved."
+        ),
+    }),
+  },
+  async ({ query, research, date, label, add_files, add_acceptance }) => {
+    const directory = getWorkingDirectory();
+    const taskFiles = await loadAllTasks(directory);
+    const result = await enrichTask(taskFiles, query, {
+      research, date, label, add_files, add_acceptance,
     });
 
     return {
