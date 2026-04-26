@@ -4,7 +4,7 @@ prompt = '''
 # Next Task
 Pick the highest-priority unblocked task from TASKS.md and work on it autonomously. Loop until the queue is empty or the user stops you.
 Pre-flight stop check
-Before anything else — including the context snapshot — check whether the autonomous session should exit immediately. If the repo ships a `scripts/check-zero-ship-streak.mjs`, run it first:
+Before anything else — including the context snapshot — check whether the autonomous session should exit immediately. If the repo ships a `scripts/check-zero-ship-streak.mjs` (the convention written in [tasks.md issue tracking](https://github.com/tasksmd/tasks.md)), run it first:
 if [ -f scripts/check-zero-ship-streak.mjs ]; then
   result=$(node scripts/check-zero-ship-streak.mjs 2>&1)
   echo "$result"
