@@ -7,6 +7,7 @@
 - Edit `spec.md` for specification changes
 - Add examples to `examples/` directory
 - Add or improve agent commands in `commands/` (Claude Code skills, Cursor commands, Windsurf workflows)
+- Edit `taskgrind/` for the canonical autonomous-grind rule set + enforcement scripts (used by every adopting repo)
 - Keep README.md as the landing page / quick start
 - Use conventional commits: `feat:`, `fix:`, `docs:`
 
@@ -40,8 +41,15 @@ The same rule applies to `lint-tasks` and any other content that exists in multi
 - A new metadata field → add it to spec, README, examples, and all command files that reference the format
 - A new step in the loop → update the step count/list in README and every command variant
 
+**Any change to a script in `taskgrind/scripts/` is a downstream-affecting change.** The scripts here are the canonical source for adopting repos (currently `oncall-hub-api`; see `taskgrind/README.md` for the adoption pattern). When changing a script:
+- Document the change in `taskgrind/README.md` if it's a behavior or interface change.
+- Bump the script's header comment to reflect the new behavior.
+- Note whether existing adopting repos need to re-copy / re-symlink. A pure bug fix is "no action needed"; an interface change (new env var, changed exit code semantics) requires a follow-up note in the README.
+
+**Any change to `taskgrind/prompt-template.md`'s 10 hard rules is a policy change.** Update the rule, update the corresponding script if applicable, and update `taskgrind/README.md`'s "Lessons learned" footnote with the failure mode the change addresses (no speculative rules).
+
 Never update one file without checking whether the change must propagate to others.
-After editing, run: `grep -r "<changed-term>" commands/ examples/ README.md spec.md` to catch missed spots.
+After editing, run: `grep -r "<changed-term>" commands/ examples/ taskgrind/ README.md spec.md` to catch missed spots.
 
 ## Task Management
 
