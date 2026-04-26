@@ -6,6 +6,28 @@ description: Pick and work on the next task from TASKS.md. Use when the user say
 
 Pick the highest-priority unblocked task from TASKS.md and work on it autonomously. Loop until the queue is empty or the user stops you.
 
+## Pre-flight stop check
+
+Before anything else — including the context snapshot — check whether the autonomous session should exit immediately. If the repo ships a `scripts/check-zero-ship-streak.mjs` (the convention written in [tasks.md issue tracking](https://github.com/tasksmd/tasks.md)), run it first:
+
+```bash
+if [ -f scripts/check-zero-ship-streak.mjs ]; then
+  result=$(node scripts/check-zero-ship-streak.mjs 2>&1)
+  echo "$result"
+  if echo "$result" | head -1 | grep -q '^STOP'; then
+    echo ""
+    echo "Stop-condition reached. Exiting session — the next session re-runs this check."
+    exit 0
+  fi
+fi
+```
+
+The script's first line is `STOP` or `CONTINUE`. `STOP` fires when the audit cascade is exhausted (last 3 commits on `origin/master` are docs-only with no `closes <task-id>` token) or when 100% of TASKS.md tasks carry a `**Human action required**` sub-bullet. Either signal means another autonomous session won't unblock anything — exit cleanly.
+
+If your session prompt mentions a prior `productive_zero_ship` or `diminishing_returns` warning from the orchestrator, treat that as an additional hard stop independent of the script's output.
+
+If the script doesn't exist (the repo hasn't adopted the check yet), or it prints `CONTINUE`, proceed to the context snapshot below.
+
 ## Context snapshot
 
 Before doing anything else, capture the current state:

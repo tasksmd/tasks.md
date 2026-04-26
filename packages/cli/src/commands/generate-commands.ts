@@ -64,6 +64,7 @@ permissions:
     - Exec(gh *)
     - Exec(find *)
     - Exec(cat *)
+    - Exec(node *)
 ---`;
 
 const AGENTS: AgentConfig[] = [
