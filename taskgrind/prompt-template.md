@@ -157,6 +157,37 @@ In ascending priority:
 3. **P0–P3 tasks tagged `docs`** only when they batch ≥3 findings
    (rule 9).
 
+## Queue pressure: deliver vs add
+
+Before picking a task, count unclaimed P0–P2 vs P3 in `TASKS.md` and pick
+a session mode:
+
+```bash
+P012=$(awk '/^## P0$/{f=1; next} /^## P3$/{f=0} f && /^- \[ \]/ && !/\(@/{c++} END{print c+0}' TASKS.md)
+P3=$(awk   '/^## P3$/{f=1; next} /^## /{f=0}    f && /^- \[ \]/ && !/\(@/{c++} END{print c+0}' TASKS.md)
+echo "P012=$P012 P3=$P3"
+```
+
+| Pressure | Trigger | Mode | Behavior |
+|---|---|---|---|
+| **HIGH** | `P012 > 10` | **Deliver** | Pick the highest-priority unblocked task and ship it. Don't run audit cascades, don't sweep, don't generate net-new tasks unless they fall out of the work in front of you (see exception below). The queue is loud enough already. |
+| **LOW** | `P012 ≤ 10` AND P3 > 0 | **Add** | After clearing any unclaimed P0–P2, spend the rest of the session on audit cascades and `sweep`-style finds — file new tasks where you find leverage. The queue is quiet, time to refill it. |
+| **EMPTY** | `P012 == 0` AND `P3 == 0` | **Stop** | Audit cascade exhausted. Apply rule 10 and exit. |
+
+**Exception — opportunistic-add ALWAYS overrides pressure mode.** If
+during *any* implementation you stumble on something fixable (a flaky
+test, a stale doc, a missing log line, a dead variable, a TODO older
+than 30 days, a misleading error message), file a one-task TASKS.md
+entry inline with your work and keep going. Do this regardless of the
+mode above — opportunistic additions cost ~30 seconds and capture
+context that's hard to recover later. The pressure rule throttles
+*proactive* sweeping, not *reactive* note-taking.
+
+The threshold (`> 10` for P0–P2 unclaimed) is the line between "ship
+what we have" and "look for more work." Bumping it weakens delivery
+focus; lowering it weakens audit cadence. Don't tune per session —
+only edit this template if a pattern across multiple repos demands it.
+
 ## Skip
 
 - Any task with a `**Human action required**` sub-bullet.
