@@ -76,6 +76,31 @@
     Startup time improved or unchanged.
     Express fully removed from dependencies.
 
+- [ ] Post v1.2 release summary in #eng-announcements Slack
+  - **ID**: slack-release-notes
+  - **Tags**: release, comms
+  - **Details**: Once the v1.2 release PR lands, drop a 2-3 line summary in
+    `#eng-announcements` with the headline changes, the deploy timing, and the
+    support channel. Use the same structure as prior release posts in that
+    channel.
+  - **Acceptance**: Announcement posted in #eng-announcements before end of
+    release-day business hours with the release tag, headline feature list, and
+    support contact.
+  - **Blocked**: needs-user-approval — posting publicly in Slack as the user
+    requires explicit per-session approval. Ask the user to post the summary
+    themselves, or confirm the exact text and channel before removing this line.
+  - **Research**: 2026-04-20 — draft message
+    :rocket: v1.2 is live — highlights:
+    • Rate limiter now honors `X-Api-Key` headers (fixes the internal-tools 429s)
+    • Webhook processor is idempotent by event ID (no more dup charges)
+    • New `tasks pick --tag <tag>` flag in the CLI
+    Deploying 09:00 Pacific; rollback plan in `runbooks/rate-limiter.md`.
+    Questions → #support-eng or @on-call-lead.
+    Recipients: #eng-announcements (default), #customer-success (crosspost).
+    Tone sampled from past releases in `git log` — short bullet list + rollback
+    link is the established format.
+  - **Last-enriched**: 2026-04-20
+
 ## P2
 
 - [ ] Add OpenTelemetry distributed tracing

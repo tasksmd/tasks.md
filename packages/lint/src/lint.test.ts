@@ -221,6 +221,203 @@ describe("tasks-lint", () => {
     });
   });
 
+  describe("**Blocked** reason validation", () => {
+    it("passes a task blocked with a real reason", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Post release notes in Slack",
+          "  - **ID**: slack-release",
+          "  - **Blocked**: needs-user-approval — posting publicly as the user requires explicit approval",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("fails on an empty **Blocked** line", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Blocked**:",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/\*\*Blocked\*\* must have a non-empty reason/);
+    });
+
+    it("fails on a whitespace-only **Blocked** line", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Blocked**:    ",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/\*\*Blocked\*\* must have a non-empty reason/);
+    });
+
+    it("allows **Blocked** and **Blocked by** on the same task", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P0",
+          "",
+          "- [ ] Prepare release",
+          "  - **ID**: prepare-release",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Blocked by**: prepare-release",
+          "  - **Blocked**: needs-credentials — prod deploy token not yet provisioned",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+  });
+
+  describe("**Research** and **Last-enriched** validation", () => {
+    it("passes a task with research notes and a valid ISO date", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Post release in Slack",
+          "  - **ID**: slack-release",
+          "  - **Blocked**: needs-user-approval — posting publicly as the user",
+          "  - **Research**: Drafted announcement text; recipients = #eng-announcements.",
+          "  - **Last-enriched**: 2026-04-20",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("supports multiline **Research** values", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Post release in Slack",
+          "  - **Research**: 2026-04-20 — draft",
+          "    First line of the draft.",
+          "    Second line with context from git log.",
+          "  - **Last-enriched**: 2026-04-20",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it("fails on an empty **Research** line", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Research**:",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/\*\*Research\*\* must have a non-empty value/);
+    });
+
+    it("fails on a whitespace-only **Research** line", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Research**:    ",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/\*\*Research\*\* must have a non-empty value/);
+    });
+
+    it("fails on an empty **Last-enriched** line", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Last-enriched**:",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/\*\*Last-enriched\*\* must be an ISO date/);
+    });
+
+    it("fails when **Last-enriched** is not an ISO date", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release",
+          "  - **Last-enriched**: yesterday",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/\*\*Last-enriched\*\* must be an ISO date \(YYYY-MM-DD\), got 'yesterday'/);
+    });
+
+    it("accepts an enriched, blocked task that keeps the block intact", () => {
+      const result = lint(
+        [
+          "# Tasks",
+          "",
+          "## P0",
+          "",
+          "- [ ] Prepare release",
+          "  - **ID**: prepare-release",
+          "",
+          "## P1",
+          "",
+          "- [ ] Ship release to production",
+          "  - **ID**: ship-prod",
+          "  - **Blocked by**: prepare-release",
+          "  - **Blocked**: needs-credentials — prod deploy token not yet provisioned",
+          "  - **Research**: 2026-04-20 — consumer sketch and rollout steps drafted.",
+          "  - **Last-enriched**: 2026-04-20",
+          "",
+        ].join("\n")
+      );
+      expect(result.exitCode).toBe(0);
+    });
+  });
+
   describe("cross-file validation", () => {
     it("detects duplicate IDs across files", () => {
       const result = lintMultiple({
