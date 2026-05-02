@@ -29,30 +29,6 @@
     `npx -y @tasks-md/lint TASKS.md`. Branch
     `fix/mcp-exact-id-mutations-session-29` is deleted after delivery.
 
-- [ ] Re-export targeted-ID parser API from `@tasks-md/parser`
-  - **ID**: parser-api-target-id-exports
-  - **Tags**: parser, api, mcp, refactor
-  - **Details**: The earlier PR #33 head (preserved on the session-11
-    and feat/next-task branches; see `git branch -a | grep
-    next-task-target`) exported `findTasksById` and `normalizeTaskId`
-    from `packages/parser/src/index.ts`, and re-exported `findTasksById`
-    from `packages/mcp/src/parser.ts`. The current PR #33 implements an
-    equivalent private `findTasksByExactId` helper inline in
-    `packages/mcp/src/tools.ts`. Move the helper into the parser package
-    so `@tasks-md/parser` consumers (CLI, MCP, and external integrations)
-    can target tasks by exact ID without duplicating the normalization
-    rule (trim plus strip surrounding backticks).
-  - **Files**: `packages/parser/src/index.ts`,
-    `packages/parser/src/index.test.ts`,
-    `packages/mcp/src/parser.ts`, `packages/mcp/src/tools.ts`,
-    `packages/mcp/src/tools.test.ts`
-  - **Acceptance**: `findTasksById` and `normalizeTaskId` are exported
-    from `@tasks-md/parser`. `packages/mcp/src/tools.ts` uses the parser
-    export instead of an inline helper. `packages/mcp/src/parser.ts`
-    re-exports `findTasksById` for MCP-side imports. All existing tests
-    pass; new parser tests cover the exact-ID lookup and normalization
-    behavior.
-
 - [ ] File Bosun follow-up: deliver orphan `main` commit `924f8f14`
   - **ID**: bosun-orphan-main-commit-924f8f14
   - **Tags**: bosun, delivery, cross-repo

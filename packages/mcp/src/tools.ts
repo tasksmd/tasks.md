@@ -7,6 +7,7 @@ import {
   countUnblocks,
   pickBestTask,
   discoverTaskFiles,
+  findTasksById,
   type Task,
   type TaskFile,
 } from "./parser.js";
@@ -104,13 +105,6 @@ function normalizeAgentName(agentName: string): string {
 function isClaimedByAgent(task: Task, agentName: string): boolean {
   const normalizedAgent = normalizeAgentName(agentName).toLowerCase();
   return task.claimed?.replace(/^@/, "").toLowerCase().startsWith(normalizedAgent) ?? false;
-}
-
-function findTasksByExactId(taskFiles: TaskFile[], taskId: string): Task[] {
-  const normalizedTaskId = taskId.trim();
-  return taskFiles.flatMap((file) =>
-    file.tasks.filter((task) => task.metadata.id?.trim() === normalizedTaskId)
-  );
 }
 
 function getBlockingDetails(task: Task, allIds: Set<string>): {
@@ -253,7 +247,7 @@ async function pickTargetTask(
   }
 
   const allIds = getAllTaskIds(taskFiles);
-  const matches = findTasksByExactId(taskFiles, taskId);
+  const matches = findTasksById(taskFiles, taskId);
 
   if (matches.length === 0) {
     return {
