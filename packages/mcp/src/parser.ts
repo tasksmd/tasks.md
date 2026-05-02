@@ -7,6 +7,8 @@ export {
   pickBestTask,
   discoverTaskFiles,
   findGitRoot,
+  findTasksById,
+  normalizeTaskId,
   loadAllTasksAsync as loadAllTasks,
   type Task,
   type TaskFile,

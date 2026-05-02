@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { parseTasksContent, parsePolicies, getAllTaskIds, isBlocked, pickBestTask, type Task, type TaskFile } from "./index.js";
+import {
+  parseTasksContent,
+  parsePolicies,
+  getAllTaskIds,
+  isBlocked,
+  pickBestTask,
+  findTasksById,
+  normalizeTaskId,
+  type Task,
+  type TaskFile,
+} from "./index.js";
 
 const TEST_FILE = "/test/TASKS.md";
 
@@ -697,6 +707,163 @@ describe("pickBestTask and **Blocked** tasks", () => {
 
     expect(picked).toBeDefined();
     expect(picked!.task.metadata.id).toBe("release-notes");
+  });
+});
+
+describe("normalizeTaskId", () => {
+  it("trims surrounding whitespace", () => {
+    expect(normalizeTaskId("  task-id  ")).toBe("task-id");
+  });
+
+  it("strips a single pair of surrounding backticks", () => {
+    expect(normalizeTaskId("`task-id`")).toBe("task-id");
+  });
+
+  it("strips backticks after trimming whitespace", () => {
+    expect(normalizeTaskId("  `task-id`  ")).toBe("task-id");
+  });
+
+  it("trims again after stripping backticks", () => {
+    expect(normalizeTaskId("` task-id `")).toBe("task-id");
+  });
+
+  it("preserves case", () => {
+    expect(normalizeTaskId("Task-ID")).toBe("Task-ID");
+  });
+
+  it("does not strip backticks that are not balanced", () => {
+    expect(normalizeTaskId("`task-id")).toBe("`task-id");
+    expect(normalizeTaskId("task-id`")).toBe("task-id`");
+  });
+
+  it("does not strip nested backticks", () => {
+    expect(normalizeTaskId("``task-id``")).toBe("``task-id``");
+  });
+
+  it("returns empty string unchanged", () => {
+    expect(normalizeTaskId("")).toBe("");
+    expect(normalizeTaskId("   ")).toBe("");
+  });
+});
+
+describe("findTasksById", () => {
+  it("returns the matching task when an exact ID exists in one file", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] First",
+      "  - **ID**: target-task",
+      "",
+      "- [ ] Second",
+      "  - **ID**: other-task",
+      "",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const matches = findTasksById([{ path: TEST_FILE, tasks }], "target-task");
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0].summary).toBe("First");
+  });
+
+  it("returns matches across multiple files", () => {
+    const fileA = parseTasksContent(
+      "# Tasks\n\n## P0\n\n- [ ] A\n  - **ID**: shared\n",
+      "/test/A.md"
+    );
+    const fileB = parseTasksContent(
+      "# Tasks\n\n## P0\n\n- [ ] B\n  - **ID**: shared\n",
+      "/test/B.md"
+    );
+    const matches = findTasksById(
+      [
+        { path: "/test/A.md", tasks: fileA },
+        { path: "/test/B.md", tasks: fileB },
+      ],
+      "shared"
+    );
+
+    expect(matches).toHaveLength(2);
+    expect(matches.map((t) => t.file).sort()).toEqual(["/test/A.md", "/test/B.md"]);
+  });
+
+  it("returns an empty array when no task has the ID", () => {
+    const content = "# Tasks\n\n## P0\n\n- [ ] Existing\n  - **ID**: present\n";
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const matches = findTasksById([{ path: TEST_FILE, tasks }], "missing");
+
+    expect(matches).toHaveLength(0);
+  });
+
+  it("ignores tasks without an ID", () => {
+    const content = "# Tasks\n\n## P0\n\n- [ ] No ID summary mentions target-task\n";
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const matches = findTasksById([{ path: TEST_FILE, tasks }], "target-task");
+
+    expect(matches).toHaveLength(0);
+  });
+
+  it("does not fuzzy-match summaries", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Summary contains target-task substring",
+      "  - **ID**: actual-id",
+      "",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const matches = findTasksById([{ path: TEST_FILE, tasks }], "target-task");
+
+    expect(matches).toHaveLength(0);
+  });
+
+  it("normalizes the query — strips backticks and trims whitespace", () => {
+    const content = "# Tasks\n\n## P0\n\n- [ ] X\n  - **ID**: target-task\n";
+    const tasks = parseTasksContent(content, TEST_FILE);
+
+    expect(findTasksById([{ path: TEST_FILE, tasks }], "  target-task  ")).toHaveLength(1);
+    expect(findTasksById([{ path: TEST_FILE, tasks }], "`target-task`")).toHaveLength(1);
+    expect(findTasksById([{ path: TEST_FILE, tasks }], " ` target-task ` ")).toHaveLength(1);
+  });
+
+  it("normalizes the metadata ID side as well", () => {
+    // A defensive check: if a task's **ID** value somehow has backticks or
+    // surrounding whitespace, findTasksById should still match a clean query.
+    const content = "# Tasks\n\n## P0\n\n- [ ] X\n  - **ID**: `target-task`\n";
+    const tasks = parseTasksContent(content, TEST_FILE);
+
+    expect(findTasksById([{ path: TEST_FILE, tasks }], "target-task")).toHaveLength(1);
+  });
+
+  it("is case-sensitive — kebab-case IDs are the convention", () => {
+    const content = "# Tasks\n\n## P0\n\n- [ ] X\n  - **ID**: Target-Task\n";
+    const tasks = parseTasksContent(content, TEST_FILE);
+
+    expect(findTasksById([{ path: TEST_FILE, tasks }], "target-task")).toHaveLength(0);
+    expect(findTasksById([{ path: TEST_FILE, tasks }], "Target-Task")).toHaveLength(1);
+  });
+
+  it("can return multiple matches when a duplicate ID exists in one file", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] First",
+      "  - **ID**: dup",
+      "",
+      "- [ ] Second",
+      "  - **ID**: dup",
+      "",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const matches = findTasksById([{ path: TEST_FILE, tasks }], "dup");
+
+    expect(matches).toHaveLength(2);
+    expect(matches.map((t) => t.summary)).toEqual(["First", "Second"]);
   });
 });
 

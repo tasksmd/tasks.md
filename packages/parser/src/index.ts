@@ -248,6 +248,35 @@ export function isBlocked(task: Task, allIds: Set<string>): boolean {
   return task.metadata.blockedBy.some((id) => allIds.has(id));
 }
 
+// ── Targeted task ID lookup (shared by CLI and MCP) ──
+
+/**
+ * Normalize a task ID for exact comparison: trim whitespace, then strip a
+ * single pair of surrounding backticks (e.g. ``"`my-id`"`` → `"my-id"`),
+ * and trim again. Comparison stays case-sensitive — IDs are kebab-case by
+ * convention, and case-insensitive matching is left to callers.
+ */
+export function normalizeTaskId(taskId: string): string {
+  return taskId.trim().replace(/^`([^`]+)`$/, "$1").trim();
+}
+
+/**
+ * Find every task whose `**ID**:` exactly equals `taskId` after both sides
+ * are run through {@link normalizeTaskId}. Useful for `/next-task <task-id>`,
+ * `pick_task` with a `task_id` argument, and any tooling that needs to
+ * route a request to one specific task without falling back to fuzzy
+ * summary matching.
+ */
+export function findTasksById(taskFiles: TaskFile[], taskId: string): Task[] {
+  const normalizedQueryId = normalizeTaskId(taskId);
+  return taskFiles.flatMap((file) =>
+    file.tasks.filter((task) => {
+      const id = task.metadata.id;
+      return id !== undefined && normalizeTaskId(id) === normalizedQueryId;
+    })
+  );
+}
+
 function hasTag(task: Task, tag: string): boolean {
   return task.metadata.tags?.some((taskTag) => taskTag.toLowerCase() === tag.toLowerCase()) ?? false;
 }
