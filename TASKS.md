@@ -6,6 +6,54 @@
 
 ## P2
 
+- [ ] Add a "trusted repo" mode to taskgrind that allows push and PR by default
+  - **ID**: taskgrind-trusted-repo-mode
+  - **Tags**: taskgrind, ergonomics, public-write, queue
+  - **Details**: During the 2026-05-02 10h tech-lead taskgrind on
+    `tasks.md`, every session ended with the agent committing locally
+    and stopping at the public-write gate. The operator (me) had to
+    manually push 10+ branches, create 9+ PRs, and merge them. The
+    user has already authorized "full approval for personal/side
+    project repos" and would prefer the agent push and PR by default
+    when the remote is one they own. Add a config-driven trusted-repo
+    mode (e.g. `TG_TRUSTED_REPO=1` or detect from a list of allowed
+    remotes) that flips the agent prompt from "Approval needed —
+    draft body at <path>" to "push the feature branch and open the
+    PR; do not merge to protected branches". Keep merge-to-main
+    requiring explicit approval. Filed in this repo because the
+    behavior interacts with the canonical taskgrind prompt template
+    in `taskgrind/prompt-template.md`; the upstream binary work would
+    land in `/Users/fivanishche/apps/taskgrind`.
+  - **Files** (in taskgrind repo): `bin/taskgrind`,
+    `taskgrind/prompt-template.md` (canonical mirror in this repo),
+    `tests/preflight.bats`, `README.md`, `man/taskgrind.1`
+  - **Acceptance**: With `TG_TRUSTED_REPO=1` set, the agent can
+    `git push` feature branches and open PRs via `gh pr create`
+    without explicit per-session approval. Merging to `main` /
+    protected branches still requires approval. A bats test verifies
+    the prompt change. Documented in README env-var table.
+
+- [ ] Add mid-session main sync (or per-session sync) option to taskgrind
+  - **ID**: taskgrind-per-session-sync
+  - **Tags**: taskgrind, sync, queue, duplicate-work
+  - **Details**: With `TG_SYNC_INTERVAL=5` (default), sessions 1-4
+    work off the same stale `main`. During the 2026-05-02 tech-lead
+    run, the operator merged session 1's PRs (which removed 5 task
+    blocks) but session 2 still saw the old TASKS.md and re-claimed
+    one of the just-completed tasks (`reconcile-session-28-30-followups`),
+    redoing the cherry-picks and conflicts on a fresh branch. Add an
+    option `TG_SYNC_INTERVAL=1` (or change the default) and document
+    the trade-off — frequent syncs add fetch overhead but prevent
+    duplicate-work episodes when an external operator is merging
+    PRs in parallel. Better: detect when local main has diverged
+    from origin/main between sessions and force a sync regardless of
+    interval.
+  - **Files** (in taskgrind repo): `bin/taskgrind`,
+    `tests/git-sync.bats`, `README.md`
+  - **Acceptance**: Default sync interval is 1 OR a "concurrent
+    operator" mode is available that forces `git fetch && rebase`
+    between every session. Documented behavior change. Test added.
+
 - [ ] File Bosun follow-up: deliver orphan `main` commit `924f8f14`
   - **ID**: bosun-orphan-main-commit-924f8f14
   - **Tags**: bosun, delivery, cross-repo
