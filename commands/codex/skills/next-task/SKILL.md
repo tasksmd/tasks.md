@@ -1,6 +1,6 @@
 ---
 name: next-task
-description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, or passes an exact task ID like `/next-task my-task-id`.
+description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like `/next-task my-task-id`, or runs the standard `standing-audit-gap-loop` audit task.
 ---
 
 # Next Task
@@ -65,6 +65,16 @@ If a target ID is provided, handle it before [Resume unfinished work](#resume-un
 5. **Actionable** — claim it (or keep your existing claim), then continue at [Refuse forbidden work](#refuse-forbidden-work), [Plan](#plan-complex-tasks-only), and [Claim and do the work](#claim-and-do-the-work). When it completes, ship it and stop; do not fall through to generic queue mode unless the user invokes `/next-task` again.
 
 If the targeted task is refused because it requires forbidden work, add the `**Blocked**:` reason as usual, commit that hunk, explain the refusal, and stop instead of continuing to the next task.
+
+## Standing audit loop tasks
+
+A task is a standing audit loop when its `**ID**:` is `standing-audit-gap-loop` or its `**Tags**:` include `standing-loop`. When selected in queue mode or targeted mode:
+
+1. Treat `**Details**:` and `**Files**:` as the repo-specific audit brief. If they are sparse, fall back to README.md, AGENTS.md, user stories, examples, package scripts, and recent git history.
+2. Audit only: read files, run local read-only checks, and inspect behavior as needed, but do not implement code or docs fixes discovered by the audit.
+3. Add or refine actionable tasks in TASKS.md with IDs, tags, details, files, and acceptance criteria. Avoid duplicates by checking existing task IDs and summaries first.
+4. Remove the standing-loop task block in the same commit that adds or updates follow-up tasks. If no gaps are found, remove the task and make the commit message say the audit found no queue additions.
+5. Stop after the standing audit loop commit. The next `/next-task` invocation can implement the newly queued work.
 
 ## Decision tree
 

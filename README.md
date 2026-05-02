@@ -169,6 +169,21 @@ Or copy manually into your project (commit it so your team gets it too):
 
 All paths are **project-local** (inside your repo). See [commands/](commands/) for source files and format details.
 
+### Queue entry modes
+
+| Mode | Use when | Example |
+|------|----------|---------|
+| Queue pick | You want the agent to drain the highest-priority actionable work | `/next-task` |
+| Targeted task | You know the exact task ID to run or resume | `/next-task auth-fix` |
+| Standing audit loop | You want an audit-only pass that adds follow-up tasks without fixing them immediately | `/next-task standing-audit-gap-loop` |
+
+The standing audit loop is a standard compact task pattern: give it
+`**ID**: standing-audit-gap-loop`, `**Tags**: standing-loop, audit, queue`,
+and put repo-specific inputs in `**Details**:` / `**Files**:`. The agent reads
+that brief, audits the repo, adds or refines TASKS.md items, removes the
+standing-loop task, commits, and stops. See
+[Standing audit loops](spec.md#standing-audit-loops) for the full template.
+
 ### What it does
 
 When you type `/next-task` or `/next-task <task-id>`, the agent runs this flow:
@@ -179,7 +194,7 @@ When you type `/next-task` or `/next-task <task-id>`, the agent runs this flow:
 4. **Tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
 5. **Find** — Discovers all `TASKS.md` files from the git root down
 6. **Policies** — Reads `<!-- policy: ... -->` comments from the file and follows them as project rules throughout the session
-7. **Target (optional)** — If a task ID follows the command, trims it and searches for an exact `**ID**:` match. Missing, duplicate, claimed-by-another-agent, and blocked targets are reported and stop the run; actionable targets bypass priority ordering but still go through policies, safety checks, verification, and task-block removal. After shipping a targeted task, the agent stops instead of draining unrelated queue items.
+7. **Target (optional)** — If a task ID follows the command, trims it and searches for an exact `**ID**:` match. Missing, duplicate, claimed-by-another-agent, and blocked targets are reported and stop the run; actionable targets bypass priority ordering but still go through policies, safety checks, verification, and task-block removal. After shipping a targeted task, including `standing-audit-gap-loop`, the agent stops instead of draining unrelated queue items.
 8. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
 9. **Pick** — Without a target ID, selects the highest-priority unblocked, unclaimed task. Skips tasks with `**Blocked by**:` whose dependencies aren't resolved and tasks with a non-empty `**Blocked**:` reason. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
 10. **Refuse forbidden work** — Before claiming, checks whether the task requires a blocked-by-default action (posting in Slack / Teams / Discord, creating or commenting on Jira or GitHub issues, publishing packages, sending emails, pushing to protected branches, etc.). If so, adds `**Blocked**: <reason>` to the task with a short code like `needs-user-approval` and moves on. In targeted mode, it stops after committing the block. Opening pull requests with `gh pr create`, reading dashboards, and local-only actions stay allowed by default.
