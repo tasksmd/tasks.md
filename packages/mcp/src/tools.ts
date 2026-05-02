@@ -83,13 +83,19 @@ export function listTasksFromFiles(
 // ── claim_task ──
 
 function findTask(taskFiles: TaskFile[], query: string): Task | undefined {
+  const normalizedQueryId = query.trim().replace(/^`([^`]+)`$/, "$1").trim().toLowerCase();
+  for (const file of taskFiles) {
+    for (const task of file.tasks) {
+      if (task.metadata.id?.trim().toLowerCase() === normalizedQueryId) {
+        return task;
+      }
+    }
+  }
+
   const queryLower = query.toLowerCase();
   for (const file of taskFiles) {
     for (const task of file.tasks) {
-      if (
-        task.metadata.id?.toLowerCase() === queryLower ||
-        task.summary.toLowerCase().includes(queryLower)
-      ) {
+      if (task.summary.toLowerCase().includes(queryLower)) {
         return task;
       }
     }
