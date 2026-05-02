@@ -283,6 +283,41 @@ When to use **Blocked** vs. **Blocked by**:
 
 Teams are free to pick their own short reason codes (the prefix before the `—`) or leave the reason as a single sentence. The spec only requires the field value to be non-empty.
 
+### Standing audit loops
+
+A standing audit loop is a regular TASKS.md task that asks an agent to audit the repo and write follow-up tasks, not fix the findings immediately. Use it when a repo needs a recurring queue-filling pass but you do not want to copy a long audit prompt into every project.
+
+The canonical pattern is a compact task with:
+
+- `**ID**: standing-audit-gap-loop`
+- `**Tags**: standing-loop, audit, queue`
+- `**Details**:` for repo-specific audit inputs: docs to read, competitor or user-story references, product constraints, and areas to ignore
+- `**Files**:` for the files or directories the agent should inspect first
+- `**Acceptance**:` that says the agent only adds or updates TASKS.md tasks, removes the standing-loop task when done, and does not implement the findings in the same run
+
+```markdown
+- [ ] Run the standard audit gap loop and queue follow-up work
+  - **ID**: standing-audit-gap-loop
+  - **Tags**: standing-loop, audit, queue
+  - **Details**: Use the standard standing audit loop. Repo-specific inputs:
+    - Compare README.md, docs/user-stories/, and the current CLI help
+    - Check competitors listed in docs/VISION.md
+    - Ignore deployment tasks; this repo is local-only
+  - **Files**: `README.md`, `docs/user-stories/`, `docs/VISION.md`,
+    `TASKS.md`
+  - **Acceptance**: TASKS.md contains deduplicated tasks for every actionable
+    gap found, or the commit explains that no gaps were found. No source files
+    changed outside TASKS.md.
+```
+
+Agents execute standing audit loops with these rules:
+
+1. Treat **Details** and **Files** as the repo-specific audit brief. If they are sparse, fall back to README.md, AGENTS.md, user stories, examples, package scripts, and recent git history.
+2. Audit only. Read files, run local read-only checks, and inspect behavior as needed, but do not implement code or docs fixes discovered by the audit.
+3. Add or refine actionable tasks in TASKS.md with IDs, tags, details, files, and acceptance criteria. Avoid duplicates by checking existing task IDs and summaries first.
+4. Remove the standing-loop task block in the same commit that adds or updates the follow-up tasks. If no gaps are found, remove the task and make the commit message say the audit found no queue additions.
+5. When invoked as `/next-task standing-audit-gap-loop`, stop after that commit. The next `/next-task` run can implement the newly queued work.
+
 ### Sub-tasks
 
 Tasks can have sub-tasks as nested checkboxes. Metadata comes first, then sub-tasks:
@@ -468,18 +503,20 @@ Reference TASKS.md from your AGENTS.md:
 
 ## Agent Commands
 
-Ready-made `/next-task` commands are available for [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://developers.openai.com/codex/skills), [Cursor](https://cursor.com/changelog/1-6), [Devin](https://windsurf.com/devin), [Gemini CLI](https://geminicli.com/docs/cli/custom-commands/), and [Windsurf](https://docs.codeium.com/windsurf/workflows). Each implements the full pick → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
+Ready-made `/next-task` commands are available for [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://developers.openai.com/codex/skills), [Cursor](https://cursor.com/changelog/1-6), [Devin](https://windsurf.com/devin), [Gemini CLI](https://geminicli.com/docs/cli/custom-commands/), and [Windsurf](https://docs.codeium.com/windsurf/workflows). Each implements the full pick/target → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
+
+Passing an exact task ID targets that task instead of queue-picking. For example, `/next-task standing-audit-gap-loop` looks for `**ID**: standing-audit-gap-loop`, refuses missing, duplicate, claimed, or blocked targets, and stops after the targeted task is shipped.
 
 Invocation syntax varies by agent:
 
 | Agent | Invoke |
 |-------|--------|
-| Claude Code | `/next-task` |
-| Codex | `$next-task` |
-| Cursor | `/next-task` |
-| Devin | `/next-task` |
-| Gemini CLI | `/next-task` |
-| Windsurf | `/next-task` |
+| Claude Code | `/next-task [task-id]` |
+| Codex | `$next-task [task-id]` |
+| Cursor | `/next-task [task-id]` |
+| Devin | `/next-task [task-id]` |
+| Gemini CLI | `/next-task [task-id]` |
+| Windsurf | `/next-task [task-id]` |
 
 ## Orchestrator Integration
 

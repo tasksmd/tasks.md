@@ -166,11 +166,20 @@ server.registerTool(
     title: "Pick Task",
     description:
       "Pick the highest-priority unblocked, unclaimed task using a deterministic algorithm. " +
+      "Set task_id to target an exact **ID** instead of queue-picking; the targeted path " +
+      "returns missing, duplicate, claimed, and blocked states, and can optionally claim " +
+      "or resume the task when agent_name is provided. " +
       "If agent_name is provided and that agent already has a claimed task, returns it " +
       "with resumed=true instead of picking a new one (prevents orphaned claims). " +
       "Walks P0→P3, skips blocked and claimed tasks, scores by unblocking impact " +
       "then tag overlap count. Returns the single best task to work on next.",
     inputSchema: z.object({
+      task_id: z
+        .string()
+        .optional()
+        .describe(
+          "Exact **ID** metadata value to target. When set, priority ordering and tags are ignored."
+        ),
       tags: z
         .string()
         .optional()
@@ -182,14 +191,15 @@ server.registerTool(
     }),
     annotations: { readOnlyHint: false },
   },
-  async ({ tags, agent_name }) => {
+  async ({ task_id, tags, agent_name }) => {
     const directory = getWorkingDirectory();
     const taskFiles = await loadAllTasks(directory);
     const parsedTags = tags?.split(",").map((t) => t.trim()).filter(Boolean);
-    const result = await pickTask(taskFiles, { tags: parsedTags, agent_name });
+    const result = await pickTask(taskFiles, { task_id, tags: parsedTags, agent_name });
 
     return {
       content: [{ type: "text" as const, text: result.text }],
+      ...(result.isError ? { isError: true } : {}),
     };
   }
 );

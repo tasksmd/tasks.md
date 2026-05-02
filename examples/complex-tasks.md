@@ -103,6 +103,20 @@
 
 ## P2
 
+- [ ] Run the standard audit gap loop and queue follow-up work
+  - **ID**: standing-audit-gap-loop
+  - **Tags**: standing-loop, audit, queue
+  - **Details**: Use the standard standing audit loop from the TASKS.md spec.
+    Repo-specific inputs:
+    - Compare `README.md`, `docs/user-stories/`, and current CLI help output
+    - Check the competitor notes in `docs/VISION.md`
+    - Ignore deployment tasks; this sample repo is local-only
+  - **Files**: `README.md`, `docs/user-stories/`, `docs/VISION.md`,
+    `TASKS.md`
+  - **Acceptance**: TASKS.md contains deduplicated tasks for every actionable
+    gap found, or the commit explains that no gaps were found. No source files
+    changed outside TASKS.md.
+
 - [ ] Add OpenTelemetry distributed tracing
   - **Tags**: backend, infra
   - **Details**: Add trace context propagation across HTTP and queue boundaries.

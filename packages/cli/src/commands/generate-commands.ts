@@ -25,7 +25,7 @@ function toGeminiToml(body: string): string {
     .join("\n");
 
   return [
-    'description = "Pick and work on the next task from TASKS.md"',
+    'description = "Pick a queued TASKS.md item, target an exact task ID, or run the standing audit loop"',
     "",
     "prompt = '''",
     prompt,
@@ -36,22 +36,22 @@ function toGeminiToml(body: string): string {
 
 const CLAUDE_FRONTMATTER = `---
 name: next-task
-description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
+description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like \`/next-task my-task-id\`, or runs the standard \`standing-audit-gap-loop\` audit task.
 allowed-tools: Bash, Read, Write, Edit, MultiEdit, Grep, Glob, LS
 ---`;
 
 const CODEX_FRONTMATTER = `---
 name: next-task
-description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
+description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like \`/next-task my-task-id\`, or runs the standard \`standing-audit-gap-loop\` audit task.
 ---`;
 
 const WINDSURF_FRONTMATTER = `---
-description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
+description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like \`/next-task my-task-id\`, or runs the standard \`standing-audit-gap-loop\` audit task.
 ---`;
 
 const DEVIN_FRONTMATTER = `---
 name: next-task
-description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
+description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like \`/next-task my-task-id\`, or runs the standard \`standing-audit-gap-loop\` audit task.
 allowed-tools:
   - read
   - edit

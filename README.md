@@ -146,7 +146,7 @@ See the [full specification](spec.md) for all rules and edge cases.
 
 ## The `/next-task` Command
 
-The most useful thing about TASKS.md is a single command: "pick the next task and do it." Install the command for your agent, then type `/next-task` to start an autonomous work loop.
+The most useful thing about TASKS.md is a single command: "pick the next task and do it." Install the command for your agent, then type `/next-task` to start an autonomous work loop or `/next-task <task-id>` to work one exact task.
 
 ### Install
 
@@ -169,9 +169,24 @@ Or copy manually into your project (commit it so your team gets it too):
 
 All paths are **project-local** (inside your repo). See [commands/](commands/) for source files and format details.
 
+### Queue entry modes
+
+| Mode | Use when | Example |
+|------|----------|---------|
+| Queue pick | You want the agent to drain the highest-priority actionable work | `/next-task` |
+| Targeted task | You know the exact task ID to run or resume | `/next-task auth-fix` |
+| Standing audit loop | You want an audit-only pass that adds follow-up tasks without fixing them immediately | `/next-task standing-audit-gap-loop` |
+
+The standing audit loop is a standard compact task pattern: give it
+`**ID**: standing-audit-gap-loop`, `**Tags**: standing-loop, audit, queue`,
+and put repo-specific inputs in `**Details**:` / `**Files**:`. The agent reads
+that brief, audits the repo, adds or refines TASKS.md items, removes the
+standing-loop task, commits, and stops. See
+[Standing audit loops](spec.md#standing-audit-loops) for the full template.
+
 ### What it does
 
-When you type `/next-task`, the agent runs a loop:
+When you type `/next-task` or `/next-task <task-id>`, the agent runs this flow:
 
 1. **Stop check** — Runs `scripts/check-zero-ship-streak.mjs` if the repo ships it and exits immediately on `STOP` output. Catches exhausted audit cascades (last 3 commits on `origin/master` were docs-only with no `closes <task-id>`) and fully-blocked queues (100% of tasks marked `**Human action required**`) before wasting a session on busywork
 2. **Snapshot** — Reads git status, current branch, and TASKS.md in one shot to orient without redundant tool calls
@@ -179,32 +194,33 @@ When you type `/next-task`, the agent runs a loop:
 4. **Tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
 5. **Find** — Discovers all `TASKS.md` files from the git root down
 6. **Policies** — Reads `<!-- policy: ... -->` comments from the file and follows them as project rules throughout the session
-7. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
-8. **Pick** — Selects the highest-priority unblocked, unclaimed task. Skips tasks with `**Blocked by**:` whose dependencies aren't resolved and tasks with a non-empty `**Blocked**:` reason. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
-9. **Refuse forbidden work** — Before claiming, checks whether the task requires a blocked-by-default action (posting in Slack / Teams / Discord, creating or commenting on Jira or GitHub issues, publishing packages, sending emails, pushing to protected branches, etc.). If so, adds `**Blocked**: <reason>` to the task with a short code like `needs-user-approval` and moves on. Opening pull requests with `gh pr create`, reading dashboards, and local-only actions stay allowed by default.
-10. **Enrich blocked tasks** — When every remaining task is blocked and none has been enriched in the last 7 days, spends the turn on read-only research. Reads the task's `**Files**:`, greps the codebase for related terms, drafts the exact Slack/Jira/PR-review text when applicable, and appends findings to the task's `**Research**:` field (plus `**Files**:` / `**Acceptance**:` when warranted). Stamps `**Last-enriched**: YYYY-MM-DD` so future sessions can tell how fresh the notes are. Never touches `**Blocked**:` or `**Blocked by**:` — enrichment leaves context behind, it doesn't unblock.
-11. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
-12. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
-13. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
-14. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
-15. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
-16. **Loop** — Returns to step 5 and picks the next task, continues until the queue is empty
-17. **Roam** — When the current repo's queue is empty and every blocked task is freshly enriched, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
-18. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
+7. **Target (optional)** — If a task ID follows the command, trims it and searches for an exact `**ID**:` match. Missing, duplicate, claimed-by-another-agent, and blocked targets are reported and stop the run; actionable targets bypass priority ordering but still go through policies, safety checks, verification, and task-block removal. After shipping a targeted task, including `standing-audit-gap-loop`, the agent stops instead of draining unrelated queue items.
+8. **Resume** — Checks for a previously claimed task (`(@agent-id)`) and picks up where it left off
+9. **Pick** — Without a target ID, selects the highest-priority unblocked, unclaimed task. Skips tasks with `**Blocked by**:` whose dependencies aren't resolved and tasks with a non-empty `**Blocked**:` reason. Prefers tasks that unblock others (impact-first) and harder tasks over simpler ones
+10. **Refuse forbidden work** — Before claiming, checks whether the task requires a blocked-by-default action (posting in Slack / Teams / Discord, creating or commenting on Jira or GitHub issues, publishing packages, sending emails, pushing to protected branches, etc.). If so, adds `**Blocked**: <reason>` to the task with a short code like `needs-user-approval` and moves on. In targeted mode, it stops after committing the block. Opening pull requests with `gh pr create`, reading dashboards, and local-only actions stay allowed by default.
+11. **Enrich blocked tasks** — When every remaining task is blocked and none has been enriched in the last 7 days, spends the turn on read-only research. Reads the task's `**Files**:`, greps the codebase for related terms, drafts the exact Slack/Jira/PR-review text when applicable, and appends findings to the task's `**Research**:` field (plus `**Files**:` / `**Acceptance**:` when warranted). Stamps `**Last-enriched**: YYYY-MM-DD` so future sessions can tell how fresh the notes are. Never touches `**Blocked**:` or `**Blocked by**:` — enrichment leaves context behind, it doesn't unblock.
+12. **Plan** — For complex tasks (multi-file, architectural, > 1 hour), explores the code and writes a `**Plan**:` sub-task checklist into the task block before touching any code
+13. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
+14. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
+15. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
+16. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
+17. **Loop** — In queue mode, returns to step 5 and picks the next task until the queue is empty
+18. **Roam** — When the current repo's queue is empty and every blocked task is freshly enriched, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
+19. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
     - Tier 1: Verify (typecheck, lint, test, build)
     - Tier 2: Security & dead code
     - Tier 3: Doc drift & stale references
     - Tier 4: Dependency modernization (universal — works for any repo type)
     - Tier 5: DX polish (help text, error messages, onboarding friction)
     - Writes findings as tasks and implements the first one — re-runs on each invocation
-18. **Terminal** — When all repos are clean across all 5 tiers, prints a summary and stops the loop cleanly
+20. **Terminal** — When all repos are clean across all 5 tiers, prints a summary and stops the loop cleanly
 
 ### The workflow
 
 ```
 You                              Agent
 ──────────────────               ──────────────────
-Write tasks as ideas come  →     /next-task
+Write tasks as ideas come  →     /next-task or /next-task <task-id>
 Add more tasks             →     Claims P0 task, starts working
 Add more tasks             →     Completes task, picks next one
 Review agent's commits     ←     Commits, removes task, loops
@@ -252,7 +268,9 @@ npx @tasks-md/cli lint TASKS.md     # validate against spec
 
 ### MCP Server
 
-The [`tasks-mcp`](packages/mcp/) server lets any MCP-compatible agent manage TASKS.md files programmatically — list, pick, claim, unclaim, complete, and add tasks without file parsing.
+The [`tasks-mcp`](packages/mcp/) server lets any MCP-compatible agent manage TASKS.md files programmatically — list, pick, target exact IDs, claim, unclaim, complete, and add tasks without file parsing.
+
+Use `pick_task` for both queue mode and targeted mode. With no `task_id`, it walks P0→P3 and returns the best unblocked, unclaimed task. With `task_id`, it bypasses queue ordering, looks for one exact `**ID**`, and returns a structured status for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, or `claimed`. Pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This composes with `/next-task <task-id>` and standing loops like `standing-audit-gap-loop` without custom file parsing.
 
 ```json
 {

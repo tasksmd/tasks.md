@@ -97,6 +97,45 @@ function findTask(taskFiles: TaskFile[], query: string): Task | undefined {
   return undefined;
 }
 
+function normalizeAgentName(agentName: string): string {
+  return agentName.replace(/^@/, "");
+}
+
+function isClaimedByAgent(task: Task, agentName: string): boolean {
+  const normalizedAgent = normalizeAgentName(agentName).toLowerCase();
+  return task.claimed?.replace(/^@/, "").toLowerCase().startsWith(normalizedAgent) ?? false;
+}
+
+function findTasksByExactId(taskFiles: TaskFile[], taskId: string): Task[] {
+  const normalizedTaskId = taskId.trim();
+  return taskFiles.flatMap((file) =>
+    file.tasks.filter((task) => task.metadata.id?.trim() === normalizedTaskId)
+  );
+}
+
+function getBlockingDetails(task: Task, allIds: Set<string>): {
+  blockedReason: string | null;
+  blockedBy: string[];
+} {
+  return {
+    blockedReason: task.metadata.blocked?.trim() || null,
+    blockedBy: task.metadata.blockedBy?.filter((id) => allIds.has(id)) ?? [],
+  };
+}
+
+async function addClaimToTask(task: Task, agentName: string): Promise<string> {
+  const fileContent = await readFile(task.file, "utf-8");
+  const lines = fileContent.split("\n");
+  const taskLineIndex = task.startLine - 1;
+  const taskLine = lines[taskLineIndex];
+
+  const claimTag = `(@${normalizeAgentName(agentName)})`;
+  lines[taskLineIndex] = taskLine + ` ${claimTag}`;
+
+  await writeFile(task.file, lines.join("\n"), "utf-8");
+  return claimTag;
+}
+
 export async function claimTask(
   taskFiles: TaskFile[],
   query: string,
@@ -115,15 +154,7 @@ export async function claimTask(
     };
   }
 
-  const fileContent = await readFile(matchedTask.file, "utf-8");
-  const lines = fileContent.split("\n");
-  const taskLineIndex = matchedTask.startLine - 1;
-  const taskLine = lines[taskLineIndex];
-
-  const claimTag = `(@${agentName.replace(/^@/, "")})`;
-  lines[taskLineIndex] = taskLine + ` ${claimTag}`;
-
-  await writeFile(matchedTask.file, lines.join("\n"), "utf-8");
+  const claimTag = await addClaimToTask(matchedTask, agentName);
 
   return {
     text: `Claimed "${matchedTask.summary}" for ${claimTag} in ${matchedTask.file}:${matchedTask.startLine}`,
@@ -201,12 +232,127 @@ export async function completeTask(
 export interface PickTaskOptions {
   tags?: string[];
   agent_name?: string;
+  task_id?: string;
+}
+
+async function pickTargetTask(
+  taskFiles: TaskFile[],
+  taskIdInput: string,
+  agentName?: string
+): Promise<ToolResult> {
+  const taskId = taskIdInput.trim();
+  if (taskId === "") {
+    return {
+      text: JSON.stringify({
+        summary: "task_id must be a non-empty exact TASKS.md ID.",
+        status: "missing",
+        task: null,
+      }, null, 2),
+      isError: true,
+    };
+  }
+
+  const allIds = getAllTaskIds(taskFiles);
+  const matches = findTasksByExactId(taskFiles, taskId);
+
+  if (matches.length === 0) {
+    return {
+      text: JSON.stringify({
+        summary: `No task found with ID "${taskId}".`,
+        status: "missing",
+        task: null,
+      }, null, 2),
+      isError: true,
+    };
+  }
+
+  if (matches.length > 1) {
+    return {
+      text: JSON.stringify({
+        summary: `Duplicate task ID "${taskId}" found in ${matches.length} tasks.`,
+        status: "duplicate",
+        task: null,
+        matches: matches.map((task) => formatTask(task, allIds)),
+      }, null, 2),
+      isError: true,
+    };
+  }
+
+  const task = matches[0];
+  const formatted = formatTask(task, allIds);
+
+  if (task.claimed) {
+    if (agentName && isClaimedByAgent(task, agentName)) {
+      return {
+        text: JSON.stringify({
+          summary: `Resuming targeted "${task.summary}" (${task.priority}) for @${normalizeAgentName(agentName)}.`,
+          status: "resumed",
+          task: formatted,
+          targeted: true,
+          resumed: true,
+        }, null, 2),
+      };
+    }
+
+    return {
+      text: JSON.stringify({
+        summary: `Target task "${taskId}" is already claimed by ${task.claimed}.`,
+        status: "already_claimed",
+        task: formatted,
+        targeted: true,
+      }, null, 2),
+      isError: true,
+    };
+  }
+
+  const blockingDetails = getBlockingDetails(task, allIds);
+  if (blockingDetails.blockedReason || blockingDetails.blockedBy.length > 0) {
+    return {
+      text: JSON.stringify({
+        summary: `Target task "${taskId}" is blocked.`,
+        status: "blocked",
+        task: formatted,
+        targeted: true,
+        blockers: {
+          blocked: blockingDetails.blockedReason,
+          blocked_by: blockingDetails.blockedBy,
+        },
+      }, null, 2),
+      isError: true,
+    };
+  }
+
+  if (agentName) {
+    await addClaimToTask(task, agentName);
+    formatted.claimed = `@${normalizeAgentName(agentName)}`;
+    return {
+      text: JSON.stringify({
+        summary: `Targeted "${task.summary}" (${task.priority}) by ID "${taskId}". Claimed for @${normalizeAgentName(agentName)}.`,
+        status: "claimed",
+        task: formatted,
+        targeted: true,
+      }, null, 2),
+    };
+  }
+
+  return {
+    text: JSON.stringify({
+      summary: `Targeted "${task.summary}" (${task.priority}) by ID "${taskId}".`,
+      status: "ready",
+      task: formatted,
+      targeted: true,
+    }, null, 2),
+  };
 }
 
 export async function pickTask(
   taskFiles: TaskFile[],
   options: PickTaskOptions = {}
 ): Promise<ToolResult> {
+  if (options.task_id !== undefined) {
+    return pickTargetTask(taskFiles, options.task_id, options.agent_name);
+  }
+
   const result = pickBestTask(taskFiles, options.tags, options.agent_name);
 
   if (!result) {
@@ -233,13 +379,13 @@ export async function pickTask(
   }
 
   if (options.agent_name) {
-    await claimTask(taskFiles, result.task.metadata.id || result.task.summary, options.agent_name);
-    formatted.claimed = `@${options.agent_name.replace(/^@/, "")}`;
+    await addClaimToTask(result.task, options.agent_name);
+    formatted.claimed = `@${normalizeAgentName(options.agent_name)}`;
   }
 
   return {
     text: JSON.stringify({
-      summary: `Picked "${result.task.summary}" (${result.task.priority}) — unblocks ${result.unblocksCount} other task(s).${options.agent_name ? ` Claimed for @${options.agent_name.replace(/^@/, "")}.` : ""}`,
+      summary: `Picked "${result.task.summary}" (${result.task.priority}) — unblocks ${result.unblocksCount} other task(s).${options.agent_name ? ` Claimed for @${normalizeAgentName(options.agent_name)}.` : ""}`,
       task: formatted,
       candidates_count: result.candidateCount,
     }, null, 2),
@@ -595,11 +741,15 @@ export async function enrichTask(
       }
       updatedLines.splice(acceptanceEnd + 1, 0, acceptanceBlock);
     } else {
+      const [firstLine = "", ...remainingLines] = params.add_acceptance.trim().split("\n");
+      const continuationLines = remainingLines.map((line) =>
+        line.length > 0 ? `${continuationIndent}${line}` : line
+      );
       updatedLines.splice(
         startIndex + 1,
         0,
-        `${listIndent}- **Acceptance**:`,
-        acceptanceBlock
+        `${listIndent}- **Acceptance**: ${firstLine}`,
+        ...continuationLines
       );
     }
   }
