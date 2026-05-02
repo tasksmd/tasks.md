@@ -6,7 +6,7 @@
 
 ## P2
 
-- [ ] Add a "trusted repo" mode to taskgrind that allows push and PR by default
+- [ ] Add a "trusted repo" mode to taskgrind that allows push and PR by default (@devin-session-4)
   - **ID**: taskgrind-trusted-repo-mode
   - **Tags**: taskgrind, ergonomics, public-write, queue
   - **Details**: During the 2026-05-02 10h tech-lead taskgrind on
