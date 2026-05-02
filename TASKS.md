@@ -6,38 +6,6 @@
 
 ## P2
 
-- [ ] Extend `tasks generate-commands` to also generate `lint-tasks` variants from canonical
-  - **ID**: generate-lint-tasks-variants
-  - **Tags**: cli, command-propagation, drift-prevention
-  - **Details**: The CI `commands-drift` job regenerates only `next-task`
-    variants from the canonical source, so the `lint-tasks` agent variants
-    have drifted: `commands/cursor/lint-tasks.md` is 13 lines (vs 63
-    canonical), `commands/windsurf/lint-tasks.md` is 45 lines, and
-    `commands/gemini/lint-tasks.toml` is 13 lines, all missing the "fd
-    fallback", "Fix mode", "What the linter checks", and "After linting"
-    sections that the canonical `commands/lint-tasks.md` documents.
-    Refactor `packages/cli/src/commands/generate-commands.ts` to loop over
-    a list of commands (`next-task`, `lint-tasks`), each with its own
-    canonical source path, agent frontmatter, and output paths. Run
-    `npx tasks generate-commands` to regenerate the drifted variants.
-    Update `cli.ts` success message and `packages/cli/README.md` to
-    mention both canonical sources, and refresh
-    `docs/user-stories/03-agents-work-through-queue.md` so it reflects
-    that both commands flow through the same generator.
-  - **Files**: `packages/cli/src/commands/generate-commands.ts`,
-    `packages/cli/src/commands/generate-commands.test.ts`,
-    `packages/cli/src/cli.ts`, `packages/cli/README.md`,
-    `docs/user-stories/03-agents-work-through-queue.md`,
-    `commands/cursor/lint-tasks.md`,
-    `commands/windsurf/lint-tasks.md`,
-    `commands/gemini/lint-tasks.toml`
-  - **Acceptance**: `npx tasks generate-commands` regenerates both
-    `next-task` and `lint-tasks` variants from their canonical sources;
-    `npm test` passes including new tests covering the lint-tasks
-    generator path; the CI `commands-drift` job rejects drift in either
-    set; cursor/windsurf/gemini lint-tasks variants now contain the same
-    sections as `commands/lint-tasks.md` (modulo wrapper format).
-
 - [ ] Add a "trusted repo" mode to taskgrind that allows push and PR by default
   - **ID**: taskgrind-trusted-repo-mode
   - **Tags**: taskgrind, ergonomics, public-write, queue

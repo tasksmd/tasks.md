@@ -1,13 +1,63 @@
+# Lint Tasks
 
-## Command: Lint Tasks
+Validate all `TASKS.md` files in the current repo against the [tasks.md spec](https://github.com/tasksmd/tasks.md/blob/main/spec.md).
 
-Validate all `TASKS.md` files in the current repo against the [tasks.md spec](https://github.com/tasksmd/tasks.md/blob/main/spec.md). Discovers files in monorepo packages too.
+## Context snapshot
 
-### Steps
+```bash
+git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+```
 
-1. Find all TASKS.md files: `fd TASKS.md . --type f --exclude node_modules --exclude .git`
-2. Lint each file: `npx @tasks-md/lint <file>`
-3. To auto-fix: `npx @tasks-md/lint --fix <file>`
-4. Show results and offer to fix any errors found
+## Find all TASKS.md files
 
-The linter checks the `# Tasks` heading, P0-P3 section order, checkbox format, kebab-case IDs, dangling `**Blocked by**` references, bold metadata labels (`**ID**:`, `**Tags**:`, `**Details**:`, `**Files**:`, `**Acceptance**:`, `**Plan**:`, `**Blocked by**:`, `**Blocked**:`, `**Parent**:`, `**Research**:`, `**Last-enriched**:`), and rejects `[x]` completed tasks.
+```bash
+fd TASKS.md "$git_root" --type f --exclude node_modules --exclude .git
+```
+
+If `fd` is not available:
+
+```bash
+find "$git_root" -name TASKS.md -not -path '*/node_modules/*' -not -path '*/.git/*'
+```
+
+## Lint each file
+
+Run the linter on every discovered file:
+
+```bash
+npx @tasks-md/lint <file>
+```
+
+Or if installed locally:
+
+```bash
+npx tasks-lint <file>
+```
+
+## Fix mode
+
+Auto-fix: removes completed `[x]` task blocks and cleans up extra blank lines:
+
+```bash
+npx @tasks-md/lint --fix <file>
+```
+
+## What the linter checks
+
+- `# Tasks` heading exists as the first line
+- Priority sections are `## P0`, `## P1`, `## P2`, `## P3` in ascending order
+- Tasks use checkbox format: `- [ ] Task description`
+- Task IDs are kebab-case and unique across the file
+- `**Blocked by**` references point to existing task IDs (no dangling references)
+- Metadata uses bold labels indented under the task, including `**ID**:`, `**Tags**:`, `**Details**:`, `**Files**:`, `**Acceptance**:`, `**Plan**:`, `**Blocked by**:`, `**Blocked**:`, `**Parent**:`, `**Research**:`, `**Last-enriched**:`
+- No `[x]` completed tasks (completed tasks should be removed entirely)
+
+## After linting
+
+If errors are found:
+1. Show the errors to the user
+2. Offer to fix them (auto-fix for formatting, manual guidance for structural issues)
+3. Re-run the linter to confirm all issues are resolved
+
+If all files pass:
+1. Report success with file count
