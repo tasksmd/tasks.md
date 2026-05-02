@@ -52,31 +52,6 @@
     `npx -y @tasks-md/lint TASKS.md`. Branch
     `fix/mcp-exact-id-mutations-session-29` is deleted after delivery.
 
-- [ ] Reconcile session 18 docs/taskgrind work onto main
-  - **ID**: reconcile-session-18-docs
-  - **Tags**: docs, spec, taskgrind, delivery
-  - **Details**: Branch `task/next-task-target-task-id` (now pushed to
-    origin) holds five session-18 commits that documented agent-managed
-    task metadata and aligned taskgrind terminology. None are reachable
-    from PR #33 / current main. Cherry-pick or re-apply: `9de5baa` chore:
-    ignore taskgrind session state artifact (adds `.taskgrind-state` to
-    `.gitignore`). `a4d0b1f` fix: align taskgrind `**Blocked**` field
-    terminology in `taskgrind/scripts/check-zero-ship-streak.mjs` and
-    `commands/next-task.md`. `447117d` docs: document agent-managed
-    `**Plan**` and `**Parent**` task metadata in `spec.md` and
-    `commands/lint-tasks.md`. `174d5df` docs: document the taskgrind
-    `closes <task-id>` commit convention in `spec.md` and
-    `taskgrind/prompt-template.md`. `4b5f571` docs: refresh AGENTS.md
-    baseline (verify this isn't already covered by the session-31 baseline
-    refresh on `cbd24be` before applying — pick the newer of the two).
-  - **Files**: `.gitignore`, `AGENTS.md`, `spec.md`,
-    `commands/lint-tasks.md`, `commands/next-task.md`,
-    `taskgrind/scripts/check-zero-ship-streak.mjs`,
-    `taskgrind/prompt-template.md`
-  - **Acceptance**: All five (or four, if `4b5f571` is superseded)
-    commits land on `main` via a PR. Branch
-    `task/next-task-target-task-id` is deleted after delivery.
-
 - [ ] Re-export targeted-ID parser API from `@tasks-md/parser`
   - **ID**: parser-api-target-id-exports
   - **Tags**: parser, api, mcp, refactor
