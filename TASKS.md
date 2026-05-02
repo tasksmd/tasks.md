@@ -104,6 +104,13 @@
 - [ ] File Bosun follow-up: deliver orphan `main` commit `924f8f14`
   - **ID**: bosun-orphan-main-commit-924f8f14
   - **Tags**: bosun, delivery, cross-repo
+  - **Blocked**: needs-user-approval — this task lives in a different
+    repo (`/Users/fivanishche/apps/bosun`) and would require pushing a
+    feature branch to that remote and opening a Bosun PR. Cross-repo
+    publication outside the current `tasks.md` workspace requires
+    explicit current-session operator approval. Another agent is also
+    actively working in Bosun, so the operator should coordinate the
+    handoff before unblocking.
   - **Details**: `/Users/fivanishche/apps/bosun` local `main` is one
     commit ahead of `origin/main` with `924f8f14 refactor(skills): apply
     3 improvement themes to user persona AIFN-720` (authored
@@ -120,6 +127,7 @@
     `AIFN-720` suffix and bosun's `cd orchestrator && npm run verify`
     passes, or (b) the commit is reverted on local main if it duplicates
     work already on origin/main.
+  - **Last-enriched**: 2026-05-02
 
 ## P3
 
