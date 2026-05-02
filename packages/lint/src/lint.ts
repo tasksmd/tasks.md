@@ -256,11 +256,24 @@ export function discoverFiles(target: string): string[] {
   if (stat.isFile()) return [resolved];
 
   if (stat.isDirectory()) {
-    return readdirSync(resolved)
-      .filter((entry) => entry.endsWith(".md"))
-      .map((entry) => join(resolved, entry))
-      .filter((full) => statSync(full).isFile());
+    return discoverMarkdownFiles(resolved, resolved);
   }
 
   return [];
+}
+
+function discoverMarkdownFiles(directory: string, root: string): string[] {
+  return readdirSync(directory, { withFileTypes: true })
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .flatMap((entry) => {
+      const fullPath = join(directory, entry.name);
+      if (entry.name === ".git" || entry.name === "node_modules") return [];
+      if (entry.isDirectory()) return discoverMarkdownFiles(fullPath, root);
+      if (!entry.isFile() || !entry.name.endsWith(".md")) return [];
+
+      // Preserve existing directory behavior for directly named examples while
+      // still discovering standard nested queues in monorepos.
+      if (directory === root || entry.name === "TASKS.md") return [fullPath];
+      return [];
+    });
 }

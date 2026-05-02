@@ -22,11 +22,12 @@ npx @tasks-md/lint TASKS.md
 tasks-lint [--fix] <file|directory> [file|directory...]
 ```
 
-Pass individual files or directories. Directories are scanned for `.md` files (non-recursive).
+Pass individual files or directories. Directory targets include direct `.md` files
+and recursively discover nested `TASKS.md` files for monorepos.
 
 ```bash
 tasks-lint TASKS.md                    # single file
-tasks-lint TASKS.md packages/          # file + directory
+tasks-lint TASKS.md packages/          # root file + nested package TASKS.md files
 tasks-lint frontend/TASKS.md backend/  # monorepo
 tasks-lint --fix TASKS.md              # auto-fix deterministic errors
 ```

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { writeFileSync, mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -581,6 +581,27 @@ describe("tasks-lint", () => {
       try {
         const result = spawnSync("node", [CLI, dir], { encoding: "utf-8" });
         expect(result.stdout).toMatch(/2 file/);
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
+    });
+
+    it("recursively lints nested TASKS.md files in directory targets", () => {
+      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-dir-"));
+      const nested = join(dir, "packages", "app");
+      mkdirSync(nested, { recursive: true });
+      writeFileSync(
+        join(nested, "TASKS.md"),
+        "# Tasks\n\n## P1\n\n- [ ] Nested task\n"
+      );
+      writeFileSync(
+        join(nested, "README.md"),
+        "This nested package README is not a task queue.\n"
+      );
+      try {
+        const result = spawnSync("node", [CLI, dir], { encoding: "utf-8" });
+        expect(result.status).toBe(0);
+        expect(result.stdout).toMatch(/1 file/);
       } finally {
         rmSync(dir, { recursive: true });
       }

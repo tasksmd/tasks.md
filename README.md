@@ -287,7 +287,7 @@ Use `pick_task` for both queue mode and targeted mode. With no `task_id`, it wal
 
 ### Linter
 
-The [`@tasks-md/lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, dangling blocker references, and tag casing.
+The [`@tasks-md/lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, dangling blocker references, and tag casing. Directory targets include direct `.md` files and nested `TASKS.md` files for monorepos.
 
 ```bash
 npx @tasks-md/lint TASKS.md           # lint one file
