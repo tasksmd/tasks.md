@@ -56,28 +56,44 @@
   - **Files**: `README.md`, `scripts/build-site.js`, `docs/index.html`
   - **Last-enriched**: 2026-05-02
 
-- [ ] Clean up stale local branches in tasks.md worktree
-  - **ID**: cleanup-stale-local-branches
-  - **Tags**: hygiene, git
-  - **Details**: Several local branches contain superseded work and can
-    be deleted after the PR #33 merge. Audit each before deleting:
-    `chore/audit-tasks-2026-04-24` predates PR #30 (the taskgrind/
-    extraction); its diff would delete the entire `taskgrind/` directory
-    so do not push or merge — delete instead.
-    `feat/queue-pressure-deliver-vs-add` content was already merged via
-    squash PR #31 (`989bc29`); local commit `11c7630` is now redundant.
-    `pr-33-next-task-target-id` is identical to PR #33's branch (the
-    session-21 `docs/...` ref); redundant.
-    `feat/next-task-target-task-id` was an earlier targeted-ID attempt
-    (4 commits) superseded by PR #33's content. The session-11
-    `docs/...` branch holds the older 15+ commit attempt; also
-    superseded by PR #33's content. After PR #33 merges: also delete
-    `task/session-31-next-task-target-task-id`, the rebased-onto-PR-#33
-    branch.
+- [ ] Delete superseded remote branches on origin
+  - **ID**: cleanup-stale-remote-branches
+  - **Tags**: hygiene, git, public-write
+  - **Blocked**: needs-user-approval — `git push origin --delete <branch>`
+    is a public-write action against the public remote and requires
+    explicit current-session operator approval. Local cleanup already
+    landed (six redundant branches deleted in this session — see
+    git reflog and the predecessor `cleanup-stale-local-branches` task
+    on commit history).
+  - **Details**: After the local cleanup pass, these origin branches
+    still hold superseded work and should be deleted:
+    `origin/chore/reconcile-session-28-30-followups-2026-05-02` —
+    superseded by PR #40 (`cac6732`).
+    `origin/task/session-31-next-task-target-task-id` — superseded by
+    PR #33 (`b8310be`).
+    `origin/fix/mcp-exact-id-mutations-session-29` — content delivered
+    via PR #40 squash merge.
+    `origin/fix/skip-standing-loop-picks-session-28` — content
+    delivered via PR #40 squash merge (the `ff35069` fix).
+    `origin/task/next-task-target-task-id` — content delivered via
+    PR #41 (`0aaf413`) and PR #33.
+    `origin/docs/next-task-target-id-session-11` — older targeted-ID
+    attempt; superseded by PR #33.
+    `origin/feat/next-task-target-task-id` — earlier targeted-ID
+    attempt (4 commits); superseded by PR #33.
+    `origin/docs/agent-guide-baseline-task-20260430` — agent guide
+    baseline refresh; content subsumed by `aa963c4` on main.
+    `origin/chore/audit-tasks-2026-04-24` — predates PR #30 and would
+    delete the entire `taskgrind/` directory if merged; **delete
+    only**, never merge.
+    The local branch `feat/queue-pressure-deliver-vs-add` is checked
+    out in `/Users/fivanishche/apps/tasks.md-stop-check`; the operator
+    needs to retire that worktree (or detach HEAD) before the local
+    branch can be deleted as a follow-up.
   - **Files**: n/a (git operations only)
-  - **Acceptance**: Each branch listed is either kept (if unique work
-    was re-delivered) or deleted locally and on `origin`. `git branch
-    --no-merged main` returns only branches with active or planned
-    work.
+  - **Acceptance**: All nine listed origin branches are deleted via
+    `git push origin --delete <branch>`. After `git fetch --prune`,
+    `git branch -r` shows only `origin/main` plus any actively-developed
+    feature branches.
 
 
