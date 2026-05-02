@@ -224,14 +224,16 @@ Metadata values can span multiple indented lines. Everything indented under the 
 | **Details** | Implementation guidance, context, approach |
 | **Files** | Relevant file paths (backtick-quoted, comma-separated) |
 | **Acceptance** | Definition of done |
+| **Plan** | Agent-managed checklist of implementation steps for complex tasks; added before coding and removed with the completed task |
 | **Blocked by** | Task ID(s) of blocking tasks — comma-separated if multiple |
 | **Blocked** | Free-form reason why the task cannot be picked right now. Distinct from **Blocked by** — use when the block is external (missing approval, policy refusal, environment access) rather than another task ID |
+| **Parent** | Parent task ID when a large task is decomposed into smaller top-level tasks |
 | **Research** | Free-form research notes accumulated by agents while the task is blocked. Distinct from **Details** (author intent) so reviewers can tell what came from the agent. See [Enriching blocked tasks](#enriching-blocked-tasks) |
 | **Last-enriched** | ISO date (`YYYY-MM-DD`) marking the last time an agent added research notes to the task. Used as an idempotency / cooldown gate so agents don't re-enrich the same task every session |
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
-Teams can add custom metadata fields beyond these eight (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
+Teams can add custom metadata fields beyond these defined fields (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
 
 Tags are lowercase, freeform labels. Teams should document their tag vocabulary in AGENTS.md to keep values consistent across tasks and agents.
 

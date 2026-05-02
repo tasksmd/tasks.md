@@ -121,9 +121,11 @@ The quality of your task description directly affects the quality of the agent's
 
 **Research / Last-enriched**: `**Research**: <notes>` + `**Last-enriched**: YYYY-MM-DD` — agent-managed fields for research notes accumulated while the task is blocked. When `/next-task` runs on a queue where every task is blocked, it spends the turn adding read-only research (drafted message text, file paths, consumer sketches) to the task's **Research** field and stamps **Last-enriched** so the next session knows how fresh the notes are. Enrichment never touches the block itself — only the metadata around it. See [Enriching blocked tasks](spec.md#enriching-blocked-tasks) in the spec.
 
+**Plan / Parent**: `**Plan**:` + `**Parent**: task-id` — agent-managed fields for complex-task planning and decomposition. `/next-task` adds a **Plan** checklist before coding on multi-file or architectural tasks, and uses **Parent** when splitting a large task into smaller top-level tasks. Users do not need to add either field manually.
+
 **Tags**: `**Tags**: backend, auth` — lowercase labels for filtering and routing to specialized agents.
 
-**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**, **Blocked**, **Research**, **Last-enriched**. Teams can add custom fields beyond these nine.
+**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Plan**, **Blocked by**, **Blocked**, **Parent**, **Research**, **Last-enriched**. Teams can add custom fields beyond these supported fields.
 
 **Sub-tasks**: Nested checkboxes under a parent. The agent who claims the parent owns all sub-tasks. Remove the entire block when done. Use sub-tasks when steps are sequential and owned by one agent; promote to separate top-level tasks when steps can be parallelized or span multiple sessions.
 

@@ -9,3 +9,5 @@ Validate all `TASKS.md` files in the current repo against the [tasks.md spec](ht
 2. Lint each file: `npx @tasks-md/lint <file>`
 3. To auto-fix: `npx @tasks-md/lint --fix <file>`
 4. Show results and offer to fix any errors found
+
+The linter checks the `# Tasks` heading, P0-P3 section order, checkbox format, kebab-case IDs, dangling `**Blocked by**` references, bold metadata labels (`**ID**:`, `**Tags**:`, `**Details**:`, `**Files**:`, `**Acceptance**:`, `**Plan**:`, `**Blocked by**:`, `**Blocked**:`, `**Parent**:`, `**Research**:`, `**Last-enriched**:`), and rejects `[x]` completed tasks.
