@@ -268,7 +268,9 @@ npx @tasks-md/cli lint TASKS.md     # validate against spec
 
 ### MCP Server
 
-The [`tasks-mcp`](packages/mcp/) server lets any MCP-compatible agent manage TASKS.md files programmatically — list, pick, claim, unclaim, complete, and add tasks without file parsing.
+The [`tasks-mcp`](packages/mcp/) server lets any MCP-compatible agent manage TASKS.md files programmatically — list, pick, target exact IDs, claim, unclaim, complete, and add tasks without file parsing.
+
+Use `pick_task` for both queue mode and targeted mode. With no `task_id`, it walks P0→P3 and returns the best unblocked, unclaimed task. With `task_id`, it bypasses queue ordering, looks for one exact `**ID**`, and returns a structured status for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, or `claimed`. Pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This composes with `/next-task <task-id>` and standing loops like `standing-audit-gap-loop` without custom file parsing.
 
 ```json
 {

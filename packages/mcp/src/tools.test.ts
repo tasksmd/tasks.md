@@ -756,6 +756,212 @@ describe("pickTask", () => {
       await rm(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it("targets an exact task_id and ignores queue priority ordering", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Urgent queue task",
+      "  - **ID**: urgent-queue-task",
+      "",
+      "## P2",
+      "",
+      "- [ ] Run the standing audit loop",
+      "  - **ID**: standing-audit-gap-loop",
+      "  - **Tags**: standing-loop, audit, queue",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { task_id: "standing-audit-gap-loop" });
+    const data = JSON.parse(result.text);
+
+    expect(result.isError).toBeUndefined();
+    expect(data.status).toBe("ready");
+    expect(data.targeted).toBe(true);
+    expect(data.task.summary).toBe("Run the standing audit loop");
+    expect(data.task.metadata.tags).toEqual(["standing-loop", "audit", "queue"]);
+    expect(data.candidates_count).toBeUndefined();
+  });
+
+  it("claims an exact task_id when agent_name is provided", async () => {
+    let tmpDir: string;
+    tmpDir = await mkdtemp(join(tmpdir(), "tasks-target-"));
+    try {
+      const filePath = join(tmpDir, "TASKS.md");
+      const content = "# Tasks\n\n## P1\n\n- [ ] Target me\n  - **ID**: target-me\n";
+      await writeFile(filePath, content, "utf-8");
+
+      const files = [makeTaskFile(content, filePath)];
+      const result = await pickTask(files, {
+        task_id: "target-me",
+        agent_name: "cascade",
+      });
+      const data = JSON.parse(result.text);
+
+      expect(result.isError).toBeUndefined();
+      expect(data.status).toBe("claimed");
+      expect(data.task.claimed).toBe("@cascade");
+      expect(data.summary).toContain("Claimed for @cascade");
+
+      const updated = await readFile(filePath, "utf-8");
+      expect(updated).toContain("- [ ] Target me (@cascade)");
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns a missing status when task_id does not match an exact ID", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Summary mentions target-me but has a different ID",
+      "  - **ID**: different-id",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { task_id: "target-me" });
+    const data = JSON.parse(result.text);
+
+    expect(result.isError).toBe(true);
+    expect(data.status).toBe("missing");
+    expect(data.task).toBeNull();
+  });
+
+  it("returns duplicate status when task_id appears more than once", async () => {
+    const file1 = makeTaskFile(
+      "# Tasks\n\n## P1\n\n- [ ] First target\n  - **ID**: duplicate-id\n",
+      "/a/TASKS.md"
+    );
+    const file2 = makeTaskFile(
+      "# Tasks\n\n## P2\n\n- [ ] Second target\n  - **ID**: duplicate-id\n",
+      "/b/TASKS.md"
+    );
+    const result = await pickTask([file1, file2], { task_id: "duplicate-id" });
+    const data = JSON.parse(result.text);
+
+    expect(result.isError).toBe(true);
+    expect(data.status).toBe("duplicate");
+    expect(data.matches).toHaveLength(2);
+    expect(data.matches.map((task: { summary: string }) => task.summary)).toEqual([
+      "First target",
+      "Second target",
+    ]);
+  });
+
+  it("refuses a targeted task_id claimed by another agent", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Already claimed (@someone)",
+      "  - **ID**: claimed-target",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, {
+      task_id: "claimed-target",
+      agent_name: "cascade",
+    });
+    const data = JSON.parse(result.text);
+
+    expect(result.isError).toBe(true);
+    expect(data.status).toBe("already_claimed");
+    expect(data.task.claimed).toBe("@someone");
+    expect(data.summary).toContain("@someone");
+  });
+
+  it("resumes a targeted task_id already claimed by the same agent", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Resume me (@cascade - in progress)",
+      "  - **ID**: resume-target",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, {
+      task_id: "resume-target",
+      agent_name: "cascade",
+    });
+    const data = JSON.parse(result.text);
+
+    expect(result.isError).toBeUndefined();
+    expect(data.status).toBe("resumed");
+    expect(data.resumed).toBe(true);
+    expect(data.task.summary).toBe("Resume me");
+  });
+
+  it("refuses a targeted task_id with a **Blocked** reason", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Post in Slack",
+      "  - **ID**: slack-post",
+      "  - **Blocked**: needs-user-approval — posting publicly as the user",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { task_id: "slack-post" });
+    const data = JSON.parse(result.text);
+
+    expect(result.isError).toBe(true);
+    expect(data.status).toBe("blocked");
+    expect(data.blockers.blocked).toContain("needs-user-approval");
+    expect(data.blockers.blocked_by).toEqual([]);
+  });
+
+  it("refuses a targeted task_id with unresolved **Blocked by** dependencies", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Build prerequisite",
+      "  - **ID**: prerequisite",
+      "",
+      "- [ ] Use prerequisite",
+      "  - **ID**: blocked-target",
+      "  - **Blocked by**: prerequisite, already-done",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { task_id: "blocked-target" });
+    const data = JSON.parse(result.text);
+
+    expect(result.isError).toBe(true);
+    expect(data.status).toBe("blocked");
+    expect(data.blockers.blocked).toBeNull();
+    expect(data.blockers.blocked_by).toEqual(["prerequisite"]);
+  });
+
+  it("allows a targeted task_id when **Blocked by** references are resolved", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Follow-up task",
+      "  - **ID**: follow-up",
+      "  - **Blocked by**: completed-task",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files, { task_id: "follow-up" });
+    const data = JSON.parse(result.text);
+
+    expect(result.isError).toBeUndefined();
+    expect(data.status).toBe("ready");
+    expect(data.task.blocked).toBe(false);
+  });
 });
 
 // ── add_task ──
