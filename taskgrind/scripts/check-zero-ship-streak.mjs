@@ -2,14 +2,14 @@
 // scripts/check-zero-ship-streak.mjs
 //
 // Pre-flight stop-condition check for autonomous taskgrind sessions.
-// Implements taskgrind.md rule 10: detect when the audit cascade is
-// exhausted or when 100% of TASKS.md is blocked on human action, so
+// Implements taskgrind rule 10: detect when the audit cascade is
+// exhausted or when 100% of TASKS.md is marked with `**Blocked**`, so
 // the next-task skill can exit early instead of running another
 // pointless audit pass.
 //
 // Reference deployment: a 22-session autonomous grind on
 // `oncall-hub-api` (2026-04-24) ran 17 sessions after the queue first
-// hit 100% Human-action-required, generating ~10 single-finding
+// hit 100% blocked, generating ~10 single-finding
 // doc-drift PRs. This script would have printed STOP from session 6
 // onward, saving ~7 hours of model time.
 //
@@ -147,14 +147,14 @@ function parseTaskBlocks(content) {
 }
 
 /**
- * Check 2 — every P0–P3 task in TASKS.md carries a
- * `**Human action required**` sub-bullet. When this fires, the
+ * Check 2 — every P0–P3 task in TASKS.md carries a non-empty
+ * `**Blocked**` metadata line. When this fires, the
  * autonomous queue is empty by safety contract; running the audit
  * cascade just produces busywork.
  *
  * @returns {{ totalTasks: number } | null}
  */
-function checkAllHarMarked() {
+function checkAllBlockedMarked() {
   let content;
   try {
     content = readFileSync(TASKS_PATH, "utf8");
@@ -165,19 +165,19 @@ function checkAllHarMarked() {
   const blocks = parseTaskBlocks(content);
   if (blocks.length === 0) return null;
 
-  const harBlocks = blocks.filter((block) =>
-    block.some((line) => /\*\*Human action required\*\*/i.test(line)),
+  const blockedBlocks = blocks.filter((block) =>
+    block.some((line) => /^\s+-\s+\*\*Blocked\*\*:\s*\S/i.test(line)),
   );
-  if (harBlocks.length === blocks.length) {
+  if (blockedBlocks.length === blocks.length) {
     return { totalTasks: blocks.length };
   }
   return null;
 }
 
 const docDrift = checkConsecutiveDocDrift();
-const allHar = checkAllHarMarked();
+const allBlocked = checkAllBlockedMarked();
 
-if (docDrift || allHar) {
+if (docDrift || allBlocked) {
   console.log("STOP");
   console.log("");
   if (docDrift) {
@@ -195,14 +195,12 @@ if (docDrift || allHar) {
     }
     console.log("");
   }
-  if (allHar) {
+  if (allBlocked) {
     console.log(
-      `  Reason 2: 100% of TASKS.md tasks (${allHar.totalTasks}/${allHar.totalTasks}) carry`,
+      `  Reason 2: 100% of TASKS.md tasks (${allBlocked.totalTasks}/${allBlocked.totalTasks}) carry`,
     );
-    console.log(
-      "            a **Human action required** sub-bullet — no autonomous",
-    );
-    console.log("            work available.");
+    console.log("            a non-empty **Blocked** metadata line — no");
+    console.log("            autonomous work available.");
     console.log("");
   }
   console.log(

@@ -9,5 +9,5 @@ Steps:
 3. To auto-fix formatting: npx @tasks-md/lint --fix <file>
 4. Show results and offer to fix any errors found
 
-The linter checks: # Tasks heading, P0-P3 section order, checkbox format, kebab-case IDs, dangling Blocked by references, bold metadata labels, no [x] completed tasks.
+The linter checks: # Tasks heading, P0-P3 section order, checkbox format, kebab-case IDs, dangling Blocked by references, bold metadata labels (ID, Tags, Details, Files, Acceptance, Plan, Blocked by, Blocked, Parent, Research, Last-enriched), no [x] completed tasks.
 """

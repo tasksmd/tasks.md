@@ -35,6 +35,9 @@
       <p>Create a <code>TASKS.md</code> at your repo root:</p>
       <pre><code># Tasks
 
+&lt;!-- policy: Run tests before every commit. Never skip CI checks.
+     policy: Prefer fixing root causes over symptoms. --&gt;
+
 ## P0
 
 - [ ] Fix authentication crash on token refresh
@@ -210,9 +213,34 @@
             <td><code>**Acceptance**: Tests pass</code></td>
           </tr>
           <tr>
+            <td>Plan</td>
+            <td>Agent-managed checklist of implementation steps for complex tasks; added before coding and removed with the completed task</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
             <td>Blocked by</td>
             <td>Task ID(s) of blocking tasks — comma-separated if multiple</td>
             <td><code>**Blocked by**: auth-fix</code></td>
+          </tr>
+          <tr>
+            <td>Blocked</td>
+            <td>Free-form reason why the task cannot be picked right now. Distinct from **Blocked by** — use when the block is external (missing approval, policy refusal, environment access) rather than another task ID</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Parent</td>
+            <td>Parent task ID when a large task is decomposed into smaller top-level tasks</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Research</td>
+            <td>Free-form research notes accumulated by agents while the task is blocked. Distinct from **Details** (author intent) so reviewers can tell what came from the agent. See [Enriching blocked tasks](#enriching-blocked-tasks)</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Last-enriched</td>
+            <td>ISO date (`YYYY-MM-DD`) marking the last time an agent added research notes to the task. Used as an idempotency / cooldown gate so agents don't re-enrich the same task every session</td>
+            <td><code></code></td>
           </tr>
         </tbody>
       </table>

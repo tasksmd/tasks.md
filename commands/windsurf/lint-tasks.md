@@ -37,7 +37,7 @@ npx @tasks-md/lint --fix <file>
 - Tasks use checkbox format: `- [ ] Task description`
 - Task IDs are kebab-case and unique
 - `**Blocked by**` references point to existing task IDs
-- Metadata uses bold labels indented under the task
+- Metadata uses bold labels indented under the task, including `**ID**:`, `**Tags**:`, `**Details**:`, `**Files**:`, `**Acceptance**:`, `**Plan**:`, `**Blocked by**:`, `**Blocked**:`, `**Parent**:`, `**Research**:`, `**Last-enriched**:`
 - No `[x]` completed tasks (remove them entirely)
 
 ## After linting

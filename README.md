@@ -121,9 +121,11 @@ The quality of your task description directly affects the quality of the agent's
 
 **Research / Last-enriched**: `**Research**: <notes>` + `**Last-enriched**: YYYY-MM-DD` — agent-managed fields for research notes accumulated while the task is blocked. When `/next-task` runs on a queue where every task is blocked, it spends the turn adding read-only research (drafted message text, file paths, consumer sketches) to the task's **Research** field and stamps **Last-enriched** so the next session knows how fresh the notes are. Enrichment never touches the block itself — only the metadata around it. See [Enriching blocked tasks](spec.md#enriching-blocked-tasks) in the spec.
 
+**Plan / Parent**: `**Plan**:` + `**Parent**: task-id` — agent-managed fields for complex-task planning and decomposition. `/next-task` adds a **Plan** checklist before coding on multi-file or architectural tasks, and uses **Parent** when splitting a large task into smaller top-level tasks. Users do not need to add either field manually.
+
 **Tags**: `**Tags**: backend, auth` — lowercase labels for filtering and routing to specialized agents.
 
-**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Blocked by**, **Blocked**, **Research**, **Last-enriched**. Teams can add custom fields beyond these nine.
+**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Plan**, **Blocked by**, **Blocked**, **Parent**, **Research**, **Last-enriched**. Teams can add custom fields beyond these supported fields.
 
 **Sub-tasks**: Nested checkboxes under a parent. The agent who claims the parent owns all sub-tasks. Remove the entire block when done. Use sub-tasks when steps are sequential and owned by one agent; promote to separate top-level tasks when steps can be parallelized or span multiple sessions.
 
@@ -188,7 +190,7 @@ standing-loop task, commits, and stops. See
 
 When you type `/next-task` or `/next-task <task-id>`, the agent runs this flow:
 
-1. **Stop check** — Runs `scripts/check-zero-ship-streak.mjs` if the repo ships it and exits immediately on `STOP` output. Catches exhausted audit cascades (last 3 commits on `origin/master` were docs-only with no `closes <task-id>`) and fully-blocked queues (100% of tasks marked `**Human action required**`) before wasting a session on busywork
+1. **Stop check** — Runs `scripts/check-zero-ship-streak.mjs` if the repo ships it and exits immediately on `STOP` output. Catches exhausted audit cascades (last 3 commits on `origin/master` were docs-only with no `closes <task-id>`) and fully-blocked queues (100% of tasks marked with non-empty `**Blocked**` metadata) before wasting a session on busywork
 2. **Snapshot** — Reads git status, current branch, and TASKS.md in one shot to orient without redundant tool calls
 3. **Preserve** — If the worktree is dirty, keeps existing edits in place, avoids them when possible, and stages only its own hunks when it must touch a shared file
 4. **Tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main
@@ -246,7 +248,7 @@ enforcement scripts that prevent these failure modes:
 | [`scripts/check-zero-ship-streak.mjs`](taskgrind/scripts/check-zero-ship-streak.mjs) | Pre-flight `STOP`/`CONTINUE` check — already wired into the `next-task` skill |
 | [`scripts/check-admin-merge-rate.mjs`](taskgrind/scripts/check-admin-merge-rate.mjs) | Counts admin self-merges in trailing 24h, exits non-zero at ≥5 |
 | [`scripts/safe-admin-merge.sh`](taskgrind/scripts/safe-admin-merge.sh) | Wrapper around `gh pr merge --admin` that runs the rate check first |
-| [`scripts/lint-pr-shape.mjs`](taskgrind/scripts/lint-pr-shape.mjs) | CI gate — refuses single-finding doc-only PRs without `closes <id>` |
+| [`scripts/lint-pr-shape.mjs`](taskgrind/scripts/lint-pr-shape.mjs) | CI gate — refuses single-finding doc-only PRs without `closes <task-id>` |
 
 See [`taskgrind/README.md`](taskgrind/README.md) for adoption options
 (copy / symlink / future npx) and the lessons that motivated each

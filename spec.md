@@ -224,14 +224,16 @@ Metadata values can span multiple indented lines. Everything indented under the 
 | **Details** | Implementation guidance, context, approach |
 | **Files** | Relevant file paths (backtick-quoted, comma-separated) |
 | **Acceptance** | Definition of done |
+| **Plan** | Agent-managed checklist of implementation steps for complex tasks; added before coding and removed with the completed task |
 | **Blocked by** | Task ID(s) of blocking tasks — comma-separated if multiple |
 | **Blocked** | Free-form reason why the task cannot be picked right now. Distinct from **Blocked by** — use when the block is external (missing approval, policy refusal, environment access) rather than another task ID |
+| **Parent** | Parent task ID when a large task is decomposed into smaller top-level tasks |
 | **Research** | Free-form research notes accumulated by agents while the task is blocked. Distinct from **Details** (author intent) so reviewers can tell what came from the agent. See [Enriching blocked tasks](#enriching-blocked-tasks) |
 | **Last-enriched** | ISO date (`YYYY-MM-DD`) marking the last time an agent added research notes to the task. Used as an idempotency / cooldown gate so agents don't re-enrich the same task every session |
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
-Teams can add custom metadata fields beyond these eight (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
+Teams can add custom metadata fields beyond these defined fields (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
 
 Tags are lowercase, freeform labels. Teams should document their tag vocabulary in AGENTS.md to keep values consistent across tasks and agents.
 
@@ -409,6 +411,18 @@ Teams with specific SLAs or automated reclamation should document their policy i
 When a task is done, the agent removes it from the file — the task line, its metadata, and all its sub-tasks. The entire block is removed as a unit. Completed task history lives in git log.
 
 Top-level tasks should never be marked `[x]`. The `[x]` checkbox is only for sub-tasks tracking progress on a parent. When a top-level task is complete, remove the entire block — don't check the box. Linters should flag `[x]` on top-level tasks as a warning.
+
+Taskgrind-powered repos may also require the completion commit to include
+`closes <task-id>` in the commit message, using lowercase `closes` followed by
+the task's exact kebab-case **ID**. This token lets
+`taskgrind/scripts/lint-pr-shape.mjs` distinguish a doc-only commit that closes
+a queued task from untasked doc drift:
+
+```text
+docs: update setup notes
+
+closes setup-docs
+```
 
 This keeps the file focused on pending work. Each agent works on a different task (via claiming), so removals target different lines and merge cleanly.
 
