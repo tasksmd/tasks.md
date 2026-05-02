@@ -261,7 +261,7 @@ rule.
 The [`@tasks-md/cli`](packages/cli/) provides task queue management — pick tasks, lint files, sync from issue trackers, and install agent commands.
 
 ```bash
-npx @tasks-md/cli pick              # pick highest-priority unblocked task
+npx @tasks-md/cli pick              # pick highest-priority unblocked non-standing task
 npx @tasks-md/cli init              # create TASKS.md in current repo
 npx @tasks-md/cli install           # install /next-task for detected agents
 npx @tasks-md/cli stats             # queue overview and throughput
@@ -272,7 +272,7 @@ npx @tasks-md/cli lint TASKS.md     # validate against spec
 
 The [`tasks-mcp`](packages/mcp/) server lets any MCP-compatible agent manage TASKS.md files programmatically — list, pick, target exact IDs, claim, unclaim, complete, and add tasks without file parsing.
 
-Use `pick_task` for both queue mode and targeted mode. With no `task_id`, it walks P0→P3 and returns the best unblocked, unclaimed task. With `task_id`, it bypasses queue ordering, looks for one exact `**ID**`, and returns a structured status for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, or `claimed`. Pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This composes with `/next-task <task-id>` and standing loops like `standing-audit-gap-loop` without custom file parsing.
+Use `pick_task` for both queue mode and targeted mode. With no `task_id`, it walks P0→P3 and returns the best unblocked, unclaimed task using the same auto-pick rules as the CLI, including skipping `standing-loop` tasks. With `task_id`, it bypasses queue ordering, looks for one exact `**ID**`, and returns a structured status for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, or `claimed`. Pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This composes with `/next-task <task-id>` and standing loops like `standing-audit-gap-loop` without custom file parsing.
 
 ```json
 {
@@ -287,7 +287,7 @@ Use `pick_task` for both queue mode and targeted mode. With no `task_id`, it wal
 
 ### Linter
 
-The [`@tasks-md/lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, dangling blocker references, and tag casing.
+The [`@tasks-md/lint`](packages/lint/) CLI validates TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, dangling blocker references, and tag casing. Directory targets include direct `.md` files and nested `TASKS.md` files for monorepos.
 
 ```bash
 npx @tasks-md/lint TASKS.md           # lint one file

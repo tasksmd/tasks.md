@@ -221,6 +221,33 @@ describe("claimTask", () => {
     expect(updated).toContain("- [ ] Fix the authentication bug (@cursor)");
   });
 
+  it("prefers an exact ID over an earlier summary substring match", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Summary mentions exact-target",
+      "  - **ID**: summary-collision",
+      "",
+      "- [ ] Exact ID target",
+      "  - **ID**: exact-target",
+      "",
+    ].join("\n");
+    await writeFile(filePath, content, "utf-8");
+
+    const files = [makeTaskFile(content, filePath)];
+    const result = await claimTask(files, "exact-target", "cascade");
+
+    expect(result.isError).toBeUndefined();
+    expect(result.text).toContain('Claimed "Exact ID target"');
+
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("- [ ] Summary mentions exact-target\n");
+    expect(updated).toContain("- [ ] Exact ID target (@cascade)");
+  });
+
   it("strips @ prefix from agent name", async () => {
     const filePath = join(tmpDir, "TASKS.md");
     const content = "# Tasks\n\n## P1\n\n- [ ] Some task\n";
@@ -310,6 +337,33 @@ describe("unclaimTask", () => {
     const updated = await readFile(filePath, "utf-8");
     expect(updated).toContain("- [ ] Fix auth bug\n");
     expect(updated).not.toContain("@cascade");
+  });
+
+  it("prefers an exact ID over an earlier summary substring match", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Summary mentions exact-target (@summary-agent)",
+      "  - **ID**: summary-collision",
+      "",
+      "- [ ] Exact ID target (@exact-agent)",
+      "  - **ID**: exact-target",
+      "",
+    ].join("\n");
+    await writeFile(filePath, content, "utf-8");
+
+    const files = [makeTaskFile(content, filePath)];
+    const result = await unclaimTask(files, "exact-target");
+
+    expect(result.isError).toBeUndefined();
+    expect(result.text).toContain('Unclaimed "Exact ID target"');
+
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("- [ ] Summary mentions exact-target (@summary-agent)");
+    expect(updated).toContain("- [ ] Exact ID target\n");
   });
 
   it("errors when task is not claimed", async () => {
@@ -430,6 +484,34 @@ describe("completeTask", () => {
     expect(updated).not.toContain("Migrate database");
   });
 
+  it("prefers an exact ID over an earlier summary substring match", async () => {
+    const filePath = join(tmpDir, "TASKS.md");
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Summary mentions exact-target",
+      "  - **ID**: summary-collision",
+      "",
+      "- [ ] Exact ID target",
+      "  - **ID**: exact-target",
+      "",
+    ].join("\n");
+    await writeFile(filePath, content, "utf-8");
+
+    const files = [makeTaskFile(content, filePath)];
+    const result = await completeTask(files, "exact-target");
+
+    expect(result.isError).toBeUndefined();
+    expect(result.text).toContain('Removed "Exact ID target"');
+
+    const updated = await readFile(filePath, "utf-8");
+    expect(updated).toContain("- [ ] Summary mentions exact-target");
+    expect(updated).not.toContain("Exact ID target");
+    expect(updated).not.toContain("  - **ID**: exact-target");
+  });
+
   it("returns error when task not found", async () => {
     const filePath = join(tmpDir, "TASKS.md");
     const content = "# Tasks\n\n## P1\n\n- [ ] Existing task\n";
@@ -543,6 +625,30 @@ describe("pickTask", () => {
     expect(data.task.summary).toBe("Ship the bug fix");
   });
 
+  it("skips standing-loop tasks during automatic selection", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Refill the queue",
+      "  - **ID**: standing-audit-gap-loop",
+      "  - **Tags**: standing-loop, audit-only",
+      "",
+      "## P1",
+      "",
+      "- [ ] Ship normal work",
+      "  - **ID**: ship-normal-work",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("Ship normal work");
+    expect(data.task.metadata.id).toBe("ship-normal-work");
+  });
+
   it("returns no task when every candidate has a **Blocked** reason", async () => {
     const content = [
       "# Tasks",
@@ -639,6 +745,39 @@ describe("pickTask", () => {
     expect(data.resumed).toBe(true);
     expect(data.summary).toContain("Resuming");
     expect(data.summary).toContain("@cascade");
+  });
+
+  it("does not resume standing-loop claims during automatic selection", async () => {
+    let tmpDir: string;
+    tmpDir = await mkdtemp(join(tmpdir(), "tasks-pick-standing-loop-"));
+    try {
+      const filePath = join(tmpDir, "TASKS.md");
+      const content = [
+        "# Tasks",
+        "",
+        "## P0",
+        "",
+        "- [ ] Refill the queue (@cascade)",
+        "  - **ID**: standing-audit-gap-loop",
+        "  - **Tags**: standing-loop, audit-only",
+        "",
+        "## P1",
+        "",
+        "- [ ] Ship normal work",
+        "  - **ID**: ship-normal-work",
+        "",
+      ].join("\n");
+      await writeFile(filePath, content, "utf-8");
+
+      const files = [makeTaskFile(content, filePath)];
+      const result = await pickTask(files, { agent_name: "cascade" });
+      const data = JSON.parse(result.text);
+
+      expect(data.task.summary).toBe("Ship normal work");
+      expect(data.resumed).toBeUndefined();
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it("resumes prior claim with 'in progress' suffix", async () => {
@@ -1333,6 +1472,39 @@ describe("enrichTask", () => {
     const refreshed = parseTasksContent(updated, filePath);
     expect(refreshed[0].metadata.research).toContain("2026-04-10 — initial draft");
     expect(refreshed[0].metadata.research).toContain("2026-04-20 — updated draft");
+  });
+
+  it("prefers an exact ID over an earlier summary substring match", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P1",
+        "",
+        "- [ ] Summary mentions exact-target",
+        "  - **ID**: summary-collision",
+        "",
+        "- [ ] Exact ID target",
+        "  - **ID**: exact-target",
+        "",
+      ].join("\n")
+    );
+
+    const result = await enrichTask(taskFiles, "exact-target", {
+      research: "Resolved the summary collision.",
+      date: "2026-04-20",
+    });
+
+    expect(result.isError).toBeUndefined();
+    expect(result.text).toContain('Enriched "Exact ID target"');
+
+    const updated = await readFile(filePath, "utf-8");
+    const summaryTaskIndex = updated.indexOf("- [ ] Summary mentions exact-target");
+    const exactTaskIndex = updated.indexOf("- [ ] Exact ID target");
+    const researchIndex = updated.indexOf("- **Research**: 2026-04-20");
+    expect(summaryTaskIndex).toBeGreaterThanOrEqual(0);
+    expect(exactTaskIndex).toBeGreaterThan(summaryTaskIndex);
+    expect(researchIndex).toBeGreaterThan(exactTaskIndex);
   });
 
   it("never touches the **Blocked** or **Blocked by** lines", async () => {

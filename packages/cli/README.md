@@ -20,7 +20,7 @@ npx @tasks-md/cli pick
 
 ### `tasks pick`
 
-Pick the highest-priority unblocked, unclaimed task. Uses a deterministic algorithm: walks P0→P3, skips blocked/claimed tasks, scores by unblocking impact.
+Pick the highest-priority unblocked, unclaimed task. Uses a deterministic algorithm: walks P0→P3, skips blocked, claimed, and `standing-loop` tasks, scores by unblocking impact.
 
 ```bash
 tasks pick                    # pick best task

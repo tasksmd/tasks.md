@@ -6,29 +6,6 @@
 
 ## P2
 
-- [ ] Reconcile session 28-30 follow-up commits onto main
-  - **ID**: reconcile-session-28-30-followups
-  - **Tags**: lint, mcp, parser, delivery
-  - **Details**: Branch `fix/mcp-exact-id-mutations-session-29` (now pushed
-    to origin) holds four shipped-but-unmerged fixes from the 2026-05-01
-    taskgrind run (sessions 28-30). After PR #33 merges, cherry-pick or
-    re-apply these onto main since they are not on the current PR #33 head:
-    `5e22e03` fix(lint): discover nested TASKS.md files when a directory is
-    passed to `tasks-lint`. `6d5d8af` fix(lint): re-validate `--fix` output
-    so removed completed-task metadata no longer reports orphaned-metadata
-    errors. `09d8c8a` fix(mcp): prefer exact `**ID**:` matches over fuzzy
-    summary contains for mutation tools so operations target the right task
-    when summaries overlap. `ff35069` fix(parser): skip tasks tagged
-    `standing-loop` in `pickBestTask` auto-pick.
-  - **Files**: `packages/lint/src/lint.ts`, `packages/lint/src/lint.test.ts`,
-    `packages/mcp/src/tools.ts`, `packages/mcp/src/tools.test.ts`,
-    `packages/mcp/src/index.ts`, `packages/parser/src/index.ts`,
-    `packages/parser/src/index.test.ts`
-  - **Acceptance**: Each cherry-picked commit lands on `main` via a PR
-    with passing `npm run build`, `npm test`, `npm run lint`,
-    `npx -y @tasks-md/lint TASKS.md`. Branch
-    `fix/mcp-exact-id-mutations-session-29` is deleted after delivery.
-
 - [ ] File Bosun follow-up: deliver orphan `main` commit `924f8f14`
   - **ID**: bosun-orphan-main-commit-924f8f14
   - **Tags**: bosun, delivery, cross-repo

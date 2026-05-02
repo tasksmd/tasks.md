@@ -76,12 +76,12 @@ server.registerTool(
     title: "Claim Task",
     description:
       "Claim a task by appending (@agent-name) to the task line. " +
-      "Identifies the task by summary substring or ID.",
+      "Identifies the task by exact ID first, then summary substring.",
     inputSchema: z.object({
       query: z
         .string()
         .describe(
-          "Task summary substring or task ID to match"
+          "Task ID or summary substring to match. Exact IDs win before summary matches."
         ),
       agent_name: z
         .string()
@@ -108,13 +108,14 @@ server.registerTool(
     title: "Unclaim Task",
     description:
       "Remove a claim from a task, making it available for other agents. " +
+      "Identifies the task by exact ID first, then summary substring. " +
       "Use for stale claim recovery when an agent crashed or its session ended " +
       "before completing the task. Per spec: check git log first — if no commits " +
       "from the claiming agent in 30+ minutes, the claim is likely stale.",
     inputSchema: z.object({
       query: z
         .string()
-        .describe("Task summary substring or task ID to match"),
+        .describe("Task ID or summary substring to match. Exact IDs win before summary matches."),
     }),
   },
   async ({ query }) => {
@@ -137,13 +138,13 @@ server.registerTool(
     title: "Complete Task",
     description:
       "Remove a completed task from TASKS.md. " +
-      "Identifies the task by summary substring or ID, then removes the entire task block. " +
+      "Identifies the task by exact ID first, then summary substring, and removes the entire task block. " +
       "Per spec, top-level tasks are removed on completion — never marked [x]. " +
       "Always use this tool instead of manually editing the checkbox.",
     inputSchema: z.object({
       query: z
         .string()
-        .describe("Task summary substring or task ID to match"),
+        .describe("Task ID or summary substring to match. Exact IDs win before summary matches."),
     }),
   },
   async ({ query }) => {
@@ -302,7 +303,7 @@ server.registerTool(
     inputSchema: z.object({
       query: z
         .string()
-        .describe("Task summary substring or task ID to match"),
+        .describe("Task ID or summary substring to match. Exact IDs win before summary matches."),
       research: z
         .string()
         .describe(

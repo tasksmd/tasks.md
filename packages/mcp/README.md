@@ -26,6 +26,7 @@ npx tasks-mcp
 | `unclaim_task` | Remove a claim from a task for stale claim recovery when an agent crashed or its session ended |
 | `complete_task` | Remove a completed task block from the file |
 | `add_task` | Add a new task under the specified priority heading |
+| `enrich_task` | Append research notes to a blocked task without changing its blocker metadata |
 
 ## Setup
 
@@ -65,12 +66,15 @@ npm start
 The server discovers all `TASKS.md` files from the git root down. It parses each file into structured task data including priority, metadata (ID, tags, details, files, acceptance, blocked-by), claim status, and line numbers.
 
 - **`list_tasks`** returns all tasks sorted by priority with optional filters
-- **`pick_task`** walks P0→P3, skips blocked/claimed tasks, scores by unblocking impact, and returns the single best task
-- **`pick_task` with `task_id`** bypasses queue order and targets one exact `**ID**`. It returns structured `status` values for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, and `claimed`; pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This is the MCP equivalent of `/next-task <task-id>`, including standing loops such as `standing-audit-gap-loop`.
-- **`claim_task`** matches by ID or summary substring and appends `(@agent-name)`
-- **`unclaim_task`** matches by ID or summary substring and removes the `(@agent-name)` claim
-- **`complete_task`** matches by ID or summary substring and removes the entire task block
+- **`pick_task`** walks P0→P3, skips blocked, claimed, and `standing-loop` tasks, scores by unblocking impact, and returns the single best task
+- **`pick_task` with `task_id`** bypasses queue order and targets one exact `**ID**`. It returns structured `status` values for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, and `claimed`; pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This is the MCP equivalent of `/next-task <task-id>`, including standing loops such as `standing-audit-gap-loop` (which auto-pick skips by design).
+- **`claim_task`** first looks for an exact `**ID**`, then falls back to a summary substring, and appends `(@agent-name)`
+- **`unclaim_task`** first looks for an exact `**ID**`, then falls back to a summary substring, and removes the `(@agent-name)` claim
+- **`complete_task`** first looks for an exact `**ID**`, then falls back to a summary substring, and removes the entire task block
 - **`add_task`** inserts under the correct priority heading, creating the section if needed
+- **`enrich_task`** first looks for an exact `**ID**`, then falls back to a summary substring, and appends research context without touching `**Blocked**` / `**Blocked by**`
+
+For mutation tools, exact ID matching wins even when an earlier task summary contains the same query. Use `pick_task` with `task_id` when you need ID-only behavior that reports missing, duplicate, blocked, or claimed targets instead of falling back to summaries.
 
 ## License
 

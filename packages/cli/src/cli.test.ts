@@ -63,6 +63,23 @@ describe("pickBestTask", () => {
     expect(result!.task.summary).toBe("Free task");
   });
 
+  it("skips standing-loop tasks during automatic selection", () => {
+    const files = makeTaskFiles(
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] Refill the queue",
+        "  - **ID**: standing-audit-gap-loop",
+        "  - **Tags**: standing-loop, audit-only", "",
+        "## P1", "",
+        "- [ ] Normal task", "",
+      ].join("\n")
+    );
+    const result = pickBestTask(files);
+    expect(result).toBeDefined();
+    expect(result!.task.summary).toBe("Normal task");
+  });
+
   it("returns undefined for empty queue", () => {
     const files = makeTaskFiles("# Tasks\n\n## P1\n");
     expect(pickBestTask(files)).toBeUndefined();
@@ -202,6 +219,37 @@ describe("CLI", () => {
       expect(result.status).toBe(0);
       expect(result.stdout).toMatch(/Picked "Do something"/);
       expect(result.stdout).toMatch(/ID: do-it/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("pick skips standing-loop tasks", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] Refill the queue",
+        "  - **ID**: standing-audit-gap-loop",
+        "  - **Tags**: standing-loop, audit-only", "",
+        "## P1", "",
+        "- [ ] Do normal work",
+        "  - **ID**: normal-work", "",
+      ].join("\n")
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    spawnSync("git", ["add", "."], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/Picked "Do normal work"/);
+      expect(result.stdout).toMatch(/ID: normal-work/);
+      expect(result.stdout).not.toMatch(/standing-audit-gap-loop/);
     } finally {
       rmSync(dir, { recursive: true });
     }

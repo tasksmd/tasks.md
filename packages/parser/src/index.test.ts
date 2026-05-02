@@ -866,3 +866,71 @@ describe("findTasksById", () => {
     expect(matches.map((t) => t.summary)).toEqual(["First", "Second"]);
   });
 });
+
+describe("pickBestTask and standing-loop tasks", () => {
+  it("skips standing-loop tasks during automatic selection", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Refill the queue",
+      "  - **ID**: standing-audit-gap-loop",
+      "  - **Tags**: standing-loop, audit-only",
+      "",
+      "## P1",
+      "",
+      "- [ ] Ship normal work",
+      "  - **ID**: ship-normal-work",
+      "",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const result = pickBestTask([{ path: TEST_FILE, tasks }]);
+
+    expect(result).toBeDefined();
+    expect(result!.task.metadata.id).toBe("ship-normal-work");
+  });
+
+  it("does not resume a standing-loop claim without an exact target", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Refill the queue (@cascade)",
+      "  - **ID**: standing-audit-gap-loop",
+      "  - **Tags**: standing-loop, audit-only",
+      "",
+      "## P1",
+      "",
+      "- [ ] Ship normal work",
+      "  - **ID**: ship-normal-work",
+      "",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const result = pickBestTask([{ path: TEST_FILE, tasks }], undefined, "cascade");
+
+    expect(result).toBeDefined();
+    expect(result!.resumed).toBeUndefined();
+    expect(result!.task.metadata.id).toBe("ship-normal-work");
+  });
+
+  it("returns undefined when only standing-loop tasks remain", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Refill the queue",
+      "  - **ID**: standing-audit-gap-loop",
+      "  - **Tags**: standing-loop, audit-only",
+      "",
+    ].join("\n");
+
+    const tasks = parseTasksContent(content, TEST_FILE);
+
+    expect(pickBestTask([{ path: TEST_FILE, tasks }])).toBeUndefined();
+  });
+});
