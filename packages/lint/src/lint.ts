@@ -49,6 +49,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     filesChecked++;
     const lines = content.split("\n");
     const linesToRemove = new Set<number>();
+    let semanticContent = content;
     let lastPriority = -1;
     let inTask = false;
 
@@ -62,6 +63,10 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
       const lineNum = i + 1;
+
+      if (fixMode && linesToRemove.has(i)) {
+        continue;
+      }
 
       // Track HTML comments for policy validation
       if (line.includes("<!--")) {
@@ -200,11 +205,12 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         if (idx === 0) return true;
         return !(l.trim() === "" && fixedLines[idx - 1]?.trim() === "");
       });
-      writeFileSync(filePath, cleaned.join("\n"), "utf-8");
+      semanticContent = cleaned.join("\n");
+      writeFileSync(filePath, semanticContent, "utf-8");
     }
 
     // Semantic validation via shared parser — IDs and blockers
-    const tasks = parseTasksContent(content, filePath);
+    const tasks = parseTasksContent(semanticContent, filePath);
     for (const task of tasks) {
       if (task.metadata.id) {
         const id = task.metadata.id;
