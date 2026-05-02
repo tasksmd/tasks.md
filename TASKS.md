@@ -6,19 +6,6 @@
 
 ## P2
 
-- [ ] Fix enrich_task missing Acceptance insertion (@devin-session-32)
-  - **ID**: fix-enrich-task-missing-acceptance
-  - **Tags**: mcp, bug, tests
-  - **Details**: `enrichTask` creates `  - **Acceptance**:` with no inline
-    value when `add_acceptance` is provided for a task that lacks Acceptance.
-    The parser requires a non-empty metadata value, so the added continuation
-    lines are not captured as `metadata.acceptance`.
-  - **Files**: `packages/mcp/src/tools.ts`,
-    `packages/mcp/src/tools.test.ts`
-  - **Acceptance**: Add a regression test that enriches a task without
-    Acceptance, re-parses the updated file, and sees the new acceptance text.
-    Fix the formatter so the generated TASKS.md block is parser-readable.
-
 ## P3
 
 - [ ] Set up custom domain for GitHub Pages

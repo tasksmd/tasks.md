@@ -741,11 +741,15 @@ export async function enrichTask(
       }
       updatedLines.splice(acceptanceEnd + 1, 0, acceptanceBlock);
     } else {
+      const [firstLine = "", ...remainingLines] = params.add_acceptance.trim().split("\n");
+      const continuationLines = remainingLines.map((line) =>
+        line.length > 0 ? `${continuationIndent}${line}` : line
+      );
       updatedLines.splice(
         startIndex + 1,
         0,
-        `${listIndent}- **Acceptance**:`,
-        acceptanceBlock
+        `${listIndent}- **Acceptance**: ${firstLine}`,
+        ...continuationLines
       );
     }
   }

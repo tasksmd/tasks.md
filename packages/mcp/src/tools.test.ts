@@ -1458,6 +1458,33 @@ describe("enrichTask", () => {
     expect(updated).toContain("    Rollout completes within 15 minutes of merge.");
   });
 
+  it("creates parser-readable **Acceptance** when the field is missing", async () => {
+    const { filePath, taskFiles } = await seed(
+      [
+        "# Tasks",
+        "",
+        "## P1",
+        "",
+        "- [ ] Ship release",
+        "  - **ID**: ship",
+        "  - **Blocked**: needs-credentials — ...",
+        "",
+      ].join("\n")
+    );
+
+    await enrichTask(taskFiles, "ship", {
+      research: "Added rollback acceptance criteria.",
+      date: "2026-04-20",
+      add_acceptance: "Rollback instructions are documented before deploy.",
+    });
+
+    const updated = await readFile(filePath, "utf-8");
+    const refreshed = parseTasksContent(updated, filePath);
+    expect(refreshed[0].metadata.acceptance).toBe(
+      "Rollback instructions are documented before deploy."
+    );
+  });
+
   it("rejects empty research notes", async () => {
     const { taskFiles } = await seed(
       "# Tasks\n\n## P1\n\n- [ ] Post in Slack\n  - **ID**: slack\n  - **Blocked**: needs-user-approval — ...\n"
