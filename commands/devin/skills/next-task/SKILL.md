@@ -36,7 +36,7 @@ if [ -f scripts/check-zero-ship-streak.mjs ]; then
 fi
 ```
 
-The script's first line is `STOP` or `CONTINUE`. `STOP` fires when the audit cascade is exhausted (last 3 commits on `origin/master` are docs-only with no `closes <task-id>` token) or when 100% of TASKS.md tasks carry a `**Human action required**` sub-bullet. Either signal means another autonomous session won't unblock anything — exit cleanly.
+The script's first line is `STOP` or `CONTINUE`. `STOP` fires when the audit cascade is exhausted (last 3 commits on `origin/master` are docs-only with no `closes <task-id>` token) or when 100% of TASKS.md tasks carry a non-empty `**Blocked**` metadata line. Either signal means another autonomous session won't unblock anything — exit cleanly.
 
 If your session prompt mentions a prior `productive_zero_ship` or `diminishing_returns` warning from the orchestrator, treat that as an additional hard stop independent of the script's output.
 

@@ -117,8 +117,8 @@ Hard stop conditions, checked at session entry:
 - If `git log --oneline -3 origin/master` shows 3 consecutive
   doc-only commits with no `closes <task-id>` token, exit
   immediately. The audit cascade is exhausted.
-- If 100% of P0–P3 tasks in `TASKS.md` carry a
-  `**Human action required**` sub-bullet, exit immediately. Don't
+- If 100% of P0–P3 tasks in `TASKS.md` carry a non-empty
+  `**Blocked**` metadata line, exit immediately. Don't
   run the audit cascade in this state.
 - If a previous session reported `productive_zero_ship` or
   `diminishing_returns`, treat it as a hard stop, not a hint.
@@ -135,12 +135,12 @@ the session prompt before doing anything else.
 If a task fundamentally requires a forbidden action (Slack post,
 DevPortal UI submit, prod deploy, infra request):
 
-1. Add this exact sub-bullet under the task in `TASKS.md`:
-   `**Human action required**: <one-sentence reason>`
+1. Add this exact metadata line under the task in `TASKS.md`:
+   `**Blocked**: <one-sentence reason>`
 2. Commit only that `TASKS.md` edit (one commit, one task).
 3. Move to the next task.
 
-Don't "skip" by silently moving on — the HAR marker is the deliverable.
+Don't "skip" by silently moving on — the `**Blocked**` marker is the deliverable.
 The marker tells future sessions and humans exactly what's blocking
 the task.
 
@@ -190,8 +190,8 @@ only edit this template if a pattern across multiple repos demands it.
 
 ## Skip
 
-- Any task with a `**Human action required**` sub-bullet.
-- Any task `**Blocked by**` a HAR-marked task (transitive blockers
+- Any task with a non-empty `**Blocked**` metadata line.
+- Any task `**Blocked by**` a blocked task (transitive blockers
   count).
 - Counter-update tasks (rule 8).
 - Single-finding doc-drift fixes (rule 9).
@@ -202,7 +202,7 @@ only edit this template if a pattern across multiple repos demands it.
 
 When in doubt, exit early with a one-line summary commit on the
 current branch rather than ship busywork. A skipped task with a
-"Human action required" sub-bullet is a successful session. A
+`**Blocked**` metadata line is a successful session. A
 zero-shipped session that correctly identifies the queue as blocked
 is a successful session. Better to land 8 hours of substantive code
 in a 24h budget and exit cleanly than to fill 24h with doc drift.

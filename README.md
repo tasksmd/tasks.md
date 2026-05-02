@@ -188,7 +188,7 @@ standing-loop task, commits, and stops. See
 
 When you type `/next-task` or `/next-task <task-id>`, the agent runs this flow:
 
-1. **Stop check** — Runs `scripts/check-zero-ship-streak.mjs` if the repo ships it and exits immediately on `STOP` output. Catches exhausted audit cascades (last 3 commits on `origin/master` were docs-only with no `closes <task-id>`) and fully-blocked queues (100% of tasks marked `**Human action required**`) before wasting a session on busywork
+1. **Stop check** — Runs `scripts/check-zero-ship-streak.mjs` if the repo ships it and exits immediately on `STOP` output. Catches exhausted audit cascades (last 3 commits on `origin/master` were docs-only with no `closes <task-id>`) and fully-blocked queues (100% of tasks marked with non-empty `**Blocked**` metadata) before wasting a session on busywork
 2. **Snapshot** — Reads git status, current branch, and TASKS.md in one shot to orient without redundant tool calls
 3. **Preserve** — If the worktree is dirty, keeps existing edits in place, avoids them when possible, and stages only its own hunks when it must touch a shared file
 4. **Tidy** — Merges ready PRs, closes stale ones, deletes merged branches, pulls main

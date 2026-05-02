@@ -117,7 +117,9 @@ The canonical [`next-task` skill](../commands/next-task.md) (and its
 `scripts/check-zero-ship-streak.mjs` at session entry per
 [`commit c974804`](https://github.com/tasksmd/tasks.md/commit/c974804).
 If you've adopted the script (Option A or B), the skill will pick
-it up automatically.
+it up automatically. The stop check follows the canonical
+`**Blocked**` metadata field from the TASKS.md spec when it detects
+fully blocked queues.
 
 ## Wiring the counter-precision rule
 
@@ -181,7 +183,7 @@ learned" section.
   - **Rule 9** — PRs #110, #111, #112, #114, #117 each fixed
     exactly one docs-only finding in one file.
   - **Rule 10** — 17 sessions ran after the queue first reached
-    100%-HAR-marked. The orchestrator's `productive_zero_ship` and
+    100% `**Blocked**` tasks. The orchestrator's `productive_zero_ship` and
     `diminishing_returns` warnings fired repeatedly and were
     ignored.
 
