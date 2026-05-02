@@ -11,3 +11,6 @@ node_modules/
 
 # Pipeline artifacts
 .tmp/
+
+# Taskgrind session state — written by the running grind, not source
+.taskgrind-state
