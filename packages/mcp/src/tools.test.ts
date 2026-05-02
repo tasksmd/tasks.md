@@ -543,6 +543,30 @@ describe("pickTask", () => {
     expect(data.task.summary).toBe("Ship the bug fix");
   });
 
+  it("skips standing-loop tasks during automatic selection", async () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P0",
+      "",
+      "- [ ] Refill the queue",
+      "  - **ID**: standing-audit-gap-loop",
+      "  - **Tags**: standing-loop, audit-only",
+      "",
+      "## P1",
+      "",
+      "- [ ] Ship normal work",
+      "  - **ID**: ship-normal-work",
+      "",
+    ].join("\n");
+    const files = [makeTaskFile(content, "/test/TASKS.md")];
+    const result = await pickTask(files);
+    const data = JSON.parse(result.text);
+
+    expect(data.task.summary).toBe("Ship normal work");
+    expect(data.task.metadata.id).toBe("ship-normal-work");
+  });
+
   it("returns no task when every candidate has a **Blocked** reason", async () => {
     const content = [
       "# Tasks",
@@ -639,6 +663,39 @@ describe("pickTask", () => {
     expect(data.resumed).toBe(true);
     expect(data.summary).toContain("Resuming");
     expect(data.summary).toContain("@cascade");
+  });
+
+  it("does not resume standing-loop claims during automatic selection", async () => {
+    let tmpDir: string;
+    tmpDir = await mkdtemp(join(tmpdir(), "tasks-pick-standing-loop-"));
+    try {
+      const filePath = join(tmpDir, "TASKS.md");
+      const content = [
+        "# Tasks",
+        "",
+        "## P0",
+        "",
+        "- [ ] Refill the queue (@cascade)",
+        "  - **ID**: standing-audit-gap-loop",
+        "  - **Tags**: standing-loop, audit-only",
+        "",
+        "## P1",
+        "",
+        "- [ ] Ship normal work",
+        "  - **ID**: ship-normal-work",
+        "",
+      ].join("\n");
+      await writeFile(filePath, content, "utf-8");
+
+      const files = [makeTaskFile(content, filePath)];
+      const result = await pickTask(files, { agent_name: "cascade" });
+      const data = JSON.parse(result.text);
+
+      expect(data.task.summary).toBe("Ship normal work");
+      expect(data.resumed).toBeUndefined();
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it("resumes prior claim with 'in progress' suffix", async () => {

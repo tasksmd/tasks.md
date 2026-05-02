@@ -65,8 +65,8 @@ npm start
 The server discovers all `TASKS.md` files from the git root down. It parses each file into structured task data including priority, metadata (ID, tags, details, files, acceptance, blocked-by), claim status, and line numbers.
 
 - **`list_tasks`** returns all tasks sorted by priority with optional filters
-- **`pick_task`** walks P0→P3, skips blocked/claimed tasks, scores by unblocking impact, and returns the single best task
-- **`pick_task` with `task_id`** bypasses queue order and targets one exact `**ID**`. It returns structured `status` values for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, and `claimed`; pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This is the MCP equivalent of `/next-task <task-id>`, including standing loops such as `standing-audit-gap-loop`.
+- **`pick_task`** walks P0→P3, skips blocked, claimed, and `standing-loop` tasks, scores by unblocking impact, and returns the single best task
+- **`pick_task` with `task_id`** bypasses queue order and targets one exact `**ID**`. It returns structured `status` values for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, and `claimed`; pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This is the MCP equivalent of `/next-task <task-id>`, including standing loops such as `standing-audit-gap-loop` (which auto-pick skips by design).
 - **`claim_task`** matches by ID or summary substring and appends `(@agent-name)`
 - **`unclaim_task`** matches by ID or summary substring and removes the `(@agent-name)` claim
 - **`complete_task`** matches by ID or summary substring and removes the entire task block

@@ -248,6 +248,14 @@ export function isBlocked(task: Task, allIds: Set<string>): boolean {
   return task.metadata.blockedBy.some((id) => allIds.has(id));
 }
 
+function hasTag(task: Task, tag: string): boolean {
+  return task.metadata.tags?.some((taskTag) => taskTag.toLowerCase() === tag.toLowerCase()) ?? false;
+}
+
+function isStandingLoopTask(task: Task): boolean {
+  return hasTag(task, "standing-loop");
+}
+
 // ── Task picking utilities (shared by CLI and MCP) ──
 
 /** Count how many other tasks this task unblocks by completing. */
@@ -275,7 +283,7 @@ export interface PickResult {
 
 /**
  * Pick the highest-priority unblocked, unclaimed task using a deterministic algorithm.
- * Walks P0-P3, skips blocked/claimed, scores by unblocking impact then tag overlap.
+ * Walks P0-P3, skips blocked/claimed/standing-loop tasks, scores by unblocking impact then tag overlap.
  */
 export function pickBestTask(
   taskFiles: TaskFile[],
@@ -291,7 +299,8 @@ export function pickBestTask(
     const priorClaim = allTasks.find(
       (t) =>
         t.claimed?.replace(/^@/, "").toLowerCase().startsWith(normalizedAgent) &&
-        !isBlocked(t, allIds)
+        !isBlocked(t, allIds) &&
+        !isStandingLoopTask(t)
     );
     if (priorClaim) {
       return {
@@ -304,7 +313,7 @@ export function pickBestTask(
   }
 
   let candidates = allTasks.filter(
-    (t) => !t.claimed && !isBlocked(t, allIds)
+    (t) => !t.claimed && !isBlocked(t, allIds) && !isStandingLoopTask(t)
   );
 
   if (tags?.length) {
