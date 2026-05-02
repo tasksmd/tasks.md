@@ -167,19 +167,4 @@
     --no-merged main` returns only branches with active or planned
     work.
 
-- [ ] Investigate root cause of npm-install version artifact files
-  - **ID**: investigate-npm-version-artifacts
-  - **Tags**: hygiene, npm
-  - **Details**: The tasks.md worktree contains three untracked files
-    that look like accidental npm output: `=1.11.0`, `=2.32.4`,
-    `=5.5.0`. These appear to come from running `npm install
-    package@>=X` without quoting the version specifier, so the shell
-    redirected output to files literally named `=X.Y.Z`. Identify which
-    npm command produced them, document the trap in `AGENTS.md` if
-    appropriate, and remove the files.
-  - **Files**: `=1.11.0`, `=2.32.4`, `=5.5.0` (to delete), optionally
-    `AGENTS.md` (to add a note)
-  - **Acceptance**: The three files are removed from the worktree, the
-    root-cause command is identified (e.g., from shell history), and
-    either `.gitignore` or `AGENTS.md` is updated if there's a
-    recurring pattern worth documenting.
+
