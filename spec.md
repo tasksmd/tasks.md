@@ -468,18 +468,20 @@ Reference TASKS.md from your AGENTS.md:
 
 ## Agent Commands
 
-Ready-made `/next-task` commands are available for [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://developers.openai.com/codex/skills), [Cursor](https://cursor.com/changelog/1-6), [Devin](https://windsurf.com/devin), [Gemini CLI](https://geminicli.com/docs/cli/custom-commands/), and [Windsurf](https://docs.codeium.com/windsurf/workflows). Each implements the full pick → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
+Ready-made `/next-task` commands are available for [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://developers.openai.com/codex/skills), [Cursor](https://cursor.com/changelog/1-6), [Devin](https://windsurf.com/devin), [Gemini CLI](https://geminicli.com/docs/cli/custom-commands/), and [Windsurf](https://docs.codeium.com/windsurf/workflows). Each implements the full pick/target → claim → work → remove → loop cycle. See the [commands/](https://github.com/tasksmd/tasks.md/tree/main/commands) directory.
+
+Passing an exact task ID targets that task instead of queue-picking. For example, `/next-task standing-audit-gap-loop` looks for `**ID**: standing-audit-gap-loop`, refuses missing, duplicate, claimed, or blocked targets, and stops after the targeted task is shipped.
 
 Invocation syntax varies by agent:
 
 | Agent | Invoke |
 |-------|--------|
-| Claude Code | `/next-task` |
-| Codex | `$next-task` |
-| Cursor | `/next-task` |
-| Devin | `/next-task` |
-| Gemini CLI | `/next-task` |
-| Windsurf | `/next-task` |
+| Claude Code | `/next-task [task-id]` |
+| Codex | `$next-task [task-id]` |
+| Cursor | `/next-task [task-id]` |
+| Devin | `/next-task [task-id]` |
+| Gemini CLI | `/next-task [task-id]` |
+| Windsurf | `/next-task [task-id]` |
 
 ## Orchestrator Integration
 

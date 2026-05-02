@@ -1,6 +1,6 @@
 ---
 name: next-task
-description: Pick and work on the next task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", or wants to start an autonomous coding loop.
+description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, or passes an exact task ID like `/next-task my-task-id`.
 allowed-tools:
   - read
   - edit
@@ -18,7 +18,7 @@ permissions:
 
 # Next Task
 
-Pick the highest-priority unblocked task from TASKS.md and work on it autonomously. Loop until the queue is empty or the user stops you.
+If a task ID is supplied, target that exact task; otherwise pick the highest-priority unblocked task from TASKS.md and work on it autonomously. Queue mode loops until the queue is empty or the user stops you; targeted mode stops after that task is shipped or explained.
 
 ## Pre-flight stop check
 
@@ -61,6 +61,23 @@ After reading TASKS.md, check for `<!-- policy: ... -->` HTML comments. These ar
 - **Section-level policies** (after a `## P*` heading) apply only to tasks in that section
 
 Read all policies before picking a task. Follow them alongside the task's own metadata. If a policy conflicts with a task's instructions, the policy takes precedence — it's the project owner's rule.
+
+## Optional task-ID argument
+
+The command accepts one optional argument: an exact TASKS.md `**ID**` value. Treat any non-empty text after the command name as the target ID after trimming whitespace; do not fuzzy-match or normalize beyond exact `**ID**:` comparison. If the context snapshot only loaded the root `TASKS.md`, search the current repo's `TASKS.md` files before declaring the target missing or duplicate.
+
+- `/next-task` — queue mode: follow the decision tree, resume work, pick P0→P3, and roam or audit when the current queue is empty.
+- `/next-task <task-id>` — targeted mode: locate exactly one task whose `**ID**:` equals `<task-id>`. Targeted mode bypasses priority ordering and "hardest first", but never bypasses policies, claims, blockers, forbidden-work checks, verification, or completion removal.
+
+If a target ID is provided, handle it before [Resume unfinished work](#resume-unfinished-work) and [Pick a task](#pick-a-task):
+
+1. **Missing** — if no task has that ID, report that `<task-id>` was not found and stop. Do not pick another task, roam, or run the audit.
+2. **Duplicate** — if more than one task has that ID, report every matching file/path and stop so the queue can be fixed.
+3. **Claimed** — if the target is claimed by another agent, report the claim and stop. If it is claimed by you, resume it.
+4. **Blocked** — if it has a non-empty `**Blocked**:` reason, or any `**Blocked by**:` reference that still exists in any TASKS.md, report the blocker(s) and stop.
+5. **Actionable** — claim it (or keep your existing claim), then continue at [Refuse forbidden work](#refuse-forbidden-work), [Plan](#plan-complex-tasks-only), and [Claim and do the work](#claim-and-do-the-work). When it completes, ship it and stop; do not fall through to generic queue mode unless the user invokes `/next-task` again.
+
+If the targeted task is refused because it requires forbidden work, add the `**Blocked**:` reason as usual, commit that hunk, explain the refusal, and stop instead of continuing to the next task.
 
 ## Decision tree
 
@@ -278,7 +295,7 @@ Scan TASKS.md for your `(@agent-id)` claim:
 
 ## Pick a task
 
-Walk **P0 → P1 → P2 → P3** in order. Within each level, prefer:
+When no task ID was provided, walk **P0 → P1 → P2 → P3** in order. Within each level, prefer:
 
 1. Tasks whose **ID** appears in another task's `**Blocked by**` — completing them unblocks others
 2. Tasks with no `**Blocked by**`, or whose blockers no longer exist in any TASKS.md
@@ -327,7 +344,7 @@ When a task requires a blocked-by-default action that the user has not approved:
    ```
 
 3. Stage only that hunk of `TASKS.md` and commit with a conventional message such as `chore: block <task-id> (<short-code>)`. Do not push an approval request anywhere public — the block lives in the file.
-4. Continue with the next highest-priority unblocked task. Future `/next-task` invocations will skip the blocked task automatically because the parser and task-picker treat a non-empty `**Blocked**:` as a block.
+4. Continue with the next highest-priority unblocked task. Future `/next-task` invocations will skip the blocked task automatically because the parser and task-picker treat a non-empty `**Blocked**:` as a block. In targeted mode, stop after committing the block instead of continuing to another task, because the user asked for that exact ID.
 
 Only unblock a task (remove the `**Blocked**:` line) when the user has explicitly approved the exact action in the current session — quoting the surface, recipient, and text if applicable — or when the external constraint has otherwise been resolved (credentials issued, legal sign-off received, etc.). Never reuse an approval across sessions.
 
@@ -432,17 +449,17 @@ If rebase conflicts on TASKS.md: re-read the file, re-apply only your task chang
 git checkout main 2>/dev/null || git checkout master && git pull --rebase
 ```
 
-Go back to [Find the queue](#find-the-queue) and pick the next task. Continue until the queue is empty or the user stops you.
+In queue mode, go back to [Find the queue](#find-the-queue) and pick the next task. Continue until the queue is empty or the user stops you. In targeted mode, stop after shipping the target task.
 
 ---
 
 ## Constraints
 
-- **Do not ask which task to pick** — walk P0→P3 and pick the first unblocked, unclaimed task. Asking wastes the user's time.
+- **Do not ask which task to pick in queue mode** — when no target ID is supplied, walk P0→P3 and pick the first unblocked, unclaimed task. Asking wastes the user's time.
 - **Do not ask for confirmation before starting** — announce the chosen task in one line and begin.
-- **Auto-roam when the queue is empty** — scan `~/apps/*/TASKS.md` for work in other repos. Only stop and audit when ALL repos are empty.
+- **Auto-roam when the queue is empty in queue mode** — scan `~/apps/*/TASKS.md` for work in other repos. Only stop and audit when ALL repos are empty. In targeted mode, stop on missing, blocked, or completed targets.
 - **Do not mark tasks `[x]`** — remove the entire block. Checked-off tasks clutter the queue. A task with code changes committed but still present in TASKS.md is **not done**.
-- **Do not stop after one task** — loop until the queue is empty or the user interrupts.
+- **Do not stop after one task in queue mode** — loop until the queue is empty or the user interrupts. In targeted mode, work only the requested ID and then stop.
 - **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
 - **Do not run blocked-by-default actions** — see [Refuse forbidden work](#refuse-forbidden-work). Instead of attempting a Slack/Jira/issue-comment/publish action, add `**Blocked**: <reason>` to the task so it's skipped in future sessions.
 - **Enrich before roaming** — when every remaining task is blocked, run [Enrich blocked tasks](#enrich-blocked-tasks) instead of jumping straight to another repo. Read-only research on the task's `**Research**:` field leaves the next session (or the human) with less work to do.

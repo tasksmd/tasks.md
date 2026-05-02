@@ -4,7 +4,7 @@ Ready-made commands for popular AI coding agents. Copy the files into your proje
 
 ## `/next-task`
 
-The full TASKS.md workflow: find → pick → claim → work → remove → loop.
+The full TASKS.md workflow: find → pick (or target an exact task ID) → claim → work → remove → loop.
 
 | Directory | Agent | Format | Install to |
 |-----------|-------|--------|------------|
