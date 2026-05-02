@@ -6,29 +6,6 @@
 
 ## P2
 
-- [ ] Stop hardcoding command frontmatter descriptions in `generate-commands.ts`
-  - **ID**: generate-commands-frontmatter-source
-  - **Tags**: cli, drift, tooling
-  - **Details**: `packages/cli/src/commands/generate-commands.ts` keeps
-    five hardcoded `description` strings (one per agent variant plus the
-    gemini TOML). Whenever someone updates a variant SKILL.md or the
-    canonical `commands/next-task.md`, the generator's strings drift
-    from reality and the `commands-drift` CI job rejects the next
-    regeneration. This was the immediate blocker on PR #33 (fixed by
-    1126a89, but the underlying class of bug remains). Make the
-    generator either (a) read the canonical description from
-    `commands/next-task.md` once and reuse it for every agent, or (b)
-    regenerate the canonical when the constants change. One source of
-    truth, one place to edit.
-  - **Files**: `packages/cli/src/commands/generate-commands.ts`,
-    `packages/cli/src/commands/generate-commands.test.ts`,
-    `commands/next-task.md`
-  - **Acceptance**: Generator no longer carries duplicated description
-    strings. Updating the canonical alone (or a single shared constant)
-    is enough to keep all six variants in sync. CI's `commands-drift`
-    job stays green after a description tweak without manually touching
-    the generator.
-
 - [ ] Reconcile session 28-30 follow-up commits onto main
   - **ID**: reconcile-session-28-30-followups
   - **Tags**: lint, mcp, parser, delivery
