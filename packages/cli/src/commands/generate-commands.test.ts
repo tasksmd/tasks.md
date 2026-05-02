@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { generateCommands } from "./generate-commands.js";
+import {
+  generateCommands,
+  AGENT_DESCRIPTION,
+  GEMINI_DESCRIPTION,
+} from "./generate-commands.js";
 
 let tempDir: string;
 
@@ -98,5 +102,31 @@ describe("generateCommands", () => {
     const result = generateCommands(tempDir);
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toContain("not found");
+  });
+
+  it("uses the same AGENT_DESCRIPTION across every markdown variant", () => {
+    // This test guards against the drift class of bug that motivated
+    // generate-commands-frontmatter-source: if anyone edits the description
+    // copy and only updates one variant, the unified constant catches the
+    // drift in CI before commands-drift fires.
+    generateCommands(tempDir);
+
+    const markdownVariants = [
+      "commands/claude/skills/next-task/SKILL.md",
+      "commands/codex/skills/next-task/SKILL.md",
+      "commands/devin/skills/next-task/SKILL.md",
+      "commands/windsurf/next-task.md",
+    ];
+
+    for (const path of markdownVariants) {
+      const content = readFileSync(join(tempDir, path), "utf-8");
+      expect(content).toContain(`description: ${AGENT_DESCRIPTION}`);
+    }
+  });
+
+  it("uses GEMINI_DESCRIPTION for the gemini TOML variant", () => {
+    generateCommands(tempDir);
+    const content = readFileSync(join(tempDir, "commands/gemini/next-task.toml"), "utf-8");
+    expect(content).toContain(`description = "${GEMINI_DESCRIPTION}"`);
   });
 });

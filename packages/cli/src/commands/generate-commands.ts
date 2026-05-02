@@ -8,6 +8,16 @@ interface AgentConfig {
   transform: (body: string) => string;
 }
 
+// Shared description copy. Edit here once — every markdown variant picks it up.
+// The Gemini TOML uses GEMINI_DESCRIPTION instead because TOML's double-quoted
+// string syntax can't carry the backticks and inline quotes from the long
+// markdown form without escaping.
+export const AGENT_DESCRIPTION =
+  'Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like `/next-task my-task-id`, or runs the standard `standing-audit-gap-loop` audit task.';
+
+export const GEMINI_DESCRIPTION =
+  "Pick a queued TASKS.md item, target an exact task ID, or run the standing audit loop";
+
 function withFrontmatter(frontmatter: string, body: string): string {
   return `${frontmatter}\n\n${body}`;
 }
@@ -25,7 +35,7 @@ function toGeminiToml(body: string): string {
     .join("\n");
 
   return [
-    'description = "Pick a queued TASKS.md item, target an exact task ID, or run the standing audit loop"',
+    `description = "${GEMINI_DESCRIPTION}"`,
     "",
     "prompt = '''",
     prompt,
@@ -36,22 +46,22 @@ function toGeminiToml(body: string): string {
 
 const CLAUDE_FRONTMATTER = `---
 name: next-task
-description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like \`/next-task my-task-id\`, or runs the standard \`standing-audit-gap-loop\` audit task.
+description: ${AGENT_DESCRIPTION}
 allowed-tools: Bash, Read, Write, Edit, MultiEdit, Grep, Glob, LS
 ---`;
 
 const CODEX_FRONTMATTER = `---
 name: next-task
-description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like \`/next-task my-task-id\`, or runs the standard \`standing-audit-gap-loop\` audit task.
+description: ${AGENT_DESCRIPTION}
 ---`;
 
 const WINDSURF_FRONTMATTER = `---
-description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like \`/next-task my-task-id\`, or runs the standard \`standing-audit-gap-loop\` audit task.
+description: ${AGENT_DESCRIPTION}
 ---`;
 
 const DEVIN_FRONTMATTER = `---
 name: next-task
-description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like \`/next-task my-task-id\`, or runs the standard \`standing-audit-gap-loop\` audit task.
+description: ${AGENT_DESCRIPTION}
 allowed-tools:
   - read
   - edit
