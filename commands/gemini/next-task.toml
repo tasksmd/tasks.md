@@ -31,12 +31,12 @@ Optional task-ID argument
 The command accepts one optional argument: an exact TASKS.md `**ID**` value. Treat any non-empty text after the command name as the target ID after trimming whitespace; do not fuzzy-match or normalize beyond exact `**ID**:` comparison. If the context snapshot only loaded the root `TASKS.md`, search the current repo's `TASKS.md` files before declaring the target missing or duplicate.
 - `/next-task` — queue mode: follow the decision tree, resume work, pick P0→P3, and roam or audit when the current queue is empty.
 - `/next-task <task-id>` — targeted mode: locate exactly one task whose `**ID**:` equals `<task-id>`. Targeted mode bypasses priority ordering and "hardest first", but never bypasses policies, claims, blockers, forbidden-work checks, verification, or completion removal.
-If a target ID is provided, handle it before Resume unfinished work and Pick a task:
+If a target ID is provided, handle it before [Resume unfinished work](#resume-unfinished-work) and [Pick a task](#pick-a-task):
 1. **Missing** — if no task has that ID, report that `<task-id>` was not found and stop. Do not pick another task, roam, or run the audit.
 2. **Duplicate** — if more than one task has that ID, report every matching file/path and stop so the queue can be fixed.
 3. **Claimed** — if the target is claimed by another agent, report the claim and stop. If it is claimed by you, resume it.
 4. **Blocked** — if it has a non-empty `**Blocked**:` reason, or any `**Blocked by**:` reference that still exists in any TASKS.md, report the blocker(s) and stop.
-5. **Actionable** — claim it (or keep your existing claim), then continue at Refuse forbidden work, Plan, and Claim and do the work. When it completes, ship it and stop; do not fall through to generic queue mode unless the user invokes `/next-task` again.
+5. **Actionable** — claim it (or keep your existing claim), then continue at [Refuse forbidden work](#refuse-forbidden-work), [Plan](#plan-complex-tasks-only), and [Claim and do the work](#claim-and-do-the-work). When it completes, ship it and stop; do not fall through to generic queue mode unless the user invokes `/next-task` again.
 If the targeted task is refused because it requires forbidden work, add the `**Blocked**:` reason as usual, commit that hunk, explain the refusal, and stop instead of continuing to the next task.
 Standing audit loop tasks
 A task is a standing audit loop when its `**ID**:` is `standing-audit-gap-loop` or its `**Tags**:` include `standing-loop`. When selected in queue mode or targeted mode:
