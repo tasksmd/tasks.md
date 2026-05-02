@@ -1,1 +1,4 @@
-commands/
+# Bundled commands directory at package root (copied during build for npm
+# distribution; see e4496c3). Anchor with leading slash so this rule does
+# not also match packages/cli/src/commands/, which holds tracked source.
+/commands/
