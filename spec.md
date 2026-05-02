@@ -412,6 +412,18 @@ When a task is done, the agent removes it from the file — the task line, its m
 
 Top-level tasks should never be marked `[x]`. The `[x]` checkbox is only for sub-tasks tracking progress on a parent. When a top-level task is complete, remove the entire block — don't check the box. Linters should flag `[x]` on top-level tasks as a warning.
 
+Taskgrind-powered repos may also require the completion commit to include
+`closes <task-id>` in the commit message, using lowercase `closes` followed by
+the task's exact kebab-case **ID**. This token lets
+`taskgrind/scripts/lint-pr-shape.mjs` distinguish a doc-only commit that closes
+a queued task from untasked doc drift:
+
+```text
+docs: update setup notes
+
+closes setup-docs
+```
+
 This keeps the file focused on pending work. Each agent works on a different task (via claiming), so removals target different lines and merge cleanly.
 
 ## Agent Behavior

@@ -101,12 +101,13 @@ exceptions with `<!-- counter-exact: <reason> -->`.
 ### 9. No single-finding doc-drift PRs
 
 A PR is acceptable only if it (a) closes a TASKS.md task via
-`closes <id>` in the commit message, OR (b) batches ≥3 distinct
-markdown findings into one commit, OR (c) is structural — adds /
-deletes / renames a markdown file. Single-finding doc-drift PRs
-(one stale port, one stale link, one stale path) are not
-acceptable — accumulate findings or skip them. Mechanically
-enforced by
+`closes <task-id>` in the HEAD commit message, using lowercase
+`closes` followed by the task's exact kebab-case `**ID**`, OR
+(b) batches ≥3 distinct markdown findings into one commit, OR
+(c) is structural — adds / deletes / renames a markdown file.
+Single-finding doc-drift PRs (one stale port, one stale link,
+one stale path) are not acceptable — accumulate findings or skip
+them. Mechanically enforced by
 [`taskgrind/scripts/lint-pr-shape.mjs`](taskgrind/scripts/lint-pr-shape.mjs)
 (or its installed copy); CI runs it on every PR.
 

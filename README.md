@@ -248,7 +248,7 @@ enforcement scripts that prevent these failure modes:
 | [`scripts/check-zero-ship-streak.mjs`](taskgrind/scripts/check-zero-ship-streak.mjs) | Pre-flight `STOP`/`CONTINUE` check — already wired into the `next-task` skill |
 | [`scripts/check-admin-merge-rate.mjs`](taskgrind/scripts/check-admin-merge-rate.mjs) | Counts admin self-merges in trailing 24h, exits non-zero at ≥5 |
 | [`scripts/safe-admin-merge.sh`](taskgrind/scripts/safe-admin-merge.sh) | Wrapper around `gh pr merge --admin` that runs the rate check first |
-| [`scripts/lint-pr-shape.mjs`](taskgrind/scripts/lint-pr-shape.mjs) | CI gate — refuses single-finding doc-only PRs without `closes <id>` |
+| [`scripts/lint-pr-shape.mjs`](taskgrind/scripts/lint-pr-shape.mjs) | CI gate — refuses single-finding doc-only PRs without `closes <task-id>` |
 
 See [`taskgrind/README.md`](taskgrind/README.md) for adoption options
 (copy / symlink / future npx) and the lessons that motivated each

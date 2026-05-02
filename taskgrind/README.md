@@ -163,7 +163,7 @@ This makes TASKS.md spec violations fail CI alongside your code lint.
 6. No roaming to other repos
 7. ≤5 admin self-merges per 24h
 8. No counter updates (use `N+` form)
-9. No single-finding doc-drift PRs (close a task or batch ≥3)
+9. No single-finding doc-drift PRs (`closes <task-id>` or batch ≥3)
 10. Stop when the audit cascade is exhausted
 
 ## Lessons learned (canonical seed)
