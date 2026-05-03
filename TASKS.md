@@ -8,7 +8,26 @@
 
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
   - **ID**: taskgrind-per-session-sync
-  - **Tags**: taskgrind, sync, queue, duplicate-work
+  - **Tags**: taskgrind, sync, queue, duplicate-work, cross-repo
+  - **Blocked**: needs-user-approval — the deliverable is a code
+    change in `/Users/fivanishche/apps/taskgrind` (`bin/taskgrind`,
+    `tests/git-sync.bats`, `README.md`, `man/taskgrind.1`), and
+    landing it requires pushing a feature branch to that remote and
+    opening an upstream PR — a cross-repo public write outside the
+    current `tasks.md` workspace that requires explicit
+    current-session operator approval. Additionally, the taskgrind
+    repo is being actively modified right now: 8 files dirty on
+    `main` including `bin/taskgrind`, `tests/features.bats`,
+    `tests/signals.bats`, `README.md`, `man/taskgrind.1`,
+    `docs/architecture.md`, `docs/user-stories.md`, and `TASKS.md`,
+    with a `bats tests/signals.bats` run in flight (PID 38645+) and
+    `.taskgrind-state` reporting `status=running session=4`. Two of
+    the three target files (`bin/taskgrind`, `README.md`) overlap
+    with the concurrent agent's WIP — picking this up from a
+    `tasks.md` session would race their edits. The previous
+    `**Blocked**` line on this task was unintentionally removed by
+    the squash-merge of #45 (which re-included session 4's pre-block
+    snapshot of TASKS.md); restoring it here.
   - **Details**: With `TG_SYNC_INTERVAL=5` (default), sessions 1-4
     work off the same stale `main`. During the 2026-05-02 tech-lead
     run, the operator merged session 1's PRs (which removed 5 task
