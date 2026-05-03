@@ -10,31 +10,6 @@
 
 ## P2
 
-- [ ] Sync end-to-end walkthrough in story 06 using the unified `tasks sync`
-  - **ID**: user-stories-sync-walkthrough
-  - **Tags**: docs, user-stories, sync, hardening
-  - **Details**: `docs/user-stories/06-issue-tracker-flows-to-agents.md`
-    documents the providers individually but never walks the
-    reader through one full cycle: GitHub issue → `tasks sync
-    github` → review TASKS.md → `tasks pick` → claim → close →
-    next sync (idempotency check). Add a `## Walkthrough: GitHub
-    issue to closed task` section that uses
-    `--repo octocat/hello-world --label tasks.md` and shows the
-    actual TASKS.md hunk produced, the `tasks pick` output,
-    `(@octocat-bot)` claim, the implementation commit's
-    `closes <task-id>` shape, and the second `tasks sync github
-    --merge` call demonstrating idempotency. Keep the walkthrough
-    under 60 lines. This complements the per-provider sections
-    that already exist; do not duplicate them.
-  - **Files**: `docs/user-stories/06-issue-tracker-flows-to-agents.md`
-  - **Acceptance**: Story 06 has a new `## Walkthrough: GitHub
-    issue to closed task` section showing one end-to-end cycle
-    with sample command + output blocks. Existing per-provider
-    sections unchanged. `npm run lint`, `npx -y @tasks-md/lint
-    TASKS.md` pass. The walkthrough's TASKS.md examples lint
-    clean.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
   - **ID**: taskgrind-per-session-sync
   - **Tags**: taskgrind, sync, queue, duplicate-work, cross-repo

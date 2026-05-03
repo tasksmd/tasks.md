@@ -150,6 +150,62 @@ Linear priority mapping: Urgent → P0, High → P1, Medium → P2, Low/No prior
 
 All three providers share one command — `tasks sync <provider>` — and the same bridge pattern: import the "what" from your tracker so agents can execute the "how".
 
+## Walkthrough: GitHub issue to closed task
+
+One full cycle, top to bottom — issue labeled in GitHub, synced into `TASKS.md`, picked, claimed, completed, then re-synced to confirm the loop is idempotent. The example uses [`octocat/hello-world`](https://github.com/octocat/hello-world) as the source repo and a `tasks.md`-labelled issue numbered `42`.
+
+1. **Sync** — pull every issue with the `tasks.md` label and write them into `TASKS.md`:
+
+   ```bash
+   tasks sync github --repo octocat/hello-world --label tasks.md --output TASKS.md
+   ```
+
+   The hunk added to `TASKS.md` (one task per matching issue):
+
+   ```markdown
+   ## P2
+
+   - [ ] Document the new pagination flag
+     - **ID**: issue-42
+     - **Tags**: docs, backend
+   ```
+
+2. **Pick** — `pickBestTask` selects this entry because it is the only available task:
+
+   ```bash
+   tasks pick
+   # Picked "Document the new pagination flag" (P2)
+   #   File: TASKS.md:5
+   #   ID: issue-42
+   #   Tags: docs, backend
+   #   Candidates: 1
+   ```
+
+3. **Claim** — the agent appends its identity to the task line so other agents skip it:
+
+   ```diff
+   -- [ ] Document the new pagination flag
+   +- [ ] Document the new pagination flag (@octocat-bot)
+   ```
+
+4. **Complete** — the agent removes the entire task block (task line + all metadata) and commits:
+
+   ```bash
+   git commit -m "docs: document the pagination flag
+
+   closes issue-42"
+   ```
+
+5. **Re-sync (idempotency)** — running the same `--merge` sync again produces no diff: the original GitHub issue is still open, but the TASKS.md task has been removed by the agent. Without `--merge`, sync would re-add it — so always pair an automated cron sync with `--merge`:
+
+   ```bash
+   tasks sync github --repo octocat/hello-world --label tasks.md --merge --output TASKS.md
+   # No diff — `issue-42` is still open in GitHub but already removed
+   # from TASKS.md by the agent. --merge respects manual / agent edits.
+   ```
+
+   Closing the GitHub issue itself is a separate action (e.g. `gh issue close 42` after the PR merges); `tasks sync github --merge` will then drop the entry on the next run too if it ever reappears.
+
 ## Files Involved
 
 | File | Purpose |
