@@ -92,7 +92,7 @@ If you're not sure about priority, use P2. It means "valuable but not blocking" 
 | **ID** | Other tasks reference it as a blocker | `auth-schema` |
 | **Tags** | Multiple agents with specialties | `backend, auth` |
 | **Details** | Implementation guidance needed | Free-form text |
-| **Files** | You know which files to touch | `` `src/auth.ts` `` |
+| **Files** | You know which files to touch | `src/auth.ts` |
 | **Acceptance** | "Done" isn't obvious | Testable criteria |
 | **Blocked by** | Must wait for another task | `auth-schema` |
 

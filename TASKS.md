@@ -10,35 +10,6 @@
 
 ## P2
 
-- [ ] Polish batch — story 02 backtick fix + story 07 pick docs + story 03 pick-vs-next-task
-  - **ID**: user-stories-polish-batch
-  - **Tags**: docs, user-stories, polish, batched
-  - **Details**: Three small but verified findings, batched per Rule 9:
-    (1) **Story 02 line ~95** — Files field example uses double
-    backticks (`` ``src/auth.ts`` ``) where `spec.md:194` and the
-    spec definition (`spec.md:225`) use single backticks. Fix to
-    single backticks.
-    (2) **Story 07** — README claims `tasks pick` is documented in
-    story 07 (see `docs/user-stories/README.md:27`) but story 07
-    never mentions the command. Add a "Pick the next task" section
-    to `07-monitor-queue-health.md` that documents: shape of the
-    output, `--tags` filter, exit code 0 on hit / non-zero on
-    empty queue, intended use ("read-only check the agent will run
-    next, useful for human inspection or scripting").
-    (3) **Story 03** — does not distinguish `/next-task` (the full
-    autonomous loop in `commands/next-task.md`) from `tasks pick`
-    (the read-only query). Add a "How `tasks pick` relates" note
-    after the "What it does" section: "`tasks pick` is the
-    read-only inspection — same algorithm, no claim, no commit.
-    `/next-task` is `tasks pick` plus claim, plan, implement,
-    commit, loop."
-  - **Files**: `docs/user-stories/02-tasks-agents-complete-without-asking.md`,
-    `docs/user-stories/07-monitor-queue-health.md`,
-    `docs/user-stories/03-agents-work-through-queue.md`
-  - **Acceptance**: All three findings fixed in one PR. `npm run
-    lint`, `npm run build`, and `npx -y @tasks-md/lint TASKS.md` pass.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
   - **ID**: taskgrind-per-session-sync
   - **Tags**: taskgrind, sync, queue, duplicate-work, cross-repo
