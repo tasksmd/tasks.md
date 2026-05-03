@@ -260,16 +260,30 @@ rule.
 
 The [`@tasks-md/cli`](packages/cli/) provides task queue management — pick tasks, lint files, sync from issue trackers, and install agent commands.
 
+| Command | What it does |
+|---------|-------------|
+| `tasks init` | Scaffold TASKS.md + AGENTS.md in the current repo |
+| `tasks install` | Install `/next-task` for detected agents (Claude Code, Cursor, Devin, etc.) |
+| `tasks pick` | Pick the highest-priority unblocked, unclaimed, non-standing-loop task |
+| `tasks list` | List every task matching filters — CLI counterpart of MCP `list_tasks` |
+| `tasks lint` | Validate TASKS.md files against the spec (`--fix` removes `[x]` tasks) |
+| `tasks watch` | Watch TASKS.md files and auto-lint on save (`--fix` auto-corrects on save) |
+| `tasks stats` | Show queue overview and throughput from git history |
+| `tasks diff` | Show queue changes since a git ref (added, removed, claimed) |
+| `tasks sync <provider>` | Sync issues from `github`, `jira`, or `linear` |
+| `tasks generate-commands` | Regenerate agent command variants from canonical sources |
+
+Quick examples:
+
 ```bash
-npx @tasks-md/cli pick                       # pick highest-priority unblocked non-standing task
+npx @tasks-md/cli pick                          # pick highest-priority unblocked non-standing task
 npx @tasks-md/cli list --unclaimed --unblocked  # list every pickable task
-npx @tasks-md/cli init                       # create TASKS.md in current repo
-npx @tasks-md/cli install                    # install /next-task for detected agents
-npx @tasks-md/cli stats                      # queue overview and throughput
-npx @tasks-md/cli lint TASKS.md              # validate against spec
-npx @tasks-md/cli sync github --merge        # sync GitHub Issues into TASKS.md
-npx @tasks-md/cli sync jira --project PROJ   # also: tasks sync linear --team ENG
+npx @tasks-md/cli stats                         # queue overview and throughput
+npx @tasks-md/cli lint TASKS.md                 # validate against spec
+npx @tasks-md/cli sync github --merge           # sync GitHub Issues into TASKS.md
 ```
+
+Run `npx @tasks-md/cli <command> --help` for full options on any command.
 
 ### MCP Server
 

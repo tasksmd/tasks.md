@@ -25,7 +25,7 @@ The legacy commands `tasks sync-issues`, `tasks sync-jira`, and `tasks sync-line
    | `medium`, `P2` | `## P2` (default) |
    | `low`, `P3` | `## P3` |
 
-   All other labels become **Tags**.
+   All other labels become **Tags**. Issues without any of the priority labels above default to **P2** — every provider (GitHub, Jira, Linear) follows this rule, so unscored work always lands in P2 rather than getting silently dropped.
 
 3. **Run the sync**:
    ```bash
@@ -145,6 +145,8 @@ tasks sync linear --team ENG --project "Q1 Launch" --merge --output TASKS.md
 ```
 
 Linear priority mapping: Urgent → P0, High → P1, Medium → P2, Low/No priority → P3. Labels become tags, issue identifiers become IDs (`linear-ENG-123`). Requires `LINEAR_API_KEY` environment variable.
+
+**Label normalization** — Linear labels are normalized to TASKS.md tag conventions: lowercased and with whitespace replaced by `-` (so `Bug Fix` becomes `bug-fix`, `In Progress` becomes `in-progress`). This keeps tags consistent across providers since GitHub and Jira tags are already lowercased.
 
 All three providers share one command — `tasks sync <provider>` — and the same bridge pattern: import the "what" from your tracker so agents can execute the "how".
 
