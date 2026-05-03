@@ -114,9 +114,10 @@ program
   .command("watch")
   .description("Watch TASKS.md files and auto-lint on change")
   .argument("[directory]", "Directory to watch", ".")
-  .action((directory: string) => {
+  .option("--fix", "Auto-fix removable issues on every save (e.g. completed tasks)")
+  .action((directory: string, opts: { fix?: boolean }) => {
     const watchDir = join(process.cwd(), directory);
-    startWatching(watchDir);
+    startWatching(watchDir, { fix: Boolean(opts.fix) });
   });
 
 // ── sync-issues ──

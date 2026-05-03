@@ -270,4 +270,33 @@ describe("CLI", () => {
       rmSync(dir, { recursive: true });
     }
   });
+
+  it("watch --help advertises the --fix flag", () => {
+    const result = spawnSync("node", [CLI, "watch", "--help"], { encoding: "utf-8" });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/--fix/);
+    expect(result.stdout).toMatch(/[Aa]uto-fix/);
+  });
+
+  it("watch --fix is accepted (no commander error on unknown option)", () => {
+    // `tasks watch` runs forever, but Commander rejects unknown options before
+    // entering the action handler. Pointing watch at a non-existent directory
+    // forces a fast exit (code 1, "No TASKS.md files found"), which lets us
+    // assert the flag is accepted without leaving a watcher running.
+    const cwd = mkdtempSync(join(tmpdir(), "tasks-watch-fix-cwd-"));
+    try {
+      const result = spawnSync("node", [CLI, "watch", "--fix", "no-such-subdir"], {
+        encoding: "utf-8",
+        cwd,
+        timeout: 5000,
+      });
+      // Commander unknown-option exit code is 1 with "unknown option" stderr;
+      // our fast-fail path is also exit 1 but with "No TASKS.md files found".
+      // Distinguish by stderr content.
+      expect(result.stderr).not.toMatch(/unknown option/i);
+      expect(result.stderr).toMatch(/No TASKS\.md files found/);
+    } finally {
+      rmSync(cwd, { recursive: true });
+    }
+  });
 });
