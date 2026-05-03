@@ -97,7 +97,10 @@ Watch TASKS.md files for changes and auto-lint on save.
 ```bash
 tasks watch               # watch current directory
 tasks watch ./packages    # watch a specific directory
+tasks watch --fix         # auto-lint and auto-fix on every save
 ```
+
+`--fix` reuses the same fix path as `tasks lint --fix`: removes `- [x]` completed tasks (and their metadata) in place, then re-runs lint on the fixed content. Other lint errors are reported but not auto-fixed.
 
 ### `tasks generate-commands`
 

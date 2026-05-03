@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
-  mkdtempSync, writeFileSync, mkdirSync, rmSync, realpathSync,
+  mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync, realpathSync,
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -58,6 +58,7 @@ describe("lintTaskFile", () => {
     const result = lintTaskFile(file);
     expect(result.success).toBe(true);
     expect(result.errors).toBe(0);
+    expect(result.fixed).toBe(0);
   });
 
   it("returns errors for invalid file", () => {
@@ -66,5 +67,29 @@ describe("lintTaskFile", () => {
     const result = lintTaskFile(file);
     expect(result.success).toBe(false);
     expect(result.errors).toBeGreaterThan(0);
+  });
+
+  it("does not auto-fix when fix flag is false (default)", () => {
+    const file = join(tempDir, "TASKS.md");
+    const before = "# Tasks\n\n## P1\n\n- [x] Done\n- [ ] Open\n";
+    writeFileSync(file, before);
+    const result = lintTaskFile(file);
+    expect(result.fixed).toBe(0);
+    // Completed task remains as a lint error, file unchanged
+    expect(result.success).toBe(false);
+    expect(readFileSync(file, "utf-8")).toBe(before);
+  });
+
+  it("auto-fixes removable issues when fix flag is true", () => {
+    const file = join(tempDir, "TASKS.md");
+    writeFileSync(file, "# Tasks\n\n## P1\n\n- [x] Done\n- [ ] Open\n");
+    const result = lintTaskFile(file, true);
+    expect(result.fixed).toBeGreaterThan(0);
+    expect(result.errors).toBe(0);
+    expect(result.success).toBe(true);
+    // Completed task removed; remaining tasks intact
+    const after = readFileSync(file, "utf-8");
+    expect(after).not.toMatch(/\[x\]/);
+    expect(after).toMatch(/- \[ \] Open/);
   });
 });
