@@ -22,7 +22,7 @@ jobs:
         run: npm run build --workspace packages/parser --workspace packages/lint
 
       - name: Lint examples
-        run: node packages/lint/dist/cli.js examples/*.md
+        run: node packages/lint/dist/cli.js examples/
 
       - name: Lint TASKS.md
         run: |

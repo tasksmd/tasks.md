@@ -1,5 +1,7 @@
 # Tasks
 
+<!-- Demonstrates: every spec feature at once — rich metadata (**Plan**, **Blocked**, **Research**, **Last-enriched**), sub-tasks under a parent, a **Blocked by** chain, file-level + section-level policies, a standing-loop audit task, and a multi-agent claim. The "kitchen sink" example. -->
+
 <!-- policy: Run the full test suite before every commit. Never skip CI.
      policy: Prefer fixing root causes over symptoms — add regression tests.
      policy: Database migrations must be backward-compatible (no dropping columns). -->

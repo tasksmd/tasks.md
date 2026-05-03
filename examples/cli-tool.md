@@ -1,5 +1,7 @@
 # Tasks
 
+<!-- Demonstrates: minimal task queue for a CLI tool — two file-level policies, a P0→P2 priority spread, and standard metadata (**ID**, **Details**, **Files**, **Acceptance**) with no blockers. -->
+
 <!-- policy: Every error must print a clear message and exit with a non-zero code.
      policy: New flags require a help description and a test case. -->
 

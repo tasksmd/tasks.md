@@ -10,33 +10,6 @@
 
 ## P2
 
-- [ ] Examples directory audit — every file lints clean and demonstrates a distinct feature
-  - **ID**: examples-directory-audit
-  - **Tags**: docs, examples, hardening, lint
-  - **Details**: `examples/` ships TASKS.md fixtures that act as
-    documentation. Run `npx -y @tasks-md/lint examples/` and
-    enumerate the files: each should (a) lint clean (zero
-    errors), (b) demonstrate a distinct format feature (basic
-    one-liners, rich metadata, blocked + research, parent-child
-    decomposition, monorepo per-package, standing loop,
-    policies, mixed priorities, etc.), and (c) have a one-line
-    intro comment at the top stating which feature it
-    demonstrates. Build a small overview file
-    `examples/README.md` (or update existing one) that lists
-    every example with a one-line description and the spec
-    section it demonstrates. Add a CI smoke that lints every
-    file in `examples/` (in `.github/workflows/` if not already).
-  - **Files**: `examples/*.md`, `examples/README.md` (may
-    already exist), `.github/workflows/tasks-lint.yml` (verify it
-    covers `examples/`)
-  - **Acceptance**: Every file in `examples/` lints clean. Each
-    has a one-line intro comment naming the demonstrated
-    feature. `examples/README.md` lists every example with a
-    one-line description. CI includes `examples/` in the lint
-    target. `npm run build`, `npm test`, `npm run lint`, `npx
-    -y @tasks-md/lint TASKS.md` pass.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
   - **ID**: taskgrind-per-session-sync
   - **Tags**: taskgrind, sync, queue, duplicate-work, cross-repo

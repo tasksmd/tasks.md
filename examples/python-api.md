@@ -1,5 +1,7 @@
 # Tasks
 
+<!-- Demonstrates: Python REST API task queue with file-level policies (pytest + mypy + reversible migrations) and **Tags**-routed P1 work that funnels through a P0 session-leak fix via **Blocked by**. -->
+
 <!-- policy: Run `pytest` and `mypy .` before every commit.
      policy: All database changes need a reversible Alembic migration. -->
 

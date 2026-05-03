@@ -607,6 +607,50 @@ describe("tasks-lint", () => {
       }
     });
 
+    // Mirror of the `examples/` directory layout: a top-level `README.md`
+    // index next to a fleet of valid `TASKS.md`-shaped fixtures. Without
+    // the README skip, `tasks-lint examples/` would discover and try to
+    // validate the README as a task queue and fail on the missing
+    // `# Tasks` header. This test pins that contract — `README.md`,
+    // `LICENSE.md`, `CHANGELOG.md`, and `CONTRIBUTING.md` are all
+    // recognized documentation filenames that the linter must skip.
+    it("skips README.md and other doc filenames at the top level of a directory target", () => {
+      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-doc-skip-"));
+      writeFileSync(
+        join(dir, "README.md"),
+        "# Examples\n\nThis index is not a task queue.\n"
+      );
+      writeFileSync(
+        join(dir, "LICENSE.md"),
+        "MIT License\n\nCopyright (c) 2026...\n"
+      );
+      writeFileSync(
+        join(dir, "CHANGELOG.md"),
+        "# Changelog\n\n## v0.1\n\n- initial release\n"
+      );
+      writeFileSync(
+        join(dir, "CONTRIBUTING.md"),
+        "# Contributing\n\nSee the README first.\n"
+      );
+      writeFileSync(
+        join(dir, "valid-fixture.md"),
+        "# Tasks\n\n## P1\n\n- [ ] Valid task\n"
+      );
+      try {
+        const result = spawnSync("node", [CLI, dir], { encoding: "utf-8" });
+        expect(result.status, result.stderr).toBe(0);
+        // Only `valid-fixture.md` should be linted — the four doc files
+        // are skipped by name.
+        expect(result.stdout).toMatch(/1 file/);
+        expect(result.stderr).not.toMatch(/README\.md/);
+        expect(result.stderr).not.toMatch(/LICENSE\.md/);
+        expect(result.stderr).not.toMatch(/CHANGELOG\.md/);
+        expect(result.stderr).not.toMatch(/CONTRIBUTING\.md/);
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
+    });
+
     it("fix removes completed tasks with metadata without reporting orphaned metadata", () => {
       const dir = mkdtempSync(join(tmpdir(), "tasks-lint-fix-"));
       const file = join(dir, "TASKS.md");

@@ -1,5 +1,7 @@
 # Tasks
 
+<!-- Demonstrates: mobile (iOS + Android) task queue with **Tags**-routed feature work and a **Blocked by** chain that gates feature tasks on a P0 build fix. -->
+
 <!-- policy: Test on both iOS simulator and Android emulator before merging.
      policy: Native module changes require rebuilding with `npx pod-install` (iOS) and `cd android && ./gradlew clean` (Android). -->
 
