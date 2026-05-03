@@ -101,28 +101,26 @@ agent config directories are generated mirrors; do not edit those mirrors.
 
 ### Command Propagation
 
-Any change to `/next-task` behavior must be applied in the same commit to:
+Edit only the canonical sources (`commands/next-task.md` and
+`commands/lint-tasks.md`) and run `npx tasks generate-commands` to
+regenerate every agent variant in one shot. The CI `commands-drift` job
+runs the generator on every PR and rejects diffs in `commands/`, so a
+manual edit to a generated variant fails CI.
 
-- `commands/next-task.md`
-- `commands/claude/skills/next-task/SKILL.md`
-- `commands/codex/skills/next-task/SKILL.md`
-- `commands/cursor/next-task.md`
-- `commands/devin/skills/next-task/SKILL.md`
-- `commands/gemini/next-task.toml`
-- `commands/windsurf/next-task.md`
-- `README.md` "What it does" step list
-- `examples/complex-tasks.md` when the change illustrates a format feature
+Generated variants regenerated from each canonical source:
 
-Any change to `/lint-tasks` behavior must be applied in the same commit to:
+| Canonical | Generated variants |
+|-----------|--------------------|
+| `commands/next-task.md` | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/devin/skills/next-task/SKILL.md`, `commands/gemini/next-task.toml`, `commands/windsurf/next-task.md` |
+| `commands/lint-tasks.md` | `commands/claude/skills/lint-tasks/SKILL.md`, `commands/codex/skills/lint-tasks/SKILL.md`, `commands/cursor/lint-tasks.md`, `commands/devin/skills/lint-tasks/SKILL.md`, `commands/gemini/lint-tasks.toml`, `commands/windsurf/lint-tasks.md` |
 
-- `commands/lint-tasks.md`
-- `commands/claude/skills/lint-tasks/SKILL.md`
-- `commands/codex/skills/lint-tasks/SKILL.md`
-- `commands/cursor/lint-tasks.md`
-- `commands/devin/skills/lint-tasks/SKILL.md`
-- `commands/gemini/lint-tasks.toml`
-- `commands/windsurf/lint-tasks.md`
-- `commands/README.md` and `README.md` when user-facing behavior changes
+Other files that may need to change in the same commit when behavior
+shifts:
+
+- `README.md` "What it does" step list and `commands/README.md` when
+  user-facing behavior changes.
+- `examples/complex-tasks.md` when the change illustrates a new format
+  feature.
 
 After changing a repeated term or command step, run a targeted search such as:
 

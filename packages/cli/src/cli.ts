@@ -60,9 +60,9 @@ program
 
 program
   .command("generate-commands")
-  .description("Regenerate agent command files from canonical source")
+  .description("Regenerate agent command files from canonical sources")
   .action(() => {
-    console.log("Generating commands from canonical source...");
+    console.log("Generating commands from canonical sources...");
     const result = generateCommands(process.cwd());
     if (result.errors.length > 0) {
       for (const error of result.errors) {
@@ -74,7 +74,7 @@ program
       console.log(message);
     }
     console.log("");
-    console.log(`✓ All ${result.generated.length} command files generated from commands/next-task.md`);
+    console.log(`✓ ${result.generated.length} command files generated from commands/next-task.md and commands/lint-tasks.md`);
   });
 
 // ── install (TypeScript-native) ──

@@ -85,7 +85,7 @@ All six commands contain the same logic — only the wrapper format differs:
 | Gemini CLI | TOML with `prompt` field | Prompt wrapped in TOML |
 | Windsurf | Markdown + YAML frontmatter | `description` in frontmatter |
 
-> **Implemented**: Commands are generated from a canonical source (`commands/next-task.md`). The `tasks generate-commands` command produces all 6 agent-specific files, and CI verifies they never drift.
+> **Implemented**: Commands are generated from canonical sources (`commands/next-task.md` and `commands/lint-tasks.md`). The `tasks generate-commands` command produces all 6 agent-specific files for each command, and CI verifies they never drift.
 
 ## Files Involved
 

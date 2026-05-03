@@ -1,10 +1,6 @@
 ---
 name: lint-tasks
-description: >
-  Validate TASKS.md files against the tasks.md spec. Use when the user says
-  "lint tasks", "check tasks", "validate tasks", or before committing changes
-  to TASKS.md. Discovers all TASKS.md files in the repo (including monorepo
-  packages) and runs the linter on each.
+description: Validate TASKS.md files against the tasks.md spec. Use when the user says "lint tasks", "check tasks", "validate tasks", or before committing changes to TASKS.md. Discovers all TASKS.md files in the repo (including monorepo packages) and runs the linter on each.
 ---
 
 # Lint Tasks

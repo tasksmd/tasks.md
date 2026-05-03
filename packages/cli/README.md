@@ -101,7 +101,7 @@ tasks watch ./packages    # watch a specific directory
 
 ### `tasks generate-commands`
 
-Regenerate agent-specific command files from the canonical source (`commands/next-task.md`). Used after editing the canonical command to propagate changes to all agent variants.
+Regenerate agent-specific command files from the canonical sources (`commands/next-task.md` and `commands/lint-tasks.md`). Used after editing a canonical command to propagate changes to all 6 agent variants for that command. The CI `commands-drift` job runs this on every PR and rejects diffs in `commands/`.
 
 ```bash
 tasks generate-commands
