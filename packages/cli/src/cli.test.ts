@@ -269,6 +269,45 @@ describe("CLI", () => {
     expect(result.stdout).toMatch(/sync/);
   });
 
+  // Every visible command's `--help` description must follow the same
+  // shape: verb-first, noun-second, no parentheticals, ≤60 chars. This
+  // pins the parallel-structure contract from `cli-help-text-parallel-
+  // structure` so a future drift (e.g. someone adding "(CLI counterpart
+  // of MCP list_tasks)" back to `list`) fails CI immediately.
+  it("every visible command description is verb-first, no parens, ≤60 chars", () => {
+    const visibleCommands = [
+      "init", "generate-commands", "install", "watch", "sync",
+      "pick", "list", "stats", "diff",
+    ];
+    for (const cmd of visibleCommands) {
+      const result = spawnSync("node", [CLI, cmd, "--help"], { encoding: "utf-8" });
+      expect(result.status, `${cmd} --help should exit 0`).toBe(0);
+      // `tasks <cmd> --help` prints `Usage: ...` then a blank line then
+      // the description on its own line (Commander leaf-command layout).
+      const lines = result.stdout.split("\n");
+      const description = (lines[2] ?? "").trim();
+
+      // Verb-first ([A-Z][a-z]+) + space + noun (any non-whitespace token —
+      // accommodates `TASKS.md`, `/next-task`, etc.) + at least one more
+      // token. The spec's `[\w]+` form was too strict; this matches the
+      // intent (verb-first, noun-second, more text after).
+      expect(
+        description,
+        `${cmd}: description "${description}" must start with a capitalized verb followed by another word`
+      ).toMatch(/^[A-Z][a-z]+ \S+ /);
+
+      expect(
+        description,
+        `${cmd}: description "${description}" must not contain parentheses`
+      ).not.toMatch(/[()]/);
+
+      expect(
+        description.length,
+        `${cmd}: description is ${description.length} chars (max 60): "${description}"`
+      ).toBeLessThanOrEqual(60);
+    }
+  });
+
   // The `tasks lint` subcommand was a duplicate surface for the
   // @tasks-md/lint backend. We collapsed to a single canonical surface
   // (the `tasks-lint` standalone binary in @tasks-md/lint) and removed
