@@ -14,6 +14,7 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 | 6 | [Issue tracker decisions flow to agents](06-issue-tracker-flows-to-agents.md) | `tasks sync github`, `tasks sync jira`, `tasks sync linear` |
 | 7 | [Monitor queue health at a glance](07-monitor-queue-health.md) | `tasks stats`, `tasks diff`, `tasks list` |
 | 8 | [Rich task metadata for blocked, multi-session, and decomposed work](08-rich-task-metadata.md) | `**Blocked**`, `**Research**`, `**Last-enriched**`, `**Parent**`, standing audit loops, file-level + section-level `<!-- policy: -->` comments |
+| 9 | [Standing audit loops in practice](09-standing-audit-loops.md) | One TASKS.md task block + `**Tags**: standing-loop` — `pickBestTask` skips it during normal walks; `/next-task standing-audit-gap-loop` targets it on demand |
 
 ## Automation Status
 
