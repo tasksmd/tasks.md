@@ -10,34 +10,6 @@
 
 ## P2
 
-- [ ] Add `tasks list` command to close CLI ↔ MCP API drift
-  - **ID**: cli-add-list-command
-  - **Tags**: cli, simplify, mcp-parity, feature
-  - **Details**: The MCP server exposes `list_tasks` with filtering
-    (`packages/mcp/src/index.ts:36-69`) supporting
-    `priority`, `tag`, `unclaimed_only`, `unblocked_only` — but the
-    CLI has no equivalent, only `tasks pick` (returns one task).
-    Agents that script through the CLI cannot enumerate matching
-    tasks without a custom parser. Add `tasks list [--priority P0]
-    [--tag <tag>] [--unclaimed] [--unblocked]` that returns one
-    line per matching task in the same order as `pick` would
-    consider them. Output format: `<priority>\t<id>\t<summary>`
-    by default; `--json` for structured output mirroring the MCP
-    `list_tasks` response. Reuse `loadAllTasks` + the same filter
-    predicates as `pickBestTask` so MCP and CLI never diverge.
-  - **Files**: `packages/cli/src/cli.ts`,
-    `packages/cli/src/lib.ts`,
-    `packages/cli/src/cli.test.ts`,
-    `packages/cli/README.md`, `README.md`,
-    `docs/user-stories/07-monitor-queue-health.md`
-  - **Acceptance**: `tasks list` prints all unclaimed tasks
-    highest-priority first. `tasks list --priority P0 --unclaimed`
-    matches the MCP `list_tasks` response for the same filter on
-    the same TASKS.md. `--json` output round-trips through `JSON.parse`.
-    Test coverage in `cli.test.ts`. Story 07 documents the new
-    command. README CLI section updated.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Sharpen vague acceptance in stories 03/04/05 — batch ≥3 findings
   - **ID**: user-stories-acceptance-sharpening
   - **Tags**: docs, user-stories, hardening, batched

@@ -4,7 +4,7 @@ import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { parseTasksContent, type TaskFile } from "@tasks-md/parser";
-import { pickBestTask } from "./lib.js";
+import { pickBestTask, listTasks } from "./lib.js";
 
 const CLI = join(import.meta.dirname, "..", "dist", "cli.js");
 
@@ -164,12 +164,106 @@ describe("pickBestTask", () => {
   });
 });
 
+describe("listTasks", () => {
+  // Same filter contract as `packages/mcp/src/tools.ts:listTasksFromFiles`.
+  // Update both in lockstep when changing filter behavior.
+  const FIXTURE = [
+    "# Tasks", "",
+    "## P0", "",
+    "- [ ] Critical fix",
+    "  - **ID**: critical",
+    "  - **Tags**: backend, auth", "",
+    "## P1", "",
+    "- [ ] Frontend feature (@cursor)",
+    "  - **ID**: frontend",
+    "  - **Tags**: frontend, ux", "",
+    "- [ ] Blocked thing",
+    "  - **ID**: blocked",
+    "  - **Blocked by**: critical", "",
+    "## P2", "",
+    "- [ ] Loose task", "",
+  ].join("\n");
+
+  it("returns all tasks priority-sorted (P0 first)", () => {
+    const tasks = listTasks(makeTaskFiles(FIXTURE));
+    expect(tasks).toHaveLength(4);
+    expect(tasks[0].summary).toBe("Critical fix");
+    expect(tasks[0].priority).toBe("P0");
+    expect(tasks[3].priority).toBe("P2");
+  });
+
+  it("filters by priority case-insensitively", () => {
+    const result = listTasks(makeTaskFiles(FIXTURE), { priority: "p1" });
+    expect(result.map((t) => t.summary)).toEqual([
+      "Frontend feature",
+      "Blocked thing",
+    ]);
+  });
+
+  it("filters by tag case-insensitively", () => {
+    const result = listTasks(makeTaskFiles(FIXTURE), { tag: "AUTH" });
+    expect(result).toHaveLength(1);
+    expect(result[0].summary).toBe("Critical fix");
+  });
+
+  it("filters unclaimed only", () => {
+    const result = listTasks(makeTaskFiles(FIXTURE), { unclaimedOnly: true });
+    // Frontend feature is claimed by @cursor → drops out
+    expect(result.map((t) => t.summary)).toEqual([
+      "Critical fix",
+      "Blocked thing",
+      "Loose task",
+    ]);
+  });
+
+  it("filters unblocked only", () => {
+    const result = listTasks(makeTaskFiles(FIXTURE), { unblockedOnly: true });
+    // Blocked thing is blocked by critical (which exists) → drops out
+    expect(result.map((t) => t.summary)).not.toContain("Blocked thing");
+    expect(result).toHaveLength(3);
+  });
+
+  it("combines filters (priority + unclaimed + unblocked)", () => {
+    const result = listTasks(makeTaskFiles(FIXTURE), {
+      priority: "P1",
+      unclaimedOnly: true,
+      unblockedOnly: true,
+    });
+    expect(result).toHaveLength(0); // Frontend (claimed) and Blocked (blocked) both filter out
+  });
+
+  it("marks blocked status correctly", () => {
+    const result = listTasks(makeTaskFiles(FIXTURE));
+    const blocked = result.find((t) => t.summary === "Blocked thing");
+    expect(blocked).toBeDefined();
+    expect(blocked!.blocked).toBe(true);
+    const open = result.find((t) => t.summary === "Critical fix");
+    expect(open!.blocked).toBe(false);
+  });
+
+  it("returns id, tags, claimed, file, line in structured form", () => {
+    const result = listTasks(makeTaskFiles(FIXTURE));
+    const claimed = result.find((t) => t.summary === "Frontend feature");
+    expect(claimed).toMatchObject({
+      id: "frontend",
+      summary: "Frontend feature",
+      priority: "P1",
+      tags: ["frontend", "ux"],
+      blocked: false,
+    });
+    // The parser preserves the `@` prefix on claims; we pass it through unchanged.
+    expect(claimed!.claimed).toBe("@cursor");
+    expect(typeof claimed!.line).toBe("number");
+  });
+});
+
 describe("CLI", () => {
   it("shows help with --help", () => {
     const result = spawnSync("node", [CLI, "--help"], { encoding: "utf-8" });
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/lint/);
     expect(result.stdout).toMatch(/pick/);
+    expect(result.stdout).toMatch(/list/);
     expect(result.stdout).toMatch(/stats/);
     expect(result.stdout).toMatch(/diff/);
   });
@@ -266,6 +360,119 @@ describe("CLI", () => {
       });
       expect(result.status).toBe(0);
       expect(result.stdout).toMatch(/No eligible tasks/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("list prints priority+id+summary tab-separated by default", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] Critical fix",
+        "  - **ID**: critical", "",
+        "## P2", "",
+        "- [ ] Loose task", "",
+      ].join("\n")
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    spawnSync("git", ["add", "."], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "list"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      // Tab-separated <priority>\t<id>\t<summary>
+      const lines = result.stdout.trim().split("\n");
+      expect(lines).toHaveLength(2);
+      expect(lines[0]).toBe("P0\tcritical\tCritical fix");
+      expect(lines[1]).toBe("P2\t-\tLoose task"); // No ID → "-"
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("list --json outputs valid round-trippable JSON", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P1\n\n- [ ] Test\n  - **ID**: test\n  - **Tags**: backend\n"
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "list", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout);
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed[0]).toMatchObject({
+        id: "test",
+        summary: "Test",
+        priority: "P1",
+        tags: ["backend"],
+        blocked: false,
+      });
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("list --priority --unclaimed matches MCP list_tasks for the same filter", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      [
+        "# Tasks", "",
+        "## P0", "",
+        "- [ ] P0 unclaimed",
+        "  - **ID**: p0a", "",
+        "- [ ] P0 claimed (@bob)",
+        "  - **ID**: p0b", "",
+        "## P1", "",
+        "- [ ] P1 unclaimed",
+        "  - **ID**: p1a", "",
+      ].join("\n")
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      // CLI: list --priority P0 --unclaimed
+      const cli = spawnSync("node", [CLI, "list", "--priority", "P0", "--unclaimed", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      const cliResult = JSON.parse(cli.stdout);
+      expect(cliResult).toHaveLength(1);
+      expect(cliResult[0].id).toBe("p0a");
+
+      // MCP parity check via listTasks() (the same function the CLI calls).
+      const { loadAllTasks } = await import("./lib.js");
+      const { listTasks } = await import("./lib.js");
+      const files = loadAllTasks(dir);
+      const libResult = listTasks(files, { priority: "P0", unclaimedOnly: true });
+      expect(libResult).toHaveLength(1);
+      expect(libResult[0].id).toBe("p0a");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("list reports empty match clearly", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Test\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "list", "--priority", "P0"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/No tasks match/);
     } finally {
       rmSync(dir, { recursive: true });
     }

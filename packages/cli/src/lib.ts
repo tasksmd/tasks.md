@@ -13,6 +13,74 @@ import {
 export { findGitRoot, loadAllTasks, pickBestTask };
 export type { Task, TaskFile, PickResult };
 
+// ── List ──
+//
+// Parity wrapper for the MCP server's `list_tasks` tool. The CLI and MCP must
+// not diverge on filtering semantics, so this function reuses the same
+// `getAllTaskIds`, `isBlocked`, and tag/priority predicates as
+// `packages/mcp/src/tools.ts:listTasksFromFiles`. Update both in lockstep when
+// changing filter behavior.
+
+export interface ListTasksOptions {
+  priority?: string;
+  tag?: string;
+  unclaimedOnly?: boolean;
+  unblockedOnly?: boolean;
+}
+
+export interface ListedTask {
+  id?: string;
+  summary: string;
+  priority: string;
+  tags: string[];
+  blocked: boolean;
+  claimed?: string;
+  file: string;
+  line: number;
+}
+
+export function listTasks(
+  taskFiles: TaskFile[],
+  options: ListTasksOptions = {}
+): ListedTask[] {
+  const allIds = getAllTaskIds(taskFiles);
+  let tasks: Task[] = taskFiles.flatMap((f) => f.tasks);
+
+  if (options.priority) {
+    const wanted = options.priority.toUpperCase();
+    tasks = tasks.filter((t) => t.priority.toUpperCase() === wanted);
+  }
+
+  if (options.tag) {
+    const wanted = options.tag.toLowerCase();
+    tasks = tasks.filter((t) =>
+      t.metadata.tags?.some((tag) => tag.toLowerCase() === wanted)
+    );
+  }
+
+  if (options.unclaimedOnly) {
+    tasks = tasks.filter((t) => !t.claimed);
+  }
+
+  if (options.unblockedOnly) {
+    tasks = tasks.filter((t) => !isBlocked(t, allIds));
+  }
+
+  // Priority lex-sort matches the MCP server (P0 < P1 < P2 < P3).
+  tasks.sort((a, b) => a.priority.localeCompare(b.priority));
+
+  return tasks.map((task) => ({
+    id: task.metadata.id,
+    summary: task.summary,
+    priority: task.priority,
+    tags: task.metadata.tags ?? [],
+    blocked: isBlocked(task, allIds),
+    claimed: task.claimed ?? undefined,
+    file: task.file,
+    line: task.startLine,
+  }));
+}
+
 // ── Stats ──
 
 export interface QueueStats {

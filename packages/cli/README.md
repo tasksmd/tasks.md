@@ -27,6 +27,20 @@ tasks pick                    # pick best task
 tasks pick --tags backend     # prefer tasks tagged "backend"
 ```
 
+### `tasks list`
+
+List every task that matches the given filters — the CLI counterpart of the MCP `list_tasks` tool. Same filter predicates and sort order, so scripts can use either backend.
+
+```bash
+tasks list                                # every task, P0 first
+tasks list --priority P0                  # only P0 tasks
+tasks list --tag backend                  # only backend-tagged tasks
+tasks list --unclaimed --unblocked        # only pickable work
+tasks list --priority P0 --json           # structured JSON output
+```
+
+Default output is one line per task: `<priority>\t<id>\t<summary>` (tab-separated, `-` for tasks with no ID). `--json` returns an array of `{ id, summary, priority, tags, blocked, claimed, file, line }` records that round-trips through `JSON.parse`.
+
 ### `tasks lint`
 
 Validate TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references.
