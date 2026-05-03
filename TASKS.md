@@ -10,32 +10,6 @@
 
 ## P2
 
-- [ ] Linter error messages — make every error actionable (state the fix)
-  - **ID**: lint-actionable-errors
-  - **Tags**: lint, dx, hardening
-  - **Details**: `packages/lint/src/lint.ts` emits errors via
-    `reportError(...)`. Some messages name the violation but
-    don't tell the reader how to fix it. Examples to audit:
-    `"first line must be '# Tasks', got '<x>'"` — good (says the
-    fix). `"completed task should be removed, not checked off"`
-    — good (says the fix: remove). `"policy directive found
-    outside HTML comment — wrap in <!-- policy: ... -->"` —
-    good. Audit the rest of the error catalog and ensure every
-    message ends with a clause that names the fix (`; do X`, `;
-    use Y`, `; remove the field if Z`). Add a lint-of-the-linter
-    test in `lint.test.ts` that scans `lint.ts` for every
-    `reportError(` call and asserts the message matches a regex
-    that requires either `;` followed by an imperative, or `→`
-    followed by a fix, or `must` / `should` / `use` keywords.
-    Pin the actionability contract.
-  - **Files**: `packages/lint/src/lint.ts`,
-    `packages/lint/src/lint.test.ts`
-  - **Acceptance**: Every `reportError(...)` call in `lint.ts`
-    emits a message that names the fix. New test in `lint.test.ts`
-    enforces the contract via a regex. `npm run build`, `npm test`,
-    `npm run lint` pass.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Examples directory audit — every file lints clean and demonstrates a distinct feature
   - **ID**: examples-directory-audit
   - **Tags**: docs, examples, hardening, lint

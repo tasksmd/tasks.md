@@ -80,13 +80,13 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       if (!inComment && !line.includes("<!--") && /policy\s*:/i.test(line)) {
         // Skip if inside a task metadata block (e.g., "**Details**: ... policy: ...")
         if (!/^\s+-\s+\*\*/.test(line) && !/^\s{4,}/.test(line) && !/^-\s+\[.\]/.test(line)) {
-          reportError(filePath, lineNum, "policy directive found outside HTML comment — wrap in <!-- policy: ... -->");
+          reportError(filePath, lineNum, "policy directive found outside HTML comment; wrap it in <!-- policy: ... -->");
         }
       }
 
       // Empty policy text inside HTML comment
       if (/<!--\s*policy\s*:\s*-->/i.test(line)) {
-        reportError(filePath, lineNum, "policy directive has empty text — add a directive after 'policy:'");
+        reportError(filePath, lineNum, "policy directive has empty text; add a directive after 'policy:'");
       }
 
       // Empty **Blocked** reason — the parser won't record a value for
@@ -138,7 +138,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       if (priorityMatch) {
         const priority = parseInt(priorityMatch[1], 10);
         if (priority <= lastPriority) {
-          reportError(filePath, lineNum, `priority heading P${priority} out of order (after P${lastPriority})`);
+          reportError(filePath, lineNum, `priority heading P${priority} out of order (after P${lastPriority}); reorder so P0 < P1 < P2 < P3`);
         }
         lastPriority = priority;
         inTask = false;
@@ -172,7 +172,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       // Top-level task (checkbox)
       if (line.match(/^-\s+\[\s?\]\s+(.+)$/)) {
         if (lastPriority < 0) {
-          reportError(filePath, lineNum, "task found before any priority heading");
+          reportError(filePath, lineNum, "task found before any priority heading; add a '## P0'-'## P3' heading first");
         }
         inTask = true;
         continue;
@@ -187,7 +187,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
       // Indented content (metadata or subtask)
       if (/^\s{2,}/.test(line)) {
         if (!inTask && /^\s+-\s+\*\*/.test(line)) {
-          reportError(filePath, lineNum, "orphaned metadata (no parent task)");
+          reportError(filePath, lineNum, "orphaned metadata (no parent task); nest under a '- [ ]' task line or remove the line");
         }
         continue;
       }
@@ -195,7 +195,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
 
     // Check for unclosed HTML comments containing policy directives
     if (inComment) {
-      reportError(filePath, lines.length, "unclosed HTML comment — missing '-->'");
+      reportError(filePath, lines.length, "unclosed HTML comment; close it with '-->' on the line that ends the comment block");
     }
 
     // Apply fixes if in fix mode
@@ -223,9 +223,9 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         if (allIds.has(id)) {
           const existing = allIds.get(id)!;
           if (existing.file === filePath) {
-            reportError(filePath, idLine, `duplicate ID '${id}' (first defined at line ${existing.line})`);
+            reportError(filePath, idLine, `duplicate ID '${id}' (first defined at line ${existing.line}); rename one or merge the two task blocks`);
           } else {
-            reportError(filePath, idLine, `duplicate ID '${id}' (also defined in ${existing.file}:${existing.line})`);
+            reportError(filePath, idLine, `duplicate ID '${id}' (also defined in ${existing.file}:${existing.line}); rename one or merge the two task blocks`);
           }
         } else {
           allIds.set(id, { file: filePath, line: idLine });
@@ -244,7 +244,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
   // Second pass: validate blocker references
   for (const ref of allBlockedBy) {
     if (!allIds.has(ref.id)) {
-      reportError(ref.file, ref.line, `blocked-by references unknown ID '${ref.id}'`);
+      reportError(ref.file, ref.line, `blocked-by references unknown ID '${ref.id}'; remove the **Blocked by** entry or add a task with that ID`);
     }
   }
 
