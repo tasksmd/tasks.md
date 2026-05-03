@@ -10,38 +10,6 @@
 
 ## P2
 
-- [ ] Consolidate `sync-issues`/`sync-jira`/`sync-linear` into `tasks sync <provider>`
-  - **ID**: cli-simplify-sync-providers
-  - **Tags**: cli, simplify, sync, reduce-surface
-  - **Details**: Three top-level commands (`sync-issues`, `sync-jira`,
-    `sync-linear` at `packages/cli/src/cli.ts:122-165`) share the
-    same `SyncSource` interface (`packages/cli/src/sync/types.ts:14-18`)
-    and `runSync()` engine (`packages/cli/src/sync/engine.ts`). Per
-    AGENTS.md "Prefer small, obvious APIs. If two tools or flags
-    overlap, merge behavior instead of adding another public command."
-    Collapse all three behind a single subcommand
-    `tasks sync <provider>` where `<provider>` is one of
-    `github|jira|linear`. Provider-specific flags (`--repo`,
-    `--label`, `--project`, `--jql`, `--team`, `--filter`) stay
-    attached to the subcommand. Shared `--output` and `--merge`
-    flags live on the parent. Keep the old commands as aliases that
-    print a one-line deprecation warning and forward to the new
-    form for one minor version, then delete in the next major. Net
-    effect: 11 → 9 top-level commands, sync becomes one discoverable
-    concept in `tasks --help`.
-  - **Files**: `packages/cli/src/cli.ts`,
-    `packages/cli/src/cli.test.ts`, `packages/cli/README.md`,
-    `README.md`, `docs/user-stories/06-issue-tracker-flows-to-agents.md`
-  - **Acceptance**: `tasks sync github --repo o/r --merge`,
-    `tasks sync jira --project P --merge`, and `tasks sync linear
-    --team T --merge` all work end-to-end against the existing fakes
-    in tests. Old commands print `warning: tasks sync-jira is
-    deprecated; use tasks sync jira` and forward identically. `tasks
-    --help` lists `sync` once. README CLI table shows the unified
-    form. `npm run build`, `npm test`, `npm run lint` pass. No
-    behavior change for end users beyond the spelling.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Add `tasks list` command to close CLI ↔ MCP API drift
   - **ID**: cli-add-list-command
   - **Tags**: cli, simplify, mcp-parity, feature

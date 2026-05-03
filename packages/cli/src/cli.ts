@@ -120,39 +120,59 @@ program
     startWatching(watchDir, { fix: Boolean(opts.fix) });
   });
 
-// ── sync-issues ──
+// ── sync (unified) ──
+//
+// `tasks sync <provider>` is the canonical surface; the legacy commands
+// `sync-issues`, `sync-jira`, and `sync-linear` are kept as deprecated aliases
+// for one minor version and print a warning before forwarding to the same
+// action handler. Provider-specific flags stay attached to the subcommand;
+// the shared `--output` and `--merge` flags repeat per subcommand because
+// Commander resolves option flags at the leaf command, not the parent.
 
-program
-  .command("sync-issues")
+interface GithubOpts { repo?: string; label?: string; output?: string; merge?: boolean }
+interface JiraOpts { project?: string; jql?: string; output?: string; merge?: boolean; max?: string }
+interface LinearOpts { team: string; project?: string; filter?: string; output?: string; merge?: boolean; max?: string }
+
+async function runGithubSync(opts: GithubOpts): Promise<void> {
+  const source = createGitHubSource({ repo: opts.repo, label: opts.label });
+  await runSync(source, { output: opts.output, merge: opts.merge });
+}
+
+async function runJiraSync(opts: JiraOpts): Promise<void> {
+  const source = createJiraSource({ project: opts.project, jql: opts.jql, maxResults: Number(opts.max) });
+  await runSync(source, { output: opts.output, merge: opts.merge });
+}
+
+async function runLinearSync(opts: LinearOpts): Promise<void> {
+  const source = createLinearSource({ team: opts.team, project: opts.project, filter: opts.filter, maxResults: Number(opts.max) });
+  await runSync(source, { output: opts.output, merge: opts.merge });
+}
+
+const sync = program
+  .command("sync")
+  .description("Sync issues from an external tracker into TASKS.md");
+
+sync
+  .command("github")
   .description("Sync GitHub Issues into TASKS.md")
   .option("--repo <repo>", "GitHub repo (default: current repo from gh)")
   .option("--label <label>", "Issue label to filter by", "tasks.md")
   .option("--output <file>", "Output file (default: stdout)")
   .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
-  .action(async (opts: { repo?: string; label?: string; output?: string; merge?: boolean }) => {
-    const source = createGitHubSource({ repo: opts.repo, label: opts.label });
-    await runSync(source, { output: opts.output, merge: opts.merge });
-  });
+  .action(async (opts: GithubOpts) => { await runGithubSync(opts); });
 
-// ── sync-jira ──
-
-program
-  .command("sync-jira")
+sync
+  .command("jira")
   .description("Sync Jira issues into TASKS.md")
   .option("--project <key>", "Jira project key")
   .option("--jql <query>", "Custom JQL query (overrides --project)")
   .option("--output <file>", "Output file (default: stdout)")
   .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
   .option("--max <n>", "Maximum results to fetch", "200")
-  .action(async (opts: { project?: string; jql?: string; output?: string; merge?: boolean; max?: string }) => {
-    const source = createJiraSource({ project: opts.project, jql: opts.jql, maxResults: Number(opts.max) });
-    await runSync(source, { output: opts.output, merge: opts.merge });
-  });
+  .action(async (opts: JiraOpts) => { await runJiraSync(opts); });
 
-// ── sync-linear ──
-
-program
-  .command("sync-linear")
+sync
+  .command("linear")
   .description("Sync Linear issues into TASKS.md")
   .requiredOption("--team <key>", "Linear team key (e.g. ENG)")
   .option("--project <name>", "Filter by Linear project name")
@@ -160,9 +180,51 @@ program
   .option("--output <file>", "Output file (default: stdout)")
   .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
   .option("--max <n>", "Maximum results to fetch", "200")
-  .action(async (opts: { team: string; project?: string; filter?: string; output?: string; merge?: boolean; max?: string }) => {
-    const source = createLinearSource({ team: opts.team, project: opts.project, filter: opts.filter, maxResults: Number(opts.max) });
-    await runSync(source, { output: opts.output, merge: opts.merge });
+  .action(async (opts: LinearOpts) => { await runLinearSync(opts); });
+
+// ── deprecated sync aliases ──
+
+function warnDeprecated(oldName: string, newName: string): void {
+  console.error(`warning: tasks ${oldName} is deprecated; use tasks ${newName}`);
+}
+
+program
+  .command("sync-issues", { hidden: true })
+  .description("[deprecated] Use 'tasks sync github' instead")
+  .option("--repo <repo>", "GitHub repo (default: current repo from gh)")
+  .option("--label <label>", "Issue label to filter by", "tasks.md")
+  .option("--output <file>", "Output file (default: stdout)")
+  .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
+  .action(async (opts: GithubOpts) => {
+    warnDeprecated("sync-issues", "sync github");
+    await runGithubSync(opts);
+  });
+
+program
+  .command("sync-jira", { hidden: true })
+  .description("[deprecated] Use 'tasks sync jira' instead")
+  .option("--project <key>", "Jira project key")
+  .option("--jql <query>", "Custom JQL query (overrides --project)")
+  .option("--output <file>", "Output file (default: stdout)")
+  .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
+  .option("--max <n>", "Maximum results to fetch", "200")
+  .action(async (opts: JiraOpts) => {
+    warnDeprecated("sync-jira", "sync jira");
+    await runJiraSync(opts);
+  });
+
+program
+  .command("sync-linear", { hidden: true })
+  .description("[deprecated] Use 'tasks sync linear' instead")
+  .requiredOption("--team <key>", "Linear team key (e.g. ENG)")
+  .option("--project <name>", "Filter by Linear project name")
+  .option("--filter <json>", "Custom Linear issue filter as JSON")
+  .option("--output <file>", "Output file (default: stdout)")
+  .option("--merge", "Preserve existing manual tasks; only add/remove synced tasks")
+  .option("--max <n>", "Maximum results to fetch", "200")
+  .action(async (opts: LinearOpts) => {
+    warnDeprecated("sync-linear", "sync linear");
+    await runLinearSync(opts);
   });
 
 // ── lint ──

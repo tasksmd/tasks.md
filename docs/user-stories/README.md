@@ -11,7 +11,7 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 | 3 | [Agents work through the queue autonomously](03-agents-work-through-queue.md) | `tasks install` auto-detects agents |
 | 4 | [Agents work in the right order](04-agents-work-in-right-order.md) | IDs, `Blocked by`, unblocking impact |
 | 5 | [Each team member has their own queue](05-separate-queues-per-member.md) | Monorepo with multiple TASKS.md files |
-| 6 | [Issue tracker decisions flow to agents](06-issue-tracker-flows-to-agents.md) | `tasks sync-issues`, `tasks sync-jira`, `tasks sync-linear` |
+| 6 | [Issue tracker decisions flow to agents](06-issue-tracker-flows-to-agents.md) | `tasks sync github`, `tasks sync jira`, `tasks sync linear` |
 | 7 | [Monitor queue health at a glance](07-monitor-queue-health.md) | `tasks stats`, `tasks diff` |
 | 8 | [Rich task metadata for blocked, multi-session, and decomposed work](08-rich-task-metadata.md) | `**Blocked**`, `**Research**`, `**Last-enriched**`, `**Parent**`, standing audit loops, file-level + section-level `<!-- policy: -->` comments |
 
@@ -27,9 +27,9 @@ All originally-identified automation gaps have been implemented:
 | Devin `/next-task` skill | [03](03-agents-work-through-queue.md) | ✅ `commands/devin/skills/next-task/SKILL.md` |
 | Deterministic `pick_task` | [07](07-monitor-queue-health.md) | ✅ `tasks pick` + `tasks-mcp` MCP tool |
 | Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `tasks lint --fix` / `npx @tasks-md/lint --fix` |
-| sync-issues `--merge` mode | [06](06-issue-tracker-flows-to-agents.md) | ✅ `tasks sync-issues --merge` |
-| sync-jira (Jira bridge) | [06](06-issue-tracker-flows-to-agents.md#jira-sync) | ✅ `tasks sync-jira` |
-| sync-linear (Linear bridge) | [06](06-issue-tracker-flows-to-agents.md#linear-sync) | ✅ `tasks sync-linear` |
+| GitHub Issues `--merge` mode | [06](06-issue-tracker-flows-to-agents.md) | ✅ `tasks sync github --merge` |
+| Jira bridge | [06](06-issue-tracker-flows-to-agents.md#jira-sync) | ✅ `tasks sync jira` |
+| Linear bridge | [06](06-issue-tracker-flows-to-agents.md#linear-sync) | ✅ `tasks sync linear` |
 | `tasks watch` (auto-lint) | [01](01-agents-know-what-to-work-on.md#watch-mode) | ✅ `tasks watch` |
 | Queue stats & diff | [07](07-monitor-queue-health.md) | ✅ `tasks stats` / `tasks diff` |
 | Reusable CI workflow | [01](01-agents-know-what-to-work-on.md#add-to-ci) | ✅ `.github/workflows/tasks-lint.yml` |

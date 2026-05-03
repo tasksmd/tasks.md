@@ -278,6 +278,67 @@ describe("CLI", () => {
     expect(result.stdout).toMatch(/[Aa]uto-fix/);
   });
 
+  it("--help lists sync once (unified surface)", () => {
+    const result = spawnSync("node", [CLI, "--help"], { encoding: "utf-8" });
+    expect(result.status).toBe(0);
+    // The unified `sync` command appears exactly once in the top-level command list.
+    const syncMatches = result.stdout.match(/^\s*sync\b/gm) ?? [];
+    expect(syncMatches).toHaveLength(1);
+    // Legacy commands are hidden from `--help` (still callable but not advertised).
+    expect(result.stdout).not.toMatch(/^\s*sync-issues\b/m);
+    expect(result.stdout).not.toMatch(/^\s*sync-jira\b/m);
+    expect(result.stdout).not.toMatch(/^\s*sync-linear\b/m);
+  });
+
+  it("sync --help advertises github/jira/linear subcommands", () => {
+    const result = spawnSync("node", [CLI, "sync", "--help"], { encoding: "utf-8" });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/github\b/);
+    expect(result.stdout).toMatch(/jira\b/);
+    expect(result.stdout).toMatch(/linear\b/);
+  });
+
+  it("sync github --help is accepted with provider flags", () => {
+    const result = spawnSync("node", [CLI, "sync", "github", "--help"], { encoding: "utf-8" });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/--repo/);
+    expect(result.stdout).toMatch(/--label/);
+    expect(result.stdout).toMatch(/--merge/);
+  });
+
+  it("sync linear requires --team", () => {
+    const result = spawnSync("node", [CLI, "sync", "linear"], { encoding: "utf-8" });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toMatch(/required option .*--team/);
+  });
+
+  it("sync-issues alias prints deprecation warning and forwards", () => {
+    // No GitHub auth available in test env, but the deprecation warning fires
+    // before the action does any work — assert on stderr.
+    const result = spawnSync("node", [CLI, "sync-issues", "--label", "__no_such_label__"], {
+      encoding: "utf-8",
+      timeout: 15000,
+      env: { ...process.env, PATH: process.env.PATH },
+    });
+    expect(result.stderr).toMatch(/tasks sync-issues is deprecated; use tasks sync github/);
+  });
+
+  it("sync-jira alias prints deprecation warning", () => {
+    const result = spawnSync("node", [CLI, "sync-jira", "--project", "__none__"], {
+      encoding: "utf-8",
+      timeout: 15000,
+    });
+    expect(result.stderr).toMatch(/tasks sync-jira is deprecated; use tasks sync jira/);
+  });
+
+  it("sync-linear alias prints deprecation warning", () => {
+    const result = spawnSync("node", [CLI, "sync-linear", "--team", "__none__"], {
+      encoding: "utf-8",
+      timeout: 15000,
+    });
+    expect(result.stderr).toMatch(/tasks sync-linear is deprecated; use tasks sync linear/);
+  });
+
   it("watch --fix is accepted (no commander error on unknown option)", () => {
     // `tasks watch` runs forever, but Commander rejects unknown options before
     // entering the action handler. Pointing watch at a non-existent directory
