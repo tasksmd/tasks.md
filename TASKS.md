@@ -40,36 +40,34 @@
     passes for every example block.
   - **Last-enriched**: 2026-05-03
 
-- [ ] Resolve `tasks watch --fix` doc/code mismatch (implement OR remove from docs)
+- [ ] Implement `tasks watch --fix` to match the documented behavior
   - **ID**: cli-watch-fix-flag-mismatch
-  - **Tags**: cli, docs, user-stories, bug, hardening
+  - **Tags**: cli, code, user-stories, bug, hardening
   - **Details**: `docs/user-stories/01-agents-know-what-to-work-on.md:132`
     advertises `tasks watch --fix    # auto-lint and auto-fix on every
     save`, but `packages/cli/src/cli.ts:113-120` declares only an
     optional `[directory]` argument and `packages/cli/src/commands/watch.ts:41`
     calls `lintTaskFile(file)` with no fix path. Users following the
-    docs hit "unknown option" and a stale watch loop. Decide
-    deliberately: implement `--fix` (forward `fix=true` through
-    `lintTaskFile` → `lintFiles` so saves auto-correct in place,
-    matching `tasks lint --fix` behavior) OR remove the line from
-    story 01 plus the matching example in `packages/cli/README.md`
-    if it is referenced there. Prefer **implement**, since story 01
-    sells watch as the agent's keep-in-sync tool — auto-fix is the
-    natural pair. If implementing: also add a `cli.test.ts`
-    case asserting `tasks watch --fix` is accepted and a
-    `commands/watch.test.ts` case asserting fix is invoked.
+    docs hit "unknown option" and a stale watch loop. **Operator
+    decision (2026-05-03)**: implement `--fix`. Forward `fix=true`
+    through `startWatching` → `lintTaskFile` → `lintFiles` so saves
+    auto-correct in place, matching the `tasks lint --fix` behavior
+    that already exists. Reuse the same `lintFiles({ fix: true })`
+    code path the CLI's `lint` command uses (cli.ts:170-188); do not
+    fork a parallel fixer.
   - **Files**: `packages/cli/src/cli.ts`,
     `packages/cli/src/commands/watch.ts`,
     `packages/cli/src/cli.test.ts`,
     `docs/user-stories/01-agents-know-what-to-work-on.md`,
     `packages/cli/README.md`
-  - **Acceptance**: Either (a) `tasks watch --fix` runs without a
-    Commander error, in-place auto-fixes a deliberately broken
-    TASKS.md on save, and is covered by at least one unit test;
-    OR (b) story 01 + `packages/cli/README.md` no longer mention
-    `--fix` for watch and a single docs commit removes the false
-    promise. `npm run build`, `npm test`, `npm run lint`, and `npx
-    -y @tasks-md/lint TASKS.md` all pass.
+  - **Acceptance**: `tasks watch --fix .` runs without a Commander
+    error, in-place auto-fixes a deliberately broken TASKS.md on
+    save, and is covered by at least one unit test in
+    `cli.test.ts` (asserting the flag is accepted) plus one in
+    `commands/watch.test.ts` (asserting `lintTaskFile` is called
+    with the fix path). `tasks watch` (no flag) keeps current
+    read-only behavior. `npm run build`, `npm test`, `npm run lint`,
+    and `npx -y @tasks-md/lint TASKS.md` all pass.
   - **Last-enriched**: 2026-05-03
 
 ## P2
