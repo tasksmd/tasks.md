@@ -26,11 +26,10 @@ remains.
 <!--
   Replace {{REPO_CONTEXT}} with a 2-4 sentence description of the
   repo: what it is, who depends on it, what's currently in flight.
-  Example (from oncall-hub-api):
-    "Real-world Intuit deploy across two repos: oncall-hub-api
-    (here) and oncall-hub-plugin (sibling). The plugin is live in
-    the E2E shell at oncall-hub-app-e2e.app.intuit.com; the API
-    runs on MSaaS paved road but is mesh-only. Phase 4 wiring
+  Example shape:
+    "Two-repo deploy across <api-repo> (here) and <plugin-repo>
+    (sibling). The plugin is live at <staging-url>; the API runs
+    on the internal paved road but is mesh-only. Phase 4 wiring
     (gateway hostname → plugin → live API calls → production) is
     the open work."
 -->
@@ -40,7 +39,7 @@ remains.
 ### 1. No outbound communication
 
 No Slack, Teams, Discord, email, SMS, Jira comments, GitHub issue
-comments, Google Doc comments, ServiceNow tickets, or DevPortal
+comments, Google Doc comments, support tickets, or admin-portal
 "request" forms. PR descriptions on PRs you authored are OK; comments
 on others' Jira / GitHub / GDocs are not. Outbound-communication
 MCP tools (slack, atlassian, google-drive, github comments) are
@@ -134,7 +133,7 @@ the session prompt before doing anything else.
 ## What to do when blocked
 
 If a task fundamentally requires a forbidden action (Slack post,
-DevPortal UI submit, prod deploy, infra request):
+admin-portal submit, prod deploy, infra request):
 
 1. Add this exact metadata line under the task in `TASKS.md`:
    `**Blocked**: <one-sentence reason>`

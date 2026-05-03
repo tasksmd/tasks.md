@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "description": "A spec and tooling for TASKS.md \u2014 the AI-native task queue format",
+  "author": "Fyodor Ivanischev",
   "workspaces": [
     "packages/*"
   ],

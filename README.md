@@ -537,12 +537,18 @@ scripts/publish-all.sh             # publish in dependency order (requires OTP)
 
 ## Contributing
 
-We track work in our own [TASKS.md](TASKS.md). Contributions welcome:
+We track work in our own [TASKS.md](TASKS.md). Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md):
 
 - Improve the [specification](spec.md)
 - Add [examples](examples/) for your stack
 - Add or improve [agent commands](commands/) for your tool
 - Report bugs or suggest features via [GitHub Issues](https://github.com/tasksmd/tasks.md/issues)
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
+
+## Disclaimer
+
+This is an independent personal open-source project by Fyodor Ivanischev. It is not affiliated with, endorsed by, sponsored by, or otherwise connected to any current or former employer of the author. Any opinions, designs, or decisions expressed here are the author's own. The codebase contains no proprietary material from any employer.
 
 ## License
 

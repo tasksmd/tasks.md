@@ -8,15 +8,12 @@ autonomous agents: counter-update busywork, single-finding doc-drift
 PRs, audit-cascade loops, and admin-merge volume on shared branches.
 
 > **Reference deployment**: the rules + scripts here were extracted
-> from a real autonomous-grind incident on
-> [`oncall-hub-api`](https://github.intuit.com/expertnetwrk-portal/oncall-hub-api)
-> on 2026-04-24. A 22-session run shipped 19 PRs but the queue was
+> from a real autonomous-grind incident I ran on 2026-04-24. A 22-session run shipped 19 PRs but the queue was
 > flat for 7 of 10 hours — the agent kept finding micro-doc-drift
-> instead of substantive work. PRs #112, #115 directly violated the
-> "no counter updates" rule; PRs #110, #111, #114, #117 each fixed a
-> single docs-only finding; ~15 admin self-merges landed on master
-> with no review. The rules below are anchored to those specific
-> failures.
+> instead of substantive work. Two PRs directly violated the "no
+> counter updates" rule; four others each fixed a single docs-only
+> finding; ~15 admin self-merges landed on master with no review.
+> The rules below are anchored to those specific failures.
 
 ## What's here
 
@@ -106,9 +103,9 @@ stage('Validate PR shape') {
 }
 ```
 
-You'll need a `node` pod container (or runtime install). See
-oncall-hub-api's [`KubernetesPods.yaml`](https://github.intuit.com/expertnetwrk-portal/oncall-hub-api/blob/master/KubernetesPods.yaml)
-for the reference image (`docker.intuit.com/oicp/standard/node/debian11-node21:1.3.5`).
+You'll need a `node` pod container (or runtime install). Any image
+with Node 18+ works; the runtime requirements are just `node` and
+`gh` (for `lint-pr-shape.mjs` and `check-admin-merge-rate.mjs`).
 
 ## Wiring the next-task skill
 
@@ -123,11 +120,12 @@ fully blocked queues.
 
 ## Wiring the counter-precision rule
 
-This one's vitest-specific. Copy
-[`oncall-hub-api/server/counter-precision.test.ts`](https://github.intuit.com/expertnetwrk-portal/oncall-hub-api/blob/master/server/counter-precision.test.ts)
-into your repo's tests directory and adjust the `SCAN_DIRS` array.
-The regex (`\b\d{2,4}\s+(tests?|suites?|skills?|agents?|...)\b`) is
-universal; the directories to scan are repo-specific.
+This one's vitest-specific. Add a `counter-precision.test.ts` file
+to your repo's tests directory that scans your docs/markdown for
+patterns matching the regex `\b\d{2,4}\s+(tests?|suites?|skills?|agents?|...)\b`
+and fails when it finds a precise count without an `<!-- counter-exact: <reason> -->`
+allow-list comment. The directories to scan are repo-specific; the
+regex is universal.
 
 For non-vitest test runners (jest, mocha, etc.) the logic ports
 straightforwardly — it's a ~150-line file with no vitest-specific
@@ -156,7 +154,7 @@ This makes TASKS.md spec violations fail CI alongside your code lint.
 (Detailed versions in [`prompt-template.md`](prompt-template.md).)
 
 1. No outbound communication (Slack/Jira/GitHub posts, MCP "create" actions)
-2. No web-UI form submits (DevPortal/Jenkins config/Splunk dashboards)
+2. No web-UI form submits (admin portals, CI configs, monitoring dashboards)
 3. No production touches
 4. No destructive git
 5. No destructive shell
@@ -172,24 +170,23 @@ The lessons below are the ones the rules above are anchored to. Add
 your repo-specific lessons in your own `taskgrind.md`'s "Lessons
 learned" section.
 
-- **2026-04-24 grind** on `oncall-hub-api`
-  (`taskgrind-2026-04-24-1856-oncall-hub-api-75142.log`):
-  10h27m run, 19 PRs shipped, queue 28 → 14 in the first 3 hours
-  then flat for 7. Failure modes that motivated rules 7–10:
+- **2026-04-24 grind**: 10h27m run,
+  19 PRs shipped, queue 28 → 14 in the first 3 hours then flat for
+  7. Failure modes that motivated rules 7–10:
   - **Rule 7** — ~15 admin self-merges in 12h with no reviewer,
     concentrated on master.
-  - **Rule 8** — PRs #112 and #115 directly violated the global
-    counter-precision rule (`800+/30+ → 833/32`, `713+ → 833`).
-  - **Rule 9** — PRs #110, #111, #112, #114, #117 each fixed
-    exactly one docs-only finding in one file.
+  - **Rule 8** — two PRs directly violated the global
+    counter-precision rule (e.g. `800+/30+ → 833/32`, `713+ → 833`).
+  - **Rule 9** — five PRs each fixed exactly one docs-only finding
+    in one file.
   - **Rule 10** — 17 sessions ran after the queue first reached
-    100% `**Blocked**` tasks. The orchestrator's `productive_zero_ship` and
-    `diminishing_returns` warnings fired repeatedly and were
+    100% `**Blocked**` tasks. The orchestrator's `productive_zero_ship`
+    and `diminishing_returns` warnings fired repeatedly and were
     ignored.
 
 - **2026-04-26 implementation session** (this directory's source):
-  the rules above were shipped to oncall-hub-api as PRs #118–#127
-  + cross-repo `tasks.md#29`. The rules now bind their own author
+  the rules above were shipped via PRs in the downstream repo plus
+  cross-repo work in this one. The rules now bind their own author
   — the `safe-admin-merge.sh` wrapper correctly refused to let me
   merge a 6th PR, and the structural-change branch in
   `lint-pr-shape.mjs` was added because the naive "all-md = drift"
