@@ -82,7 +82,7 @@ program
 
 program
   .command("install")
-  .description("Install /next-task for detected agents")
+  .description("Install agent commands for detected IDEs")
   .option("--all", "Install for all agents (even if directories don't exist)")
   .option("--agent <name>", "Install for a specific agent only")
   .option("--hooks", "Install pre-commit hook that validates TASKS.md")
@@ -307,7 +307,7 @@ program
 
 program
   .command("list")
-  .description("List tasks matching filters (CLI counterpart of MCP list_tasks)")
+  .description("List tasks matching priority/tag filters")
   .option("--priority <p>", "Filter by priority (P0, P1, P2, P3)")
   .option("--tag <tag>", "Filter by tag")
   .option("--unclaimed", "Only show unclaimed tasks")
