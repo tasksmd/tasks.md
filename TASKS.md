@@ -8,33 +8,6 @@
 
 ## P1
 
-- [ ] Restore `--json` to `tasks pick`/`stats`/`diff` for read-command consistency
-  - **ID**: cli-restore-json-on-read-commands
-  - **Tags**: cli, simplify, mcp-parity, regression
-  - **Details**: Commit `ccf1360` ("refactor: simplify lint rules and remove
-    unused features", 2026-03-17) removed `--json` from `tasks pick`,
-    `stats`, and `diff` to "remove unused features", but commit
-    `ef58b8d` (#54, 2026-05-03) added `--json` to the new `tasks list`
-    command. The CLI now has an inconsistent surface: one read command
-    has `--json`, three don't. Documented justification for `list`
-    having it (`packages/cli/README.md:42`) is "round-trips through
-    `JSON.parse` for scripting" — that argument applies equally to
-    pick/stats/diff. Restore `--json` to all four read commands using
-    the same flag/handler shape. Re-add the four tests that landed in
-    `a567140` and were dropped in `ccf1360`. This is a coherence win,
-    not feature growth — every read command becomes JSON-scriptable
-    by the same flag.
-  - **Files**: `packages/cli/src/cli.ts`, `packages/cli/src/cli.test.ts`,
-    `packages/cli/README.md`, `README.md`
-  - **Acceptance**: `tasks pick --json`, `tasks stats --json`, and
-    `tasks diff --json` all emit valid JSON that `JSON.parse` accepts.
-    `tasks pick --help`, `tasks stats --help`, `tasks diff --help`
-    each list `--json`. `tasks list --json` keeps current behavior
-    (no shape change). Test cases in `cli.test.ts` cover all four
-    commands' JSON paths. `npm run build`, `npm test`, `npm run lint`
-    pass.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Add a `Try it yourself` runnable demo to every user story
   - **ID**: user-stories-runnable-demos
   - **Tags**: docs, user-stories, hardening, executable

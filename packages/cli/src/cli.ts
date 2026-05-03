@@ -252,22 +252,49 @@ program
   });
 
 // ── pick ──
+//
+// `--json` keeps the same shape across all four read commands (pick / list /
+// stats / diff) so any script can choose a command and parse its output with
+// the same `JSON.parse(stdout)` call. The shape mirrors the historical
+// implementation in commit a567140 — `{picked: false}` when the queue is
+// empty, otherwise `{picked, summary, priority, file, line, metadata,
+// candidates, unblocks}`.
 
 program
   .command("pick")
   .description("Pick the best task to work on next")
   .option("--tags <tags>", "Filter by tags (comma-separated)")
-  .action((opts: { tags?: string }) => {
+  .option("--json", "Output as JSON for scripting")
+  .action((opts: { tags?: string; json?: boolean }) => {
     const taskFiles = loadAllTasks(process.cwd());
     const tags = opts.tags?.split(",").filter(Boolean);
     const result = pickBestTask(taskFiles, tags);
 
     if (!result) {
-      console.log("No eligible tasks found (all claimed, blocked, or empty queue).");
+      if (opts.json) {
+        console.log(JSON.stringify({ picked: false }));
+      } else {
+        console.log("No eligible tasks found (all claimed, blocked, or empty queue).");
+      }
       return;
     }
 
     const { task, candidateCount, unblocksCount } = result;
+
+    if (opts.json) {
+      console.log(JSON.stringify({
+        picked: true,
+        summary: task.summary,
+        priority: task.priority,
+        file: task.file,
+        line: task.startLine,
+        metadata: task.metadata,
+        candidates: candidateCount,
+        unblocks: unblocksCount,
+      }));
+      return;
+    }
+
     console.log(`Picked "${task.summary}" (${task.priority})`);
     console.log(`  File: ${task.file}:${task.startLine}`);
     if (task.metadata.id) console.log(`  ID: ${task.metadata.id}`);
@@ -318,8 +345,14 @@ program
 program
   .command("stats")
   .description("Show task queue stats and throughput")
-  .action(() => {
+  .option("--json", "Output as JSON for scripting")
+  .action((opts: { json?: boolean }) => {
     const stats = getQueueStats(process.cwd());
+
+    if (opts.json) {
+      console.log(JSON.stringify(stats));
+      return;
+    }
 
     console.log("📋 Queue Overview");
     console.log("");
@@ -354,8 +387,14 @@ program
   .command("diff")
   .description("Show queue changes since last commit")
   .argument("[ref]", "Git reference to compare against", "HEAD")
-  .action((ref: string) => {
+  .option("--json", "Output as JSON for scripting")
+  .action((ref: string, opts: { json?: boolean }) => {
     const diff = getQueueDiff(process.cwd(), ref);
+
+    if (opts.json) {
+      console.log(JSON.stringify(diff));
+      return;
+    }
 
     if (!diff.hasChanges) {
       console.log(`No TASKS.md changes since ${ref}`);

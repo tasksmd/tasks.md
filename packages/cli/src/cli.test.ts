@@ -365,6 +365,126 @@ describe("CLI", () => {
     }
   });
 
+  // ── --json output across the four read commands (pick / list / stats / diff)
+  //
+  // These tests pin the cross-command parity contract: every read command
+  // accepts `--json`, prints a single-line JSON payload that `JSON.parse`
+  // accepts, and advertises `--json` in `--help`. The historical tests for
+  // pick/stats/diff (commit a567140) were dropped in commit ccf1360 ("remove
+  // unused features") while `tasks list --json` (PR #54) kept the flag — the
+  // tests below restore parity so the same drift fails CI next time.
+
+  it("pick --json outputs structured JSON", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P1\n\n- [ ] JSON task\n  - **ID**: json-test\n  - **Tags**: backend\n"
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    spawnSync("git", ["add", "."], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.picked).toBe(true);
+      expect(parsed.summary).toBe("JSON task");
+      expect(parsed.priority).toBe("P1");
+      expect(parsed.metadata.id).toBe("json-test");
+      expect(parsed.metadata.tags).toEqual(["backend"]);
+      expect(parsed.line).toBeTypeOf("number");
+      expect(parsed.candidates).toBe(1);
+      expect(parsed.unblocks).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("pick --json outputs {picked: false} for empty queue", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.picked).toBe(false);
+      // Empty-queue payload must not carry stale fields.
+      expect(parsed.summary).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("stats --json outputs structured JSON", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P0\n\n- [ ] Urgent\n\n## P1\n\n- [ ] Normal\n"
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    spawnSync("git", ["add", "."], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "stats", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.total).toBe(2);
+      expect(parsed.byPriority.P0).toBe(1);
+      expect(parsed.byPriority.P1).toBe(1);
+      expect(parsed.available).toBe(2);
+      expect(parsed.fileCount).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("diff --json outputs structured JSON", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Initial\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    // `-f` forces the add even when the user's global gitignore excludes
+    // `TASKS.md` (a common pattern in agent-driven repos). Without `-f` the
+    // initial commit would be empty and the diff would report no changes.
+    spawnSync("git", ["add", "-f", "TASKS.md"], { cwd: dir });
+    spawnSync(
+      "git",
+      ["-c", "user.name=test", "-c", "user.email=test@test.com", "commit", "--no-verify", "-m", "feat: init"],
+      { cwd: dir }
+    );
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P1\n\n- [ ] Initial\n\n- [ ] New task\n"
+    );
+    try {
+      const result = spawnSync("node", [CLI, "diff", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.hasChanges).toBe(true);
+      expect(parsed.added.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("--help advertises --json for every read command (pick, list, stats, diff)", () => {
+    for (const cmd of ["pick", "list", "stats", "diff"]) {
+      const result = spawnSync("node", [CLI, cmd, "--help"], { encoding: "utf-8" });
+      expect(result.status, `${cmd} --help should exit 0`).toBe(0);
+      expect(result.stdout, `${cmd} --help should list --json`).toMatch(/--json/);
+    }
+  });
+
   it("list prints priority+id+summary tab-separated by default", () => {
     const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
     writeFileSync(
