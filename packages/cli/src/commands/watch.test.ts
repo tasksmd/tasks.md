@@ -49,6 +49,45 @@ describe("discoverWatchFiles", () => {
     const files = discoverWatchFiles(tempDir);
     expect(files).toHaveLength(0);
   });
+
+  // Story 05 ("Each Team Member Has Their Own Queue") sells nested
+  // `TASKS.md` files across packages as a first-class workflow. This test
+  // pins the monorepo discovery shape end-to-end: top-level + two sibling
+  // packages are all discovered, a `node_modules` decoy is excluded, and
+  // the returned set is exactly the three-file expectation
+  // (top + 2 packages, no decoy), not just `>= 3`.
+  it("discovers a full monorepo shape (top + two packages, excludes node_modules)", () => {
+    writeFileSync(join(tempDir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Repo-wide cleanup\n");
+
+    mkdirSync(join(tempDir, "packages", "foo"), { recursive: true });
+    writeFileSync(join(tempDir, "packages", "foo", "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Foo work\n");
+
+    mkdirSync(join(tempDir, "packages", "bar"), { recursive: true });
+    writeFileSync(join(tempDir, "packages", "bar", "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Bar work\n");
+
+    // Decoy that must NOT be discovered.
+    mkdirSync(join(tempDir, "node_modules", "baz"), { recursive: true });
+    writeFileSync(
+      join(tempDir, "node_modules", "baz", "TASKS.md"),
+      "# Tasks\n\n## P1\n\n- [ ] Vendor task — must be ignored\n"
+    );
+
+    const files = discoverWatchFiles(tempDir);
+
+    // Exactly three files — the decoy under `node_modules/` is excluded.
+    expect(files).toHaveLength(3);
+    expect(files.sort()).toEqual(
+      [
+        join(tempDir, "TASKS.md"),
+        join(tempDir, "packages", "bar", "TASKS.md"),
+        join(tempDir, "packages", "foo", "TASKS.md"),
+      ].sort()
+    );
+    // Belt-and-suspenders: no entry references the decoy path.
+    for (const file of files) {
+      expect(file).not.toContain(join("node_modules", "baz"));
+    }
+  });
 });
 
 describe("lintTaskFile", () => {
