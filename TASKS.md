@@ -8,7 +8,136 @@
 
 ## P1
 
+- [ ] Audit `tasks lint` (CLI subcommand) vs `tasks-lint` (binary) — pick one canonical entry point
+  - **ID**: cli-simplify-lint-entrypoints
+  - **Tags**: cli, simplify, reduce-surface, lint
+  - **Details**: Two entry points to the same backend exist:
+    `tasks lint <paths...>` (in `@tasks-md/cli`,
+    `packages/cli/src/cli.ts:170`) and `tasks-lint <file|directory>...`
+    (separate binary in `@tasks-md/lint`,
+    `packages/lint/src/cli.ts`). Both call `lintFiles` from
+    `@tasks-md/lint`. Their argv shapes diverge slightly — `tasks
+    lint` takes Commander-style options; `tasks-lint` takes
+    `--fix` as a leading positional. The README at line 293
+    documents `npx @tasks-md/lint TASKS.md` (the standalone binary)
+    while `packages/cli/README.md` documents `tasks lint` — same
+    operation, two different commands, two different doc surfaces.
+    **Decide and commit**: keep `tasks-lint` as the canonical
+    standalone binary (already documented in README), and either
+    (a) hard-remove `tasks lint` from the unified CLI, or (b)
+    keep `tasks lint` as a thin alias that internally calls
+    `tasks-lint`. Prefer (a) — fewer surfaces. Document the
+    deletion in the migration note in the PR body. Update README
+    + packages/cli/README + story 01 in lockstep so docs only
+    mention one entry point.
+  - **Files**: `packages/cli/src/cli.ts`,
+    `packages/cli/src/cli.test.ts`,
+    `packages/cli/README.md`, `README.md`,
+    `docs/user-stories/01-agents-know-what-to-work-on.md`
+  - **Acceptance**: Either `tasks lint` is removed (option a — `tasks
+    --help` no longer shows `lint`; `cli.test.ts` updated) OR
+    `tasks lint` becomes a thin alias that prints a deprecation
+    notice and forwards to the same `lintFiles` call (option b —
+    one-test alias coverage). README CLI section + `packages/cli/README.md`
+    + story 01 reference exactly one canonical command. `npm run
+    build`, `npm test`, `npm run lint`, `npx -y @tasks-md/lint
+    TASKS.md` pass.
+  - **Last-enriched**: 2026-05-03
+
 ## P2
+
+- [ ] Standardize CLI command help-text first lines into parallel structure
+  - **ID**: cli-help-text-parallel-structure
+  - **Tags**: cli, simplify, polish, dx
+  - **Details**: Each `program.command(...)` in
+    `packages/cli/src/cli.ts` has a `.description("…")` shown in
+    `tasks --help`. Current first lines drift in voice:
+    `pick`: "Pick the best task to work on next" (verb-first OK)
+    `list`: "List tasks matching filters (CLI counterpart of MCP
+            list_tasks)" (parenthetical leak)
+    `init`: "Initialize a task queue in the current repo" (good)
+    `install`: "Install /next-task for detected agents" (truncates
+            the noun phrase)
+    `watch`: "Watch TASKS.md files and auto-lint on change" (good)
+    `lint`: "Validate TASKS.md files against the spec" (good)
+    `stats`: "Show task queue stats and throughput" (good)
+    `diff`: "Show queue changes since last commit" (good)
+    `sync`: "Sync issues from an external tracker into TASKS.md"
+            (good)
+    `generate-commands`: "Regenerate agent command files from
+            canonical sources" (good)
+    Tighten `list` (remove parenthetical — the "CLI counterpart"
+    framing belongs in the command body, not in the one-liner)
+    and `install` (drop "Install /next-task for detected agents" →
+    "Install agent commands for detected IDEs"). Add a CLI test
+    that asserts every command's description matches the regex
+    `^[A-Z][a-z]+ [\w]+ ` — verb-first, noun-second, no
+    parentheticals. This pin-the-shape test catches future drift.
+  - **Files**: `packages/cli/src/cli.ts`,
+    `packages/cli/src/cli.test.ts`,
+    `packages/cli/README.md`
+  - **Acceptance**: Every command description starts with a verb
+    and is ≤60 chars. New CLI test enforces the regex. `tasks
+    --help` output is consistent in voice. `npm run build`, `npm
+    test`, `npm run lint` pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Sync end-to-end walkthrough in story 06 using the unified `tasks sync`
+  - **ID**: user-stories-sync-walkthrough
+  - **Tags**: docs, user-stories, sync, hardening
+  - **Details**: `docs/user-stories/06-issue-tracker-flows-to-agents.md`
+    documents the providers individually but never walks the
+    reader through one full cycle: GitHub issue → `tasks sync
+    github` → review TASKS.md → `tasks pick` → claim → close →
+    next sync (idempotency check). Add a `## Walkthrough: GitHub
+    issue to closed task` section that uses
+    `--repo octocat/hello-world --label tasks.md` and shows the
+    actual TASKS.md hunk produced, the `tasks pick` output,
+    `(@octocat-bot)` claim, the implementation commit's
+    `closes <task-id>` shape, and the second `tasks sync github
+    --merge` call demonstrating idempotency. Keep the walkthrough
+    under 60 lines. This complements the per-provider sections
+    that already exist; do not duplicate them.
+  - **Files**: `docs/user-stories/06-issue-tracker-flows-to-agents.md`
+  - **Acceptance**: Story 06 has a new `## Walkthrough: GitHub
+    issue to closed task` section showing one end-to-end cycle
+    with sample command + output blocks. Existing per-provider
+    sections unchanged. `npm run lint`, `npx -y @tasks-md/lint
+    TASKS.md` pass. The walkthrough's TASKS.md examples lint
+    clean.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Cross-link audit: every `(see story N)` reference resolves and is current
+  - **ID**: user-stories-crosslink-audit
+  - **Tags**: docs, user-stories, polish, hardening
+  - **Details**: After the recent additions (story 08, polish,
+    runnable demos, install table, walkthroughs), several stories
+    reference each other. A drift check is overdue. Run a grep
+    `(see story|user-stories/0[0-9]|<story-N>)` across
+    `docs/user-stories/`, `README.md`, `packages/cli/README.md`,
+    `packages/mcp/README.md`, and `spec.md`. Build a small report
+    of every cross-reference + verify it points to a real
+    section heading. Fix any that point to renamed sections,
+    deleted content, or missing heading IDs. Also add the
+    missing inverse links: where story A references story B but
+    story B doesn't link back, decide whether the back-link adds
+    value and add it where it does. Single-PR batch (≥3 fixes
+    expected so Rule 9 is satisfied automatically).
+  - **Files**: `docs/user-stories/01-agents-know-what-to-work-on.md`,
+    `docs/user-stories/02-tasks-agents-complete-without-asking.md`,
+    `docs/user-stories/03-agents-work-through-queue.md`,
+    `docs/user-stories/04-agents-work-in-right-order.md`,
+    `docs/user-stories/05-separate-queues-per-member.md`,
+    `docs/user-stories/06-issue-tracker-flows-to-agents.md`,
+    `docs/user-stories/07-monitor-queue-health.md`,
+    `docs/user-stories/08-rich-task-metadata.md`,
+    `docs/user-stories/README.md`, `README.md`
+  - **Acceptance**: Cross-reference report (in PR body) lists
+    every cross-link found and its resolution status. All
+    broken/stale references are fixed in the same PR. PR diff
+    is docs-only. `npm run lint`, `npx -y @tasks-md/lint TASKS.md`
+    pass.
+  - **Last-enriched**: 2026-05-03
 
 - [ ] Add a top-level `Worked example: first 10 minutes` to README
   - **ID**: readme-worked-example
