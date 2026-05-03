@@ -264,12 +264,12 @@ The [`@tasks-md/cli`](packages/cli/) provides task queue management — pick tas
 |---------|-------------|
 | `tasks init` | Scaffold TASKS.md + AGENTS.md in the current repo |
 | `tasks install` | Install `/next-task` for detected agents (Claude Code, Cursor, Devin, etc.) |
-| `tasks pick` | Pick the highest-priority unblocked, unclaimed, non-standing-loop task |
-| `tasks list` | List every task matching filters — CLI counterpart of MCP `list_tasks` |
+| `tasks pick` | Pick the highest-priority unblocked, unclaimed, non-standing-loop task (`--json` for scripts) |
+| `tasks list` | List every task matching filters — CLI counterpart of MCP `list_tasks` (`--json` for scripts) |
 | `tasks lint` | Validate TASKS.md files against the spec (`--fix` removes `[x]` tasks) |
 | `tasks watch` | Watch TASKS.md files and auto-lint on save (`--fix` auto-corrects on save) |
-| `tasks stats` | Show queue overview and throughput from git history |
-| `tasks diff` | Show queue changes since a git ref (added, removed, claimed) |
+| `tasks stats` | Show queue overview and throughput from git history (`--json` for scripts) |
+| `tasks diff` | Show queue changes since a git ref (`--json` for scripts) |
 | `tasks sync <provider>` | Sync issues from `github`, `jira`, or `linear` |
 | `tasks generate-commands` | Regenerate agent command variants from canonical sources |
 

@@ -25,7 +25,10 @@ Pick the highest-priority unblocked, unclaimed task. Uses a deterministic algori
 ```bash
 tasks pick                    # pick best task
 tasks pick --tags backend     # prefer tasks tagged "backend"
+tasks pick --json             # structured output for scripts
 ```
+
+`--json` emits `{picked: false}` when the queue is empty, otherwise `{picked: true, summary, priority, file, line, metadata, candidates, unblocks}`. Same flag shape as `tasks list`, `tasks stats`, and `tasks diff` — all four read commands round-trip through `JSON.parse`.
 
 ### `tasks list`
 
@@ -56,7 +59,8 @@ tasks lint --fix TASKS.md              # auto-fix (removes completed tasks)
 Show queue overview and throughput metrics.
 
 ```bash
-tasks stats
+tasks stats              # human-readable overview
+tasks stats --json       # full QueueStats object for scripts
 ```
 
 ```
@@ -84,6 +88,7 @@ Show queue changes since a git reference.
 ```bash
 tasks diff              # changes since HEAD
 tasks diff HEAD~5       # changes in the last 5 commits
+tasks diff --json       # full QueueDiff object for scripts
 ```
 
 ### `tasks init`
