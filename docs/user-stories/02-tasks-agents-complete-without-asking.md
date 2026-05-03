@@ -89,14 +89,14 @@ If you're not sure about priority, use P2. It means "valuable but not blocking" 
 
 | Field | When to use | Example |
 |-------|------------|---------|
-| **ID** | Other tasks reference it as a blocker | `auth-schema` |
-| **Tags** | Multiple agents with specialties | `backend, auth` |
+| **ID** | Other tasks reference it as a blocker — see [Story 04](04-agents-work-in-right-order.md) | `auth-schema` |
+| **Tags** | Multiple agents with specialties — see [Story 05](05-separate-queues-per-member.md#tag-based-routing) | `backend, auth` |
 | **Details** | Implementation guidance needed | Free-form text |
 | **Files** | You know which files to touch | `src/auth.ts` |
 | **Acceptance** | "Done" isn't obvious | Testable criteria |
-| **Blocked by** | Must wait for another task | `auth-schema` |
+| **Blocked by** | Must wait for another task — see [Story 04](04-agents-work-in-right-order.md) | `auth-schema` |
 
-All are optional. Use only what helps the agent succeed.
+All are optional. Use only what helps the agent succeed. For agent-managed fields (`**Blocked**`, `**Research**`, `**Last-enriched**`, `**Parent**`) and project-level policies, see [Story 08](08-rich-task-metadata.md).
 
 ## Try it yourself
 
