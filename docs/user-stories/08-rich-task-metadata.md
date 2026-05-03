@@ -51,6 +51,8 @@ The first task waits for `schema-review` to be removed. The third waits for the 
 
 The reason should be actionable — name what needs to happen before the task can be picked again.
 
+This contract is pinned by `packages/parser/src/index.test.ts` (`isBlocked` describe block) — a non-empty `**Blocked**` string blocks the task even when every `**Blocked by**` ID has been resolved.
+
 ## `**Research**` and `**Last-enriched**`
 
 When every remaining task is blocked, agents shouldn't just sleep. They enrich blocked tasks with read-only research so the next session (or the human who unblocks it) inherits useful context.
@@ -91,7 +93,7 @@ Example of a task enriched across two sessions:
 
 `**Research**` is the agent's scratchpad. `**Details**` stays clean — it's the original brief from whoever queued the work. When the block clears, the developer who picks the task inherits the research and can move faster.
 
-The lint rule pins this contract: `**Research**` cannot be empty (that's almost always a mistake), and `**Last-enriched**` must be an ISO date.
+The lint rule pins this contract: `**Research**` cannot be empty (that's almost always a mistake), and `**Last-enriched**` must be an ISO date. Both checks live in `packages/lint/src/lint.ts` and are pinned by `packages/lint/src/lint.test.ts` (`**Research** and **Last-enriched** validation` describe block).
 
 ## `**Parent**` — Task Decomposition
 
@@ -128,6 +130,8 @@ A `**Parent**` field links a sub-task back to the larger task it was split from.
 ```
 
 `**Parent**` is decomposition history, not a runtime constraint. The pick algorithm doesn't read it — it's a paper trail for humans (and future audits). Use `**Blocked by**` for actual ordering between children, as in the example.
+
+Both halves of that contract are pinned by `packages/parser/src/index.test.ts` (`**Parent** field` describe block): the parser exposes the field on `task.metadata.parent`, and `pickBestTask` does not skip, demote, or boost a task because it has a `**Parent**`.
 
 When to decompose vs. use sub-tasks (nested checkboxes):
 
@@ -167,7 +171,7 @@ The agent runs the loop with these rules (also in [`spec.md`](../../spec.md#stan
 3. Remove the standing-loop block in the same commit as the new tasks
 4. Stop after the audit commit; the next `/next-task` invocation can implement the queued work
 
-The `tasks pick` algorithm and `commands/next-task.md` skip standing-loop tasks during automatic queue-walking — they're picked only when explicitly targeted as `/next-task standing-audit-gap-loop`. See [Story 09](09-standing-audit-loops.md) for a full worked example: when to reach for one, the canonical task shape, the audit pass itself, and the anti-pattern to avoid.
+The `tasks pick` algorithm and `commands/next-task.md` skip standing-loop tasks during automatic queue-walking — they're picked only when explicitly targeted as `/next-task standing-audit-gap-loop`. The skip behavior is pinned by `packages/parser/src/index.test.ts` (`pickBestTask and standing-loop tasks` describe block) and `packages/mcp/src/tools.test.ts`, so CLI and MCP cannot drift apart on this rule. See [Story 09](09-standing-audit-loops.md) for a full worked example: when to reach for one, the canonical task shape, the audit pass itself, and the anti-pattern to avoid.
 
 ## Policies — Project Rules in HTML Comments
 
@@ -228,6 +232,8 @@ The lint rule guards three failure modes:
 - A `policy:` directive outside an HTML comment (wrap it in `<!-- ... -->`)
 - An empty `policy:` directive (`<!-- policy: -->` with nothing after the colon)
 - An unclosed HTML comment (`<!--` with no matching `-->`)
+
+These three checks are pinned by `packages/lint/src/lint.test.ts` (`policy validation` describe block). The parser-side scope assignment (file-level vs section-level) is pinned by `packages/parser/src/index.test.ts` (`parsePolicies` describe block) — every section-level `policy:` carries a `scope` of the priority heading it sits under (`P0`, `P1`, `P2`, or `P3`), and file-level policies carry `scope: "file"`.
 
 ## When to Reach for Each Field
 
