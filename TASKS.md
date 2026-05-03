@@ -8,7 +8,146 @@
 
 ## P1
 
+- [ ] Per-package README consistency audit — same structure across cli, lint, parser, mcp
+  - **ID**: docs-package-readme-consistency
+  - **Tags**: docs, packages, simplify, hardening
+  - **Details**: The four published packages have separate
+    READMEs (`packages/cli/README.md`, `packages/lint/README.md`,
+    `packages/parser/README.md`, `packages/mcp/README.md`) that
+    drifted in shape over time. Audit and unify the top-level
+    structure: every README should have the same headings in the
+    same order — `# <package-name>` (1-line tagline), `##
+    Install`, `## Use` (the canonical use case in 5-10 lines),
+    `## API` (TypeScript-exposed types/functions or CLI flags),
+    `## See also` (link to spec.md, root README, related
+    packages). Drop any "Why this exists" / "Background"
+    rambling that lives outside that frame. Produce a single docs
+    PR. Verify each README passes `npm run lint` and that internal
+    links resolve. The PR's diff should be net-negative or
+    near-neutral (consolidation, not addition).
+  - **Files**: `packages/cli/README.md`,
+    `packages/lint/README.md`,
+    `packages/parser/README.md`,
+    `packages/mcp/README.md`
+  - **Acceptance**: All four READMEs share the same five
+    top-level headings (`Install`, `Use`, `API`, `See also`, plus
+    the H1). Cross-links between packages resolve. Net diff is
+    near-zero. `npm run lint`, `npx -y @tasks-md/lint TASKS.md`
+    pass.
+  - **Last-enriched**: 2026-05-03
+
 ## P2
+
+- [ ] MCP tool descriptions audit — match the parallel-structure rule applied to CLI commands
+  - **ID**: mcp-tool-descriptions-parallel
+  - **Tags**: mcp, simplify, polish, dx
+  - **Details**: After PR #67 pinned CLI command descriptions
+    into a verb-first, ≤60-char shape, the MCP server's tool
+    descriptions in `packages/mcp/src/index.ts` weren't checked.
+    The MCP exposes 7 tools: `list_tasks`, `pick_task`,
+    `claim_task`, `unclaim_task`, `complete_task`, `add_task`,
+    plus parser inspection helpers. Each has a `description:` in
+    its `server.tool(...)` call. Audit them for the same
+    parallel structure used by the CLI (see PR #67 + the regex
+    pinned in `cli.test.ts`), tighten any drifters, and add a
+    test in `packages/mcp/src/tools.test.ts` that asserts every
+    registered tool description matches the same regex. Drop
+    redundancy in MCP-vs-CLI descriptions where they mirror each
+    other (e.g., MCP `list_tasks` and CLI `list` should differ
+    only in the verb-noun, not the framing).
+  - **Files**: `packages/mcp/src/index.ts`,
+    `packages/mcp/src/tools.test.ts`
+  - **Acceptance**: All 7 MCP tool descriptions follow the
+    parallel structure (verb-first, ≤60 chars). New regex test
+    in `tools.test.ts` enforces the rule. `npm run build`, `npm
+    test`, `npm run lint` pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Linter error messages — make every error actionable (state the fix)
+  - **ID**: lint-actionable-errors
+  - **Tags**: lint, dx, hardening
+  - **Details**: `packages/lint/src/lint.ts` emits errors via
+    `reportError(...)`. Some messages name the violation but
+    don't tell the reader how to fix it. Examples to audit:
+    `"first line must be '# Tasks', got '<x>'"` — good (says the
+    fix). `"completed task should be removed, not checked off"`
+    — good (says the fix: remove). `"policy directive found
+    outside HTML comment — wrap in <!-- policy: ... -->"` —
+    good. Audit the rest of the error catalog and ensure every
+    message ends with a clause that names the fix (`; do X`, `;
+    use Y`, `; remove the field if Z`). Add a lint-of-the-linter
+    test in `lint.test.ts` that scans `lint.ts` for every
+    `reportError(` call and asserts the message matches a regex
+    that requires either `;` followed by an imperative, or `→`
+    followed by a fix, or `must` / `should` / `use` keywords.
+    Pin the actionability contract.
+  - **Files**: `packages/lint/src/lint.ts`,
+    `packages/lint/src/lint.test.ts`
+  - **Acceptance**: Every `reportError(...)` call in `lint.ts`
+    emits a message that names the fix. New test in `lint.test.ts`
+    enforces the contract via a regex. `npm run build`, `npm test`,
+    `npm run lint` pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Story 09 — Standing audit loops in practice (one full walkthrough)
+  - **ID**: user-stories-09-standing-loops-walkthrough
+  - **Tags**: docs, user-stories, standing-loops, hardening
+  - **Details**: Story 08 introduced standing audit loops as a
+    pattern. Story 09 should walk through one full cycle so
+    readers see them in action. New file
+    `docs/user-stories/09-standing-audit-loops.md` covering:
+    (1) When you'd reach for a standing loop (recurring queue
+    refill, scheduled audit cadence, post-deploy checklist).
+    (2) The exact TASKS.md shape — task block with the
+    `standing-loop` tag and ID `standing-audit-gap-loop` (or
+    similar). Show `tasks pick` skipping it during normal queue
+    walks; show `/next-task standing-audit-gap-loop` targeting
+    it explicitly. (3) The agent's Tier-1/Tier-2 audit loop —
+    audit, file findings, exit; humans (or other sessions)
+    drain the findings on the next normal pass. (4) Anti-pattern:
+    don't make every task a standing loop — that's just a queue
+    of audit prompts with no work. (5) `## Try it yourself`
+    section at the end (matches the pattern PR #60 established).
+    Cross-link from `docs/user-stories/README.md` table; from
+    story 08; and from the spec's standing-loops section.
+  - **Files**: `docs/user-stories/09-standing-audit-loops.md`
+    (new), `docs/user-stories/README.md`,
+    `docs/user-stories/08-rich-task-metadata.md`, `spec.md`
+    (cross-link only — do not modify the spec itself)
+  - **Acceptance**: New story 09 exists with the 5 sections and
+    a Try-it-yourself demo. `docs/user-stories/README.md` table
+    has the new row in the right priority (07 → 08 → 09).
+    `spec.md` standing-loops section gets a one-line link "see
+    story 09 for a worked example". `npm run lint`, `npx -y
+    @tasks-md/lint TASKS.md` pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Examples directory audit — every file lints clean and demonstrates a distinct feature
+  - **ID**: examples-directory-audit
+  - **Tags**: docs, examples, hardening, lint
+  - **Details**: `examples/` ships TASKS.md fixtures that act as
+    documentation. Run `npx -y @tasks-md/lint examples/` and
+    enumerate the files: each should (a) lint clean (zero
+    errors), (b) demonstrate a distinct format feature (basic
+    one-liners, rich metadata, blocked + research, parent-child
+    decomposition, monorepo per-package, standing loop,
+    policies, mixed priorities, etc.), and (c) have a one-line
+    intro comment at the top stating which feature it
+    demonstrates. Build a small overview file
+    `examples/README.md` (or update existing one) that lists
+    every example with a one-line description and the spec
+    section it demonstrates. Add a CI smoke that lints every
+    file in `examples/` (in `.github/workflows/` if not already).
+  - **Files**: `examples/*.md`, `examples/README.md` (may
+    already exist), `.github/workflows/tasks-lint.yml` (verify it
+    covers `examples/`)
+  - **Acceptance**: Every file in `examples/` lints clean. Each
+    has a one-line intro comment naming the demonstrated
+    feature. `examples/README.md` lists every example with a
+    one-line description. CI includes `examples/` in the lint
+    target. `npm run build`, `npm test`, `npm run lint`, `npx
+    -y @tasks-md/lint TASKS.md` pass.
+  - **Last-enriched**: 2026-05-03
 
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
   - **ID**: taskgrind-per-session-sync
