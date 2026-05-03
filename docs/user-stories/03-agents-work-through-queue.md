@@ -112,3 +112,38 @@ All six commands contain the same logic — only the wrapper format differs:
 | `commands/gemini/next-task.toml` | Gemini CLI command |
 | `commands/windsurf/next-task.md` | Windsurf workflow |
 | [commands/README.md](../../commands/README.md) | Format details |
+
+## Try it yourself
+
+Sixty-second walkthrough — watch `tasks pick` walk a two-priority queue across two iterations.
+
+```bash
+mkdir tmp-tasks-demo && cd tmp-tasks-demo
+git init -q
+cat > TASKS.md <<'EOF'
+# Tasks
+
+## P0
+
+- [ ] Investigate auth bug
+
+## P1
+
+- [ ] Add new feature
+EOF
+npx -y @tasks-md/cli pick                    # picks the P0 — "Investigate auth bug"
+
+# Agent does the work, then removes the completed task block in one commit.
+# Simulating that step by hand here:
+cat > TASKS.md <<'EOF'
+# Tasks
+
+## P1
+
+- [ ] Add new feature
+EOF
+npx -y @tasks-md/cli pick                    # now picks the P1 — "Add new feature"
+cd .. && rm -rf tmp-tasks-demo
+```
+
+That second `pick` is the loop. As long as `pickBestTask()` returns something, the agent keeps going; when it returns `undefined` the queue is empty and the session ends.

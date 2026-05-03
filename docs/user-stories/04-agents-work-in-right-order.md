@@ -127,3 +127,37 @@ npx @tasks-md/lint TASKS.md
 - Flags duplicate IDs
 - Flags `Blocked by` references to non-existent IDs (dangling blockers)
 - Validates ID format (must be kebab-case)
+
+## Try it yourself
+
+Sixty-second walkthrough — give two tasks the same priority but make one block the other; watch `tasks pick` favor the unblocking task.
+
+```bash
+mkdir tmp-tasks-demo && cd tmp-tasks-demo
+git init -q
+cat > TASKS.md <<'EOF'
+# Tasks
+
+## P1
+
+- [ ] Implement JWT generation
+  - **Blocked by**: auth-schema
+
+- [ ] Set up auth database schema
+  - **ID**: auth-schema
+EOF
+npx -y @tasks-md/cli pick                    # picks the schema task
+npx -y @tasks-md/lint TASKS.md               # exits 0 — `auth-schema` ID resolves
+cd .. && rm -rf tmp-tasks-demo
+```
+
+Expected highlights:
+
+```
+Picked "Set up auth database schema" (P1)
+  ID: auth-schema
+  Unblocks: 1 task(s)
+  Candidates: 1
+```
+
+`Candidates: 1` is the proof that the JWT task was filtered out — its `**Blocked by**: auth-schema` matched a still-present ID. Remove the schema task block (as the agent would after completing it) and re-run `pick`; the JWT task becomes the candidate.

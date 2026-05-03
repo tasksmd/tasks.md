@@ -8,44 +8,6 @@
 
 ## P1
 
-- [ ] Add a `Try it yourself` runnable demo to every user story
-  - **ID**: user-stories-runnable-demos
-  - **Tags**: docs, user-stories, hardening, executable
-  - **Details**: Stories 01–08 describe behaviors with prose and
-    static examples but never give the reader a sequence of shell
-    commands they can copy-paste against a fresh repo to see the
-    behavior. Hardening means making every claim verifiable. For each
-    of the 8 stories, add a `## Try it yourself` section near the end
-    with a sequence of `mkdir tmp && cd tmp && git init && echo ...`
-    commands plus the expected output. Examples:
-    - Story 01 — `tasks init` then `cat TASKS.md` then `tasks lint`
-    - Story 03 — minimal queue + `tasks pick` showing the picked task
-    - Story 04 — three tasks with `**Blocked by**` and observe
-      ordering across `tasks pick` calls
-    - Story 06 — sync from a tiny GitHub repo (use the provided
-      `--repo octocat/hello-world` example) into a temp file
-    - Story 08 — show `**Research**` empty-validation failing the
-      linter, then succeeding with a real value
-    Do NOT add a CI runner for these — they are documentation. Keep
-    each demo under 15 commands. The point is a reader can run them
-    in 60 seconds.
-  - **Files**: `docs/user-stories/01-agents-know-what-to-work-on.md`,
-    `docs/user-stories/02-tasks-agents-complete-without-asking.md`,
-    `docs/user-stories/03-agents-work-through-queue.md`,
-    `docs/user-stories/04-agents-work-in-right-order.md`,
-    `docs/user-stories/05-separate-queues-per-member.md`,
-    `docs/user-stories/06-issue-tracker-flows-to-agents.md`,
-    `docs/user-stories/07-monitor-queue-health.md`,
-    `docs/user-stories/08-rich-task-metadata.md`
-  - **Acceptance**: Every story has exactly one `## Try it yourself`
-    section. Each demo is self-contained (creates and cleans up a
-    temp dir). Commands compile to valid CLI invocations (no
-    fictional flags). `npm run lint` passes; `npx -y @tasks-md/lint
-    TASKS.md` passes for any embedded TASKS.md examples. PR can
-    batch all 8 stories in one commit (one author touching unrelated
-    files = single docs concern under the user-stories umbrella).
-  - **Last-enriched**: 2026-05-03
-
 ## P2
 
 - [ ] Print full `**Details**` in `tasks pick` output (not just summary)

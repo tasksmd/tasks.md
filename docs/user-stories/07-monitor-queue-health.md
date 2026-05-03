@@ -132,3 +132,43 @@ Throughput is measured from **git history** — every time a `- [ ]` line is rem
 | [`packages/cli/src/cli.ts`](../../packages/cli/src/cli.ts) | `tasks stats`, `tasks diff`, and `tasks list` commands |
 | [`packages/mcp/src/tools.ts`](../../packages/mcp/src/tools.ts) | `listTasksFromFiles()` — the same filter contract exposed via MCP |
 | [`packages/parser/`](../../packages/parser/) | Shared parser for task file analysis |
+
+## Try it yourself
+
+Sixty-second walkthrough — exercise `stats`, `list`, and `diff` against a tiny queue with a blocked task and a claimed task.
+
+```bash
+mkdir tmp-tasks-demo && cd tmp-tasks-demo
+git init -q
+cat > TASKS.md <<'EOF'
+# Tasks
+
+## P0
+
+- [ ] Critical bug
+  - **ID**: bug-1
+
+## P1
+
+- [ ] Add feature
+  - **Blocked by**: bug-1
+
+## P2
+
+- [ ] Update docs (@bot)
+EOF
+npx -y @tasks-md/cli stats                   # 3 total, 1 blocked, 1 claimed, 1 available
+npx -y @tasks-md/cli list --unclaimed --unblocked   # only "Critical bug" remains
+
+# Commit, then add a new task to see `tasks diff`:
+git add -f TASKS.md
+git -c user.name=demo -c user.email=demo@local commit -q --no-verify -m "init"
+cat >> TASKS.md <<'EOF'
+
+- [ ] Refresh README
+EOF
+npx -y @tasks-md/cli diff                    # +1 added, 0 removed, 0 claimed
+cd .. && rm -rf tmp-tasks-demo
+```
+
+`tasks stats --json`, `tasks list --json`, and `tasks diff --json` emit the same structured shapes for piping into `jq` or another script.

@@ -250,3 +250,40 @@ The lint rule guards three failure modes:
 | [`packages/lint/`](../../packages/lint/) | Linter rules that pin `**Blocked**`, `**Research**`, `**Last-enriched**`, and policy formats |
 | [`packages/parser/`](../../packages/parser/) | Reference parser that exposes every field on `task.metadata` |
 | [`packages/mcp/`](../../packages/mcp/) | MCP server that surfaces the same fields to agents |
+
+## Try it yourself
+
+Sixty-second walkthrough — write a blocked task with empty `**Research**`, watch the linter reject it, then add real notes and a `**Last-enriched**` date and watch it pass.
+
+```bash
+mkdir tmp-tasks-demo && cd tmp-tasks-demo
+git init -q
+
+# 1) Empty **Research** — lint flags the line and exits 1.
+cat > TASKS.md <<'EOF'
+# Tasks
+
+## P1
+
+- [ ] Migrate cron jobs
+  - **Blocked**: needs-credentials — DATABASE_URL not provisioned
+  - **Research**:
+EOF
+npx -y @tasks-md/lint TASKS.md || echo "lint exit $?"
+
+# 2) Add real notes + an ISO **Last-enriched** date — lint exits 0.
+cat > TASKS.md <<'EOF'
+# Tasks
+
+## P1
+
+- [ ] Migrate cron jobs
+  - **Blocked**: needs-credentials — DATABASE_URL not provisioned
+  - **Research**: 2026-04-20 — drafted runner config sketch.
+  - **Last-enriched**: 2026-04-20
+EOF
+npx -y @tasks-md/lint TASKS.md               # exits 0 — both fields are well-formed
+cd .. && rm -rf tmp-tasks-demo
+```
+
+The first run prints something like ``ERROR: TASKS.md:7: **Research** must have a non-empty value`` and exits 1. The second run prints `Checked 1 file(s), found 0 error(s)` and exits 0. Swap the date for `yesterday` to see `**Last-enriched**` reject anything that isn't `YYYY-MM-DD`.
