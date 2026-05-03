@@ -299,6 +299,16 @@ program
     console.log(`  File: ${task.file}:${task.startLine}`);
     if (task.metadata.id) console.log(`  ID: ${task.metadata.id}`);
     if (task.metadata.tags?.length) console.log(`  Tags: ${task.metadata.tags.join(", ")}`);
+    // Print Details so agents calling `pick` for context have the full prose
+    // without needing a follow-up file read at the reported file:line. Each
+    // continuation line stays under the same 2-space indent as the rest of the
+    // labeled fields. Skipped silently when the task has no Details metadata.
+    if (task.metadata.details) {
+      console.log(`  Details:`);
+      for (const line of task.metadata.details.split("\n")) {
+        console.log(`    ${line}`);
+      }
+    }
     if (unblocksCount > 0) console.log(`  Unblocks: ${unblocksCount} task(s)`);
     console.log(`  Candidates: ${candidateCount}`);
   });
