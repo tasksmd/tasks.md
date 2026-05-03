@@ -934,3 +934,92 @@ describe("pickBestTask and standing-loop tasks", () => {
     expect(pickBestTask([{ path: TEST_FILE, tasks }])).toBeUndefined();
   });
 });
+
+// ── **Parent** field — paper trail, not a runtime constraint ────────────────
+//
+// Story 08 ("Rich task metadata") claims that **Parent** is decomposition
+// history only — the pick algorithm must not read it. These tests pin both
+// halves of that contract so the same drift fails CI next time:
+//
+//   1. The parser exposes **Parent** on `task.metadata.parent` (so MCP
+//      consumers, audits, and the linter all see the same value).
+//   2. `pickBestTask` ignores the field — adding **Parent** to a task does
+//      not skip it, demote it, or change ordering relative to its parent.
+
+describe("**Parent** field", () => {
+  it("exposes **Parent** as task.metadata.parent (lowercased, no whitespace)", () => {
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Wire feature flag client into the API server",
+      "  - **ID**: feature-flags-api",
+      "  - **Parent**: feature-flags-epic",
+      "",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].metadata.parent).toBe("feature-flags-epic");
+  });
+
+  it("does not skip a task just because it has a **Parent** field", () => {
+    // A child task with **Parent** but no other blockers must remain pickable
+    // even when the parent epic is still in the queue. This pins the claim in
+    // docs/user-stories/08-rich-task-metadata.md that **Parent** is a paper
+    // trail, not a runtime constraint.
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Add feature-flag schema to Postgres",
+      "  - **ID**: feature-flags-schema",
+      "  - **Parent**: feature-flags-epic",
+      "",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    const result = pickBestTask([{ path: TEST_FILE, tasks }]);
+    expect(result).toBeDefined();
+    expect(result!.task.metadata.id).toBe("feature-flags-schema");
+  });
+
+  it("treats parent + child as independent picks (parent's presence does not unblock or block child)", () => {
+    // Two sibling children share a **Parent**, and the parent epic is still in
+    // the queue. None of the three should be skipped, demoted, or boosted by
+    // the **Parent** field — pickBestTask must rank them by priority alone.
+    const content = [
+      "# Tasks",
+      "",
+      "## P1",
+      "",
+      "- [ ] Implement feature flag system",
+      "  - **ID**: feature-flags-epic",
+      "",
+      "- [ ] Add feature-flag schema",
+      "  - **ID**: feature-flags-schema",
+      "  - **Parent**: feature-flags-epic",
+      "",
+      "- [ ] Wire feature-flag client into API",
+      "  - **ID**: feature-flags-api",
+      "  - **Parent**: feature-flags-epic",
+      "  - **Blocked by**: feature-flags-schema",
+      "",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks).toHaveLength(3);
+
+    // The schema child unblocks the API child, so it wins on unblocking impact.
+    // The epic and the API task tie on priority but the schema beats both
+    // because it has unblocksCount=1 while the others have 0.
+    const result = pickBestTask([{ path: TEST_FILE, tasks }]);
+    expect(result).toBeDefined();
+    expect(result!.task.metadata.id).toBe("feature-flags-schema");
+    expect(result!.unblocksCount).toBe(1);
+
+    // None of the three was filtered out by the **Parent** field — the
+    // candidate count must include the epic and the schema (the API task is
+    // blocked by `feature-flags-schema`).
+    expect(result!.candidateCount).toBe(2);
+  });
+});
