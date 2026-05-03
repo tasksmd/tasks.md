@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/@tasks-md/parser)](https://www.npmjs.com/package/@tasks-md/parser)
 
-Parser for [TASKS.md](https://github.com/tasksmd/tasks.md) files — extracts tasks, metadata, priorities, and blockers.
+Parser for [TASKS.md](https://github.com/tasksmd/tasks.md) files — extracts tasks, metadata, priorities, blockers, and policies.
 
 ## Install
 
@@ -10,51 +10,39 @@ Parser for [TASKS.md](https://github.com/tasksmd/tasks.md) files — extracts ta
 npm install @tasks-md/parser
 ```
 
-## Usage
+## Use
 
 ```ts
-import { parseTasksContent, isBlocked, getAllTaskIds } from "@tasks-md/parser";
+import { loadAllTasks, pickBestTask, isBlocked, getAllTaskIds } from "@tasks-md/parser";
 
-const content = `# Tasks
-
-## P0
-
-- [ ] Fix login crash
-  - **ID**: fix-login
-  - **Tags**: bug, auth
-
-## P1
-
-- [ ] Add dark mode
-  - **ID**: dark-mode
-  - **Blocked by**: fix-login
-`;
-
-const tasks = parseTasksContent(content, "TASKS.md");
-// → [{ summary: 'Fix login crash', priority: 'P0', metadata: { id: 'fix-login', ... } }, ...]
-
-const ids = getAllTaskIds([{ path: "TASKS.md", tasks }]);
-// → Set { 'fix-login', 'dark-mode' }
-
-const blocked = isBlocked(tasks[1], ids);
-// → true (dark-mode is blocked by fix-login which exists)
+const taskFiles = loadAllTasks(process.cwd());        // discover every TASKS.md from the git root
+const allIds = getAllTaskIds(taskFiles);
+const result = pickBestTask(taskFiles);               // walks P0→P3, skips blocked / claimed / standing-loop
+if (result) {
+  const stillBlocked = isBlocked(result.task, allIds);
+}
 ```
 
-### File discovery
+`@tasks-md/cli`, `@tasks-md/lint`, and `tasks-mcp` all call into this package — they share one parser and one pick algorithm so behavior cannot drift across surfaces.
+
+## API
 
 ```ts
-import { discoverTaskFiles, loadAllTasks } from "@tasks-md/parser";
+parseTasksContent(content: string, filePath: string): Task[]
+parsePolicies(content: string): Policy[]
+discoverTaskFiles(directory: string): string[]
+loadAllTasks(directory: string): TaskFile[]
+loadAllTasksAsync(directory: string): Promise<TaskFile[]>
+findGitRoot(directory: string): string
 
-// Find all TASKS.md files from a git root
-const files = discoverTaskFiles("/path/to/repo");
-// → ['TASKS.md', 'packages/api/TASKS.md']
-
-// Load and parse all at once
-const taskFiles = loadAllTasks("/path/to/repo");
-// → [{ path: 'TASKS.md', tasks: [...] }, ...]
+getAllTaskIds(taskFiles: TaskFile[]): Set<string>
+isBlocked(task: Task, allIds: Set<string>): boolean
+pickBestTask(taskFiles: TaskFile[], tags?: string[], agentName?: string): PickResult | undefined
+findTasksById(taskFiles: TaskFile[], taskId: string): Task[]
+normalizeTaskId(taskId: string): string
+countUnblocks(task: Task, allTasks: Task[]): number
+tagOverlapCount(task: Task, tags: string[]): number
 ```
-
-## Types
 
 ```ts
 interface Task {
@@ -76,13 +64,40 @@ interface TaskMetadata {
   files?: string[];
   acceptance?: string;
   blockedBy?: string[];
+  blocked?: string;        // free-form external-constraint reason
+  research?: string;       // agent-managed research notes
+  lastEnriched?: string;   // ISO date YYYY-MM-DD
+  [key: string]: string | string[] | undefined;
+}
+
+interface Policy {
+  text: string;
+  scope: "file" | string;  // "file" or "P0".."P3"
 }
 
 interface TaskFile {
   path: string;
   tasks: Task[];
+  policies?: Policy[];
+}
+
+interface PickResult {
+  task: Task;
+  candidateCount: number;
+  unblocksCount: number;
+  resumed?: boolean;
 }
 ```
+
+`pickBestTask` is the single source of truth for queue ordering: walks `P0 → P1 → P2 → P3`, drops tasks that are claimed, blocked (non-empty `**Blocked**` OR a `**Blocked by**` ID still present in the queue), or carry the `standing-loop` tag. Within a priority it sorts by descending unblocking impact, then by descending tag overlap. Pass `agentName` to resume a prior claim before walking the queue.
+
+## See also
+
+- [Specification](../../spec.md) — the canonical TASKS.md format
+- [Root README](../../README.md) — project overview and quick start
+- [`@tasks-md/cli`](../cli/) — CLI built on this parser
+- [`@tasks-md/lint`](../lint/) — linter built on this parser
+- [`tasks-mcp`](../mcp/) — MCP server built on this parser
 
 ## License
 
