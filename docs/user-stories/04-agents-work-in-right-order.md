@@ -66,6 +66,22 @@ Agents should prefer tasks that unblock other work. This is the most impactful h
 
 Here, `api-schema` unblocks 3 tasks. `Add request logging` unblocks none. A smart agent picks `api-schema` first — even though both are P1.
 
+## The Actual Algorithm
+
+`pickBestTask()` in [`packages/parser/src/index.ts`](../../packages/parser/src/index.ts) is the source of truth for ordering. Both the CLI (`tasks pick`) and the MCP server (`pick_task`) call it directly, so behavior cannot drift. The algorithm:
+
+1. **Collect candidates** — every task in every discovered `TASKS.md`, then drop tasks that are claimed (`(@agent)`), blocked (non-empty `**Blocked**` OR a `**Blocked by**` ID still present in the queue), or marked with the `standing-loop` tag.
+2. **Tag preference** — if the caller passed `--tags backend, infra`, narrow to tasks with at least one matching tag. If no candidate matches, fall back to the full set (tags are a soft preference, not a hard filter — see Story 05 for the contract).
+3. **Sort** by, in order:
+   - **Priority** — `P0 < P1 < P2 < P3` lex-sorted (P0 first).
+   - **Unblocking impact** — descending count of tasks that name this task's ID in their `**Blocked by**` field.
+   - **Tag overlap count** — descending number of caller-supplied tags this task carries.
+4. **Pick** the first candidate; the rest are returned as `candidateCount` for inspection.
+
+A task is unblocked when **none** of its `**Blocked by**` IDs match a `**ID**:` value still present in any discovered `TASKS.md`. Removing the blocker's task block from the file is what flips the dependent from blocked to pickable — there is no separate "unblock" command. `**Blocked**:` (free-form text) blocks the task too, but it can only be cleared by a human or by the agent removing the line.
+
+This contract is pinned by unit tests in `packages/cli/src/cli.test.ts` (`pickBestTask` describe block) and `packages/mcp/src/tools.test.ts`. Any change to the ordering rules must update both test suites.
+
 ## Chains
 
 Dependencies can chain:

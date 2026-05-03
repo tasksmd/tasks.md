@@ -82,6 +82,16 @@ Declare agent capabilities in AGENTS.md:
 - @frontend-agent: tags frontend, ux
 ```
 
+### How routing is enforced
+
+Tag routing is enforced at the **`pick`/`list` filter call site, not in the parser**. The parser just records `**Tags**:` as a list — it doesn't know which agent should pick what. Concretely:
+
+- `tasks pick --tags backend` (CLI) — passes the tag list to [`pickBestTask()`](../../packages/parser/src/index.ts), which filters candidates to those whose `**Tags**:` overlap. If no candidate matches, it falls back to the full set (tags are a soft preference).
+- `tasks list --tag backend` (CLI) and the `tag` filter on the MCP `list_tasks` tool work the same way — the filter is applied in [`packages/cli/src/lib.ts`](../../packages/cli/src/lib.ts) and [`packages/mcp/src/tools.ts`](../../packages/mcp/src/tools.ts) respectively, both of which agree on the predicate.
+- The `## Agents` block in `AGENTS.md` is **documentation of intent** — a contract between you and the agents. Actual enforcement happens because each agent passes its own tag list when calling `pick`/`list`. An agent that ignores its tag declaration will still be allowed to claim any task; the tag system is collaborative, not a sandbox.
+
+This means orchestrators that route tasks programmatically (e.g., dispatching `pick --tags <agent-tags>` per agent process) get strong routing; ad-hoc human-driven agents with the same `AGENTS.md` are on the honor system.
+
 ## Linting Across Files
 
 Pass all files to the linter for cross-file validation:

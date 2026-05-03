@@ -49,6 +49,20 @@ Start the loop:
 
 The agent picks the highest-priority unblocked task, claims it, does the work, removes it from the file, and loops. You keep adding tasks while the agent keeps draining them.
 
+### Success looks like
+
+A successful `/next-task` run is behaviorally precise — anyone reading the source-of-truth code paths can verify it:
+
+1. The agent calls [`pickBestTask()`](../../packages/parser/src/index.ts), which selects the highest-priority task whose `**Blocked**` field is empty, whose `**Blocked by**` IDs are not present in any discovered `TASKS.md`, that has no `(@agent)` claim, and that is not a `standing-loop` task.
+2. The agent claims it by appending `(@<agent-id>)` to the task line and pushes (or commits, in single-agent setups).
+3. The agent does the work — reads metadata, makes changes, runs tests, etc.
+4. On completion, the agent removes the entire task block (task line + metadata + sub-tasks) and commits.
+5. Loop repeats until `pickBestTask()` returns `undefined` (queue exhausted) or every remaining task is blocked or claimed by another agent.
+
+`tasks pick` is the read-only inspection of step 1 — same algorithm, no claim, no commit. `/next-task` is `tasks pick` plus claim → plan → implement → commit → loop.
+
+The deterministic-pick contract is pinned by unit tests in `packages/cli/src/cli.test.ts` (`pickBestTask` describe block) and `packages/mcp/src/tools.test.ts`; both must agree on every filter so CLI and MCP cannot drift.
+
 ## What the Agent Does at Each Step
 
 ### Checking workspace
