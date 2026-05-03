@@ -339,7 +339,6 @@ The [`@tasks-md/cli`](packages/cli/) provides task queue management — pick tas
 | `tasks install` | Install `/next-task` for detected agents (Claude Code, Cursor, Devin, etc.) |
 | `tasks pick` | Pick the highest-priority unblocked, unclaimed, non-standing-loop task (`--json` for scripts) |
 | `tasks list` | List every task matching filters — CLI counterpart of MCP `list_tasks` (`--json` for scripts) |
-| `tasks lint` | Validate TASKS.md files against the spec (`--fix` removes `[x]` tasks) |
 | `tasks watch` | Watch TASKS.md files and auto-lint on save (`--fix` auto-corrects on save) |
 | `tasks stats` | Show queue overview and throughput from git history (`--json` for scripts) |
 | `tasks diff` | Show queue changes since a git ref (`--json` for scripts) |
@@ -352,7 +351,7 @@ Quick examples:
 npx @tasks-md/cli pick                          # pick highest-priority unblocked non-standing task
 npx @tasks-md/cli list --unclaimed --unblocked  # list every pickable task
 npx @tasks-md/cli stats                         # queue overview and throughput
-npx @tasks-md/cli lint TASKS.md                 # validate against spec
+npx @tasks-md/lint TASKS.md                     # validate against spec (separate package)
 npx @tasks-md/cli sync github --merge           # sync GitHub Issues into TASKS.md
 ```
 

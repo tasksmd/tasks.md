@@ -8,42 +8,6 @@
 
 ## P1
 
-- [ ] Audit `tasks lint` (CLI subcommand) vs `tasks-lint` (binary) — pick one canonical entry point
-  - **ID**: cli-simplify-lint-entrypoints
-  - **Tags**: cli, simplify, reduce-surface, lint
-  - **Details**: Two entry points to the same backend exist:
-    `tasks lint <paths...>` (in `@tasks-md/cli`,
-    `packages/cli/src/cli.ts:170`) and `tasks-lint <file|directory>...`
-    (separate binary in `@tasks-md/lint`,
-    `packages/lint/src/cli.ts`). Both call `lintFiles` from
-    `@tasks-md/lint`. Their argv shapes diverge slightly — `tasks
-    lint` takes Commander-style options; `tasks-lint` takes
-    `--fix` as a leading positional. The README at line 293
-    documents `npx @tasks-md/lint TASKS.md` (the standalone binary)
-    while `packages/cli/README.md` documents `tasks lint` — same
-    operation, two different commands, two different doc surfaces.
-    **Decide and commit**: keep `tasks-lint` as the canonical
-    standalone binary (already documented in README), and either
-    (a) hard-remove `tasks lint` from the unified CLI, or (b)
-    keep `tasks lint` as a thin alias that internally calls
-    `tasks-lint`. Prefer (a) — fewer surfaces. Document the
-    deletion in the migration note in the PR body. Update README
-    + packages/cli/README + story 01 in lockstep so docs only
-    mention one entry point.
-  - **Files**: `packages/cli/src/cli.ts`,
-    `packages/cli/src/cli.test.ts`,
-    `packages/cli/README.md`, `README.md`,
-    `docs/user-stories/01-agents-know-what-to-work-on.md`
-  - **Acceptance**: Either `tasks lint` is removed (option a — `tasks
-    --help` no longer shows `lint`; `cli.test.ts` updated) OR
-    `tasks lint` becomes a thin alias that prints a deprecation
-    notice and forwards to the same `lintFiles` call (option b —
-    one-test alias coverage). README CLI section + `packages/cli/README.md`
-    + story 01 reference exactly one canonical command. `npm run
-    build`, `npm test`, `npm run lint`, `npx -y @tasks-md/lint
-    TASKS.md` pass.
-  - **Last-enriched**: 2026-05-03
-
 ## P2
 
 - [ ] Standardize CLI command help-text first lines into parallel structure
