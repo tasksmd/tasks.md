@@ -104,3 +104,39 @@ This checks:
 - Unique IDs across all files
 - Blocker references resolved globally
 - Format valid in every file
+
+## Try it yourself
+
+Sixty-second walkthrough — set up a tiny monorepo with one TASKS.md per package and see how `tasks list --tag` carves out per-agent queues.
+
+```bash
+mkdir tmp-tasks-demo && cd tmp-tasks-demo
+git init -q
+mkdir -p packages/api packages/web
+cat > packages/api/TASKS.md <<'EOF'
+# Tasks
+
+## P1
+
+- [ ] Add user endpoints
+  - **Tags**: backend, api
+EOF
+cat > packages/web/TASKS.md <<'EOF'
+# Tasks
+
+## P1
+
+- [ ] Build login page
+  - **Tags**: frontend, ux
+EOF
+echo "All tasks across both packages:"
+npx -y @tasks-md/cli list
+echo "Backend agent's queue:"
+npx -y @tasks-md/cli list --tag backend
+echo "Frontend agent's queue:"
+npx -y @tasks-md/cli list --tag frontend
+npx -y @tasks-md/lint packages/*/TASKS.md    # validates both files together
+cd .. && rm -rf tmp-tasks-demo
+```
+
+The discovery walks the git root and reads every `TASKS.md` it finds, so the same `tasks list` call sees both packages without any extra config. `--tag backend` reduces it to one task, `--tag frontend` to the other.

@@ -97,3 +97,28 @@ If you're not sure about priority, use P2. It means "valuable but not blocking" 
 | **Blocked by** | Must wait for another task | `auth-schema` |
 
 All are optional. Use only what helps the agent succeed.
+
+## Try it yourself
+
+Sixty-second walkthrough — write one rich task and one bare task, see which one `tasks pick` reaches first.
+
+```bash
+mkdir tmp-tasks-demo && cd tmp-tasks-demo
+git init -q
+cat > TASKS.md <<'EOF'
+# Tasks
+
+## P1
+
+- [ ] Add pagination to /products endpoint
+  - **Files**: src/products/handler.ts
+  - **Acceptance**: Returns 20 items/page; supports ?page=N
+
+- [ ] Fix typo in README
+EOF
+npx -y @tasks-md/cli pick                    # picks the first P1 task
+npx -y @tasks-md/lint TASKS.md               # exits 0 — both shapes are valid
+cd .. && rm -rf tmp-tasks-demo
+```
+
+The pick output names the chosen task and reports `Candidates: 2`, confirming the queue had two pickable tasks. The rich one is what an agent would actually pick up — `Files` and `Acceptance` answer the questions a one-liner leaves open.

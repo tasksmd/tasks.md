@@ -168,3 +168,27 @@ npx @tasks-md/lint TASKS.md || exit 1
 | [`packages/lint/`](../../packages/lint/) | Linter (TypeScript, [`@tasks-md/lint`](https://www.npmjs.com/package/@tasks-md/lint)) |
 | [`packages/cli/`](../../packages/cli/) | Unified CLI (`tasks lint`, `tasks pick`, etc.) |
 | [spec.md](../../spec.md) | Full specification |
+
+## Try it yourself
+
+Sixty-second walkthrough — scaffolds a fresh queue and validates it against the spec.
+
+```bash
+mkdir tmp-tasks-demo && cd tmp-tasks-demo
+git init -q
+touch AGENTS.md                              # so init merges instead of skipping
+npx -y @tasks-md/cli init
+cat TASKS.md                                 # shows # Tasks + ## P1 + ## P2
+cat AGENTS.md                                # shows the new ## Task Management section
+npx -y @tasks-md/lint TASKS.md               # exits 0 — file is spec-valid
+cd .. && rm -rf tmp-tasks-demo
+```
+
+Expected highlights:
+
+```
+✓ Created TASKS.md
+✓ Added Task Management section to AGENTS.md
+...
+Checked 1 file(s), found 0 error(s)
+```

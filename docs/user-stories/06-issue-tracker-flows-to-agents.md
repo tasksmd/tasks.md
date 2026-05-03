@@ -158,3 +158,26 @@ All three providers share one command — `tasks sync <provider>` — and the sa
 | `packages/cli/src/sync/github.ts` | GitHub Issues sync adapter |
 | `packages/cli/src/sync/jira.ts` | Jira sync adapter |
 | `packages/cli/src/sync/linear.ts` | Linear sync adapter |
+
+## Try it yourself
+
+Sixty-second walkthrough — every provider lives behind the same `tasks sync <provider>` shape. The actual sync needs auth (`gh login`, `JIRA_URL`+`JIRA_TOKEN`, or `LINEAR_API_KEY`), but the help output is enough to confirm the flag set without leaving the shell.
+
+```bash
+mkdir tmp-tasks-demo && cd tmp-tasks-demo
+git init -q
+npx -y @tasks-md/cli sync --help             # one unified subcommand list
+npx -y @tasks-md/cli sync github --help      # --repo, --label, --output, --merge
+npx -y @tasks-md/cli sync jira --help        # --project, --jql, --output, --merge, --max
+npx -y @tasks-md/cli sync linear --help      # --team (required), --project, --filter, ...
+
+# When you're ready to sync — run only the line that matches your tracker:
+#   npx -y @tasks-md/cli sync github --label tasks.md --output TASKS.md
+#   npx -y @tasks-md/cli sync jira   --project PROJ   --output TASKS.md
+#   npx -y @tasks-md/cli sync linear --team ENG       --output TASKS.md
+# Re-running with `--merge` preserves manual tasks:
+#   npx -y @tasks-md/cli sync github --label tasks.md --merge --output TASKS.md
+cd .. && rm -rf tmp-tasks-demo
+```
+
+`tasks sync --help` should print exactly three subcommands (`github`, `jira`, `linear`) — that's the unified surface. The legacy `tasks sync-issues|sync-jira|sync-linear` aliases still work but print a deprecation warning the first time you call them.
