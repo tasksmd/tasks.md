@@ -8,7 +8,183 @@
 
 ## P1
 
+- [ ] Restore `--json` to `tasks pick`/`stats`/`diff` for read-command consistency
+  - **ID**: cli-restore-json-on-read-commands
+  - **Tags**: cli, simplify, mcp-parity, regression
+  - **Details**: Commit `ccf1360` ("refactor: simplify lint rules and remove
+    unused features", 2026-03-17) removed `--json` from `tasks pick`,
+    `stats`, and `diff` to "remove unused features", but commit
+    `ef58b8d` (#54, 2026-05-03) added `--json` to the new `tasks list`
+    command. The CLI now has an inconsistent surface: one read command
+    has `--json`, three don't. Documented justification for `list`
+    having it (`packages/cli/README.md:42`) is "round-trips through
+    `JSON.parse` for scripting" — that argument applies equally to
+    pick/stats/diff. Restore `--json` to all four read commands using
+    the same flag/handler shape. Re-add the four tests that landed in
+    `a567140` and were dropped in `ccf1360`. This is a coherence win,
+    not feature growth — every read command becomes JSON-scriptable
+    by the same flag.
+  - **Files**: `packages/cli/src/cli.ts`, `packages/cli/src/cli.test.ts`,
+    `packages/cli/README.md`, `README.md`
+  - **Acceptance**: `tasks pick --json`, `tasks stats --json`, and
+    `tasks diff --json` all emit valid JSON that `JSON.parse` accepts.
+    `tasks pick --help`, `tasks stats --help`, `tasks diff --help`
+    each list `--json`. `tasks list --json` keeps current behavior
+    (no shape change). Test cases in `cli.test.ts` cover all four
+    commands' JSON paths. `npm run build`, `npm test`, `npm run lint`
+    pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Add a `Try it yourself` runnable demo to every user story
+  - **ID**: user-stories-runnable-demos
+  - **Tags**: docs, user-stories, hardening, executable
+  - **Details**: Stories 01–08 describe behaviors with prose and
+    static examples but never give the reader a sequence of shell
+    commands they can copy-paste against a fresh repo to see the
+    behavior. Hardening means making every claim verifiable. For each
+    of the 8 stories, add a `## Try it yourself` section near the end
+    with a sequence of `mkdir tmp && cd tmp && git init && echo ...`
+    commands plus the expected output. Examples:
+    - Story 01 — `tasks init` then `cat TASKS.md` then `tasks lint`
+    - Story 03 — minimal queue + `tasks pick` showing the picked task
+    - Story 04 — three tasks with `**Blocked by**` and observe
+      ordering across `tasks pick` calls
+    - Story 06 — sync from a tiny GitHub repo (use the provided
+      `--repo octocat/hello-world` example) into a temp file
+    - Story 08 — show `**Research**` empty-validation failing the
+      linter, then succeeding with a real value
+    Do NOT add a CI runner for these — they are documentation. Keep
+    each demo under 15 commands. The point is a reader can run them
+    in 60 seconds.
+  - **Files**: `docs/user-stories/01-agents-know-what-to-work-on.md`,
+    `docs/user-stories/02-tasks-agents-complete-without-asking.md`,
+    `docs/user-stories/03-agents-work-through-queue.md`,
+    `docs/user-stories/04-agents-work-in-right-order.md`,
+    `docs/user-stories/05-separate-queues-per-member.md`,
+    `docs/user-stories/06-issue-tracker-flows-to-agents.md`,
+    `docs/user-stories/07-monitor-queue-health.md`,
+    `docs/user-stories/08-rich-task-metadata.md`
+  - **Acceptance**: Every story has exactly one `## Try it yourself`
+    section. Each demo is self-contained (creates and cleans up a
+    temp dir). Commands compile to valid CLI invocations (no
+    fictional flags). `npm run lint` passes; `npx -y @tasks-md/lint
+    TASKS.md` passes for any embedded TASKS.md examples. PR can
+    batch all 8 stories in one commit (one author touching unrelated
+    files = single docs concern under the user-stories umbrella).
+  - **Last-enriched**: 2026-05-03
+
 ## P2
+
+- [ ] Print full `**Details**` in `tasks pick` output (not just summary)
+  - **ID**: cli-pick-show-details
+  - **Tags**: cli, ux, agent-context
+  - **Details**: `tasks pick` currently prints only `summary`, `file`,
+    `id`, `tags`, `candidates` — see `packages/cli/src/cli.ts:201-213`.
+    When an autonomous agent invokes `pick` to learn what to work on,
+    it loses the `**Details**` block — the very prose that explains
+    *what* to do. Agents typically follow up with a file read of
+    `TASKS.md` at the reported file:line, which is wasteful. Add a
+    `**Details**` print block (multiline, indented two spaces) right
+    after `Tags:`. If the metadata has no `Details` field, print
+    nothing (no header, no empty line). The `--json` shape (after
+    `cli-restore-json-on-read-commands` lands) already exposes
+    `metadata` as a full object — this is a parity improvement on
+    the human-readable path.
+  - **Files**: `packages/cli/src/cli.ts`,
+    `packages/cli/src/cli.test.ts`
+  - **Acceptance**: `tasks pick` against a TASKS.md with a task whose
+    metadata includes `**Details**: foo bar` prints a `Details:`
+    section with `foo bar` underneath. `tasks pick` against a
+    Details-free task prints exactly what it does today (no extra
+    blank line). Test in `cli.test.ts` covers both branches. `npm
+    run build`, `npm test`, `npm run lint` pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Add a top-level `Worked example: first 10 minutes` to README
+  - **ID**: readme-worked-example
+  - **Tags**: docs, readme, hardening, onboarding
+  - **Details**: The README currently sells the spec via 7+ bullet
+    points and lists CLI commands but never walks the reader through
+    a *single end-to-end flow*. A new reader has to bounce between
+    sections to assemble the workflow. Add one new section
+    `## Worked example: first 10 minutes` between the existing
+    "Quick Start" / "Installation" area and the per-package
+    documentation that walks through:
+    1. `mkdir my-project && cd my-project && git init && echo
+       "# README" > README.md && git add . && git commit -m init`
+    2. `npx -y @tasks-md/cli init` — show resulting `TASKS.md` +
+       `AGENTS.md` snippet
+    3. `npx -y @tasks-md/cli install` — show what gets created
+    4. Edit TASKS.md to add 2 tasks (paste a small `markdown`
+       block)
+    5. `npx -y @tasks-md/cli pick` — show output
+    6. `npx -y @tasks-md/lint TASKS.md` — show clean pass
+    7. `npx -y @tasks-md/cli stats` — show queue stats
+    8. `npx -y @tasks-md/cli diff main` — show diff after a commit
+    9. Cross-link to story 03 ("autonomous loop") and story 06
+       ("issue tracker sync") for next steps
+    Keep the section under 80 lines. Use real CLI output (run the
+    commands locally to capture).
+  - **Files**: `README.md`
+  - **Acceptance**: README has a single new top-level section
+    `## Worked example: first 10 minutes` containing 9 numbered
+    steps with shell prompts and expected output. The section
+    appears before "Per-package documentation" and after "Install
+    and use". `npm run build:site` produces a site that includes
+    the new section. `npm run lint`, `npx -y @tasks-md/lint
+    TASKS.md` pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Audit `tasks watch` monorepo recursion — does it find nested TASKS.md?
+  - **ID**: cli-watch-monorepo-coverage
+  - **Tags**: cli, test, monorepo, hardening
+  - **Details**: `discoverWatchFiles` in
+    `packages/cli/src/commands/watch.ts:16-43` walks recursively
+    skipping `node_modules`, `.git`, `dist`. Story 05 ("each team
+    member has their own queue") sells nested `TASKS.md` files
+    across packages as a first-class workflow but neither
+    `watch.test.ts` nor any integration test verifies that `tasks
+    watch .` in a monorepo root picks up `packages/foo/TASKS.md`
+    AND `packages/bar/TASKS.md` AND watches them all. Add a
+    monorepo-shape integration test in `commands/watch.test.ts`:
+    create a temp dir with `TASKS.md`, `packages/foo/TASKS.md`,
+    `packages/bar/TASKS.md`, plus `node_modules/baz/TASKS.md`,
+    invoke `discoverWatchFiles`, assert it returns exactly the
+    first three (top-level + 2 packages, NOT the node_modules
+    one). If the test reveals a bug, fix it.
+  - **Files**: `packages/cli/src/commands/watch.ts`,
+    `packages/cli/src/commands/watch.test.ts`
+  - **Acceptance**: New test in `watch.test.ts` exercises the
+    monorepo discovery shape with a `node_modules` decoy and
+    asserts the exact discovered set. `npm run build`, `npm test`,
+    `npm run lint` pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Document the `tasks install` agent auto-detect algorithm in story 03
+  - **ID**: user-stories-install-detect-docs
+  - **Tags**: docs, user-stories, hardening, install
+  - **Details**: Story 03 ("agents work through the queue
+    autonomously") line 1 sells `tasks install` as "auto-detects
+    agents" but never names which directories trigger which agent
+    install, nor what happens when the agent dir is missing. Story
+    needs a small table mapping detection signal → agent variant
+    installed, sourced from
+    `packages/cli/src/commands/install.ts`. Verify the listed
+    detection list against the source file and add anything
+    missing. Cross-link from `docs/user-stories/README.md` "How"
+    column to the new section.
+  - **Files**: `docs/user-stories/03-agents-work-through-queue.md`,
+    `docs/user-stories/README.md`,
+    `packages/cli/src/commands/install.ts`
+  - **Acceptance**: Story 03 contains a table with one row per
+    auto-detected agent (Claude Code, Cursor, Codex, Devin, Gemini
+    CLI, Windsurf — match what `install.ts` actually checks)
+    listing: detection signal (e.g., `.claude/` exists), command
+    file written (e.g., `.claude/skills/next-task/SKILL.md`), and
+    fallback when the dir is missing (skip silently or create the
+    dir). The table matches the actual source code. `npm run lint`
+    passes. `npx -y @tasks-md/lint TASKS.md` passes.
+  - **Last-enriched**: 2026-05-03
 
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
   - **ID**: taskgrind-per-session-sync
