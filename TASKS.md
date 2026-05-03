@@ -10,31 +10,6 @@
 
 ## P2
 
-- [ ] MCP tool descriptions audit — match the parallel-structure rule applied to CLI commands
-  - **ID**: mcp-tool-descriptions-parallel
-  - **Tags**: mcp, simplify, polish, dx
-  - **Details**: After PR #67 pinned CLI command descriptions
-    into a verb-first, ≤60-char shape, the MCP server's tool
-    descriptions in `packages/mcp/src/index.ts` weren't checked.
-    The MCP exposes 7 tools: `list_tasks`, `pick_task`,
-    `claim_task`, `unclaim_task`, `complete_task`, `add_task`,
-    plus parser inspection helpers. Each has a `description:` in
-    its `server.tool(...)` call. Audit them for the same
-    parallel structure used by the CLI (see PR #67 + the regex
-    pinned in `cli.test.ts`), tighten any drifters, and add a
-    test in `packages/mcp/src/tools.test.ts` that asserts every
-    registered tool description matches the same regex. Drop
-    redundancy in MCP-vs-CLI descriptions where they mirror each
-    other (e.g., MCP `list_tasks` and CLI `list` should differ
-    only in the verb-noun, not the framing).
-  - **Files**: `packages/mcp/src/index.ts`,
-    `packages/mcp/src/tools.test.ts`
-  - **Acceptance**: All 7 MCP tool descriptions follow the
-    parallel structure (verb-first, ≤60 chars). New regex test
-    in `tools.test.ts` enforces the rule. `npm run build`, `npm
-    test`, `npm run lint` pass.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Linter error messages — make every error actionable (state the fix)
   - **ID**: lint-actionable-errors
   - **Tags**: lint, dx, hardening

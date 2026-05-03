@@ -16,6 +16,7 @@ import {
   addTask,
   pickTask,
   enrichTask,
+  TOOL_DESCRIPTIONS,
 } from "./tools.js";
 
 const pkg = JSON.parse(
@@ -37,9 +38,7 @@ server.registerTool(
   "list_tasks",
   {
     title: "List Tasks",
-    description:
-      "List all tasks from TASKS.md files. Discovers files from git root down. " +
-      "Returns structured task data with priority, tags, blockers, and claim status.",
+    description: TOOL_DESCRIPTIONS.list_tasks,
     inputSchema: z.object({
       priority: z
         .string()
@@ -74,9 +73,7 @@ server.registerTool(
   "claim_task",
   {
     title: "Claim Task",
-    description:
-      "Claim a task by appending (@agent-name) to the task line. " +
-      "Identifies the task by exact ID first, then summary substring.",
+    description: TOOL_DESCRIPTIONS.claim_task,
     inputSchema: z.object({
       query: z
         .string()
@@ -106,12 +103,7 @@ server.registerTool(
   "unclaim_task",
   {
     title: "Unclaim Task",
-    description:
-      "Remove a claim from a task, making it available for other agents. " +
-      "Identifies the task by exact ID first, then summary substring. " +
-      "Use for stale claim recovery when an agent crashed or its session ended " +
-      "before completing the task. Per spec: check git log first — if no commits " +
-      "from the claiming agent in 30+ minutes, the claim is likely stale.",
+    description: TOOL_DESCRIPTIONS.unclaim_task,
     inputSchema: z.object({
       query: z
         .string()
@@ -136,11 +128,7 @@ server.registerTool(
   "complete_task",
   {
     title: "Complete Task",
-    description:
-      "Remove a completed task from TASKS.md. " +
-      "Identifies the task by exact ID first, then summary substring, and removes the entire task block. " +
-      "Per spec, top-level tasks are removed on completion — never marked [x]. " +
-      "Always use this tool instead of manually editing the checkbox.",
+    description: TOOL_DESCRIPTIONS.complete_task,
     inputSchema: z.object({
       query: z
         .string()
@@ -165,15 +153,7 @@ server.registerTool(
   "pick_task",
   {
     title: "Pick Task",
-    description:
-      "Pick the highest-priority unblocked, unclaimed task using a deterministic algorithm. " +
-      "Set task_id to target an exact **ID** instead of queue-picking; the targeted path " +
-      "returns missing, duplicate, claimed, and blocked states, and can optionally claim " +
-      "or resume the task when agent_name is provided. " +
-      "If agent_name is provided and that agent already has a claimed task, returns it " +
-      "with resumed=true instead of picking a new one (prevents orphaned claims). " +
-      "Walks P0→P3, skips blocked and claimed tasks, scores by unblocking impact " +
-      "then tag overlap count. Returns the single best task to work on next.",
+    description: TOOL_DESCRIPTIONS.pick_task,
     inputSchema: z.object({
       task_id: z
         .string()
@@ -211,9 +191,7 @@ server.registerTool(
   "add_task",
   {
     title: "Add Task",
-    description:
-      "Add a new task to TASKS.md under the specified priority heading. " +
-      "Creates the priority section if it doesn't exist.",
+    description: TOOL_DESCRIPTIONS.add_task,
     inputSchema: z.object({
       summary: z.string().describe("Task summary (one line)"),
       priority: z
@@ -293,13 +271,7 @@ server.registerTool(
   "enrich_task",
   {
     title: "Enrich Task",
-    description:
-      "Append read-only research notes to a blocked task's **Research** field " +
-      "and stamp **Last-enriched** with today's UTC date (or a caller-provided " +
-      "ISO date). Never touches the task's **Blocked** or **Blocked by** lines — " +
-      "enrichment only adds context, never unblocks. Use when /next-task detects " +
-      "that every remaining task is blocked and wants to leave durable context " +
-      "for the next session.",
+    description: TOOL_DESCRIPTIONS.enrich_task,
     inputSchema: z.object({
       query: z
         .string()

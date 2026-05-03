@@ -11,6 +11,7 @@ import {
   addTask,
   pickTask,
   enrichTask,
+  TOOL_DESCRIPTIONS,
 } from "./tools.js";
 
 // ── Helpers ──
@@ -1729,4 +1730,58 @@ describe("enrichTask", () => {
     const data = JSON.parse(picked.text);
     expect(data.task.summary).toBe("Unblock-able task");
   });
+});
+
+// ── Tool description parallel structure ──
+//
+// Mirrors the contract pinned by `cli.test.ts` for the CLI subcommand `--help`
+// strings ("every visible command description is verb-first, no parens, ≤60
+// chars"). MCP tools share the same parallel-structure rule so a client
+// listing both surfaces sees a consistent catalog. Detailed behavior lives in
+// the per-input `describe(...)` strings on each `inputSchema` field and in
+// the package README — the registered description is intentionally a
+// one-liner. If a future description drifts (re-introduces parens, exceeds
+// 60 chars, or stops starting with a verb), this test fails CI immediately.
+describe("MCP tool description parallel structure", () => {
+  // Names ordered to match `index.ts` registration order so failures are
+  // easier to map back to the source file.
+  const expectedTools = [
+    "list_tasks",
+    "claim_task",
+    "unclaim_task",
+    "complete_task",
+    "pick_task",
+    "add_task",
+    "enrich_task",
+  ];
+
+  it("registers exactly one description per tool — no extras, no missing", () => {
+    expect(Object.keys(TOOL_DESCRIPTIONS).sort()).toEqual([...expectedTools].sort());
+  });
+
+  for (const name of expectedTools) {
+    it(`${name}: verb-first, no parens, ≤60 chars`, () => {
+      const description = TOOL_DESCRIPTIONS[name];
+      expect(description, `${name} must have a non-empty description`).toBeTruthy();
+
+      // Verb-first ([A-Z][a-z]+) + space + noun (any non-whitespace token —
+      // accommodates `TASKS.md`, `(@agent-name)`-free text, etc.) + at least
+      // one more token. Same regex used by `cli.test.ts` so the CLI and MCP
+      // surfaces cannot drift apart.
+      expect(
+        description,
+        `${name}: description "${description}" must start with a capitalized verb followed by another word`
+      ).toMatch(/^[A-Z][a-z]+ \S+ /);
+
+      expect(
+        description,
+        `${name}: description "${description}" must not contain parentheses`
+      ).not.toMatch(/[()]/);
+
+      expect(
+        description.length,
+        `${name}: description is ${description.length} chars (max 60): "${description}"`
+      ).toBeLessThanOrEqual(60);
+    });
+  }
 });
