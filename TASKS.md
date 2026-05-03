@@ -41,10 +41,56 @@
     from origin/main between sessions and force a sync regardless of
     interval.
   - **Files** (in taskgrind repo): `bin/taskgrind`,
-    `tests/git-sync.bats`, `README.md`
+    `lib/constants.sh`, `tests/git-sync.bats`, `README.md`,
+    `man/taskgrind.1`
   - **Acceptance**: Default sync interval is 1 OR a "concurrent
     operator" mode is available that forces `git fetch && rebase`
     between every session. Documented behavior change. Test added.
+  - **Research**: 2026-05-02 — implementation sketch
+    Sync behavior in taskgrind currently lives in three call sites:
+    1. `lib/constants.sh:35` defines `DVB_DEFAULT_SYNC_INTERVAL="5"`.
+    2. `bin/taskgrind:673` reads
+       `sync_interval="${DVB_SYNC_INTERVAL:-$DVB_DEFAULT_SYNC_INTERVAL}"`
+       (the `TG_*` → `DVB_*` translation table around line 231 maps
+       `TG_SYNC_INTERVAL` to `DVB_SYNC_INTERVAL`).
+    3. The sync gate at `bin/taskgrind:5413` triggers when
+       `sync_interval == 0` OR `session % sync_interval == 0`, with
+       a `_dvb_slot >= 1` early-return so only slot 0 syncs and a
+       `git_sync skipped (interval=…, session=…)` log line at
+       `bin/taskgrind:5586` for the non-trigger path.
+    Help/doc surfaces that mention the default: `bin/taskgrind:94`
+    (header help block), `README.md:248` (env-var table row), and
+    `man/taskgrind.1` (the same env-var entry — concurrent agent is
+    rewriting this file as part of the `TG_STALL_EXIT` consolidation).
+    Smallest-change option (acceptance "default sync interval is 1"):
+    flip `DVB_DEFAULT_SYNC_INTERVAL` from `"5"` to `"1"`, then update
+    the three doc surfaces above. Existing tests in
+    `tests/git-sync.bats` already parameterize
+    `DVB_SYNC_INTERVAL=0|2|3` (lines 42-131), so a new bats case can
+    drop the `DVB_SYNC_INTERVAL` export entirely and assert that
+    every loop iteration logs `git_sync` (not `git_sync skipped`).
+    Divergence-detection option (acceptance "concurrent-operator
+    mode that forces sync"): keep the default at 5 but add a cheap
+    probe before the interval gate at line 5413 — `git fetch
+    --quiet origin "$_default_branch"` followed by `git rev-list
+    HEAD..origin/$_default_branch --count`. If the count is non-zero,
+    log `git_sync forced reason=diverged ahead=N` and run the
+    existing stash/checkout/fetch/rebase block; otherwise fall
+    through to the interval logic. Bats coverage stages a remote one
+    commit ahead and asserts `git_sync forced` appears even with
+    `DVB_SYNC_INTERVAL=99`. Either option must keep the
+    `_dvb_slot >= 1` early-return so only slot 0 syncs.
+    Concurrent-agent note: the live README diff in taskgrind is the
+    `TG_STALL_EXIT` consolidation (collapsing `TG_NO_STALL_EXIT`,
+    `TG_EXIT_ON_STALL`, and `TG_EARLY_EXIT_ON_STALL` into a single
+    `TG_STALL_EXIT={never|first|second}` knob) — it rewrites the
+    same env-var table neighborhood as the `TG_SYNC_INTERVAL` row,
+    so this work should land after that branch merges (or be
+    rebased onto it) to avoid a textual conflict. The taskgrind
+    state file `.taskgrind-state` showed `status=running session=4`
+    during this enrichment, so the operator should also wait for
+    that grind to finish (or pause it) before unblocking.
+  - **Last-enriched**: 2026-05-02
 
 - [ ] File Bosun follow-up: deliver orphan `main` commit `924f8f14`
   - **ID**: bosun-orphan-main-commit-924f8f14
