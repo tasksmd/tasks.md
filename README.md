@@ -262,6 +262,7 @@ The [`@tasks-md/cli`](packages/cli/) provides task queue management — pick tas
 
 ```bash
 npx @tasks-md/cli pick                       # pick highest-priority unblocked non-standing task
+npx @tasks-md/cli list --unclaimed --unblocked  # list every pickable task
 npx @tasks-md/cli init                       # create TASKS.md in current repo
 npx @tasks-md/cli install                    # install /next-task for detected agents
 npx @tasks-md/cli stats                      # queue overview and throughput

@@ -32,6 +32,18 @@ tasks stats
 
 One command shows queue size by priority, how many tasks are blocked or claimed, throughput over time, and which agents are doing the most work.
 
+## Enumerate Tasks Programmatically
+
+```bash
+tasks list                                 # every task, P0 first
+tasks list --priority P0                   # only P0 tasks
+tasks list --tag backend                   # only backend-tagged tasks
+tasks list --unclaimed --unblocked         # only pickable work
+tasks list --priority P0 --json            # structured output for scripting
+```
+
+`tasks list` is the read-only enumerator paired with `tasks pick`. Default output is one tab-separated line per task — `<priority>\t<id>\t<summary>` (or `-` if the task has no ID). `--json` returns the same structured fields the MCP `list_tasks` tool exposes (`id`, `summary`, `priority`, `tags`, `blocked`, `claimed`, `file`, `line`), so a script that runs against the CLI works the same against the MCP server. Both backends share `loadAllTasks` + the same `priority`/`tag`/`unclaimed`/`unblocked` predicates from `packages/cli/src/lib.ts`, so they cannot drift.
+
 ## What Changed?
 
 ```bash
@@ -91,6 +103,7 @@ Throughput is measured from **git history** — every time a `- [ ]` line is rem
 
 | File | Purpose |
 |------|---------|
-| [`packages/cli/src/lib.ts`](../../packages/cli/src/lib.ts) | `getQueueStats()` and `getQueueDiff()` implementation |
-| [`packages/cli/src/cli.ts`](../../packages/cli/src/cli.ts) | `tasks stats` and `tasks diff` commands |
+| [`packages/cli/src/lib.ts`](../../packages/cli/src/lib.ts) | `getQueueStats()`, `getQueueDiff()`, and `listTasks()` implementations (MCP parity) |
+| [`packages/cli/src/cli.ts`](../../packages/cli/src/cli.ts) | `tasks stats`, `tasks diff`, and `tasks list` commands |
+| [`packages/mcp/src/tools.ts`](../../packages/mcp/src/tools.ts) | `listTasksFromFiles()` — the same filter contract exposed via MCP |
 | [`packages/parser/`](../../packages/parser/) | Shared parser for task file analysis |

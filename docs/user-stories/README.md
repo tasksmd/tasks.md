@@ -12,7 +12,7 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 | 4 | [Agents work in the right order](04-agents-work-in-right-order.md) | IDs, `Blocked by`, unblocking impact |
 | 5 | [Each team member has their own queue](05-separate-queues-per-member.md) | Monorepo with multiple TASKS.md files |
 | 6 | [Issue tracker decisions flow to agents](06-issue-tracker-flows-to-agents.md) | `tasks sync github`, `tasks sync jira`, `tasks sync linear` |
-| 7 | [Monitor queue health at a glance](07-monitor-queue-health.md) | `tasks stats`, `tasks diff` |
+| 7 | [Monitor queue health at a glance](07-monitor-queue-health.md) | `tasks stats`, `tasks diff`, `tasks list` |
 | 8 | [Rich task metadata for blocked, multi-session, and decomposed work](08-rich-task-metadata.md) | `**Blocked**`, `**Research**`, `**Last-enriched**`, `**Parent**`, standing audit loops, file-level + section-level `<!-- policy: -->` comments |
 
 ## Automation Status
@@ -26,6 +26,7 @@ All originally-identified automation gaps have been implemented:
 | Write-once commands (canonical + generate) | [03](03-agents-work-through-queue.md) | ✅ `tasks generate-commands` + CI drift check |
 | Devin `/next-task` skill | [03](03-agents-work-through-queue.md) | ✅ `commands/devin/skills/next-task/SKILL.md` |
 | Deterministic `pick_task` | [07](07-monitor-queue-health.md) | ✅ `tasks pick` + `tasks-mcp` MCP tool |
+| CLI ↔ MCP `list_tasks` parity | [07](07-monitor-queue-health.md#enumerate-tasks-programmatically) | ✅ `tasks list` (same filters as MCP) |
 | Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `tasks lint --fix` / `npx @tasks-md/lint --fix` |
 | GitHub Issues `--merge` mode | [06](06-issue-tracker-flows-to-agents.md) | ✅ `tasks sync github --merge` |
 | Jira bridge | [06](06-issue-tracker-flows-to-agents.md#jira-sync) | ✅ `tasks sync jira` |

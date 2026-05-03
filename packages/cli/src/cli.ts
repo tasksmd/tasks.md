@@ -9,6 +9,7 @@ import {
   pickBestTask,
   getQueueStats,
   getQueueDiff,
+  listTasks,
 } from "./lib.js";
 import { initTaskQueue } from "./commands/init.js";
 import { generateCommands } from "./commands/generate-commands.js";
@@ -273,6 +274,43 @@ program
     if (task.metadata.tags?.length) console.log(`  Tags: ${task.metadata.tags.join(", ")}`);
     if (unblocksCount > 0) console.log(`  Unblocks: ${unblocksCount} task(s)`);
     console.log(`  Candidates: ${candidateCount}`);
+  });
+
+// ── list ──
+//
+// CLI counterpart of the MCP `list_tasks` tool. Same filter predicates and
+// sort order — see `lib.ts:listTasks` for the parity contract.
+
+program
+  .command("list")
+  .description("List tasks matching filters (CLI counterpart of MCP list_tasks)")
+  .option("--priority <p>", "Filter by priority (P0, P1, P2, P3)")
+  .option("--tag <tag>", "Filter by tag")
+  .option("--unclaimed", "Only show unclaimed tasks")
+  .option("--unblocked", "Only show unblocked tasks")
+  .option("--json", "Output as JSON instead of tab-separated")
+  .action((opts: { priority?: string; tag?: string; unclaimed?: boolean; unblocked?: boolean; json?: boolean }) => {
+    const taskFiles = loadAllTasks(process.cwd());
+    const tasks = listTasks(taskFiles, {
+      priority: opts.priority,
+      tag: opts.tag,
+      unclaimedOnly: opts.unclaimed,
+      unblockedOnly: opts.unblocked,
+    });
+
+    if (opts.json) {
+      console.log(JSON.stringify(tasks, null, 2));
+      return;
+    }
+
+    if (tasks.length === 0) {
+      console.log("No tasks match the filters.");
+      return;
+    }
+
+    for (const t of tasks) {
+      console.log(`${t.priority}\t${t.id ?? "-"}\t${t.summary}`);
+    }
   });
 
 // ── stats ──
