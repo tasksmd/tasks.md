@@ -1,10 +1,237 @@
 # Tasks
 
+<!-- policy: Tech-lead-curated queue (2026-05-03). Focus is hardening
+     user stories and simplifying CLI features. Pick tasks in priority
+     order. Do NOT roam beyond `tasks.md` repo. -->
+
 ## P0
 
 ## P1
 
+- [ ] Cover spec metadata fields missing from user stories (Blocked, Research, Parent, Last-enriched, standing loops, policies)
+  - **ID**: user-stories-spec-metadata-coverage
+  - **Tags**: docs, user-stories, spec-alignment, hardening
+  - **Details**: User stories cover only `**Blocked by**` (transitive
+    dependencies) but never mention `**Blocked**` (external
+    constraints), `**Research**` (agent-accumulated notes),
+    `**Parent**` (task decomposition), or `**Last-enriched**`
+    (idempotency marker) — all first-class fields in `spec.md` (see
+    spec.md:269 for `**Blocked**`, spec.md "Standing loops" section
+    around 288-322, "Policies" section around 81-102). Standing
+    loops and HTML policy comments are also unmentioned. Agents
+    reading only the user stories miss core workflow primitives.
+    Add a single new user story `08-rich-task-metadata.md` (preferred)
+    or expand story 02 with an "Advanced metadata" section that:
+    (a) documents each field with one-paragraph + one TASKS.md
+    example, (b) shows when to use **Blocked** vs **Blocked by**,
+    (c) demonstrates `**Research**` accumulation across sessions,
+    (d) shows a `<!-- policy: ... -->` comment in context. Cross-link
+    from `docs/user-stories/README.md` table and from any story that
+    currently demos a basic task block.
+  - **Files**: `docs/user-stories/08-rich-task-metadata.md` (new) OR
+    `docs/user-stories/02-tasks-agents-complete-without-asking.md`,
+    `docs/user-stories/README.md`, `spec.md` (cross-link only — do
+    not modify the spec)
+  - **Acceptance**: Each of the four uncovered metadata fields plus
+    "Standing loops" and "Policies" appears with a runnable
+    `markdown` code block in user stories. `docs/user-stories/README.md`
+    "How" column for the new/expanded story names every covered
+    field. `npm run lint` passes. `npx -y @tasks-md/lint TASKS.md`
+    passes for every example block.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Resolve `tasks watch --fix` doc/code mismatch (implement OR remove from docs)
+  - **ID**: cli-watch-fix-flag-mismatch
+  - **Tags**: cli, docs, user-stories, bug, hardening
+  - **Details**: `docs/user-stories/01-agents-know-what-to-work-on.md:132`
+    advertises `tasks watch --fix    # auto-lint and auto-fix on every
+    save`, but `packages/cli/src/cli.ts:113-120` declares only an
+    optional `[directory]` argument and `packages/cli/src/commands/watch.ts:41`
+    calls `lintTaskFile(file)` with no fix path. Users following the
+    docs hit "unknown option" and a stale watch loop. Decide
+    deliberately: implement `--fix` (forward `fix=true` through
+    `lintTaskFile` → `lintFiles` so saves auto-correct in place,
+    matching `tasks lint --fix` behavior) OR remove the line from
+    story 01 plus the matching example in `packages/cli/README.md`
+    if it is referenced there. Prefer **implement**, since story 01
+    sells watch as the agent's keep-in-sync tool — auto-fix is the
+    natural pair. If implementing: also add a `cli.test.ts`
+    case asserting `tasks watch --fix` is accepted and a
+    `commands/watch.test.ts` case asserting fix is invoked.
+  - **Files**: `packages/cli/src/cli.ts`,
+    `packages/cli/src/commands/watch.ts`,
+    `packages/cli/src/cli.test.ts`,
+    `docs/user-stories/01-agents-know-what-to-work-on.md`,
+    `packages/cli/README.md`
+  - **Acceptance**: Either (a) `tasks watch --fix` runs without a
+    Commander error, in-place auto-fixes a deliberately broken
+    TASKS.md on save, and is covered by at least one unit test;
+    OR (b) story 01 + `packages/cli/README.md` no longer mention
+    `--fix` for watch and a single docs commit removes the false
+    promise. `npm run build`, `npm test`, `npm run lint`, and `npx
+    -y @tasks-md/lint TASKS.md` all pass.
+  - **Last-enriched**: 2026-05-03
+
 ## P2
+
+- [ ] Consolidate `sync-issues`/`sync-jira`/`sync-linear` into `tasks sync <provider>`
+  - **ID**: cli-simplify-sync-providers
+  - **Tags**: cli, simplify, sync, reduce-surface
+  - **Details**: Three top-level commands (`sync-issues`, `sync-jira`,
+    `sync-linear` at `packages/cli/src/cli.ts:122-165`) share the
+    same `SyncSource` interface (`packages/cli/src/sync/types.ts:14-18`)
+    and `runSync()` engine (`packages/cli/src/sync/engine.ts`). Per
+    AGENTS.md "Prefer small, obvious APIs. If two tools or flags
+    overlap, merge behavior instead of adding another public command."
+    Collapse all three behind a single subcommand
+    `tasks sync <provider>` where `<provider>` is one of
+    `github|jira|linear`. Provider-specific flags (`--repo`,
+    `--label`, `--project`, `--jql`, `--team`, `--filter`) stay
+    attached to the subcommand. Shared `--output` and `--merge`
+    flags live on the parent. Keep the old commands as aliases that
+    print a one-line deprecation warning and forward to the new
+    form for one minor version, then delete in the next major. Net
+    effect: 11 → 9 top-level commands, sync becomes one discoverable
+    concept in `tasks --help`.
+  - **Files**: `packages/cli/src/cli.ts`,
+    `packages/cli/src/cli.test.ts`, `packages/cli/README.md`,
+    `README.md`, `docs/user-stories/06-issue-tracker-flows-to-agents.md`
+  - **Acceptance**: `tasks sync github --repo o/r --merge`,
+    `tasks sync jira --project P --merge`, and `tasks sync linear
+    --team T --merge` all work end-to-end against the existing fakes
+    in tests. Old commands print `warning: tasks sync-jira is
+    deprecated; use tasks sync jira` and forward identically. `tasks
+    --help` lists `sync` once. README CLI table shows the unified
+    form. `npm run build`, `npm test`, `npm run lint` pass. No
+    behavior change for end users beyond the spelling.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Add `tasks list` command to close CLI ↔ MCP API drift
+  - **ID**: cli-add-list-command
+  - **Tags**: cli, simplify, mcp-parity, feature
+  - **Details**: The MCP server exposes `list_tasks` with filtering
+    (`packages/mcp/src/index.ts:36-69`) supporting
+    `priority`, `tag`, `unclaimed_only`, `unblocked_only` — but the
+    CLI has no equivalent, only `tasks pick` (returns one task).
+    Agents that script through the CLI cannot enumerate matching
+    tasks without a custom parser. Add `tasks list [--priority P0]
+    [--tag <tag>] [--unclaimed] [--unblocked]` that returns one
+    line per matching task in the same order as `pick` would
+    consider them. Output format: `<priority>\t<id>\t<summary>`
+    by default; `--json` for structured output mirroring the MCP
+    `list_tasks` response. Reuse `loadAllTasks` + the same filter
+    predicates as `pickBestTask` so MCP and CLI never diverge.
+  - **Files**: `packages/cli/src/cli.ts`,
+    `packages/cli/src/lib.ts`,
+    `packages/cli/src/cli.test.ts`,
+    `packages/cli/README.md`, `README.md`,
+    `docs/user-stories/07-monitor-queue-health.md`
+  - **Acceptance**: `tasks list` prints all unclaimed tasks
+    highest-priority first. `tasks list --priority P0 --unclaimed`
+    matches the MCP `list_tasks` response for the same filter on
+    the same TASKS.md. `--json` output round-trips through `JSON.parse`.
+    Test coverage in `cli.test.ts`. Story 07 documents the new
+    command. README CLI section updated.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Sharpen vague acceptance in stories 03/04/05 — batch ≥3 findings
+  - **ID**: user-stories-acceptance-sharpening
+  - **Tags**: docs, user-stories, hardening, batched
+  - **Details**: Three stories make claims that are too soft for an
+    agent to verify behaviorally. Batch into one PR (Rule 9 ≥3
+    findings):
+    (1) **Story 03** "Agents Work Through the Queue Autonomously"
+    — has no concrete success criterion. Add a "Success looks like"
+    block stating: "`/next-task` picks the highest-priority
+    unclaimed task whose `**Blocked**` is empty and whose
+    `**Blocked by**` IDs are not present elsewhere in the file,
+    claims it with `(@<agent>)`, makes the change, commits, and
+    loops until `pickBestTask()` returns null."
+    (2) **Story 04** "Agents Work in the Right Order" — claims
+    agents "respect dependencies automatically" without naming the
+    algorithm. Document the actual rule from
+    `packages/parser/src/index.ts` `pickBestTask`: "Tasks are
+    sorted by priority (P0→P3), then by `Blocked by` resolution
+    status, then by file order. A task is picked only when no `**Blocked
+    by**` ID matches an open task ID anywhere in the discovered
+    files."
+    (3) **Story 05** "Each Team Member Has Their Own Queue" lines
+    63-83 show `@backend-agent: tags backend, database, api` in
+    AGENTS.md but never explain the filtering mechanism. Add: "Tag
+    routing is enforced at the `pick`/`list` filter, not in the
+    parser. Agents pass `--tags backend` (CLI) or `tag` filter
+    (MCP) when claiming. AGENTS.md is documentation of intent;
+    actual enforcement happens at the call site."
+  - **Files**: `docs/user-stories/03-agents-work-through-queue.md`,
+    `docs/user-stories/04-agents-work-in-right-order.md`,
+    `docs/user-stories/05-separate-queues-per-member.md`
+  - **Acceptance**: Each of the three stories gains a "Success
+    looks like" or equivalent precise-claim block referencing the
+    exact source-of-truth code path. The PR contains commits to all
+    three files (or one squashed commit touching all three). `npm
+    run lint`, `npm run build`, `npx -y @tasks-md/lint TASKS.md` pass.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Documentation accuracy batch — README CLI table + watch/diff visibility + sync defaults
+  - **ID**: docs-accuracy-batch-readme-cli
+  - **Tags**: docs, accuracy, batched, hardening
+  - **Details**: Batch ≥3 findings into one docs commit (Rule 9):
+    (1) **README CLI table** (`README.md` "Commands" section near
+    line 263-269) lists 5 of 11 actual commands. After the sync
+    consolidation lands (or independently if not), update the
+    table to enumerate every public command exposed by `tasks
+    --help` with a one-line description.
+    (2) **`packages/cli/README.md`** does not mention `tasks diff`
+    even though it is implemented at `packages/cli/src/cli.ts:250-288`.
+    Add a `### \`tasks diff\`` section mirroring the `tasks watch`
+    section at `packages/cli/README.md:93`.
+    (3) **Sync default priority is P2** — `packages/cli/src/sync/github.ts:36`,
+    `jira.ts:28`, and `linear.ts:29` all default to P2 when the
+    upstream issue has no priority label. Story 06 does not say
+    this. Add a single bullet to story 06 "Set priority via labels"
+    section: "Issues without a priority label default to P2."
+    (4) **Linear label normalization** —
+    `packages/cli/src/sync/linear.ts:110` lowercases tags and
+    replaces spaces with hyphens (`Bug Fix` → `bug-fix`). Story 06
+    "Linear Sync" section should note this transformation explicitly.
+  - **Files**: `README.md`, `packages/cli/README.md`,
+    `docs/user-stories/06-issue-tracker-flows-to-agents.md`
+  - **Acceptance**: README CLI table lists every command in `tasks
+    --help` with matching summary text. `packages/cli/README.md`
+    has a `tasks diff` section. Story 06 documents both default-P2
+    behavior and Linear label normalization. `npm run lint`, `npm
+    run build`, `npx -y @tasks-md/lint TASKS.md` pass. No code
+    changes.
+  - **Last-enriched**: 2026-05-03
+
+- [ ] Polish batch — story 02 backtick fix + story 07 pick docs + story 03 pick-vs-next-task
+  - **ID**: user-stories-polish-batch
+  - **Tags**: docs, user-stories, polish, batched
+  - **Details**: Three small but verified findings, batched per Rule 9:
+    (1) **Story 02 line ~95** — Files field example uses double
+    backticks (`` ``src/auth.ts`` ``) where `spec.md:194` and the
+    spec definition (`spec.md:225`) use single backticks. Fix to
+    single backticks.
+    (2) **Story 07** — README claims `tasks pick` is documented in
+    story 07 (see `docs/user-stories/README.md:27`) but story 07
+    never mentions the command. Add a "Pick the next task" section
+    to `07-monitor-queue-health.md` that documents: shape of the
+    output, `--tags` filter, exit code 0 on hit / non-zero on
+    empty queue, intended use ("read-only check the agent will run
+    next, useful for human inspection or scripting").
+    (3) **Story 03** — does not distinguish `/next-task` (the full
+    autonomous loop in `commands/next-task.md`) from `tasks pick`
+    (the read-only query). Add a "How `tasks pick` relates" note
+    after the "What it does" section: "`tasks pick` is the
+    read-only inspection — same algorithm, no claim, no commit.
+    `/next-task` is `tasks pick` plus claim, plan, implement,
+    commit, loop."
+  - **Files**: `docs/user-stories/02-tasks-agents-complete-without-asking.md`,
+    `docs/user-stories/07-monitor-queue-health.md`,
+    `docs/user-stories/03-agents-work-through-queue.md`
+  - **Acceptance**: All three findings fixed in one PR. `npm run
+    lint`, `npm run build`, and `npx -y @tasks-md/lint TASKS.md` pass.
+  - **Last-enriched**: 2026-05-03
 
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
   - **ID**: taskgrind-per-session-sync
