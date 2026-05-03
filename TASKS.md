@@ -10,31 +10,6 @@
 
 ## P2
 
-- [ ] Print full `**Details**` in `tasks pick` output (not just summary)
-  - **ID**: cli-pick-show-details
-  - **Tags**: cli, ux, agent-context
-  - **Details**: `tasks pick` currently prints only `summary`, `file`,
-    `id`, `tags`, `candidates` — see `packages/cli/src/cli.ts:201-213`.
-    When an autonomous agent invokes `pick` to learn what to work on,
-    it loses the `**Details**` block — the very prose that explains
-    *what* to do. Agents typically follow up with a file read of
-    `TASKS.md` at the reported file:line, which is wasteful. Add a
-    `**Details**` print block (multiline, indented two spaces) right
-    after `Tags:`. If the metadata has no `Details` field, print
-    nothing (no header, no empty line). The `--json` shape (after
-    `cli-restore-json-on-read-commands` lands) already exposes
-    `metadata` as a full object — this is a parity improvement on
-    the human-readable path.
-  - **Files**: `packages/cli/src/cli.ts`,
-    `packages/cli/src/cli.test.ts`
-  - **Acceptance**: `tasks pick` against a TASKS.md with a task whose
-    metadata includes `**Details**: foo bar` prints a `Details:`
-    section with `foo bar` underneath. `tasks pick` against a
-    Details-free task prints exactly what it does today (no extra
-    blank line). Test in `cli.test.ts` covers both branches. `npm
-    run build`, `npm test`, `npm run lint` pass.
-  - **Last-enriched**: 2026-05-03
-
 - [ ] Add a top-level `Worked example: first 10 minutes` to README
   - **ID**: readme-worked-example
   - **Tags**: docs, readme, hardening, onboarding

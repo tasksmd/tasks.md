@@ -365,6 +365,86 @@ describe("CLI", () => {
     }
   });
 
+  // Detail-block printing — agents calling `tasks pick` for context get the
+  // full Details prose inline, no follow-up file read needed. The two cases
+  // pinned here are: with Details (block printed under `Details:` header)
+  // and without (no Details header, no empty line). The `--json` shape
+  // already exposes metadata as a full object — these tests guard the
+  // human-readable parity.
+
+  it("pick prints **Details** block when the task has one", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P1\n\n- [ ] Add pagination\n  - **Details**: Returns 20 items/page; supports ?page=N\n"
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/Picked "Add pagination"/);
+      expect(result.stdout).toMatch(/^ {2}Details:$/m);
+      expect(result.stdout).toMatch(/^ {4}Returns 20 items\/page; supports \?page=N$/m);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("pick omits the Details header when the task has no **Details** metadata", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "# Tasks\n\n## P1\n\n- [ ] Bare task\n  - **ID**: bare\n"
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/Picked "Bare task"/);
+      expect(result.stdout).toMatch(/ID: bare/);
+      // No `Details:` header at all when the field is absent.
+      expect(result.stdout).not.toMatch(/Details:/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("pick prints multiline **Details** values on indented continuation lines", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      [
+        "# Tasks", "",
+        "## P1", "",
+        "- [ ] Multi-line task",
+        "  - **Details**: First line of context.",
+        "    Continuation with more detail.",
+        "    Final line.",
+        "",
+      ].join("\n")
+    );
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "pick"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/^ {2}Details:$/m);
+      expect(result.stdout).toMatch(/^ {4}First line of context\.$/m);
+      expect(result.stdout).toMatch(/^ {4}Continuation with more detail\.$/m);
+      expect(result.stdout).toMatch(/^ {4}Final line\.$/m);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
   // ── --json output across the four read commands (pick / list / stats / diff)
   //
   // These tests pin the cross-command parity contract: every read command
