@@ -13,6 +13,7 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 | 5 | [Each team member has their own queue](05-separate-queues-per-member.md) | Monorepo with multiple TASKS.md files |
 | 6 | [Issue tracker decisions flow to agents](06-issue-tracker-flows-to-agents.md) | `tasks sync-issues`, `tasks sync-jira`, `tasks sync-linear` |
 | 7 | [Monitor queue health at a glance](07-monitor-queue-health.md) | `tasks stats`, `tasks diff` |
+| 8 | [Rich task metadata for blocked, multi-session, and decomposed work](08-rich-task-metadata.md) | `**Blocked**`, `**Research**`, `**Last-enriched**`, `**Parent**`, standing audit loops, file-level + section-level `<!-- policy: -->` comments |
 
 ## Automation Status
 

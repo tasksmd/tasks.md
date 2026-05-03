@@ -8,38 +8,6 @@
 
 ## P1
 
-- [ ] Cover spec metadata fields missing from user stories (Blocked, Research, Parent, Last-enriched, standing loops, policies)
-  - **ID**: user-stories-spec-metadata-coverage
-  - **Tags**: docs, user-stories, spec-alignment, hardening
-  - **Details**: User stories cover only `**Blocked by**` (transitive
-    dependencies) but never mention `**Blocked**` (external
-    constraints), `**Research**` (agent-accumulated notes),
-    `**Parent**` (task decomposition), or `**Last-enriched**`
-    (idempotency marker) — all first-class fields in `spec.md` (see
-    spec.md:269 for `**Blocked**`, spec.md "Standing loops" section
-    around 288-322, "Policies" section around 81-102). Standing
-    loops and HTML policy comments are also unmentioned. Agents
-    reading only the user stories miss core workflow primitives.
-    Add a single new user story `08-rich-task-metadata.md` (preferred)
-    or expand story 02 with an "Advanced metadata" section that:
-    (a) documents each field with one-paragraph + one TASKS.md
-    example, (b) shows when to use **Blocked** vs **Blocked by**,
-    (c) demonstrates `**Research**` accumulation across sessions,
-    (d) shows a `<!-- policy: ... -->` comment in context. Cross-link
-    from `docs/user-stories/README.md` table and from any story that
-    currently demos a basic task block.
-  - **Files**: `docs/user-stories/08-rich-task-metadata.md` (new) OR
-    `docs/user-stories/02-tasks-agents-complete-without-asking.md`,
-    `docs/user-stories/README.md`, `spec.md` (cross-link only — do
-    not modify the spec)
-  - **Acceptance**: Each of the four uncovered metadata fields plus
-    "Standing loops" and "Policies" appears with a runnable
-    `markdown` code block in user stories. `docs/user-stories/README.md`
-    "How" column for the new/expanded story names every covered
-    field. `npm run lint` passes. `npx -y @tasks-md/lint TASKS.md`
-    passes for every example block.
-  - **Last-enriched**: 2026-05-03
-
 ## P2
 
 - [ ] Consolidate `sync-issues`/`sync-jira`/`sync-linear` into `tasks sync <provider>`
