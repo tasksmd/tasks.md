@@ -1,5 +1,7 @@
 # Tasks
 
+<!-- Demonstrates: multi-agent setup — the `(@agent-name)` claim format, agent-identity conventions for parallel sessions, and the policy of pushing claims immediately so other agents see them. -->
+
 <!-- Multi-agent setup: background agents work in parallel, each claiming tasks with their identity.
      Example identities in use:
        @cursor-bg     — Cursor background agent

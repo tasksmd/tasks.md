@@ -1,5 +1,7 @@
 # Tasks
 
+<!-- Demonstrates: web app (Express/Node) task queue with file-level policies (CORS + secrets) and a **Blocked by** chain on rate-limiting work that depends on a P0 CORS fix. -->
+
 <!-- policy: All middleware changes require integration tests with supertest.
      policy: Never hardcode origins or API keys — use environment variables. -->
 

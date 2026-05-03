@@ -1,5 +1,7 @@
 # Tasks
 
+<!-- Demonstrates: Rust CLI task queue with file-level policies (clippy + cargo test, no panics) and a **Blocked by** chain that gates feature work and integration tests on a P0 panic fix. -->
+
 <!-- policy: No panics in release builds — use Result and proper error handling.
      policy: Run `cargo clippy` and `cargo test` before every commit. -->
 

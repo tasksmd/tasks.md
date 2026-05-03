@@ -1,5 +1,7 @@
 # Tasks
 
+<!-- Demonstrates: monorepo workspace task queue with sub-tasks under a P1 parent, a **Blocked by** chain across packages, and a trailing freeform comment that explains how cross-file blockers resolve when an ID lives in a sibling TASKS.md. -->
+
 <!-- policy: Run `pnpm -r build` from the root to verify all packages build together.
      policy: Shared packages use `workspace:*` — never pin to a fixed version. -->
 

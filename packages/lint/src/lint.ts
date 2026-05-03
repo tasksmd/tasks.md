@@ -268,6 +268,19 @@ export function discoverFiles(target: string): string[] {
   return [];
 }
 
+// Filenames that are obviously documentation, not task queues. Skip these
+// during directory discovery so a `tasks-lint <dir>` invocation doesn't try
+// to lint `README.md` / `LICENSE.md` / `CHANGELOG.md` / `CONTRIBUTING.md` as
+// if they were TASKS.md files. Comparison is case-insensitive — GitHub
+// auto-renders any of these regardless of casing, so the convention is
+// well-known across ecosystems.
+const NON_TASK_DOC_FILENAMES = new Set([
+  "readme.md",
+  "license.md",
+  "changelog.md",
+  "contributing.md",
+]);
+
 function discoverMarkdownFiles(directory: string, root: string): string[] {
   return readdirSync(directory, { withFileTypes: true })
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -276,6 +289,11 @@ function discoverMarkdownFiles(directory: string, root: string): string[] {
       if (entry.name === ".git" || entry.name === "node_modules") return [];
       if (entry.isDirectory()) return discoverMarkdownFiles(fullPath, root);
       if (!entry.isFile() || !entry.name.endsWith(".md")) return [];
+
+      // Skip well-known documentation filenames at every level so a
+      // `tasks-lint examples/` (with an `examples/README.md` index) doesn't
+      // erroneously flag the index as a malformed task queue.
+      if (NON_TASK_DOC_FILENAMES.has(entry.name.toLowerCase())) return [];
 
       // Preserve existing directory behavior for directly named examples while
       // still discovering standard nested queues in monorepos.
