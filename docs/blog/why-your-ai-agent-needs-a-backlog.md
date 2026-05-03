@@ -105,7 +105,7 @@ Or just create the file manually — it's Markdown with priority headings:
 - [ ] Important but not urgent
 ```
 
-Add the [MCP server](https://github.com/tasksmd/tasks.md/tree/main/packages/mcp) so agents can read and write tasks programmatically. Add the [linter](https://github.com/tasksmd/tasks.md/tree/main/packages/lint) to CI to keep the file clean. Use the [CLI](https://github.com/tasksmd/tasks.md/tree/main/packages/cli) for `tasks pick`, `tasks stats`, and `tasks lint`.
+Add the [MCP server](https://github.com/tasksmd/tasks.md/tree/main/packages/mcp) so agents can read and write tasks programmatically. Add the [linter](https://github.com/tasksmd/tasks.md/tree/main/packages/lint) to CI to keep the file clean. Use the [CLI](https://github.com/tasksmd/tasks.md/tree/main/packages/cli) for `tasks pick`, `tasks list`, and `tasks stats`.
 
 Then build the habit. Every time you think of something — `add_task`. Every time an agent finishes — `complete_task`. Every time you start a session — `pick_task`.
 

@@ -3,7 +3,7 @@
 import { Command } from "commander";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
-import { lintFiles, discoverFiles } from "@tasks-md/lint";
+
 import {
   loadAllTasks,
   pickBestTask,
@@ -228,28 +228,15 @@ program
     await runLinearSync(opts);
   });
 
-// ── lint ──
-
-program
-  .command("lint")
-  .description("Validate TASKS.md files against the spec")
-  .option("--fix", "Auto-fix removable issues (completed tasks)")
-  .argument("<paths...>", "Files or directories to lint")
-  .action((paths: string[], opts: { fix?: boolean }) => {
-    const allFiles = paths.flatMap(discoverFiles);
-    if (allFiles.length === 0) {
-      console.error("No .md files found in the specified paths.");
-      process.exit(2);
-    }
-    const { errors, fixed, filesChecked } = lintFiles(allFiles, Boolean(opts.fix));
-    console.log("");
-    if (opts.fix && fixed > 0) {
-      console.log(`Checked ${filesChecked} file(s), fixed ${fixed} issue(s), ${errors} remaining error(s)`);
-    } else {
-      console.log(`Checked ${filesChecked} file(s), found ${errors} error(s)`);
-    }
-    process.exit(errors > 0 ? 1 : 0);
-  });
+// ── lint (removed) ──
+//
+// `tasks lint` was a duplicate surface for the same backend that
+// `tasks-lint` (the @tasks-md/lint standalone binary) already exposes.
+// To collapse to one canonical lint entry point we removed it; if you
+// installed @tasks-md/cli only, lint via `npx @tasks-md/lint TASKS.md`
+// (or install @tasks-md/lint to get the `tasks-lint` binary on PATH).
+// The shared `lintFiles` backend in @tasks-md/lint is unchanged — both
+// `tasks watch` and `tasks-lint` keep using it.
 
 // ── pick ──
 //

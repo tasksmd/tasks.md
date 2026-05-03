@@ -44,15 +44,17 @@ tasks list --priority P0 --json           # structured JSON output
 
 Default output is one line per task: `<priority>\t<id>\t<summary>` (tab-separated, `-` for tasks with no ID). `--json` returns an array of `{ id, summary, priority, tags, blocked, claimed, file, line }` records that round-trips through `JSON.parse`.
 
-### `tasks lint`
+### Linting
 
-Validate TASKS.md files against the spec — checks structure, priority ordering, ID format, duplicate IDs, and dangling blocker references.
+`@tasks-md/cli` deliberately does not ship a `lint` subcommand — the canonical lint surface is the [`@tasks-md/lint`](../lint/) standalone binary, so there is exactly one way to lint a TASKS.md file:
 
 ```bash
-tasks lint TASKS.md                    # lint one file
-tasks lint TASKS.md examples/          # lint multiple paths
-tasks lint --fix TASKS.md              # auto-fix (removes completed tasks)
+npx -y @tasks-md/lint TASKS.md          # lint one file
+npx -y @tasks-md/lint TASKS.md packages/   # lint multiple paths
+npx -y @tasks-md/lint --fix TASKS.md    # auto-fix (removes completed tasks)
 ```
+
+The CLI's `tasks watch` keeps using the same `lintFiles` backend internally — see below.
 
 ### `tasks stats`
 
@@ -119,7 +121,7 @@ tasks watch ./packages    # watch a specific directory
 tasks watch --fix         # auto-lint and auto-fix on every save
 ```
 
-`--fix` reuses the same fix path as `tasks lint --fix`: removes `- [x]` completed tasks (and their metadata) in place, then re-runs lint on the fixed content. Other lint errors are reported but not auto-fixed.
+`--fix` reuses the same fix path as `npx @tasks-md/lint --fix`: removes `- [x]` completed tasks (and their metadata) in place, then re-runs lint on the fixed content. Other lint errors are reported but not auto-fixed.
 
 ### `tasks generate-commands`
 

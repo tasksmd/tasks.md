@@ -261,36 +261,39 @@ describe("CLI", () => {
   it("shows help with --help", () => {
     const result = spawnSync("node", [CLI, "--help"], { encoding: "utf-8" });
     expect(result.status).toBe(0);
-    expect(result.stdout).toMatch(/lint/);
     expect(result.stdout).toMatch(/pick/);
     expect(result.stdout).toMatch(/list/);
     expect(result.stdout).toMatch(/stats/);
     expect(result.stdout).toMatch(/diff/);
+    expect(result.stdout).toMatch(/watch/);
+    expect(result.stdout).toMatch(/sync/);
   });
 
-  it("lint validates a valid file", () => {
+  // The `tasks lint` subcommand was a duplicate surface for the
+  // @tasks-md/lint backend. We collapsed to a single canonical surface
+  // (the `tasks-lint` standalone binary in @tasks-md/lint) and removed
+  // `tasks lint` entirely. This regression guard fails CI if someone
+  // re-adds it: `tasks --help` must NOT advertise a `lint` subcommand,
+  // and `tasks lint <file>` must exit non-zero with an "unknown command"
+  // diagnostic rather than running silently against the wrong file shape.
+  it("removes the `tasks lint` surface — collapse to one canonical lint entry point", () => {
+    const help = spawnSync("node", [CLI, "--help"], { encoding: "utf-8" });
+    expect(help.status).toBe(0);
+    // Top-level command list lines look like `  pick      Pick the …`.
+    // We don't want a leading-whitespace `lint` entry in that list.
+    expect(help.stdout).not.toMatch(/^\s+lint\b/m);
+
     const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
     writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Test\n");
     try {
       const result = spawnSync("node", [CLI, "lint", join(dir, "TASKS.md")], {
         encoding: "utf-8",
+        cwd: dir,
       });
-      expect(result.status).toBe(0);
-      expect(result.stdout).toMatch(/0 error/);
-    } finally {
-      rmSync(dir, { recursive: true });
-    }
-  });
-
-  it("lint fails on invalid file", () => {
-    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
-    writeFileSync(join(dir, "TASKS.md"), "# Not Tasks\n");
-    try {
-      const result = spawnSync("node", [CLI, "lint", join(dir, "TASKS.md")], {
-        encoding: "utf-8",
-      });
-      expect(result.status).toBe(1);
-      expect(result.stderr).toMatch(/first line must be/);
+      // Commander exits non-zero with an "unknown command" error when the
+      // user invokes a command that no longer exists.
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toMatch(/unknown command|error/i);
     } finally {
       rmSync(dir, { recursive: true });
     }

@@ -27,7 +27,7 @@ All originally-identified automation gaps have been implemented:
 | Devin `/next-task` skill | [03](03-agents-work-through-queue.md) | ✅ `commands/devin/skills/next-task/SKILL.md` |
 | Deterministic `pick_task` | [07](07-monitor-queue-health.md) | ✅ `tasks pick` + `tasks-mcp` MCP tool |
 | CLI ↔ MCP `list_tasks` parity | [07](07-monitor-queue-health.md#enumerate-tasks-programmatically) | ✅ `tasks list` (same filters as MCP) |
-| Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `tasks lint --fix` / `npx @tasks-md/lint --fix` |
+| Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `npx @tasks-md/lint --fix` (canonical lint surface) |
 | GitHub Issues `--merge` mode | [06](06-issue-tracker-flows-to-agents.md) | ✅ `tasks sync github --merge` |
 | Jira bridge | [06](06-issue-tracker-flows-to-agents.md#jira-sync) | ✅ `tasks sync jira` |
 | Linear bridge | [06](06-issue-tracker-flows-to-agents.md#linear-sync) | ✅ `tasks sync linear` |

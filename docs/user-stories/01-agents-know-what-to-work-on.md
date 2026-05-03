@@ -120,8 +120,9 @@ When a task is done, the agent **removes the entire block** — task line, metad
 npx @tasks-md/lint TASKS.md                    # single file
 npx @tasks-md/lint TASKS.md packages/          # monorepo
 npx @tasks-md/lint --fix TASKS.md              # auto-fix deterministic issues
-tasks lint TASKS.md                            # via the tasks CLI
 ```
+
+`@tasks-md/lint` is the canonical lint surface — `@tasks-md/cli` deliberately does not ship a duplicate `tasks lint` subcommand. If you only have `@tasks-md/cli` installed, lint via the `npx -y @tasks-md/lint …` shape above; or install `@tasks-md/lint` to put a `tasks-lint` binary on `PATH`.
 
 Auto-fix handles: removing completed tasks, empty priority sections, normalizing ID casing, and removing orphaned metadata.
 
@@ -166,7 +167,7 @@ npx @tasks-md/lint TASKS.md || exit 1
 | `TASKS.md` | The task queue |
 | `AGENTS.md` | Tell agents to read TASKS.md |
 | [`packages/lint/`](../../packages/lint/) | Linter (TypeScript, [`@tasks-md/lint`](https://www.npmjs.com/package/@tasks-md/lint)) |
-| [`packages/cli/`](../../packages/cli/) | Unified CLI (`tasks lint`, `tasks pick`, etc.) |
+| [`packages/cli/`](../../packages/cli/) | Unified CLI (`tasks pick`, `tasks list`, `tasks watch`, etc.) |
 | [spec.md](../../spec.md) | Full specification |
 
 ## Try it yourself
