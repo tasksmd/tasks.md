@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/tasks-mcp)](https://www.npmjs.com/package/tasks-mcp)
 
-An MCP server for reading and writing [TASKS.md](https://github.com/tasksmd/tasks.md) files. Works with Claude Code, Cursor, Windsurf, and any MCP-compatible client.
+MCP server for [TASKS.md](https://github.com/tasksmd/tasks.md) — exposes the queue to Claude Code, Cursor, Windsurf, and any MCP-compatible client.
 
 ## Install
 
@@ -13,24 +13,12 @@ npm install -g tasks-mcp
 Or run directly with npx:
 
 ```bash
-npx tasks-mcp
+npx -y tasks-mcp
 ```
 
-## Tools
+## Use
 
-| Tool | Description |
-|------|-------------|
-| `list_tasks` | List all tasks with filtering by priority, tag, claim status, and blocker status |
-| `pick_task` | Deterministically select the best task to work on next, or pass `task_id` to target an exact `**ID**` |
-| `claim_task` | Claim a task by appending `(@agent-name)` to the task line |
-| `unclaim_task` | Remove a claim from a task for stale claim recovery when an agent crashed or its session ended |
-| `complete_task` | Remove a completed task block from the file |
-| `add_task` | Add a new task under the specified priority heading |
-| `enrich_task` | Append research notes to a blocked task without changing its blocker metadata |
-
-## Setup
-
-### Claude Code
+Add the server to your MCP client config. Example for Claude Code:
 
 ```json
 {
@@ -38,15 +26,15 @@ npx tasks-mcp
     "tasks": {
       "command": "npx",
       "args": ["tasks-mcp"],
-      "env": {
-        "TASKS_MCP_DIR": "/path/to/your/repo"
-      }
+      "env": { "TASKS_MCP_DIR": "/path/to/your/repo" }
     }
   }
 }
 ```
 
-### Build from source
+The server discovers every `TASKS.md` from the git root down and parses each file via [`@tasks-md/parser`](../parser/), so its filter and pick behavior matches `@tasks-md/cli` exactly.
+
+To build from source:
 
 ```bash
 cd packages/mcp
@@ -55,26 +43,31 @@ npm run build
 npm start
 ```
 
-## Environment Variables
+## API
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Tool | What it does |
+|------|--------------|
+| `list_tasks` | List tasks with optional `priority`, `tag`, `unclaimedOnly`, `unblockedOnly` filters. Same predicates as `tasks list` |
+| `pick_task` | Walks P0→P3, skips blocked / claimed / `standing-loop`, scores by unblocking impact. Pass `task_id` to target an exact `**ID**` (returns `missing` / `duplicate` / `already_claimed` / `blocked` / `ready` / `resumed` / `claimed`); pass `agent_name` to claim or resume |
+| `claim_task` | Append `(@agent-name)` to a task line. Exact `**ID**` match wins; falls back to summary substring |
+| `unclaim_task` | Remove a `(@agent-name)` claim for stale-claim recovery. Same ID-then-summary lookup as `claim_task` |
+| `complete_task` | Remove a completed task block from the file. Same lookup as `claim_task` |
+| `add_task` | Insert a new task under the given priority heading; creates the section if it doesn't exist |
+| `enrich_task` | Append research notes to a blocked task and stamp `**Last-enriched**`. Never modifies `**Blocked**` / `**Blocked by**` |
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
 | `TASKS_MCP_DIR` | `process.cwd()` | Working directory for TASKS.md discovery |
 
-## How it works
+For mutation tools (`claim_task`, `unclaim_task`, `complete_task`, `enrich_task`), exact `**ID**` matching wins even when an earlier task summary contains the same query. Use `pick_task` with `task_id` when you need ID-only behavior that reports `missing`, `duplicate`, `blocked`, or `claimed` instead of falling back to summaries.
 
-The server discovers all `TASKS.md` files from the git root down. It parses each file into structured task data including priority, metadata (ID, tags, details, files, acceptance, blocked-by), claim status, and line numbers.
+## See also
 
-- **`list_tasks`** returns all tasks sorted by priority with optional filters
-- **`pick_task`** walks P0→P3, skips blocked, claimed, and `standing-loop` tasks, scores by unblocking impact, and returns the single best task
-- **`pick_task` with `task_id`** bypasses queue order and targets one exact `**ID**`. It returns structured `status` values for `missing`, `duplicate`, `already_claimed`, `blocked`, `ready`, `resumed`, and `claimed`; pass `agent_name` to claim an actionable target or resume a target already claimed by that same agent. This is the MCP equivalent of `/next-task <task-id>`, including standing loops such as `standing-audit-gap-loop` (which auto-pick skips by design).
-- **`claim_task`** first looks for an exact `**ID**`, then falls back to a summary substring, and appends `(@agent-name)`
-- **`unclaim_task`** first looks for an exact `**ID**`, then falls back to a summary substring, and removes the `(@agent-name)` claim
-- **`complete_task`** first looks for an exact `**ID**`, then falls back to a summary substring, and removes the entire task block
-- **`add_task`** inserts under the correct priority heading, creating the section if needed
-- **`enrich_task`** first looks for an exact `**ID**`, then falls back to a summary substring, and appends research context without touching `**Blocked**` / `**Blocked by**`
-
-For mutation tools, exact ID matching wins even when an earlier task summary contains the same query. Use `pick_task` with `task_id` when you need ID-only behavior that reports missing, duplicate, blocked, or claimed targets instead of falling back to summaries.
+- [Specification](../../spec.md) — the canonical TASKS.md format
+- [Root README](../../README.md) — project overview and quick start
+- [`@tasks-md/cli`](../cli/) — CLI with the same operations as the MCP tools
+- [`@tasks-md/lint`](../lint/) — TASKS.md linter
+- [`@tasks-md/parser`](../parser/) — shared parser the server calls
 
 ## License
 

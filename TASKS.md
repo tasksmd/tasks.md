@@ -8,34 +8,6 @@
 
 ## P1
 
-- [ ] Per-package README consistency audit — same structure across cli, lint, parser, mcp
-  - **ID**: docs-package-readme-consistency
-  - **Tags**: docs, packages, simplify, hardening
-  - **Details**: The four published packages have separate
-    READMEs (`packages/cli/README.md`, `packages/lint/README.md`,
-    `packages/parser/README.md`, `packages/mcp/README.md`) that
-    drifted in shape over time. Audit and unify the top-level
-    structure: every README should have the same headings in the
-    same order — `# <package-name>` (1-line tagline), `##
-    Install`, `## Use` (the canonical use case in 5-10 lines),
-    `## API` (TypeScript-exposed types/functions or CLI flags),
-    `## See also` (link to spec.md, root README, related
-    packages). Drop any "Why this exists" / "Background"
-    rambling that lives outside that frame. Produce a single docs
-    PR. Verify each README passes `npm run lint` and that internal
-    links resolve. The PR's diff should be net-negative or
-    near-neutral (consolidation, not addition).
-  - **Files**: `packages/cli/README.md`,
-    `packages/lint/README.md`,
-    `packages/parser/README.md`,
-    `packages/mcp/README.md`
-  - **Acceptance**: All four READMEs share the same five
-    top-level headings (`Install`, `Use`, `API`, `See also`, plus
-    the H1). Cross-links between packages resolve. Net diff is
-    near-zero. `npm run lint`, `npx -y @tasks-md/lint TASKS.md`
-    pass.
-  - **Last-enriched**: 2026-05-03
-
 ## P2
 
 - [ ] MCP tool descriptions audit — match the parallel-structure rule applied to CLI commands
