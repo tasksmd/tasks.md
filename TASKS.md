@@ -6,37 +6,6 @@
 
 ## P2
 
-- [ ] Dogfood the pre-flight stop check in this repo (@devin-session-6)
-  - **ID**: dogfood-stop-check-canonical-repo
-  - **Tags**: taskgrind, stop-check, dogfood, dx, ergonomics
-  - **Details**: The canonical `next-task` skill's pre-flight stop
-    check looks for `scripts/check-zero-ship-streak.mjs` (the path
-    every adopting repo uses per `taskgrind/README.md` Options A/B).
-    In this repo — the canonical source of the script — the file
-    actually lives at `taskgrind/scripts/check-zero-ship-streak.mjs`,
-    so the check silently skips: `[ -f scripts/check-zero-ship-streak.mjs ]`
-    fails, the skill falls through to "script doesn't exist (the
-    repo hasn't adopted the check yet) ... proceed", and a session
-    that should have stopped at entry keeps running. Earlier in this
-    session, with `TASKS.md` 4/4 blocked, running the canonical
-    script directly (`node taskgrind/scripts/check-zero-ship-streak.mjs`)
-    already printed `STOP — Reason 2`. Sessions 5 (23m, 0 ships) and
-    6 both burned context discovering the queue was empty instead of
-    being stopped at entry. Fix is to dogfood Option B from
-    `taskgrind/README.md` — a relative symlink at
-    `scripts/check-zero-ship-streak.mjs` pointing into
-    `taskgrind/scripts/`. Same regular file is visible to
-    `[ -f ... ]` and `node`, no copy drift, and the canonical source
-    repo demonstrates its own documented adoption pattern.
-  - **Files**: `scripts/check-zero-ship-streak.mjs` (new symlink),
-    `taskgrind/scripts/check-zero-ship-streak.mjs` (existing target)
-  - **Acceptance**: `scripts/check-zero-ship-streak.mjs` resolves to
-    the canonical script. Running `node scripts/check-zero-ship-streak.mjs`
-    from the repo root prints `STOP` while `TASKS.md` is 100%
-    blocked and `CONTINUE` otherwise, and the next `/next-task`
-    invocation exits cleanly at the pre-flight check when applicable.
-    `npm run lint` and `npm test` still pass.
-
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
   - **ID**: taskgrind-per-session-sync
   - **Tags**: taskgrind, sync, queue, duplicate-work
