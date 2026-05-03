@@ -99,4 +99,4 @@ Checked 1 file(s), found 5 error(s)
 
 ## License
 
-[MIT](../LICENSE)
+[MIT](../../LICENSE)
