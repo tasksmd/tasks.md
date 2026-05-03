@@ -32,6 +32,31 @@ tasks stats
 
 One command shows queue size by priority, how many tasks are blocked or claimed, throughput over time, and which agents are doing the most work.
 
+## Pick the Next Task
+
+```bash
+tasks pick                       # pick the highest-priority available task
+tasks pick --tags backend        # prefer backend-tagged tasks (soft preference)
+tasks pick --tags backend,api    # multiple tags — at least one must overlap
+```
+
+`tasks pick` is the read-only inspection paired with `/next-task`. Same algorithm — same priority sort, same blocker resolution, same `standing-loop` skip — but it makes no claim, no commit, and no file edit. Use it for human inspection ("what would the agent pick?") or for scripts that need the next-up task without claiming it.
+
+Output shape on a hit:
+
+```
+Picked "Fix the crash on startup" (P0)
+  File: TASKS.md:5
+  ID: fix-startup-crash
+  Tags: backend, infra
+  Unblocks: 2 task(s)
+  Candidates: 7
+```
+
+On an empty queue (everything claimed, blocked, or no tasks at all), `tasks pick` prints `No eligible tasks found (all claimed, blocked, or empty queue).` and exits 0 — so use stdout content (or `tasks list --unclaimed --unblocked` returning zero lines) to detect emptiness in a script, not the exit code.
+
+`--tags` is a soft preference: if no candidate matches the requested tags, `pick` falls back to the full candidate set rather than returning empty. To get a hard tag filter, use `tasks list --tag <tag>` and act only when the output is non-empty.
+
 ## Enumerate Tasks Programmatically
 
 ```bash
