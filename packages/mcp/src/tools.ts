@@ -12,6 +12,25 @@ import {
   type TaskFile,
 } from "./parser.js";
 
+// ── Tool descriptions ──
+//
+// Every MCP tool description follows the same parallel structure that the CLI
+// help text uses (pinned by `cli.test.ts`): verb-first, no parens, ≤60 chars.
+// Detailed behavior lives in each tool's `inputSchema` field descriptions and
+// in the package README — the registered description is a one-liner so MCP
+// clients can scan the catalog without reading prose. The parallel-structure
+// rule is enforced by a regression test in `tools.test.ts`; if a future
+// description drifts, that test fails CI.
+export const TOOL_DESCRIPTIONS: Record<string, string> = {
+  list_tasks: "List tasks from TASKS.md with optional filters",
+  pick_task: "Pick the highest-priority unblocked task or target one",
+  claim_task: "Claim a task by stamping it with an agent identity",
+  unclaim_task: "Remove a stale agent claim from a task line",
+  complete_task: "Remove a completed task block from TASKS.md",
+  add_task: "Add a new task under a priority heading",
+  enrich_task: "Append research notes to a blocked task",
+};
+
 export interface ToolResult {
   text: string;
   isError?: boolean;
