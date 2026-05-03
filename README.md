@@ -261,11 +261,13 @@ rule.
 The [`@tasks-md/cli`](packages/cli/) provides task queue management — pick tasks, lint files, sync from issue trackers, and install agent commands.
 
 ```bash
-npx @tasks-md/cli pick              # pick highest-priority unblocked non-standing task
-npx @tasks-md/cli init              # create TASKS.md in current repo
-npx @tasks-md/cli install           # install /next-task for detected agents
-npx @tasks-md/cli stats             # queue overview and throughput
-npx @tasks-md/cli lint TASKS.md     # validate against spec
+npx @tasks-md/cli pick                       # pick highest-priority unblocked non-standing task
+npx @tasks-md/cli init                       # create TASKS.md in current repo
+npx @tasks-md/cli install                    # install /next-task for detected agents
+npx @tasks-md/cli stats                      # queue overview and throughput
+npx @tasks-md/cli lint TASKS.md              # validate against spec
+npx @tasks-md/cli sync github --merge        # sync GitHub Issues into TASKS.md
+npx @tasks-md/cli sync jira --project PROJ   # also: tasks sync linear --team ENG
 ```
 
 ### MCP Server

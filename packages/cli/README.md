@@ -110,15 +110,19 @@ Regenerate agent-specific command files from the canonical sources (`commands/ne
 tasks generate-commands
 ```
 
-### `tasks sync-issues`
+### `tasks sync <provider>`
+
+Sync issues from an external tracker into TASKS.md. Provider is one of `github`, `jira`, or `linear`. The legacy commands `tasks sync-issues`, `tasks sync-jira`, and `tasks sync-linear` are kept as deprecated aliases for one minor version — they print a warning and forward to the new form.
+
+#### `tasks sync github`
 
 Sync GitHub Issues into TASKS.md. Requires the `gh` CLI to be authenticated (`gh auth login`).
 
 ```bash
-tasks sync-issues                              # sync from current repo
-tasks sync-issues --repo owner/repo            # specify repo
-tasks sync-issues --label bug --merge          # filter + merge into existing file
-tasks sync-issues --output TASKS.md --merge    # write to file, preserving manual tasks
+tasks sync github                              # sync from current repo
+tasks sync github --repo owner/repo            # specify repo
+tasks sync github --label bug --merge          # filter + merge into existing file
+tasks sync github --output TASKS.md --merge    # write to file, preserving manual tasks
 ```
 
 **Priority mapping** — GitHub labels map to TASKS.md priorities. The highest-priority (lowest number) label wins when multiple are present:
@@ -134,15 +138,15 @@ tasks sync-issues --output TASKS.md --merge    # write to file, preserving manua
 
 **ID format** — Each synced issue gets an ID like `issue-42` (the `issue-` prefix plus the GitHub issue number).
 
-### `tasks sync-jira`
+#### `tasks sync jira`
 
 Sync Jira issues into TASKS.md. Requires `JIRA_URL` and `JIRA_TOKEN` environment variables. Set `JIRA_AUTH=bearer` for Bearer token auth (default is Basic).
 
 ```bash
-tasks sync-jira --project PROJ                 # sync a project
-tasks sync-jira --jql "assignee = currentUser()" --merge
-tasks sync-jira --output TASKS.md --merge
-tasks sync-jira --max 50                       # limit results
+tasks sync jira --project PROJ                 # sync a project
+tasks sync jira --jql "assignee = currentUser()" --merge
+tasks sync jira --output TASKS.md --merge
+tasks sync jira --max 50                       # limit results
 ```
 
 **Priority mapping** — Jira priority names map to TASKS.md priorities:
@@ -158,16 +162,16 @@ tasks sync-jira --max 50                       # limit results
 
 **ID format** — Each synced issue gets an ID like `jira-PROJ-42`.
 
-### `tasks sync-linear`
+#### `tasks sync linear`
 
 Sync Linear issues into TASKS.md. Requires `LINEAR_API_KEY` environment variable.
 
 ```bash
-tasks sync-linear --team ENG                   # sync a team's issues
-tasks sync-linear --team ENG --project "Q1"    # filter by project
-tasks sync-linear --filter '{"assignee":{"id":{"eq":"me"}}}'  # custom filter
-tasks sync-linear --output TASKS.md --merge
-tasks sync-linear --max 50                     # limit results
+tasks sync linear --team ENG                   # sync a team's issues
+tasks sync linear --team ENG --project "Q1"    # filter by project
+tasks sync linear --filter '{"assignee":{"id":{"eq":"me"}}}'  # custom filter
+tasks sync linear --output TASKS.md --merge
+tasks sync linear --max 50                     # limit results
 ```
 
 **Priority mapping** — Linear numeric priorities map to TASKS.md priorities:
