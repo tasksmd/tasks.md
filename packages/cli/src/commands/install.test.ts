@@ -67,6 +67,24 @@ describe("installCommands", () => {
     expect(result.installed).toContain("windsurf");
   });
 
+  // The destination paths in this test are documented in
+  // docs/user-stories/03-agents-work-through-queue.md ("Auto-detect algorithm"
+  // table). If you change a destination path in install.ts, update both the
+  // test below and the story table — they are the user-facing contract.
+  it("pins the AGENT_MAPPINGS install paths for all 6 agents", () => {
+    const targetDir = join(tempDir, "project");
+    mkdirSync(targetDir);
+
+    installCommands(targetDir, commandsDir, { all: true });
+
+    expect(existsSync(join(targetDir, ".claude", "skills", "next-task", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(targetDir, ".agents", "skills", "next-task", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(targetDir, ".cursor", "commands", "next-task.md"))).toBe(true);
+    expect(existsSync(join(targetDir, ".devin", "skills", "next-task", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(targetDir, ".gemini", "commands", "next-task.toml"))).toBe(true);
+    expect(existsSync(join(targetDir, ".windsurf", "workflows", "next-task.md"))).toBe(true);
+  });
+
   it("filters to a specific agent", () => {
     const targetDir = join(tempDir, "project");
     mkdirSync(join(targetDir, ".claude"), { recursive: true });

@@ -20,24 +20,30 @@
 ## Install ✓
 
 ```bash
-tasks install
-# Auto-detects which agent directories exist and copies the right files
+tasks install                     # auto-detect mode (default)
+tasks install --all               # install for every supported agent, even if its dir doesn't exist
+tasks install --agent claude      # install for one specific agent
+tasks install --hooks             # also install the pre-commit hook that runs tasks-lint
 ```
 
-Or copy manually:
+### Auto-detect algorithm
 
-| Agent | Command |
-|-------|---------|
-| Claude Code | `cp -r commands/claude/skills/next-task .claude/skills/` |
-| Codex | `cp -r commands/codex/skills/next-task .agents/skills/` |
-| Cursor | `cp commands/cursor/next-task.md .cursor/commands/` |
-| Devin | `cp -r commands/devin/skills/next-task .devin/skills/` |
-| Gemini CLI | `cp commands/gemini/next-task.toml .gemini/commands/` |
-| Windsurf | `cp commands/windsurf/next-task.md .windsurf/workflows/` |
+`tasks install` walks the [`AGENT_MAPPINGS`](../../packages/cli/src/commands/install.ts) table and, for each agent, checks whether the `Detection signal` directory exists in the current repo. When it does, the matching command file is written to `Installed path`; when it does not, the agent is skipped silently (no error). Pass `--all` to override the detection check and install for every supported agent.
 
-All paths are **project-local** (inside your repo). Commit the file so your whole team gets the command.
+| Agent | Detection signal | Installed path | Source file |
+|-------|-----------------|----------------|-------------|
+| Claude Code | `.claude/` exists | `.claude/skills/next-task/` (directory) | `commands/claude/skills/next-task/` |
+| Codex | `.agents/` exists | `.agents/skills/next-task/` (directory) | `commands/codex/skills/next-task/` |
+| Cursor | `.cursor/` exists | `.cursor/commands/next-task.md` | `commands/cursor/next-task.md` |
+| Devin | `.devin/` exists | `.devin/skills/next-task/` (directory) | `commands/devin/skills/next-task/` |
+| Gemini CLI | `.gemini/` exists | `.gemini/commands/next-task.toml` | `commands/gemini/next-task.toml` |
+| Windsurf | `.windsurf/` exists | `.windsurf/workflows/next-task.md` | `commands/windsurf/next-task.md` |
 
-> **Implemented**: `tasks install` auto-detects agent directories and copies the right files. See `packages/cli/`.
+If the detection signal is missing and you didn't pass `--all`, the agent is skipped silently — `tasks install` exits 0 even when zero agents matched. Use `--all` to scaffold every agent's command directory regardless of what's already present, or `--agent <name>` to target one specific entry from the table.
+
+All paths are **project-local** (inside your repo). Commit the file so your whole team gets the command. The same canonical source — [`commands/next-task.md`](../../commands/next-task.md) — is regenerated into every agent variant by `tasks generate-commands`, so the command behaves identically across agents.
+
+> **Implemented**: `tasks install` auto-detects agent directories and copies the right files. See [`packages/cli/src/commands/install.ts`](../../packages/cli/src/commands/install.ts). The detection table is pinned by `packages/cli/src/commands/install.test.ts`.
 
 ## Usage
 
