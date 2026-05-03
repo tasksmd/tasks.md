@@ -320,6 +320,8 @@ Agents execute standing audit loops with these rules:
 4. Remove the standing-loop task block in the same commit that adds or updates the follow-up tasks. If no gaps are found, remove the task and make the commit message say the audit found no queue additions.
 5. When invoked as `/next-task standing-audit-gap-loop`, stop after that commit. The next `/next-task` run can implement the newly queued work.
 
+See [User Story 09](docs/user-stories/09-standing-audit-loops.md) for a worked example — when to reach for the pattern, how `pickBestTask` skips it during automatic walks, and the anti-pattern to avoid.
+
 ### Sub-tasks
 
 Tasks can have sub-tasks as nested checkboxes. Metadata comes first, then sub-tasks:

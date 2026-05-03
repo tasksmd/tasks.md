@@ -167,7 +167,7 @@ The agent runs the loop with these rules (also in [`spec.md`](../../spec.md#stan
 3. Remove the standing-loop block in the same commit as the new tasks
 4. Stop after the audit commit; the next `/next-task` invocation can implement the queued work
 
-The `tasks pick` algorithm and `commands/next-task.md` skip standing-loop tasks during automatic queue-walking — they're picked only when explicitly targeted as `/next-task standing-audit-gap-loop`.
+The `tasks pick` algorithm and `commands/next-task.md` skip standing-loop tasks during automatic queue-walking — they're picked only when explicitly targeted as `/next-task standing-audit-gap-loop`. See [Story 09](09-standing-audit-loops.md) for a full worked example: when to reach for one, the canonical task shape, the audit pass itself, and the anti-pattern to avoid.
 
 ## Policies — Project Rules in HTML Comments
 
