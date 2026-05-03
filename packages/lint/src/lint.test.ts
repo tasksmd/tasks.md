@@ -667,3 +667,62 @@ describe("tasks-lint", () => {
     });
   });
 });
+
+// ── Lint-of-the-linter: every reportError message must name the fix ──
+//
+// The linter only earns its keep when an error message tells the reader what
+// to do, not just what is wrong. This test enforces the rule by scanning the
+// `lint.ts` source for every `reportError(...)` call, extracting the message
+// argument, and asserting it contains at least one actionability marker:
+//
+//   ; <imperative>          — semicolon-separated continuation that names a fix
+//   → <fix>                 — arrow continuation
+//   one of `must` / `should` / `use` keywords (case-insensitive)
+//
+// New `reportError(...)` calls added in the future automatically inherit the
+// rule — if the message doesn't name a fix, this test fails CI and forces the
+// author to extend the message before merging.
+describe("lint actionable error messages", () => {
+  const sourcePath = join(import.meta.dirname, "lint.ts");
+  const source = readFileSync(sourcePath, "utf-8");
+
+  // Match every `reportError(<file>, <line>, <message>)` call. The first two
+  // arguments are skipped non-greedily to keep the regex simple — they're
+  // typically `filePath, lineNum` or `ref.file, ref.line`. The third argument
+  // is the message; it can be a backtick template literal (with interpolation),
+  // a double-quoted string, or a single-quoted string. We capture the literal
+  // text between matching delimiters; interpolation expressions inside backticks
+  // are captured verbatim, which is fine because we're checking that the static
+  // portion contains the actionability keyword.
+  const REPORT_ERROR_PATTERN =
+    /reportError\s*\(\s*[^,]+,\s*[^,]+,\s*([`"'])([\s\S]*?)\1\s*\)/g;
+
+  // Sanity check — if the regex stops matching, refactor the test before
+  // weakening the contract elsewhere. The current source has 18 calls
+  // (one definition + 17 usages); we expect at least 15 so a refactor that
+  // drops a few calls still leaves enough coverage to catch drift.
+  it("scans lint.ts for at least 15 reportError messages", () => {
+    const matches = [...source.matchAll(REPORT_ERROR_PATTERN)];
+    expect(matches.length).toBeGreaterThanOrEqual(15);
+  });
+
+  it("every reportError message names the fix", () => {
+    const ACTIONABLE_PATTERN = /(;\s|→\s|\b(?:must|should|use)\b)/i;
+
+    const failures: string[] = [];
+    for (const match of source.matchAll(REPORT_ERROR_PATTERN)) {
+      const message = match[2];
+      if (!ACTIONABLE_PATTERN.test(message)) {
+        failures.push(message);
+      }
+    }
+
+    expect(
+      failures,
+      `${failures.length} reportError message(s) do not name the fix.\n` +
+        `Each message must contain a '; <imperative>' continuation, '→ <fix>' continuation, ` +
+        `or one of the keywords 'must', 'should', 'use'.\nFailing messages:\n` +
+        failures.map((m) => `  - "${m}"`).join("\n")
+    ).toEqual([]);
+  });
+});
