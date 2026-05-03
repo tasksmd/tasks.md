@@ -53,6 +53,79 @@ Then add this to your `AGENTS.md` so agents know to use it:
 
 That's it. Your agent will read TASKS.md on session start and work through the queue.
 
+## Worked example: first 10 minutes
+
+Nine commands take a fresh repo from zero to a queue an agent can pick from. Output snippets below are real (`tasks` here is `npx -y @tasks-md/cli` — `npm install -g @tasks-md/cli` once to drop the `npx -y` prefix).
+
+1. **Bootstrap a project.**
+   ```bash
+   mkdir my-project && cd my-project && git init -q
+   echo "# README" > README.md && git add README.md && git commit -m "feat: init"
+   ```
+
+2. **Scaffold the queue** — `tasks init` writes `TASKS.md` and merges a `## Task Management` section into `AGENTS.md` if present.
+   ```bash
+   touch AGENTS.md && npx -y @tasks-md/cli init
+   ```
+   Prints `✓ Created TASKS.md` and `✓ Added Task Management section to AGENTS.md`.
+
+3. **Install the `/next-task` command for your agent** — auto-detects from agent dirs (`.claude/`, `.cursor/`, `.devin/`, etc.). See [story 3 → Auto-detect algorithm](docs/user-stories/03-agents-work-through-queue.md#auto-detect-algorithm) for the full table.
+   ```bash
+   npx -y @tasks-md/cli install
+   ```
+
+4. **Edit `TASKS.md`** — paste these two tasks under the existing priority headings:
+   ```markdown
+   ## P0
+
+   - [ ] Fix the crash on startup
+     - **ID**: fix-startup
+     - **Details**: Service exits 1 when DATABASE_URL is missing.
+
+   ## P1
+
+   - [ ] Add request logging middleware
+     - **Tags**: backend
+   ```
+
+5. **Pick the next task** — read-only inspection of what `/next-task` would claim.
+   ```bash
+   npx -y @tasks-md/cli pick
+   ```
+   ```
+   Picked "Fix the crash on startup" (P0)
+     File: TASKS.md:5
+     ID: fix-startup
+     Details:
+       Service exits 1 when DATABASE_URL is missing.
+     Candidates: 2
+   ```
+
+6. **Validate the queue against the spec.**
+   ```bash
+   npx -y @tasks-md/lint TASKS.md     # → Checked 1 file(s), found 0 error(s)
+   ```
+
+7. **Check queue health.**
+   ```bash
+   npx -y @tasks-md/cli stats
+   ```
+   ```
+   📋 Queue Overview
+     P0   P1   P2   P3   Total
+     1    1    0    0    2
+     Blocked: 0   Claimed: 0   Available: 2   Files: 1
+   ```
+
+8. **Commit, then look at queue changes since the last commit.**
+   ```bash
+   git add TASKS.md && git commit -m "chore: queue 2 items"
+   echo "- [ ] Update README" >> TASKS.md
+   npx -y @tasks-md/cli diff           # → ➕ Added (1): Update README
+   ```
+
+9. **Run the autonomous loop** — `/next-task` from inside your agent picks, claims, works, removes, and repeats. See [story 3](docs/user-stories/03-agents-work-through-queue.md) for the precise picking algorithm and [story 6](docs/user-stories/06-issue-tracker-flows-to-agents.md) when you want issues from GitHub / Jira / Linear feeding the queue automatically.
+
 ## Why TASKS.md?
 
 **You think faster than agents can code.** Ideas come in bursts — while an agent implements one feature, you've already thought of three more. Without a queue, those ideas live in your head or scatter across chat windows. TASKS.md is your buffer: write tasks down as they come, and agents work through them at their own pace.
