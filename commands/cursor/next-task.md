@@ -360,6 +360,8 @@ A task is complex if it spans multiple files, involves architectural decisions, 
 3. Stage only the TASKS.md hunk for your plan (never blindly `git add TASKS.md` if the file already has other edits), then `git commit -m "chore: add plan for <task-id>"`
 4. Work through sub-steps, checking them off as you go
 
+**Pre-register the metric (rule-#9).** For non-trivial tasks — features, refactors, or bugfixes whose recurrence rate is observable — extend the task block with the [rule-#9 pre-registration fields](https://github.com/tasksmd/tasks.md/blob/main/spec.md#rule-9-pre-registration-block) before writing code: `**Hypothesis**` (what observable will move and by how much), `**Success**` and `**Pivot**` thresholds (keep / abandon-the-approach), `**Measurement**` (an exact runnable command — no English instructions), and `**Anchor**` (literature citation justifying the threshold). Commit the pre-registration in the same `chore: add plan for <task-id>` commit as the **Plan** checklist, so the prediction is locked in before the implementation commit lands. If the **Measurement** isn't yet runnable (no counter, no log line, no test harness), open a preparation PR that adds the instrumentation first, then come back to the change PR with real before/after numbers. Trivial fixes (typo, formatting) where CI already enforces the metric are exempt.
+
 **Simple tasks** (single file, obvious fix, < 30 min): skip planning, implement directly.
 
 ## Claim and do the work

@@ -179,6 +179,7 @@ The quality of your task description directly affects the quality of the agent's
 - **Include file paths** — Agents explore faster when they know where to look
 - **Define "done"** — An **Acceptance** field turns a vague ask into a testable outcome
 - **Use IDs for dependencies** — If task B depends on task A, give A an **ID** and add `**Blocked by**: task-a` to B. The agent will skip B until A is gone.
+- **Pre-register the metric for non-trivial changes** — when a task is a feature, refactor, or non-cosmetic bugfix, write a **Hypothesis** (what observable will move and by how much), a **Success** / **Pivot** threshold, and a **Measurement** (the exact runnable command). This is the [rule-#9 pre-registration block](spec.md#rule-9-pre-registration-block); it prevents picking a flattering metric *after* seeing the result.
 
 ## The Format
 
@@ -198,7 +199,11 @@ The quality of your task description directly affects the quality of the agent's
 
 **Tags**: `**Tags**: backend, auth` — lowercase labels for filtering and routing to specialized agents.
 
-**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Plan**, **Blocked by**, **Blocked**, **Parent**, **Research**, **Last-enriched**. Teams can add custom fields beyond these supported fields.
+**Estimate / Verification / Risk**: `**Estimate**: 2-3d` (free-form duration), `**Verification**: <runnable steps>` (procedure for confirming done — distinct from **Acceptance**, which is the criterion), `**Risk**: <what could go wrong>. Mitigation: <how>.` — author-managed fields that surface session-fit, the doneness procedure, and the failure mode considered up front.
+
+**Rule-#9 pre-registration**: `**Hypothesis**:` + `**Success**:` + `**Pivot**:` + `**Measurement**:` + `**Anchor**:` — five fields used together to declare what observable a non-trivial change expects to move *before* the code is written. **Hypothesis** captures the predicted effect, **Success** and **Pivot** are the keep / abandon thresholds, **Measurement** is the exact runnable command (no English instructions), and **Anchor** is the literature citation justifying the threshold. Pre-registering the metric prevents post-hoc fishing for flattering observables (Munafò et al. 2017); the **Pivot** threshold pre-registers the give-up criterion (Ries 2011). Originating implementation: [Minsky](https://github.com/fyodoriv/minsky) (`vision.md` § 9). See [Rule-#9 pre-registration block](spec.md#rule-9-pre-registration-block) in the spec.
+
+**Metadata**: Optional nested fields — **ID**, **Tags**, **Details**, **Files**, **Acceptance**, **Plan**, **Blocked by**, **Blocked**, **Parent**, **Research**, **Last-enriched**, **Estimate**, **Verification**, **Risk**, **Hypothesis**, **Success**, **Pivot**, **Measurement**, **Anchor**. Teams can add custom fields beyond these supported fields.
 
 **Sub-tasks**: Nested checkboxes under a parent. The agent who claims the parent owns all sub-tasks. Remove the entire block when done. Use sub-tasks when steps are sequential and owned by one agent; promote to separate top-level tasks when steps can be parallelized or span multiple sessions.
 

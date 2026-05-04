@@ -66,7 +66,19 @@ Task IDs should be unique across all `TASKS.md` files in the repo so blocker ref
 
 - [ ] Add rate limiting to public API endpoints (@cursor-1)
   - **Tags**: backend
+  - **Estimate**: 1h
   - **Details**: Use express-rate-limit, 100 req/min per IP
+  - **Hypothesis**: Capping public endpoints at 100 req/min/IP drops the
+    abusive-traffic 5xx rate from ~3% to <0.5% without affecting legitimate
+    users (steady-state p95 latency unchanged).
+  - **Success**: 5xx rate <0.5% over a 24h window post-deploy; p95 latency delta within ±10ms.
+  - **Pivot**: if legitimate clients trip the limiter at >1% rate, the per-IP
+    model is wrong — switch to per-API-key buckets instead of widening the cap.
+  - **Measurement**:
+    `curl -s https://api.example.com/metrics | grep http_5xx_rate_24h`
+  - **Anchor**: Beyer et al., *SRE* 2016, Ch. 5 (eliminating toil with rate limits).
+  - **Verification**: `vitest run tests/rate-limit.test.ts` exits 0; staging soak ≥1h with no false-positives.
+  - **Risk**: shared NAT egress (corp networks) could trip the limit. Mitigation: `X-Forwarded-For` honored when behind trusted proxy.
   - **Blocked by**: auth-fix
 
 ## P2
@@ -230,12 +242,101 @@ Metadata values can span multiple indented lines. Everything indented under the 
 | **Parent** | Parent task ID when a large task is decomposed into smaller top-level tasks |
 | **Research** | Free-form research notes accumulated by agents while the task is blocked. Distinct from **Details** (author intent) so reviewers can tell what came from the agent. See [Enriching blocked tasks](#enriching-blocked-tasks) |
 | **Last-enriched** | ISO date (`YYYY-MM-DD`) marking the last time an agent added research notes to the task. Used as an idempotency / cooldown gate so agents don't re-enrich the same task every session |
+| **Estimate** | Agent or human time estimate as free-form duration text — e.g., `30m`, `1h`, `2-3d`. Lets pickers reason about session-fit before claiming |
+| **Verification** | Procedure for confirming the task is done. Distinct from **Acceptance** (the definition-of-done criterion); **Verification** is the runnable procedure or steps that exercise that criterion |
+| **Risk** | Free-form `Risk: <what could go wrong>. Mitigation: <how it's handled>.` Surfaces the failure mode the author already considered so the agent doesn't re-discover it |
+| **Hypothesis** | Pre-registered prediction (rule-#9): which observable behaviour will improve, by how much, and why. The first half of the [pre-registration block](#rule-9-pre-registration-block) |
+| **Success** | Numeric or rubric threshold at or above which the change is kept. Pairs with **Hypothesis** and **Measurement** |
+| **Pivot** | Threshold below which the *approach* (not just the change) is abandoned. Pre-registers the give-up criterion so the team doesn't keep iterating on a dead end |
+| **Measurement** | Exact runnable shell / OTEL / CI command that produces the metric. No English instructions; reviewers must be able to copy-paste and reproduce |
+| **Anchor** | Literature citation or internal reference justifying the metric and its threshold. Keeps the threshold from being arbitrary |
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 
-Teams can add custom metadata fields beyond these defined fields (e.g., estimates, assignees). The fields above are the ones the spec defines behavior for.
+The five rule-#9 fields — **Hypothesis**, **Success**, **Pivot**, **Measurement**, **Anchor** — are typically used together as a coherent block on non-trivial tasks. See [Rule-#9 pre-registration block](#rule-9-pre-registration-block) for the rationale and a worked example.
+
+Teams can add additional custom metadata fields beyond these defined fields (e.g., assignees, sprint markers). The fields above are the ones the spec defines behavior for.
 
 Tags are lowercase, freeform labels. Teams should document their tag vocabulary in AGENTS.md to keep values consistent across tasks and agents.
+
+### Rule-#9 pre-registration block {#rule-9-pre-registration-block}
+
+Non-trivial tasks — bugfixes, features, refactors — should declare what observable they expect to move *before* the code is written. The pattern is named after [Minsky](https://github.com/fyodoriv/minsky)'s constitutional rule #9 (`vision.md` § 9 — "every change is a pre-registered experiment"), the project that originated it as a TASKS.md convention.
+
+The block is five fields, used together:
+
+| Field | Captures |
+|-------|----------|
+| **Hypothesis** | Which observable will improve, by how much, why — Goal-Question-Metric framing (Basili-Caldiera-Rombach 1994) |
+| **Success** | Numeric / rubric threshold at or above which the change is kept |
+| **Pivot** | Threshold below which the **approach** is abandoned (not just the change reverted) — Ries 2011's pivot-or-persevere |
+| **Measurement** | Exact runnable command, query, or test that produces the observable. No English |
+| **Anchor** | Literature citation or internal reference justifying the metric and threshold |
+
+Why these five together:
+
+- **Pre-registration** (Munafò et al. 2017, *Nature Human Behaviour*) is what makes the prediction falsifiable. Picking the metric *after* seeing the result lets every change "succeed" against the most flattering observable. Committing the prediction in TASKS.md, before the implementation commit, prevents that.
+- **Pivot threshold** is the discipline of declaring give-up criteria up front (Ries 2011, *The Lean Startup*). Without it, a failing approach gets iterated on indefinitely. With it, the next agent or reviewer can read the task block and recognise that the approach itself — not just this attempt — is what should be abandoned.
+- **Measurement** must be a runnable command, not an English instruction. "Make sure latency drops" is not a measurement; `pnpm vitest run x.test.ts --reporter=json | jq -e '.numPassedTests >= 6'` is. Reproducibility is the point.
+- **Anchor** keeps the threshold from being arbitrary. "p99 latency under 200 ms" with no anchor is a wish; the same threshold with "Beyer et al., *SRE* 2016, Ch. 4" is engineering.
+
+A task that ships **Hypothesis** + **Success** + **Pivot** + **Measurement** + **Anchor** carries its own falsification criterion. After the change lands, anyone can rerun the **Measurement** command, compare against **Success** and **Pivot**, and decide whether to keep, iterate, or pivot — without re-litigating intent.
+
+**Trivial changes are exempt.** A typo fix, a formatting churn, a no-op rename covered by passing tests — when the existing CI gate already *is* the metric, the rule-#9 block is redundant. Use judgement; document the exemption in the commit message rather than inventing a metric.
+
+**Bugfixes are not exempt.** A bugfix's hypothesis is "the recurrence rate (or stability metric to which the bug contributes — error rate, MTTR, p99 latency, crash frequency) drops from X to Y after this fix". If that statement cannot be made — including its threshold and its measurement command — the root cause has not been identified and the fix is not ready to ship.
+
+**Worked example** (abridged from Minsky's `tick-loop-daemon-v0`):
+
+```markdown
+- [ ] `tick-loop-daemon-v0` — production tick-loop daemon
+  - **ID**: tick-loop-daemon-v0
+  - **Tags**: runtime, supervision
+  - **Estimate**: 2-3d
+  - **Hypothesis**: A `run-tick-loop.sh` Node entry-point that loops
+    `pickTask → checkBudget → claim → spawn → emitOtelSpans → complete`
+    on a 5-min cadence makes the supervisor unit (already shipped) actually
+    supervise something. MAPE-K (Kephart-Chess 2003) assumes a *running*
+    monitor; the entire pipeline is dormant until the daemon exists.
+  - **Success**: ≥6 dry-run iterations complete with mock tasks; OTEL spans
+    visible per phase; `state/PAUSED` honored within 1 iteration.
+  - **Pivot**: if spawning `claude` as a subprocess deadlocks on stdin/stdout,
+    fall back to file-based handoff (write task brief to `state/inbox/<id>.md`,
+    operator consumes). If lease-then-spawn loses tasks under crash, switch to
+    spawn-then-lease with idempotent claim semantics.
+  - **Measurement**:
+    `pnpm vitest run novel/tick-loop/src/daemon.test.ts --reporter=json | jq -e '.numPassedTests >= 6 and .numFailedTests == 0'`
+  - **Anchor**: Kephart & Chess, "The Vision of Autonomic Computing",
+    *IEEE Computer* 36(1) 2003 (MAPE-K assumes a running monitor);
+    Armstrong, *Programming Erlang*, 2007 (let-it-crash + supervisor restart).
+  - **Verification**: `bash distribution/systemd/run-tick-loop.sh --dry-run
+    --max-iterations=4` exits 0 with 4 mock tasks completed.
+  - **Risk**: spawning a child process inside a service may not get the user's
+    environment (API keys, MCP config). Mitigation: daemon explicitly sources
+    `~/.zshenv` and reads `~/.claude/` config before spawn.
+  - **Acceptance**: daemon survives `kill -9` mid-tick and respawns within
+    MTTR <5 min; `tick.iteration` OTEL spans visible.
+```
+
+Notice how **Verification** (the procedure to demonstrate doneness) is distinct from **Measurement** (the runnable metric command) and from **Acceptance** (the definition-of-done criterion). The three answer different questions: *did it work, can we measure it, is it done?*
+
+**Forbidden:**
+
+- *Vanity metrics* — counts that always go up (lines of code, commits, hours, tasks-in-flight). They incentivise activity, not outcomes (Ries 2011; Doerr 2018).
+- *Post-hoc metrics* — choosing the success criterion after seeing the change's effect. Pre-registration is the correction.
+
+**Preparation-PR pattern.** When the metric in **Measurement** isn't yet runnable (no counter, no log line, no test harness), open a preparation PR that adds the instrumentation first. Land it. Then open the change PR against the now-measurable baseline, with before/after numbers. Skipping this and promising "we'll instrument later" rarely survives contact with the next sprint.
+
+**Sources:**
+
+- Basili, Caldiera, Rombach, "The Goal-Question-Metric Approach", *Encyclopedia of Software Engineering*, 1994.
+- Ries, *The Lean Startup*, 2011 (build–measure–learn; pivot-or-persevere).
+- Munafò, Nosek, Bishop, et al., "A Manifesto for Reproducible Science", *Nature Human Behaviour* 1, 0021, 2017 (pre-registration).
+- Kohavi, Tang, Xu, *Trustworthy Online Controlled Experiments*, Cambridge University Press, 2020 (statistical rigour in A/B).
+- Doerr, *Measure What Matters*, 2018 (OKRs; outcomes not activities).
+- Forsgren, Humble, Kim, *Accelerate*, 2018 (DORA's four key metrics).
+
+Originating implementation: [Minsky](https://github.com/fyodoriv/minsky) (`vision.md` § 9 — pre-registered hypothesis-driven development as a constitutional iron rule).
 
 ### Blockers
 
