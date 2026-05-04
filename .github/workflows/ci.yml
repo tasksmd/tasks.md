@@ -79,6 +79,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Drop `examples/` from the dogfood path until @tasks-md/lint publishes
+      # a release containing the doc-filename skip in packages/lint/src/lint.ts.
+      # The local `Lint examples` step in the `test` job still covers it via
+      # the in-repo build, so we don't lose coverage on this PR.
       - uses: ./.github/actions/lint
         with:
-          paths: "TASKS.md examples/"
+          paths: "TASKS.md"

@@ -17,10 +17,12 @@
   "files": [
     "dist/**/*.js",
     "dist/**/*.d.ts",
-    "!dist/**/*.test.*"
+    "!dist/**/*.test.*",
+    "commands/**"
   ],
   "scripts": {
-    "build": "tsc",
+    "copy-commands": "rm -rf commands && cp -r ../../commands commands",
+    "build": "tsc && npm run copy-commands",
     "test": "vitest run --exclude dist",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"
