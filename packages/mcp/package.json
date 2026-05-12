@@ -2,6 +2,7 @@
   "name": "tasks-mcp",
   "version": "0.7.0",
   "description": "MCP server for reading and writing TASKS.md files",
+  "author": "Fyodor Ivanischev",
   "type": "module",
   "bin": {
     "tasks-mcp": "dist/index.js"

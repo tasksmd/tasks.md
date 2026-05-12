@@ -7,11 +7,11 @@
 // the next-task skill can exit early instead of running another
 // pointless audit pass.
 //
-// Reference deployment: a 22-session autonomous grind on
-// `oncall-hub-api` (2026-04-24) ran 17 sessions after the queue first
-// hit 100% blocked, generating ~10 single-finding
-// doc-drift PRs. This script would have printed STOP from session 6
-// onward, saving ~7 hours of model time.
+// Reference deployment: a 22-session autonomous grind on a private
+// downstream repo (2026-04-24) ran 17 sessions after the queue first
+// hit 100% blocked, generating ~10 single-finding doc-drift PRs.
+// This script would have printed STOP from session 6 onward, saving
+// ~7 hours of model time.
 //
 // Usage:
 //   node taskgrind/scripts/check-zero-ship-streak.mjs

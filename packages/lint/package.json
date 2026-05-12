@@ -2,6 +2,7 @@
   "name": "@tasks-md/lint",
   "version": "0.7.0",
   "description": "Validate TASKS.md files against the spec",
+  "author": "Fyodor Ivanischev",
   "type": "module",
   "main": "./dist/lint.js",
   "types": "./dist/lint.d.ts",

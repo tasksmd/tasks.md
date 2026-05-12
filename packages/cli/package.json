@@ -2,6 +2,7 @@
   "name": "@tasks-md/cli",
   "version": "0.7.0",
   "description": "Unified CLI for TASKS.md task queue management",
+  "author": "Fyodor Ivanischev",
   "type": "module",
   "main": "./dist/lib.js",
   "types": "./dist/lib.d.ts",
