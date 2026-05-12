@@ -8,6 +8,39 @@
 
 ## P1
 
+- [ ] Workspace mode: parser, CLI, MCP, and `/next-task` aggregate TASKS.md files across nested repos in a workspace folder
+  - **ID**: workspace-mode-nested-repos
+  - **Tags**: spec, parser, cli, mcp, next-task, workspace, multi-repo
+  - **Details**: Operators with a workspace folder containing multiple repos (`~/apps/tooling/` with 10+ repos as of 2026-05-12, each with its own `TASKS.md`) currently have no first-class way to pick the highest-priority unblocked task across the whole workspace. `/next-task` reads `./TASKS.md` only. To work the workspace, the operator `cd`s into each repo individually, runs the command, picks something, finishes, repeats. Friction scales with repo count.
+
+    The right answer is a workspace mode in the canonical tasks.md tooling, since the spec + parser + MCP + CLI are the load-bearing dependencies every other tool (agentbrew, dotfiles, minsky-observer, taskgrind) consumes.
+
+    **Outcome-shaped** (what a workspace-aware operator sees):
+
+    1. Operator runs `tasks --workspace ~/apps/tooling next` (or `/next-task` from any cwd inside a workspace-marked folder).
+    2. The tool discovers every `TASKS.md` under the workspace root (excluding `.worktrees/**`, `node_modules/**`, etc.), parses each, and produces a unified queue ordered by `(priority, repo, document-order)`.
+    3. P0 in repo A beats P1 in repo B (priority dominates).
+    4. Output names the repo + task ID + title. Claiming the task and editing TASKS.md happens inside the corresponding repo's checkout.
+    5. Cross-repo `**Blocked by**:` references (e.g. `**Blocked by**: agentbrew#agentfile-command-sources`) are recognised and resolved.
+
+    **Spec extension** (`spec.md`):
+
+    - New § "Workspace folders": a workspace is any directory marked by `.tasks-md-workspace` (sentinel file, similar to `.git`) OR a directory containing ≥ 2 immediate child dirs each carrying a `TASKS.md`. The sentinel takes precedence and may declare repo discovery globs explicitly.
+    - Cross-repo blocker reference: `**Blocked by**: <repo-name>#<task-id>` (the `<repo-name>` is the dir name under the workspace root). The single-repo form (`**Blocked by**: <task-id>`) stays valid for backwards compatibility.
+    - `.tasks-md-workspace` schema (YAML): `{repos: ["minsky", "agentbrew", "dotfiles"], exclude: ["dotfiles-intuit.bundle"], priorityWeights: {minsky: 1.0, agentbrew: 0.8}}` — `priorityWeights` is optional per-repo modifier when two repos' priorities legitimately differ in user importance.
+
+    **Implementation surfaces**:
+
+    - `@tasks-md/parser`: new `parseWorkspace(workspaceRoot)` returning `{repo, file, tasks}[]`. The existing `parse()` stays single-file. Discovery honours `.gitignore` + `.tasks-md-ignore` (new optional file).
+    - `tasks` CLI: `--workspace=<path>` flag on `tasks next`, `tasks lint`, `tasks list`. Default behaviour unchanged.
+    - `tasks-mcp` (MCP server): new tool `find_next_task_in_workspace({workspace})` returning the chosen `{repo, task_id, file_path}`. The existing `find_next_task` stays single-repo.
+    - `commands/next-task.md` canonical source: a new step `0. Workspace detection` — if `$(pwd)` is inside a workspace AND the operator didn't pass an explicit repo flag, surface a one-line prompt "Workspace detected (N repos, M tasks total) — pick across the workspace? [Y/n]" before falling through to single-repo. All 6 generated agent variants regenerate via `npx tasks generate-commands`.
+
+    Cross-repo dependencies on this feature: agentbrew gains a workspace-aware `agentbrew sync` (filed as a companion task in that repo); dotfiles gains a `dotfiles-doctor` check (filed as a companion task there).
+  - **Files**: `spec.md`, `examples/workspace.md` (new — example workspace), `packages/parser/src/workspace.ts` (new), `packages/parser/src/workspace.test.ts` (new, paired), `packages/cli/src/commands/next.ts` (extend with workspace flag), `packages/cli/src/commands/lint.ts` (extend), `packages/cli/src/commands/list.ts` (extend), `packages/mcp/src/tools/findNextTaskInWorkspace.ts` (new), `packages/mcp/src/tools/findNextTaskInWorkspace.test.ts` (new), `commands/next-task.md` (canonical workspace step), `commands/lint-tasks.md` (workspace flag), `README.md` (workspace quickstart), all 6 generated agent variants under `commands/<agent>/` (regenerated via `npx tasks generate-commands`).
+  - **Acceptance**: (a) `tasks --workspace ~/apps/tooling next` exits 0 + prints `<repo>:<task-id>` for the highest-priority unblocked task across the workspace; (b) `parseWorkspace()` discovers all `TASKS.md` files except those in `.worktrees/**` / `node_modules/**`; (c) cross-repo `**Blocked by**: <repo>#<task-id>` is recognised + resolved; (d) the `tasks-mcp` server exposes `find_next_task_in_workspace`; (e) `commands/next-task.md` step list regenerated; (f) `npm run build && npm test` pass; (g) `npx tasks generate-commands` is clean (commands-drift CI gate).
+  - **Surfaced-by**: operator workspace at `~/apps/tooling/` with 10+ nested repos as of 2026-05-12 (minsky, agentbrew, dotfiles, bosun, tasks.md itself, taskgrind, ideas, plus Intuit-specific repos). The Minsky observer plugin shipped 2026-05-12 surfaced the cross-repo task-filing pattern (PRs #492/#493/#494/#495/#496 fyodoriv/minsky + fyodoriv/agentbrew#1 + fyodoriv/dotfiles#30) — but the operator-side `/next-task` to consume those tasks is still single-repo. This task closes the consumer side.
+
 ## P2
 
 - [ ] Add mid-session main sync (or per-session sync) option to taskgrind
