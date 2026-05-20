@@ -32,4 +32,14 @@ If errors are found:
 3. Re-run the linter to confirm all issues are resolved
 If all files pass:
 1. Report success with file count
+Plan-file convention (operator review, not enforced)
+<!-- Plan-file convention: documentation only, not enforced in v1.
+     Promoted to a hard CI gate via the follow-up task lint-tasks-md-plan-required-gate. -->
+When you review a TASKS.md file, prefer claimed (`(@agent-id)`) tasks that have
+a matching `docs/plans/<task-id>.md` file alongside the implementation. The
+file's absence is a smell, not an error — trivial tasks (single file, <30
+minutes, obvious fix) legitimately skip the plan step per the `/next-task`
+"Plan and validate" rules. `@tasks-md/lint` does NOT fail when a plan file is
+missing; the operator catches this in PR review. A hard CI gate is deferred to
+a follow-up task; see `lint-tasks-md-plan-required-gate`.
 '''

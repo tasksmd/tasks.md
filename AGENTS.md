@@ -169,8 +169,14 @@ appropriate source repo.
 - Read `TASKS.md` before starting work and obey any `<!-- policy: ... -->`
   comments.
 - Claim tasks by appending your agent identity, for example `(@devin-session-17)`.
-- For complex tasks, add a `**Plan**:` checklist before implementation and commit
-  that planning hunk.
+- For non-trivial tasks, write a plan to `docs/plans/<task-id>.md` by copying
+  `docs/templates/plan-template.md`, then validate it with a reviewer subagent
+  (`reviewer` profile, fallback chain `qa-engineer` → `researcher`). Commit
+  the plan + the appended `## Reviewer verdict` block (`**Verdict**: approved`)
+  before any implementation commit lands. Trivial tasks — single file under 30
+  minutes with an obvious fix — skip the plan step. The legacy `**Plan**:`
+  TASKS.md checklist is superseded; see `commands/next-task.md` § "Plan and
+  validate" for the full rules.
 - Do not mark completed tasks `[x]`; remove the entire task block, including all
   metadata and plan lines. History lives in git.
 - If a task requires public writes, external purchases, publishing, or another
