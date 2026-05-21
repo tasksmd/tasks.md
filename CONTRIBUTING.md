@@ -94,6 +94,32 @@ Open a [GitHub issue](https://github.com/tasksmd/tasks.md/issues) describing:
 For format-level proposals, please read [`spec.md`](spec.md) first and
 reference the relevant section.
 
+## Releasing (maintainers only)
+
+Releases ship the four npm packages — `@tasks-md/parser`, `@tasks-md/lint`,
+`@tasks-md/cli`, and `tasks-mcp` — from a single GitHub release tag.
+
+The flow:
+
+1. **Create a GitHub release** with a `vX.Y.Z` tag from the [Releases page](https://github.com/tasksmd/tasks.md/releases). The tag name is the source of truth for the version — `scripts/sync-versions.sh` rewrites every `packages/*/package.json` to match.
+2. **The `Publish to npm` workflow runs automatically** ([`.github/workflows/publish.yml`](.github/workflows/publish.yml)). It installs, builds, runs the full test suite, then publishes any package whose `version` isn't already on npm.
+3. **No `NPM_TOKEN` secret is required.** The workflow uses [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers) — npm verifies the GitHub Actions OIDC token against the publisher rule configured per-package on npmjs.com.
+4. **Every published artifact carries a [provenance attestation](https://docs.npmjs.com/generating-provenance-statements)** (`npm publish --provenance`). Consumers can verify it with `npm audit signatures`.
+
+### One-time Trusted Publisher setup (per package)
+
+For each of the four packages, on npmjs.com:
+
+1. Open the package page → **Settings** → **Publishing access**.
+2. Under **Trusted Publishers**, click **Add a trusted publisher**.
+3. Fill in:
+   - **Repository**: `tasksmd/tasks.md`
+   - **Workflow filename**: `publish.yml`
+   - **Environment**: *(leave blank — the workflow runs on the `release` event, not in a named environment)*
+4. Save.
+
+Once configured, the publish workflow needs no secrets to publish that package. To rotate or revoke, edit the Trusted Publisher rule on npmjs.com — no GitHub repo changes required.
+
 ## License and attribution
 
 By contributing, you agree that your contributions will be licensed under

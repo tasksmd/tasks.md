@@ -4,11 +4,25 @@ on:
   release:
     types: [published]
 
+# Trusted Publishing (npm OIDC, August 2025+):
+# - No NPM_TOKEN secret required — npm verifies the GitHub Actions OIDC
+#   token against the Trusted Publisher rule configured per-package on
+#   npmjs.com.
+# - `id-token: write` is required so GitHub mints the OIDC token.
+# - `npm publish --provenance` records the build provenance attestation
+#   alongside the package — viewable on the npm page (`Provenance` tab)
+#   and verifiable via `npm audit signatures`.
+# - Prerequisite (one-time, per package, on npmjs.com): the package's
+#   "Publishing access" → "Trusted Publishers" section must list this
+#   repo (`tasksmd/tasks.md`), the workflow file (`.github/workflows/
+#   publish.yml`), and the environment (none — runs on release event).
+#   See: https://docs.npmjs.com/trusted-publishers
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,9 +49,7 @@ jobs:
       - name: Run all tests
         run: npm test
 
-      - name: Publish packages to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish packages to npm (Trusted Publishing + provenance)
         run: |
           PACKAGES=(parser lint mcp cli)
           for pkg in "${PACKAGES[@]}"; do
@@ -48,8 +60,8 @@ jobs:
             if npm view "$name@$version" >/dev/null 2>&1; then
               echo "⏭  $name@$version already published, skipping"
             else
-              (cd "$dir" && npm publish --access=public)
-              echo "✓  Published $name@$version"
+              (cd "$dir" && npm publish --access=public --provenance)
+              echo "✓  Published $name@$version (with provenance attestation)"
             fi
           done
 
