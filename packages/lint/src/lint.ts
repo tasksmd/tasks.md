@@ -2,6 +2,18 @@ import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "
 import { join, resolve } from "node:path";
 import { parseTasksContent, type Task } from "@tasks-md/parser";
 
+export {
+  parseRule9Blocks,
+  classifyRule9Blocks,
+  parseAllowlistFile,
+  lintRule9Content,
+} from "./rule9.js";
+export type {
+  Rule9TaskBlock,
+  Rule9Classification,
+  Rule9LintReport,
+} from "./rule9.js";
+
 interface IdLocation {
   file: string;
   line: number;
