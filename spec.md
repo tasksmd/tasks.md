@@ -250,6 +250,9 @@ Metadata values can span multiple indented lines. Everything indented under the 
 | **Pivot** | Threshold below which the *approach* (not just the change) is abandoned. Pre-registers the give-up criterion so the team doesn't keep iterating on a dead end |
 | **Measurement** | Exact runnable shell / OTEL / CI command that produces the metric. No English instructions; reviewers must be able to copy-paste and reproduce |
 | **Anchor** | Literature citation or internal reference justifying the metric and its threshold. Keeps the threshold from being arbitrary |
+| **Touches** | Files this task is expected to **modify**. Comma-separated, backtick-stripped (same shape as **Files**). Distinct from **Files** (the broader "all relevant files" set, which may include read-only references) — **Touches** is the write-set. Used by orchestrators to detect file-set overlap when parallel-launching multiple agents; overlapping **Touches** sets indicate likely merge conflicts and should serialise rather than parallelise |
+| **Surfaced-by** | Provenance: which audit, lint, observer session, sweep, or external report surfaced this task. Free-form text. Lets reviewers tell whether the task came from author intent or a deterministic gate, and lets agents find sibling findings from the same source |
+| **Milestone** | Milestone identifier this task contributes to. Free-form text; teams pick the format (e.g., `M1.1`, `Q3-2026`, `v0.2.0`, `north-star-A`). Used by milestone-alignment gates and roadmap views to filter tasks by the milestone they unblock |
 
 All metadata is optional. A bare `- [ ] Fix the typo` is a valid task.
 

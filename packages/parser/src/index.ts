@@ -25,6 +25,28 @@ export interface TaskMetadata {
    * same task every session.
    */
   lastEnriched?: string;
+  /**
+   * Files this task is expected to MODIFY. Distinct from `files` (the
+   * broader "all relevant files" set, which may include read-only
+   * references). Used by orchestrators to detect file-set overlap when
+   * parallel-launching multiple agents — overlapping `touches` sets
+   * indicate likely merge conflicts and should serialise rather than
+   * parallelise. Comma-separated, backtick-stripped.
+   */
+  touches?: string[];
+  /**
+   * Provenance: which audit, lint, observer session, sweep, or external
+   * report surfaced this task. Free-form text. Lets reviewers tell whether
+   * the task was author-intent or derived from a deterministic gate.
+   */
+  surfacedBy?: string;
+  /**
+   * Milestone identifier this task contributes to. Free-form text;
+   * teams pick the format (e.g., `M1.1`, `Q3-2026`, `v0.2.0`,
+   * `north-star-A`). Used by milestone-alignment gates and roadmap views
+   * to filter tasks by the milestone they unblock.
+   */
+  milestone?: string;
   [key: string]: string | string[] | undefined;
 }
 
@@ -63,7 +85,7 @@ function parseClaimant(summary: string): { cleanSummary: string; claimed?: strin
 }
 
 function parseMetadataValue(key: string, value: string): string | string[] {
-  const listKeys = ["tags", "files", "blockedby"];
+  const listKeys = ["tags", "files", "blockedby", "touches"];
   if (listKeys.includes(key.toLowerCase().replace(/\s+/g, ""))) {
     return value.split(",").map((item) => item.replace(/`/g, "").trim());
   }
@@ -191,6 +213,16 @@ export function parseTasksContent(content: string, filePath: string): Task[] {
           case "last-enriched":
           case "lastenriched":
             currentTask.metadata.lastEnriched = value;
+            break;
+          case "touches":
+            currentTask.metadata.touches = parseMetadataValue("touches", value) as string[];
+            break;
+          case "surfaced-by":
+          case "surfacedby":
+            currentTask.metadata.surfacedBy = value;
+            break;
+          case "milestone":
+            currentTask.metadata.milestone = value;
             break;
           default:
             currentTask.metadata[normalizedKey] = parseMetadataValue(normalizedKey, value);
