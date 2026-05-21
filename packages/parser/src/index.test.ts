@@ -77,6 +77,9 @@ describe("parseTasksContent", () => {
       "  - **Files**: `src/auth.ts`, `src/middleware.ts`",
       "  - **Acceptance**: Tests pass, no 500 errors",
       "  - **Blocked by**: setup-db",
+      "  - **Touches**: `src/auth.ts`, `src/middleware.ts`",
+      "  - **Surfaced-by**: 2026-05-21 secret-scan audit",
+      "  - **Milestone**: M1.13",
     ].join("\n");
 
     const tasks = parseTasksContent(content, TEST_FILE);
@@ -89,6 +92,46 @@ describe("parseTasksContent", () => {
     expect(task.metadata.files).toEqual(["src/auth.ts", "src/middleware.ts"]);
     expect(task.metadata.acceptance).toBe("Tests pass, no 500 errors");
     expect(task.metadata.blockedBy).toEqual(["setup-db"]);
+    expect(task.metadata.touches).toEqual(["src/auth.ts", "src/middleware.ts"]);
+    expect(task.metadata.surfacedBy).toBe("2026-05-21 secret-scan audit");
+    expect(task.metadata.milestone).toBe("M1.13");
+  });
+
+  it("parses Touches as a comma-separated path list (orchestrator file-set overlap)", () => {
+    const content = [
+      "# Tasks",
+      "## P0",
+      "- [ ] Multi-file refactor",
+      "  - **Touches**: `pkg/a/src/foo.ts`, `pkg/b/src/bar.ts`, `pkg/c/dist/index.js`",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks[0].metadata.touches).toEqual([
+      "pkg/a/src/foo.ts",
+      "pkg/b/src/bar.ts",
+      "pkg/c/dist/index.js",
+    ]);
+  });
+
+  it("parses Surfaced-by with hyphen normalisation (case + space tolerant)", () => {
+    const content = [
+      "# Tasks",
+      "## P0",
+      "- [ ] Audit finding",
+      "  - **Surfaced-by**: nightly lint sweep 2026-05-21",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks[0].metadata.surfacedBy).toBe("nightly lint sweep 2026-05-21");
+  });
+
+  it("parses Milestone as free-form text (teams pick the format)", () => {
+    const content = [
+      "# Tasks",
+      "## P1",
+      "- [ ] Quarterly cleanup",
+      "  - **Milestone**: Q3-2026",
+    ].join("\n");
+    const tasks = parseTasksContent(content, TEST_FILE);
+    expect(tasks[0].metadata.milestone).toBe("Q3-2026");
   });
 
   it("parses claimed task", () => {
