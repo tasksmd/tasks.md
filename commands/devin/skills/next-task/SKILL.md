@@ -360,27 +360,47 @@ Only unblock a task (remove the `**Blocked**:` line) when the user has explicitl
 
 If the task is blocked purely because of a task-dependency (not an external constraint), use `**Blocked by**: <id>` instead; that mechanism is for the dependency graph and is resolved automatically when the blocker task is completed and removed.
 
-## Plan (complex tasks only)
+## Plan and validate
 
-A task is complex if it spans multiple files, involves architectural decisions, or will take > 1 hour. **When in doubt, treat it as complex.**
+A task is **trivial** when ALL THREE hold:
 
-1. Explore the code: read files, trace call paths, understand data flow
-2. Add a `**Plan**:` checklist to the task block in TASKS.md:
+- touches a single file (excluding `TASKS.md` itself),
+- estimated under 30 minutes of changes,
+- the fix is obvious (typo, formatting, single-line correction, comment edit).
 
-```markdown
-- [ ] Task description (@your-agent-id)
-  - **Details**: original details
-  - **Plan**:
-    - [ ] Sub-step 1
-    - [x] Sub-step 2
-```
+Trivial tasks skip planning — implement directly under [Claim and do the work](#claim-and-do-the-work).
 
-3. Stage only the TASKS.md hunk for your plan (never blindly `git add TASKS.md` if the file already has other edits), then `git commit -m "chore: add plan for <task-id>"`
-4. Work through sub-steps, checking them off as you go
+**Non-trivial tasks (the default):**
 
-**Pre-register the metric (rule-#9).** For non-trivial tasks — features, refactors, or bugfixes whose recurrence rate is observable — extend the task block with the [rule-#9 pre-registration fields](https://github.com/tasksmd/tasks.md/blob/main/spec.md#rule-9-pre-registration-block) before writing code: `**Hypothesis**` (what observable will move and by how much), `**Success**` and `**Pivot**` thresholds (keep / abandon-the-approach), `**Measurement**` (an exact runnable command — no English instructions), and `**Anchor**` (literature citation justifying the threshold). Commit the pre-registration in the same `chore: add plan for <task-id>` commit as the **Plan** checklist, so the prediction is locked in before the implementation commit lands. If the **Measurement** isn't yet runnable (no counter, no log line, no test harness), open a preparation PR that adds the instrumentation first, then come back to the change PR with real before/after numbers. Trivial fixes (typo, formatting) where CI already enforces the metric are exempt.
+1. **Check for an existing plan.** If `docs/plans/<task-id>.md` exists AND its last `**Verdict**:` line in the `## Reviewer verdict` section is `approved`, skip to step 4. The plan is reusable across sessions; only re-validate if the code has drifted significantly since the plan was written.
 
-**Simple tasks** (single file, obvious fix, < 30 min): skip planning, implement directly.
+2. **Write the plan.** Create `docs/plans/<task-id>.md` by copying `docs/templates/plan-template.md` and filling each required section: **Goal**, **Why**, **Scope (in)**, **Scope (out)**, **Implementation steps**, **Risks and mitigations**, **Acceptance criteria**. Every section is required; the reviewer subagent will flag any that are missing. Stage and commit only the plan file:
+
+   ```bash
+   git add docs/plans/<task-id>.md
+   git commit -m "plan: <task-id>"
+   ```
+
+3. **Validate with a reviewer subagent.** Launch a subagent with the **`reviewer`** profile (canonical for this workflow). If the agent's agentbrew config doesn't expose `reviewer`, fall back in order: `qa-engineer` (for test-heavy tasks) → `researcher` (for ambiguity-resolution tasks). If none of the three is available, halt and escalate to the operator with the one-line message `reviewer-subagent unavailable: tried reviewer, qa-engineer, researcher — please configure one of these in agentbrew`. The subagent MUST read: the plan file, the task block in TASKS.md, the files listed in the task's `**Files**:` field, and the relevant project docs (`AGENTS.md`, `vision.md` if present). It writes a verdict + reasons into the plan file under a `## Reviewer verdict` heading:
+
+   ```markdown
+   ## Reviewer verdict
+   - **Verdict**: approved | needs-revision | reject
+   - **Reviewer**: <subagent-profile>
+   - **Date**: YYYY-MM-DD
+   - **Concerns**:
+     <bulleted list — empty when approved>
+   ```
+
+   - `approved` → commit (`plan: validate <task-id>`), continue to step 4.
+   - `needs-revision` → revise the plan to address each concern, then re-run validation. Max 3 cycles before escalating to the operator. If the subagent returns text that does not parse as a `## Reviewer verdict` block, treat that as one of the 3 cycles with concern "reviewer output unparseable".
+   - `reject` → the task as specified is not implementable; report to the operator and stop.
+
+4. **Pre-register the metric (rule-#9).** For non-trivial tasks whose recurrence rate is observable, extend the task block in TASKS.md with `**Hypothesis**`, `**Success**`, `**Pivot**`, `**Measurement**` (an exact runnable shell command — no English instructions), and `**Anchor**` (literature citation). The plan's **Acceptance criteria** section is the source of truth; the rule-#9 fields are its falsifiable shape. Commit the pre-registration in the same `plan: <task-id>` commit as the plan if practical, otherwise as `plan: pre-register <task-id>`. If the **Measurement** isn't yet runnable (no counter, no log line, no test harness), open a preparation PR that lands the instrumentation first, then return with real before/after numbers. Trivial fixes where CI already enforces the metric are exempt.
+
+5. **Implement.** Continue to [Claim and do the work](#claim-and-do-the-work).
+
+The plan file lives as long as the task does. When the task ships, the plan file can be deleted in the same commit (history lives in git log) or kept as documentation if it'd serve future readers — the author's call.
 
 ## Claim and do the work
 
