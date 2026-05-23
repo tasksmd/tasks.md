@@ -1,0 +1,40 @@
+name: pr-vision-trace
+
+# Deterministic gate (agentbrew rule #10 shape): every pull request body
+# contains a `Vision trace` block tracing the change back to a VISION goal,
+# user story, and competitor-prior-art check. The convention is documented
+# in the agentbrew catalog rule `pr-vision-trace`; the script lives at
+# `scripts/check-pr-vision-trace.mjs` and is paired-tested in
+# `src/check-pr-vision-trace.test.ts`.
+#
+# Skips on `push` events (no PR body to inspect). Skips on PRs from the
+# release bot / dependabot / pre-approved opt-out marker.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, ready_for_review, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-vision-trace:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: fetch PR body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr view "$PR_NUMBER" --json body --jq '.body' > /tmp/pr-body.md
+          test -s /tmp/pr-body.md || { echo "PR body is empty"; exit 1; }
+
+      - name: lint vision-trace block
+        run: node scripts/check-pr-vision-trace.mjs /tmp/pr-body.md
