@@ -1,3 +1,32 @@
+---
+schema: vision-v1
+version: 1
+last_reviewed: 2026-05-23
+goals:
+  - id: G1
+    name: Spec first, packages second
+    description: spec.md is canonical. parser, lint, mcp, cli are reference implementations that exist to validate the spec.
+  - id: G2
+    name: Cross-agent commands are generated, not hand-edited
+    description: commands/next-task.md and commands/lint-tasks.md are canonical; per-agent variants regenerate. CI rejects manual edits to generated variants.
+  - id: G3
+    name: One TASKS.md per repo, optionally federated
+    description: Workspace-mode aggregates per-host queues; per-repo queues stay the source of truth.
+  - id: G4
+    name: No vendor lock-in
+    description: Every agent that adopts the spec works against the same file. Switching agents requires no migration.
+non_goals:
+  - id: NG1
+    name: Not a project management tool
+    description: No GUI, no team assignments beyond claim suffixes, no time tracking. Use Jira/Linear for those.
+  - id: NG2
+    name: Not a workflow engine
+    description: TASKS.md describes what work exists, not how it gets routed.
+  - id: NG3
+    name: Not a graph database
+    description: Blocked-by edges are a flat list, not a topological sort.
+---
+
 # Vision
 
 > **A lightweight, machine-readable spec for AI agent task queues.** The "what to work on" companion to [AGENTS.md](https://agents.md/)'s "how to work."
