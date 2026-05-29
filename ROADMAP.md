@@ -17,7 +17,6 @@ This file is the root-level milestone summary that the `load-project-context` ru
 | **Per-agent variants** — Claude Code, Codex, Cursor, Devin, Gemini CLI, Windsurf | ✅ Shipped | [`commands/{claude,codex,cursor,devin,gemini,windsurf}/`](commands/) |
 | **Plan-first workflow** — agents write `docs/plans/<task-id>.md` before non-trivial work, validated by a reviewer subagent | ✅ Stable | [`docs/plans/next-task-plan-first-workflow.md`](docs/plans/next-task-plan-first-workflow.md), [`docs/templates/plan-template.md`](docs/templates/plan-template.md) |
 | **Workspace mode** — `next-task` aggregates TASKS.md files across nested repos in one or more workspaces | 🟡 In progress | [`TASKS.md` § "Workspace mode"](TASKS.md) |
-| **Taskgrind** — long-running autonomous-session enforcement scripts adopted by downstream repos | ✅ Shipped | [`taskgrind/`](taskgrind/) |
 | **Site / docs hub** — public website at tasksmd.github.io | ✅ Live | [tasksmd.github.io/tasks.md](https://tasksmd.github.io/tasks.md/) |
 
 ## Active focus
@@ -43,7 +42,6 @@ When a new agent vendor ships first-class `/next-task` support, that's a milesto
 | User stories | [`docs/user-stories/`](docs/user-stories/) (numbered) | New US per shipped capability |
 | Spec definition | [`spec.md`](spec.md) | Conservative; breaking changes are spec-version bumps |
 | Architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md) + [`AGENTS.md`](AGENTS.md) | Updated in same commit as behavior changes |
-| Long-running session enforcement | [`taskgrind/prompt-template.md`](taskgrind/prompt-template.md) | Hardened from real session learnings |
 
 ## Out-of-scope (won't do)
 

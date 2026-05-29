@@ -14,8 +14,6 @@ supporting tools that make the format useful for humans and agents:
 - `packages/cli` provides the `tasks` command-line interface.
 - `commands/` contains the shared `/next-task` and `/lint-tasks` command variants
   for Claude Code, Codex, Cursor, Devin, Gemini CLI, and Windsurf.
-- `taskgrind/` contains the autonomous-grind prompt template and enforcement
-  scripts adopted by downstream repos.
 
 ## Repo Layout
 
@@ -40,7 +38,6 @@ tasks.md/
 |   +-- lint/                       # @tasks-md/lint and tasks-lint binary
 |   +-- mcp/                        # tasks-mcp server
 |   +-- cli/                        # @tasks-md/cli and tasks binary
-+-- taskgrind/                      # Long-running autonomous session guardrails
 ```
 
 ## Development
@@ -125,7 +122,7 @@ shifts:
 After changing a repeated term or command step, run a targeted search such as:
 
 ```bash
-grep -r "<changed-term>" commands/ examples/ taskgrind/ README.md spec.md
+grep -r "<changed-term>" commands/ examples/ README.md spec.md
 ```
 
 ### Spec Propagation
@@ -137,16 +134,6 @@ grep -r "<changed-term>" commands/ examples/ taskgrind/ README.md spec.md
   `/next-task` variant.
 - Examples must remain valid and should demonstrate new format features when
   they would help agents learn the pattern.
-
-### Taskgrind Propagation
-
-Scripts in `taskgrind/scripts/` are canonical for adopting repos. For behavior
-or interface changes, update the script header comment and `taskgrind/README.md`
-with adoption notes. Pure bug fixes can say that no downstream action is needed.
-
-Changes to `taskgrind/prompt-template.md` hard rules are policy changes. Update
-the corresponding enforcement script when applicable and document the concrete
-failure mode in `taskgrind/README.md`.
 
 ## Agentfile And MCP
 
