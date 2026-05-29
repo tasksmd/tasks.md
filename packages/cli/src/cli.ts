@@ -19,6 +19,8 @@ import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
 import { createLinearSource } from "./sync/linear.js";
+import { getBackend, resolveBackendConfig } from "./backend/index.js";
+import type { BackendTask } from "./backend/index.js";
 
 
 const pkg = JSON.parse(
@@ -252,7 +254,22 @@ program
   .description("Pick the best task to work on next")
   .option("--tags <tags>", "Filter by tags (comma-separated)")
   .option("--json", "Output as JSON for scripting")
-  .action((opts: { tags?: string; json?: boolean }) => {
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues")
+  .action(async (opts: { tags?: string; json?: boolean; backend?: string }) => {
+    // github-issues backend: pick the top-priority unassigned open issue.
+    if (resolveBackendConfig(process.cwd(), opts.backend).backend === "github-issues") {
+      const task = await getBackend(process.cwd(), opts.backend).next();
+      if (opts.json) {
+        console.log(JSON.stringify(task ? { picked: true, ...task } : { picked: false }));
+      } else if (task) {
+        console.log(`Picked ${formatTask(task)}`);
+        if (task.url) console.log(`  URL: ${task.url}`);
+      } else {
+        console.log("No eligible issues found (all claimed or empty queue).");
+      }
+      return;
+    }
+
     const taskFiles = loadAllTasks(process.cwd());
     const tags = opts.tags?.split(",").filter(Boolean);
     const result = pickBestTask(taskFiles, tags);
@@ -313,7 +330,28 @@ program
   .option("--unclaimed", "Only show unclaimed tasks")
   .option("--unblocked", "Only show unblocked tasks")
   .option("--json", "Output as JSON instead of tab-separated")
-  .action((opts: { priority?: string; tag?: string; unclaimed?: boolean; unblocked?: boolean; json?: boolean }) => {
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues")
+  .action(async (opts: { priority?: string; tag?: string; unclaimed?: boolean; unblocked?: boolean; json?: boolean; backend?: string }) => {
+    // github-issues backend: list open issues, highest priority first.
+    if (resolveBackendConfig(process.cwd(), opts.backend).backend === "github-issues") {
+      let issues = await getBackend(process.cwd(), opts.backend).listOpen();
+      if (opts.priority) {
+        issues = issues.filter((t) => t.priority.toUpperCase() === opts.priority?.toUpperCase());
+      }
+      if (opts.tag) issues = issues.filter((t) => t.tags.includes(opts.tag as string));
+      if (opts.unclaimed) issues = issues.filter((t) => !t.assignee);
+      if (opts.json) {
+        console.log(JSON.stringify(issues, null, 2));
+        return;
+      }
+      if (issues.length === 0) {
+        console.log("No issues match the filters.");
+        return;
+      }
+      for (const t of issues) console.log(`${t.priority}\t${t.id}\t${t.title}`);
+      return;
+    }
+
     const taskFiles = loadAllTasks(process.cwd());
     const tasks = listTasks(taskFiles, {
       priority: opts.priority,
@@ -422,6 +460,65 @@ program
     console.log(
       `  Summary: +${diff.added.length} added, -${diff.removed.length} removed, ${diff.claimed.length} claimed`
     );
+  });
+
+// ── backend-aware task ops (VISION.md G5: tasks-md | github-issues) ──
+//
+// These behave identically regardless of where the work lives. The backend
+// is resolved from `.tasksmd.json` (default: tasks-md) and can be overridden
+// per-invocation with `--backend`.
+
+interface BackendOpts {
+  backend?: string;
+}
+
+function formatTask(task: BackendTask): string {
+  const idPart = task.id ? `${task.id} — ` : "";
+  const claim = task.assignee ? ` (@${task.assignee})` : "";
+  return `[${task.priority}] ${idPart}${task.title}${claim}`;
+}
+
+program
+  .command("create")
+  .description("File a new task in the active backend")
+  .argument("<title>", "Task title")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues")
+  .option("--priority <p>", "Priority: P0 | P1 | P2 | P3", "P2")
+  .option("--body <text>", "Task body / details")
+  .option("--tag <tag...>", "Label/tag (repeatable)")
+  .action(
+    async (
+      title: string,
+      opts: BackendOpts & { priority?: string; body?: string; tag?: string[] },
+    ) => {
+      const task = await getBackend(process.cwd(), opts.backend).create({
+        title,
+        priority: opts.priority,
+        body: opts.body,
+        tags: opts.tag,
+      });
+      console.log(`Created ${task.url ?? task.id}: ${task.title}`);
+    },
+  );
+
+program
+  .command("claim")
+  .description("Claim a task (assign it to you)")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues")
+  .action(async (id: string, opts: BackendOpts) => {
+    await getBackend(process.cwd(), opts.backend).claim(id);
+    console.log(`Claimed ${id}.`);
+  });
+
+program
+  .command("complete")
+  .description("Complete a task (close the issue / remove the TASKS.md block)")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues")
+  .action(async (id: string, opts: BackendOpts) => {
+    await getBackend(process.cwd(), opts.backend).complete(id);
+    console.log(`Completed ${id}.`);
   });
 
 program.parse();

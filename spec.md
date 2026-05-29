@@ -532,6 +532,54 @@ closes setup-docs
 
 This keeps the file focused on pending work. Each agent works on a different task (via claiming), so removals target different lines and merge cleanly.
 
+## Task backends
+
+`TASKS.md` (local markdown) is the **default, canonical backend** — file-first, offline, no vendor lock-in (VISION.md G4). A repo MAY opt into an alternative **backend** so a team already living in an issue tracker can use the tasks.md workflow without migrating its work into a file (VISION.md G5). Backends are adapters behind the same surface: the spec, parser, CLI, and MCP behave identically regardless of where the work is stored.
+
+### Selecting a backend
+
+A repo declares its backend in a `.tasksmd.json` file at the git root (or the working directory when not in a repo):
+
+```json
+{
+  "backend": "github-issues",
+  "repo": "owner/repo",
+  "label": "tasks.md"
+}
+```
+
+- **`backend`** — `tasks-md` (default) or `github-issues`. Unknown values are rejected.
+- **`repo`** — `owner/repo` for `github-issues`; omit to use the current directory's repo.
+- **`label`** — the marker label that identifies an issue as a task. Default `tasks.md`.
+
+`tasks-md` is assumed when no config file is present, so existing repos are unaffected. A `--backend <kind>` flag on the CLI overrides the config per-invocation.
+
+### The `github-issues` backend
+
+Open issues carrying the marker **label** are the queue. The mapping to the task model is:
+
+| Task concept | GitHub Issues representation |
+| --- | --- |
+| id | issue number (as a string) |
+| priority `P0`–`P3` | a `priority/P0`..`priority/P3` label (the looser `critical`/`high`/`medium`/`low` and `p0`..`p3` labels are also read) |
+| tags | all other labels (excluding the marker + priority labels) |
+| claim | issue **assignee** (self-assign to claim) |
+| completion | closing the issue — a merged PR with `Closes #N` does this automatically |
+
+It shells out to the `gh` CLI, inheriting the user's existing auth, and requires only the `repo` token scope (no GitHub Project is required; a Project board is an optional view layer). When `gh` is unauthenticated, operations fail with an actionable error.
+
+### Backend-aware commands
+
+These operate identically across backends (`tasks-md` reads via the deterministic picker; `github-issues` via `gh`):
+
+- `tasks pick` — highest-priority open, unclaimed task/issue.
+- `tasks list` — open tasks/issues, highest priority first (supports `--priority`, `--tag`, `--unclaimed`).
+- `tasks create "<title>" [--priority P2] [--body ...] [--tag ...]` — file a new task/issue.
+- `tasks claim <id>` — claim (self-assign).
+- `tasks complete <id>` — complete (close the issue / remove the TASKS.md block).
+
+Workspace-mode aggregation (planned) ranks tasks across repos by reading each repo's backend through this same uniform surface, so a host can mix markdown-backed and issue-backed repos in one queue.
+
 ## Agent Behavior
 
 ### Reading Tasks
