@@ -1,7 +1,7 @@
 ---
 schema: vision-v1
 version: 1
-last_reviewed: 2026-05-23
+last_reviewed: 2026-05-29
 goals:
   - id: G1
     name: Spec first, packages second
@@ -15,6 +15,9 @@ goals:
   - id: G4
     name: No vendor lock-in
     description: Every agent that adopts the spec works against the same file. Switching agents requires no migration.
+  - id: G5
+    name: File-first, pluggable backends
+    description: TASKS.md (local markdown) is the default, canonical backend. The spec, parser, CLI, and MCP MAY target an alternative backend (e.g. GitHub Issues/Projects) as an explicit, off-by-default opt-in, so a team already living in an issue tracker can adopt the tasks.md workflow without migrating. The file backend stays the reference implementation; other backends are adapters behind the same spec surface, preserving G4 (the spec, not the storage, is the portable layer).
 non_goals:
   - id: NG1
     name: Not a project management tool
@@ -36,7 +39,7 @@ non_goals:
 **Primary audience: any team that has AI agents picking up coding work.** Today's agents (Claude Code, Cursor, Windsurf, Devin, Codex, Gemini CLI, Codium, OpenHands, and 30+ others) need a way to ask *"what should I work on?"* and get back a structured, prioritized, tooling-friendly answer.
 
 The current options all fail:
-- **GitHub Issues** — too heavy for sub-PR-sized work, no priority semantics, no claim mechanics, requires network.
+- **GitHub Issues as your only queue** — too heavy for sub-PR-sized work, no priority semantics, no claim mechanics, requires network. tasks.md stays file-first for exactly these reasons; teams already living in Issues can opt into an Issues *backend* (G5) and keep the same spec / CLI / MCP surface, trading the file's offline simplicity for tracker integration.
 - **Plain markdown checklists** — no parser, no lint, no claims, no metadata.
 - **Per-tool todo formats** — fragment by agent. A task written for Claude can't be picked up by Cursor.
 
