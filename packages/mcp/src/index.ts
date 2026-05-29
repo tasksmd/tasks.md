@@ -18,6 +18,7 @@ import {
   enrichTask,
   TOOL_DESCRIPTIONS,
 } from "./tools.js";
+import { buildListArgs, buildPickArgs, resolveBackend, runTasksCli } from "./backend.js";
 
 const pkg = JSON.parse(
   readFileSync(join(import.meta.dirname, "..", "package.json"), "utf-8")
@@ -58,6 +59,27 @@ server.registerTool(
   },
   async ({ priority, tag, unclaimed_only, unblocked_only }) => {
     const directory = getWorkingDirectory();
+    const backend = resolveBackend(directory);
+
+    if (backend.backend === "github-issues") {
+      // Delegate to CLI for github-issues backend
+      const args = buildListArgs({ priority, tag, unclaimed_only, unblocked_only });
+
+      try {
+        const output = runTasksCli(args, directory);
+        return {
+          content: [{ type: "text" as const, text: output }],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text" as const, text: `Error: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+
+    // tasks-md backend: use existing behavior
     const taskFiles = await loadAllTasks(directory);
     const result = listTasksFromFiles(taskFiles, { priority, tag, unclaimed_only, unblocked_only });
 
@@ -87,6 +109,27 @@ server.registerTool(
   },
   async ({ query, agent_name }) => {
     const directory = getWorkingDirectory();
+    const backend = resolveBackend(directory);
+
+    if (backend.backend === "github-issues") {
+      // Delegate to CLI for github-issues backend
+      const args = ["claim", query];
+
+      try {
+        const output = runTasksCli(args, directory);
+        return {
+          content: [{ type: "text" as const, text: output }],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text" as const, text: `Error: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+
+    // tasks-md backend: use existing behavior
     const taskFiles = await loadAllTasks(directory);
     const result = await claimTask(taskFiles, query, agent_name);
 
@@ -112,6 +155,22 @@ server.registerTool(
   },
   async ({ query }) => {
     const directory = getWorkingDirectory();
+    const backend = resolveBackend(directory);
+
+    if (backend.backend === "github-issues") {
+      // github-issues backend does not support unclaim
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: "The github-issues backend does not support unclaiming tasks. To remove a claim, you must manually unassign the issue on GitHub.",
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    // tasks-md backend: use existing behavior
     const taskFiles = await loadAllTasks(directory);
     const result = await unclaimTask(taskFiles, query);
 
@@ -137,6 +196,27 @@ server.registerTool(
   },
   async ({ query }) => {
     const directory = getWorkingDirectory();
+    const backend = resolveBackend(directory);
+
+    if (backend.backend === "github-issues") {
+      // Delegate to CLI for github-issues backend
+      const args = ["complete", query];
+
+      try {
+        const output = runTasksCli(args, directory);
+        return {
+          content: [{ type: "text" as const, text: output }],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text" as const, text: `Error: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+
+    // tasks-md backend: use existing behavior
     const taskFiles = await loadAllTasks(directory);
     const result = await completeTask(taskFiles, query);
 
@@ -174,6 +254,40 @@ server.registerTool(
   },
   async ({ task_id, tags, agent_name }) => {
     const directory = getWorkingDirectory();
+    const backend = resolveBackend(directory);
+
+    if (backend.backend === "github-issues") {
+      // Delegate to CLI for github-issues backend
+      const args = buildPickArgs({ tags });
+
+      try {
+        const output = runTasksCli(args, directory);
+        // If agent_name is provided, also claim the picked task
+        if (agent_name) {
+          try {
+            const parsed = JSON.parse(output);
+            const taskId = parsed.id || parsed.task?.id;
+            if (taskId) {
+              const claimArgs = ["claim", String(taskId)];
+              runTasksCli(claimArgs, directory);
+            }
+          } catch {
+            // If parsing fails, just return the pick output
+          }
+        }
+        return {
+          content: [{ type: "text" as const, text: output }],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: "text" as const, text: `Error: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+
+    // tasks-md backend: use existing behavior
     const taskFiles = await loadAllTasks(directory);
     const parsedTags = tags?.split(",").map((t) => t.trim()).filter(Boolean);
     const result = await pickTask(taskFiles, { task_id, tags: parsedTags, agent_name });
