@@ -8,6 +8,26 @@
 
 ## P1
 
+- [ ] GitHub Issues backend: let the parser, CLI, MCP, and `/next-task` treat GitHub Issues/Projects as a task source/sink alongside `TASKS.md`
+  - **ID**: github-issues-backend
+  - **Tags**: spec, parser, cli, mcp, next-task, github-issues, projects-v2, backend, contribute-upstream
+  - **Composes-with**: `workspace-mode-nested-repos` (a workspace repo may declare `task_backend: github-issues`; aggregation then spans both markdown and issue-backed repos)
+  - **Details**: Downstream consumers (agentbrew, minsky, dotfiles) are adding GitHub Issues as a task backend so repos can retire `TASKS.md`. The canonical tasks.md tooling is the load-bearing dependency they all build on, so the cleanest long-term answer is for the spec + parser + CLI + MCP to support an **Issues backend** natively, rather than each consumer hand-rolling its own `gh` integration.
+
+    **Outcome-shaped** (what an operator on an issue-backed repo sees):
+
+    1. A repo declares its backend once (`task_backend: github-issues` in the repo's tasks-md config / sentinel), with `tasks-md` as the default so all existing repos are unaffected.
+    2. `tasks next` on that repo lists the highest-priority **open issue** (Priority from the org Project field or a `priority/P0..P3` label), not a markdown task. Claiming = self-assign. Completion = the linked PR's `Closes #N`.
+    3. The parser exposes a backend-agnostic `Task` shape so `workspace-mode` aggregation can mix markdown repos and issue-backed repos in one ranked list.
+    4. The MCP server's task tools (`list`/`next`/`create`/`complete`) work identically regardless of backend.
+
+    **Spec extension** (`spec.md`): new § "Task backends" defining `tasks-md` (current behavior) and `github-issues` (issues on a repo's org Project), the config field, the default, and the `Task`-shape mapping (issue number ↔ id, Project Priority ↔ priority, assignee ↔ claim, `Closes #N` ↔ completion).
+
+    **Reuse note (GET-don't-implement):** wrap `gh` / the GitHub REST+GraphQL API; do not re-implement an issue client. Sub-issues + issue types (GHES 3.18+) map onto the existing parent/child + tag concepts — reuse them rather than inventing a parallel hierarchy.
+
+    **Delivery note:** this repo is upstream OSS (`github.com/tasksmd/tasks.md`). Land as a contribute-upstream PR (do not push without the normal upstream contribution flow); the downstream consumers (agentbrew/minsky/dotfiles) can ship their own thin adapters first and migrate onto this native backend once it lands.
+  - **Acceptance**: (a) `spec.md` § "Task backends" defines both backends + the config field + default; (b) the parser returns a backend-agnostic `Task` for issue-backed repos; (c) `tasks next` ranks open issues by priority on an issue-backed repo; (d) MCP task tools are backend-agnostic; (e) `workspace-mode` aggregation mixes both backends; (f) existing markdown-repo behavior is unchanged (default backend).
+
 - [ ] Workspace mode: parser, CLI, MCP, and `/next-task` aggregate TASKS.md files across nested repos in **one or more workspaces** on one host
   - **ID**: workspace-mode-nested-repos
   - **Tags**: spec, parser, cli, mcp, next-task, workspace, multi-repo, multi-workspace
