@@ -86,7 +86,7 @@
         - name: tooling
           root: ~/apps/tooling
           # optional:
-          exclude: ["dotfiles-intuit.bundle"]
+          exclude: ["archived-repo"]
           priorityWeight: 1.0
         - name: oncall-hub
           root: ~/apps/oncall-hub
