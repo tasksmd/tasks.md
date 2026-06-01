@@ -7,7 +7,7 @@ section headers and bullet shapes intact. -->
 
 ## What changed
 
-<bullet list of substantive deltas; group by package (parser/lint/mcp/cli) or by surface (spec/commands/taskgrind)>
+<bullet list of substantive deltas; group by package (parser/lint/mcp/cli) or by surface (spec/commands)>
 
 ## Vision trace
 
