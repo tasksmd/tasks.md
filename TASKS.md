@@ -6,6 +6,35 @@
 
 ## P0
 
+- [ ] One-prompt setup: a developer tells their agent to "use tasks.md" and the agent does the entire setup
+  - **ID**: one-prompt-setup
+  - **Tags**: docs, user-story, onboarding, cli, commands, adoption, dx
+  - **Details**: Add a new user story (lands as `docs/user-stories/10-one-prompt-setup.md`):
+
+    > **I am a developer and I want to tell my agents to use tasks.md in my GitHub repo — in one step.**
+
+    Today adoption is a manual or multi-command path: the README "Quick Start" tells the human to hand-create `TASKS.md` and paste an `AGENTS.md` snippet, and the "first 10 minutes" walkthrough runs ~9 commands (`tasks init`, `tasks install`, …). The vision is **one prompt in the README** that the developer pastes into whatever agent they use (Claude Code, Cursor, Devin, Codex, Gemini CLI, Windsurf); the agent then does the rest, end to end, with no further input.
+
+    **Outcome-shaped** (what the developer experiences):
+
+    1. The README has a single, prominent, copy-paste prompt block: *"Set up tasks.md in this repo."*
+    2. The developer pastes it into their agent. The agent: confirms the git repo root → creates `TASKS.md` if missing → idempotently merges the `## Task Management` section into `AGENTS.md` → installs the `/next-task` (and `/lint-tasks`) command for **itself** → verifies the result → reports done. No human CLI knowledge required.
+    3. Re-running is safe — it merges, never clobbering an existing `TASKS.md` or duplicating the `AGENTS.md` section.
+    4. Works whether or not Node/`npx` is available (CLI path preferred; direct-file-write fallback otherwise).
+
+    **What this requires — build on what exists (GET, don't reinvent):**
+
+    Reuse: `tasks init` (creates `TASKS.md` + merges the `AGENTS.md` section, already idempotent — `packages/cli/src/commands/init.ts`); `tasks install` (installs `/next-task` per agent — `packages/cli/src/commands/install.ts`); `tasks generate-commands` (regenerates per-agent variants from a canonical source, CI-drift-gated — the pattern a setup command must follow, VISION G2).
+
+    Gaps to close:
+    - **(a) The prompt artifact.** Add a canonical copy-paste "set up tasks.md" prompt to the README. Recommended: make it the canonical `commands/setup.md` and regenerate per-agent `setup` command/skill variants via `tasks generate-commands`, so "the agent does the rest" is identical and deterministic across all six agents (consistent with G2 — generated, not free-handed).
+    - **(b) Self-install fix (CLI bug).** `tasks install --agent <name>` silently installs nothing when the agent's own dir does not yet exist, because the detect-dir check still runs unless `--all` is also passed (`packages/cli/src/commands/install.ts`: `if (!options.all && !existsSync(detectPath)) continue;`). For a one-prompt bootstrap the calling agent (which knows its own identity) must be able to force-install its own command — make `--agent <name>` imply force (skip detection for the named agent), or add an explicit `--force`.
+    - **(c) Node-optional fallback.** The prompt/command must instruct the agent: if `npx`/Node is present, use `tasks init` + `tasks install --agent <self>`; otherwise write `TASKS.md`, the `AGENTS.md` `## Task Management` section, and the agent's own command file directly from the spec + canonical command text.
+    - **(d) Verifiable acceptance.** The agent finishes by running `npx -y @tasks-md/lint TASKS.md` (exit 0), confirming `AGENTS.md` has exactly one `## Task Management` section, and confirming its own command file exists at the right project-local path.
+    - **(e) GitHub-repo extras (optional branches in the prompt).** Offer to add the reusable lint CI workflow (`.github/workflows/tasks-lint.yml`) and/or back the queue with the shipped GitHub Issues backend (`task_backend: github-issues`, VISION G5) for teams that live in their issue tracker.
+  - **Files**: `README.md` (add the one-prompt block; trim/redirect the manual Quick Start), `docs/user-stories/10-one-prompt-setup.md` (new), `docs/user-stories/README.md` (add row 10 + table entry), `commands/setup.md` (new canonical source) + the six generated `commands/<agent>/…/setup.*` variants via `tasks generate-commands`, `packages/cli/src/commands/install.ts` (+ `install.test.ts`) for the `--agent` force-install fix, `packages/cli/src/commands/generate-commands.ts` (+ test) to emit the new `setup` command, `ROADMAP.md` (capability row).
+  - **Acceptance**: (a) README contains a single copy-paste "set up tasks.md" prompt; (b) `docs/user-stories/10-one-prompt-setup.md` exists and is linked from `docs/user-stories/README.md`; (c) a `setup` command is generated for all six agents from `commands/setup.md` and the `commands-drift` CI gate stays clean; (d) `tasks install --agent <name>` force-installs that agent's command even when its dir doesn't exist yet, pinned by a new `install.test.ts` case; (e) the prompt documents the Node-optional fallback plus the idempotency and verification steps; (f) `npm run build && npm test && npm run lint` pass; (g) `npx -y @tasks-md/lint TASKS.md` exits 0.
+
 ## P1
 
 - [ ] GitHub Issues backend: aggregate issue-backed repos alongside markdown repos in workspace mode
