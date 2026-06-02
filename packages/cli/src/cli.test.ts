@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { parseTasksContent, type TaskFile } from "@tasks-md/parser";
@@ -715,6 +715,48 @@ describe("CLI", () => {
       });
       expect(result.status).toBe(0);
       expect(result.stdout).toMatch(/No tasks match/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("pick --backend git-native reads the task log instead of TASKS.md", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const created = spawnSync(
+        "node",
+        [
+          CLI,
+          "create",
+          "Git native task",
+          "--backend",
+          "git-native",
+          "--priority",
+          "P0",
+          "--tag",
+          "fleet",
+        ],
+        { encoding: "utf-8", cwd: dir },
+      );
+      expect(created.status).toBe(0);
+      expect(existsSync(join(dir, "TASKS.md"))).toBe(false);
+
+      const result = spawnSync(
+        "node",
+        [CLI, "pick", "--backend", "git-native", "--json"],
+        { encoding: "utf-8", cwd: dir },
+      );
+
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed).toMatchObject({
+        picked: true,
+        id: "git-native-task",
+        title: "Git native task",
+        priority: "P0",
+        tags: ["fleet"],
+      });
     } finally {
       rmSync(dir, { recursive: true });
     }

@@ -285,10 +285,10 @@
     2026-06-02 (h) design refinement (folded into the plan; re-validated):
     • Claim ledger = an APPEND-ONLY EVENT LOG (`claimed`/`released`/`completed`/
       `cancelled`/`snapshot` as immutable `.tasks/events/<ulid>.json` files on a
-      dedicated ref), not mutable `.tasks/claims/<id>` files. Winner of a task = the
-      FIRST `claimed` event in the ref's commit order → no timestamp resolver, no merge
-      driver, clock-skew-immune. Two-plane model: TASKS.md on main = the queue (tasks
-      edited/deleted as plain markdown); the event log = who-owns-what-now.
+      dedicated ref), not mutable `.tasks/claims/<id>` files. Earlier drafts used commit
+      order as the winner; later research superseded that with strict linear-CAS for v1, or
+      Lamport ordering if forks/merges are introduced. Two-plane model: generated TASKS.md
+      on main = the snapshot; the event log = who-owns-what-now.
     • RELIABILITY must be DETERMINISTIC, not skill-dependent (a `/next-task` skill can't
       guarantee an agent claims before working). Enforce via git hooks (`pre-push`
       blocks a work push for an unclaimed task; `post-merge` auto-fetches the ledger;
@@ -302,8 +302,8 @@
       branch protection + `/next-task` — an extension of the `one-prompt-setup` task.
 
     2026-06-02 (i) full prior-art research — `docs/research/fleet-claiming.md`. Key
-    findings folded into the plan: (1) CORRECTION — "winner = first claimed in git commit
-    order" is NOT deterministic (git's topo/date order has unstable ties); decide by an
+    findings folded into the plan: (1) CORRECTION — a commit-order claim winner is NOT
+    deterministic (git's topo/date order has unstable ties); decide by an
     embedded Lamport total order `(lamport, actor_id, content_hash)` + keep the ledger
     linear (git-bug's proven model). (2) ADOPT git-bug's append-only-op-log-on-refs DESIGN
     (Go+GPL, so design not code) and `lefthook` for hook install (don't hand-roll). (3)
@@ -339,9 +339,9 @@
     Lamport+lexicographic fold gives deterministic cross-clone resolution OUT OF THE BOX
     (no need to build ordering, no need for a linear ref). Mechanism findings: CLI
     exposes only bug/label/user (no custom entity); `entity/dag` is an importable Go lib
-    but GPL-3.0; git-bug lacks TTL leases + snapshots. RECOMMENDED: git-bug via a
-    separate GPL Go helper invoked as a subprocess (first-class Claim entity + TS stays
-    MIT). OPEN DECISION surfaced: Option A git-bug (proven, GPL, build lease/snapshot)
+    but GPL-3.0; git-bug lacks TTL leases + snapshots. FALLBACK IF CRDT IS NEEDED:
+    git-bug via a separate GPL Go helper invoked as a subprocess (first-class Claim entity
+    + TS stays MIT). OPEN DECISION surfaced: Option A git-bug (proven, GPL, build lease/snapshot)
     vs Option B grite (MIT, NATIVE leases+snapshots, immature) vs git-warp (TS-native,
     immature); Beads + git-appraise ruled out (non-deterministic). Adapter stays behind
     an interface → engine swappable; upstream CONTRIBUTE to git-bug runs in parallel.
@@ -359,73 +359,351 @@
     2026-06-02 (m) FULL-PLAN edge-case Q&A — the plan is now the definitive v1 design.
     Locked decisions: SINGLE REPO ONLY, no sidecar (ledger on a `tasks-claims` ref in the
     same repo). NO DUPLICATION / log-first: the claim log is the sole source of truth for
-    state; TASKS.md holds only authored task DEFINITIONS and is a projection target
-    (terminal events remove blocks); the picker excludes log-closed tasks directly; log
-    wins on disagreement. Identity = `<git-email>/<instance-id>` (per-process, unique per
-    concurrent agent). Lease = long, no heartbeat. Contention = optimistic CAS + silent
-    retry/backoff + STATELESS id-hashed pick-dispersion (no roster/steal); full
-    HRW+work-stealing deferred. Failure = release-back-to-queue (no attempt counter/failed
-    state in v1). Enforcement = STRICT full-belt (every main PR needs a live claim by its
-    author; no bypass). Blocked-by = unclaimable until unblocked. Winner = reused engine's
-    Lamport order. New deferred follow-ups: `fleet-claim-hrw-partition`,
-    `fleet-claim-heartbeat-liveness`, `fleet-claim-poison-guard`,
-    `fleet-claim-coordinator-daemon`, `fleet-claim-signed-identity`, `fleet-claim-workspace`,
-    `fleet-claim-queue-backend`.
+    state; TASKS.md is a single-writer generated snapshot, never hand-edited in git-native
+    mode. Identity = `<actor-id>/<instance-id>` with privacy-safe rendering. Claims carry a
+    `claim_id` fencing token, and implementation commits carry both `Task:` and
+    `Task-Claim:` trailers parsed with `git interpret-trailers`. Contention = optimistic
+    linear-CAS + silent retry/backoff + STATELESS id-hashed pick-dispersion. Failure =
+    release-back-to-queue or lease expiry. Blocked-by = unclaimable until unblocked.
 
     2026-06-02 (n) independent (fresh-context) review found a BLOCKER + majors; resolved
     them while keeping the vision. Fixes: (1) rename to COLLISION-FREE (not
     "deterministic" — that oversold; the guarantee is collision-freedom via git ref-CAS).
     (2) FULLY log-first: the `tasks-claims` log is the SOLE source of state; TASKS.md is a
     SINGLE-WRITER GENERATED SNAPSHOT on main — agents never edit it, so it's conflict-free
-    by construction (kills the original one-file-merge problem) and needs no CI bypass.
-    (3) Enforcement deadlock resolved by a PATH-SCOPED required check (code→needs a claim;
-    TASKS.md/docs→pass) that never bypasses CI — corporate-safe. (4) Engine is now a
-    Step-3 BAKE-OFF: linear-CAS (no engine, reuse git's own ref-CAS) vs a reused CRDT
-    engine, decided on evidence against the conformance suite — v1 may have NO engine.
+    by construction (kills the original one-file-merge problem). (3) Enforcement deadlock
+    resolved by a PATH-SCOPED required check (code→needs a claim; TASKS.md/docs→pass) that
+    never bypasses CI — corporate-safe. (4) Engine is linear-CAS first; CRDT/git-bug/grite/
+    Automerge-on-git is deferred until conformance or measured contention proves need.
     (5) Status downgraded to design-approved/integration-UNPROVEN (the git-bug spike
     proved only generic convergence). (6) PHASED: v1 = collision-free core; leases+offline
     (P2), server enforcement (P3), CRDT engine+HRW (P4, only if measured). (7) assume-online
-    made an explicit precondition. (8) conformance shipped as a runnable `@tasks-md/conformance`
-    package (required gate for the reference adapter; self-cert for third parties). Prior
-    "validations" were the same resumed reviewer (not independent) — future reviews use a
-    fresh context.
+    made an explicit precondition. (8) conformance starts as an internal workspace package;
+    public self-certification waits until file, GitHub Issues, and git-native adapters
+    exercise the same harness. Prior "validations" were the same resumed reviewer (not
+    independent) — future reviews use a fresh context.
   - **Files**: `docs/research/gitbug-reuse-spike.md` (reuse-mechanism spike),
     `docs/research/fleet-claiming.md` (prior-art research),
     `docs/plans/deterministic-fleet-claiming.md` (implementation plan — design-approved,
     integration-UNPROVEN; collision-free, fully-log-first, phased v1; the steps +
-    acceptance below derive from it), `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
-    done), `spec.md` (§ Claiming — Limitations / Stale Claims; a new § "Fleet
-    coordination" documenting the GIT-NATIVE model + tier-aware `@machine/agent`
-    identity), `.tasksmd.json` (backend selector), a git-native claim adapter in
-    `packages/cli/src/backend/` (per-task `.tasks/claims/<id>` files on a DEDICATED
-    non-CI claims ref + git-CAS verify + TTL lease + heartbeat + a ≤1-min poll loop;
-    tq-style frontmatter, git-queue-style optimistic lock; a deterministic same-task
-    merge resolver), `packages/cli/src/backend/tasks-md.ts` (make `claim` the real
-    git-CAS claim, not a no-op), `docs/user-stories/` (new git-native fleet-coordination
-    story → G7), `examples/` (a two-tier team×fleet example), `.tasks/claims/` +
-    `.tasks/agents/` conventions, plus CI config that EXCLUDES the claims ref /
-    `.tasks/claims/**` from the build pipeline (claiming must never trigger CI or a PR).
-    A server-queue adapter (pgmq/River) is an OPTIONAL non-default sibling; the
-    HRW-partition + ref-sharding pieces are contention optimisations, not required for
-    correctness.
-  - **Acceptance**: The GIT-NATIVE backend (operator decision, Research (f)/(g)) is
-    specified in spec.md § Claiming: claims as per-task `.tasks/claims/<id>` files
-    (conflict-free multi-writer) on a dedicated ref excluded from CI + branch protection
-    (never main); git-push CAS as the mutual-exclusion primitive (write → commit → pull
-    --rebase → push → verify-won; loser yields and re-picks; same-task add/add resolved
-    deterministically by earliest claimed_at then machine/agent id); a TTL lease +
-    heartbeat for dead-machine reclaim; a per-host coordinator polling ≤ the freshness
-    budget (≤1 min) and pushing claims immediately — TASKS.md stays the queue (G3). A new
-    `docs/user-stories/` story makes two-tier git-native fleet coordination the primary
-    use case (traces to G7). No-double-claim holds INDEPENDENT of sync lag (the push-CAS,
-    not the poll, is the arbiter). Determinism is preserved — no probabilistic selection;
-    existing `pickBestTask` tests pass. A test proves two agents — same machine OR
-    different machines — never both win a claim (the loser's push is rejected and it
-    yields), and a CI test asserts claim commits do not trigger the build pipeline. The
-    model adopts/absorbs tq + git-queue rather than building a from-scratch scheduler
-    (G6); a server-queue (pgmq/River) backend, if shipped at all, is an optional
-    non-default. Remaining work is split into follow-up tasks each with its own
-    acceptance.
+    acceptance below derive from it), `VISION.md` (G6 thinnest-layer + G7 fleet-primary +
+    backend-scoped truth — done), `spec.md` (§ "Fleet coordination" documenting the
+    GIT-NATIVE log-first model), `.tasksmd.json` (backend selector), an internal
+    `packages/conformance/` harness, a git-native claim adapter in
+    `packages/cli/src/backend/`, `packages/cli/src/backend/tasks-md.ts` (honest
+    file-backend capability flags), `docs/user-stories/` (new git-native
+    fleet-coordination story → G7), `examples/` (a two-tier team×fleet example), plus
+    projection workflow + lefthook config. A server-queue adapter (pgmq/River) is an
+    OPTIONAL non-default sibling; HRW, per-host batching, and CRDT engines are measured
+    optimisations, not v1 requirements.
+  - **Acceptance**: The GIT-NATIVE backend is specified in spec.md as an append-only
+    `tasks-claims` event log that is excluded from normal CI but consumed by projection and
+    claim-check workflows; `TASKS.md` is a single-writer generated snapshot, not live state.
+    Events have canonical serialization, schema versions, privacy-safe actor IDs, and
+    `claim_id` fencing tokens. The internal conformance harness proves same-task races have
+    exactly one winner, different-task races preserve both events, stale snapshots do not
+    affect picks, generated snapshots are byte-idempotent, and path-scoped enforcement
+    rejects non-doc changes without matching `Task:`/`Task-Claim:` trailers. The reference
+    adapter runs linear-CAS first and only adds a reused CRDT engine if conformance or
+    contention metrics require it. Setup uses lefthook and documented Rulesets via `gh api`,
+    Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
+    is split into follow-up tasks each with its own acceptance.
+
+- [ ] Propagate backend-scoped truth semantics from vision into roadmap and user stories
+  - **ID**: vision-agent-owned-task-semantics
+  - **Tags**: vision, strategy, agent-owned, backend, fleet, docs, g1, g3, g5, g7
+  - **Details**: `VISION.md` now defines backend-scoped truth: file backend uses mutable `TASKS.md`, generated backends expose `TASKS.md` as a projection, and git-native fleet mode guarantees collision-free claiming rather than globally reproducible race winners. The remaining public roadmap and user-story docs still teach the older universal mutable-file workflow. Propagate the vision into those docs without removing the file backend's zero-setup manual-edit path.
+
+    Current gaps to fix:
+    - `ROADMAP.md` still lists the current active focus as workspace mode and release automation, not fleet coordination and backend semantics.
+    - `docs/user-stories/README.md` and story 03 still frame `/next-task` as direct file mutation without backend-aware claim semantics.
+    - `README.md` and user stories still need backend-scoped language: manual `TASKS.md` editing is a file-backend path, not the universal workflow.
+
+    Required changes:
+    1. Verify `VISION.md` remains backend-scoped and does not regress to global `TASKS.md` source-of-truth wording.
+    2. Update `ROADMAP.md` so git-native fleet coordination is visible as the active G7 capability track.
+    3. Add the human/agent contract to user-story docs: humans can read task queues and issue commands to agents; agents/tools mutate task state in generated backends.
+    4. Add backend capability language to public docs: spec-compatible, collision-free, fleet-default, offline-capable, infra-required.
+  - **Files**: `VISION.md`, `ROADMAP.md`, `docs/user-stories/README.md`
+  - **Acceptance**: `VISION.md` still has no global `TASKS.md` vs log source-of-truth contradiction; ROADMAP and user-story index expose the fleet/backend-semantics track; docs name collision-free claiming rather than globally reproducible race winners; public docs state that generated-backend task mutation is agent/tool-mediated while file-backend `TASKS.md` remains human-editable.
+
+- [ ] Specify the agent-mediated task command surface before changing backend code
+  - **ID**: spec-agent-mediated-task-commands
+  - **Tags**: spec, commands, agent-owned, human-interface, setup, adoption
+  - **Blocked by**: vision-agent-owned-task-semantics
+  - **Details**: The new direction makes task mutation an agent/tool responsibility, not a human hand-edit workflow. Before implementing storage, define the command surface humans use to ask agents to maintain the queue: add a task, update a task, review/prioritize tasks, lint tasks, run the next task, and install the workflow in a repo. This should preserve the low-friction promise without telling users to manually edit queue state.
+
+    Required changes:
+    1. Add a spec section describing the human-facing command verbs and the backend-neutral operations they invoke (`create`, `update`, `review`, `claim`, `release`, `complete`, `cancel`, `render`).
+    2. Decide which commands are canonical files under `commands/` (`setup`, `add-task`, `update-task`, `review-tasks`, or equivalent) and which remain CLI/MCP-only.
+    3. Define how commands behave in file backend vs git-native backend without exposing backend internals to the human.
+    4. Define minimum verification after an agent mutates tasks: lint for file backend, fold/projection check for git-native backend.
+  - **Files**: `spec.md`, `commands/README.md`, `commands/next-task.md`, `packages/cli/src/backend/types.ts`, `packages/mcp/src/tools.ts`
+  - **Acceptance**: `spec.md` has a backend-neutral "agent-mediated task operations" section; humans are instructed to command agents/tools rather than hand-edit task state; every operation is mapped to the `TaskBackend`/MCP surface; the planned canonical command names and install paths are explicit enough for an implementation PR.
+
+- [ ] Specify the git-native log-first backend protocol in `spec.md`
+  - **ID**: spec-git-native-log-first-backend
+  - **Tags**: spec, git-native, fleet, conformance, backend, collision-free, generated-snapshot
+  - **Blocked by**: vision-agent-owned-task-semantics, spec-agent-mediated-task-commands
+  - **Details**: The approved plan lives in `docs/plans/deterministic-fleet-claiming.md`, but the canonical spec still documents only best-effort inline `(@agent)` claims. Per G1, the protocol must move into `spec.md` before backend code lands. This spec must be conformance-grade and explicitly distinguish file backend semantics from git-native fleet semantics.
+
+    Required changes:
+    1. Add `git-native` as a backend kind in the spec, with `tasks-claims` ref naming, event-log source-of-truth rules, event types, event schema, actor identity, lease fields, and projection semantics.
+    2. Pin canonical event serialization: schema version, event ID, JSON/JSONL format, key order/hash input, duplicate handling, malformed-event behavior, actor ID normalization, timestamp rules, and whether commits carry one event or batches.
+    3. Define task creation/edit/update in git-native mode as log events, not human edits to generated `TASKS.md`.
+    4. Define claim lifecycle: claim, `claim_id` fencing token, release, lease expiry, completion, cancellation, stale-owner fencing, loser-yields behavior.
+    5. Define generated `TASKS.md`: single writer, stable projection branch/PR, idempotent fold, staleness is cosmetic, agents pick from folded log state.
+    6. Preserve file backend behavior as the zero-setup backend: humans may edit `TASKS.md` in file-backend repos; git-native generated snapshots are not hand-edited.
+    7. Define actor privacy defaults so public snapshots do not expose raw git emails unless configured.
+  - **Files**: `spec.md`, `examples/`, `docs/plans/deterministic-fleet-claiming.md`, `docs/research/fleet-claiming.md`
+  - **Acceptance**: `spec.md` documents both file and git-native backends without contradiction; `git-native` has a canonical event schema, lifecycle, and `claim_id` fencing model; stale generated snapshots and projection PR lifecycle are specified; file backend remains human-editable but explicitly not collision-free; public actor rendering is privacy-safe by default; `npx -y @tasks-md/lint TASKS.md` exits 0.
+
+- [ ] Write the security and trust model for git-native fleet claiming before implementation
+  - **ID**: security-threat-model-git-native-claiming
+  - **Tags**: security, git-native, threat-model, enforcement, ci, rulesets, agent-owned
+  - **Blocked by**: spec-git-native-log-first-backend
+  - **Details**: The approved fleet plan depends on git refs, CI, rulesets, local hooks, and actor identities. Those are security boundaries, not just implementation details. Before adapter code lands, document the trust model so the v1 limitations are explicit and the conformance/server-enforcement tasks know which abuse cases they must cover.
+
+    Required coverage:
+    1. Trust boundaries: local clone, agent process, git remote, `tasks-claims` ref, generated `TASKS.md` PR, CI status check, repository ruleset, and optional server hook.
+    2. Threats: forged actor identity, stale or stolen `claim_id` fencing tokens, missing GitHub-actor-to-claim-owner mapping, force-push/delete of the claims ref, replayed or edited log events, malicious generated-snapshot PRs, local hook bypass, sleeping laptops, PR-workflow injection, raw-email leakage, and `pull_request_target` misuse.
+    3. v1 mitigations vs deferred mitigations: what client hooks catch, what only Phase 3 server checks can catch, and what remains an operator policy decision.
+    4. Token-scope and workflow guidance for GitHub.com, GitHub Enterprise, GitLab, and Gitea where behavior differs.
+  - **Files**: `docs/security/git-native-claims-threat-model.md` (new), `spec.md`, `docs/plans/deterministic-fleet-claiming.md`, `.github/workflows/`
+  - **Acceptance**: A threat-model doc exists with a threat/mitigation/status table; the spec links to it from the git-native backend section; CI workflow guidance forbids `pull_request_target` for untrusted claim checks; Phase 3 enforcement requirements trace to concrete threats and validate `Task-Claim` fencing tokens; privacy-safe actor rendering is documented; docs do not claim v1 is unbypassably secure.
+
+- [ ] Build the backend conformance suite before implementing the git-native adapter
+  - **ID**: conformance-backend-protocol
+  - **Tags**: tests, conformance, backend, git-native, fleet, collision-free, ci
+  - **Blocked by**: spec-git-native-log-first-backend
+  - **Details**: The plan's proof gate is a runnable backend-agnostic conformance suite, not another prose review. Write the suite before any real adapter so the tests drive the backend interface and the linear-CAS-first decision. Keep it internal-first until the adapter contract stabilizes; publishing a public package too early would freeze the wrong API. The suite must fail a deliberately broken stub so it cannot become a checkbox.
+
+    Required checks:
+    - Same-task race: two clones claim the same task concurrently; exactly one wins and the loser yields without starting work.
+    - Different-task race: two clones claim different tasks concurrently; both eventually win without dropping either event.
+    - Stale snapshot: generated `TASKS.md` still shows a completed task, but folded log excludes it from picks.
+    - Human command path: task creation/update through the supported operation appears in fold(log) and the generated snapshot.
+    - Lease expiry and stale-owner fencing.
+    - Canonical serialization: duplicate, malformed, unknown-version, and reordered-key events behave deterministically.
+    - Claim fencing: implementation commits without a matching `Task-Claim` token fail the claim gate.
+    - Release and re-claim.
+    - Blocked-by unclaimable until the blocker closes.
+    - Idempotent projection bytes for the same log.
+    - Path-scoped enforcement: markdown-only change passes; any non-`.md` change without live claim fails, including executable code under `docs/`.
+  - **Files**: `packages/conformance/`, `package.json`, `vitest.config.mjs`, `packages/cli/src/backend/types.ts`, `docs/plans/deterministic-fleet-claiming.md`
+  - **Acceptance**: A new internal conformance workspace package exists; it runs against a deliberately broken stub and fails for the expected reasons; it exposes a reusable runner that real backends can import; root `npm test` includes the conformance package; public npm publishing is explicitly deferred until adapter stability; `npm run build && npm test && npm run lint` pass.
+
+- [ ] Reshape `TaskBackend` for agent-owned operations, leases, fencing, and backend capabilities
+  - **ID**: backend-interface-agent-owned-protocol
+  - **Tags**: cli, mcp, backend, types, agent-owned, lease, conformance
+  - **Blocked by**: spec-agent-mediated-task-commands, spec-git-native-log-first-backend, conformance-backend-protocol
+  - **Details**: The current backend interface exposes `claim(id): Promise<void>` with no actor identity, lease, fencing token, or result status, and the file backend claim is a no-op. That shape cannot implement the git-native protocol or agent-mediated task operations. Redesign the interface around explicit operation results while preserving compatibility for file and GitHub Issues backends.
+
+    Required changes:
+    1. Add backend capability metadata (for example: `collisionFreeClaims`, `supportsLeases`, `generatedSnapshot`, `requiresRemote`, `humanEditableSnapshot`).
+    2. Replace void mutation methods with typed results for `create`, `update`, `claim`, `release`, `complete`, `cancel`, and `render`.
+    3. Pass an explicit actor identity (`git-email` + `instance-id`, or the final spec shape) into claim/release/complete operations.
+    4. Add `claim_id` lease/fencing metadata to backend task state where the backend supports it.
+    5. Update CLI and MCP delegation so unsupported operations fail with actionable messages rather than pretending to be fleet-safe.
+  - **Files**: `packages/cli/src/backend/types.ts`, `packages/cli/src/backend/config.ts`, `packages/cli/src/backend/index.ts`, `packages/cli/src/backend/tasks-md.ts`, `packages/cli/src/backend/github-issues.ts`, `packages/mcp/src/backend.ts`, `packages/mcp/src/tools.ts`, `packages/cli/src/backend/*.test.ts`, `packages/mcp/src/*.test.ts`
+  - **Acceptance**: TypeScript exposes a protocol-grade backend interface; `tasks-md` and `github-issues` still pass existing tests with honest capability flags; `tasks claim` no longer reports a successful file-backend claim when no mutation occurred; successful claim operations return fencing metadata when supported; MCP tools surface the same operation results as the CLI; `npm run build && npm test` pass.
+
+- [ ] Implement backend-neutral CLI and MCP commands for agent-mediated task operations
+  - **ID**: cli-mcp-agent-mediated-operations
+  - **Tags**: cli, mcp, backend, commands, agent-owned, task-operations
+  - **Blocked by**: backend-interface-agent-owned-protocol
+  - **Details**: The spec task defines backend-neutral operations, but the user-facing surfaces must actually expose them. Today the CLI is mostly list/pick/sync and the MCP mutation tools directly edit files. Add a public CLI/MCP operation layer so agents can create, update, review, claim, release, complete, cancel, enrich, and render tasks without knowing whether the active backend is a mutable file, GitHub Issues, or git-native log-first storage.
+
+    Required changes:
+    1. Add or align a grouped CLI surface such as `tasks task <add|update|review|claim|release|complete|cancel|enrich|render>` around the typed `TaskBackend` results; avoid nine new top-level commands unless the spec records why a grouped command is worse.
+    2. Make MCP tools delegate to the same backend operations instead of duplicating file-only mutation semantics.
+    3. Return explicit statuses for unsupported, blocked, already-claimed, stale-fenced, lease-expired, and rendered-snapshot-stale outcomes.
+    4. Keep the file backend usable, but label its claim mutation as best-effort and non-fleet-safe.
+    5. Add JSON output shapes stable enough for generated agent commands to consume.
+  - **Files**: `packages/cli/src/commands/`, `packages/cli/src/cli.ts`, `packages/cli/src/backend/`, `packages/mcp/src/index.ts`, `packages/mcp/src/tools.ts`, `packages/mcp/src/backend.ts`, `packages/cli/README.md`, `packages/mcp/README.md`
+  - **Acceptance**: CLI and MCP expose the same backend-neutral task operation set through a small grouped surface; file, GitHub Issues, and git-native backends either perform each operation or return an actionable unsupported result; generated commands can consume `--json` without parsing prose; tests cover file and at least one non-file backend path; `npm run build && npm test` pass.
+
+- [ ] Prove linear-CAS first, and prototype a CRDT engine only if evidence requires it
+  - **ID**: git-native-engine-bakeoff
+  - **Tags**: prototype, git-native, conformance, reuse, crdt, backend, decision
+  - **Blocked by**: conformance-backend-protocol, backend-interface-agent-owned-protocol
+  - **Details**: The approved plan defers engine choice until the suite exists, but v1 should not pay CRDT complexity unless the simple path fails. Run linear git ref-CAS first, behind the same adapter interface and conformance suite. Prototype a reused engine/core candidate such as git-bug, grite, or Automerge-on-git only if linear-CAS fails conformance or contention metrics cross the Phase-4 tripwire. Apply GET/WRAP before IMPLEMENT and record evidence, not vibes.
+
+    Required changes:
+    1. Prototype linear-CAS behind the conformance adapter interface.
+    2. Run linear-CAS against the full conformance suite before any CRDT prototype.
+    3. Prototype at least one reused CRDT/ledger engine candidate only when linear-CAS fails conformance or measured contention exceeds the documented threshold; otherwise record why no CRDT was needed for v1.
+    4. Measure adapter LOC, dependencies, license constraints, contention behavior, and which conformance cases pass/fail.
+    5. Update the plan/research docs with the selected v1 path and rejected alternatives.
+  - **Files**: `docs/plans/deterministic-fleet-claiming.md`, `docs/research/gitbug-reuse-spike.md`, `packages/conformance/`, `packages/cli/src/backend/`
+  - **Acceptance**: Linear-CAS has run against `@tasks-md/conformance` first; any CRDT prototype is justified by conformance failure or contention metrics, not preference; the decision is documented with evidence; any selected engine is reused/wrapped rather than reimplemented unless a written ABSORB rationale exists.
+
+- [ ] Implement the git-native reference adapter behind `TaskBackend`
+  - **ID**: git-native-reference-adapter
+  - **Tags**: cli, backend, git-native, fleet, conformance, collision-free, adapter
+  - **Blocked by**: git-native-engine-bakeoff
+  - **Details**: Build the thin reference adapter only after the spec, conformance suite, backend interface, and engine bake-off exist. The adapter is the out-of-the-box proof path for `tasks fleet init`, not a bespoke scheduler. It must operate inside a single repo, use the `tasks-claims` ref, and keep generated `TASKS.md` as a view rather than live state.
+
+    Required changes:
+    1. Add `git-native` to backend config and instantiate it from `packages/cli/src/backend/index.ts`.
+    2. Implement log append/fetch/fold operations around the linear-CAS path first; wrap a selected engine only if `git-native-engine-bakeoff` justifies it.
+    3. Implement `next`, `create`, `update`, `claim`, `release`, `complete`, `cancel`, and projection rendering through the backend interface.
+    4. Verify claim win/loss against the remote before returning success.
+    5. Keep all remote writes silent-retry with bounded backoff and actionable failure output.
+  - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/backend/git-native.test.ts`, `packages/cli/src/backend/config.ts`, `packages/cli/src/backend/index.ts`, `packages/conformance/`, `packages/mcp/src/backend.ts`, `packages/mcp/src/tools.ts`
+  - **Acceptance**: `git-native` backend passes `@tasks-md/conformance`; two local clones cannot both win the same claim; successful claims produce `claim_id` fencing tokens; generated snapshots are byte-idempotent; file and GitHub Issues backend tests still pass; `npm run build && npm test && npm run lint` pass.
+
+- [ ] Ship migration and versioning for moving existing file queues to git-native mode
+  - **ID**: migrate-file-queue-to-git-native
+  - **Tags**: migration, backend, git-native, cli, spec-version, adoption, compatibility
+  - **Blocked by**: git-native-reference-adapter
+  - **Details**: Existing adopters have hand-maintained `TASKS.md` files and global instructions that assume the file backend. The fleet path changes the source of truth to a log, so adoption needs an explicit migration/versioning story rather than asking agents to reinterpret old files on the fly.
+
+    Required changes:
+    1. Add a spec/backcompat section that names the file backend as v1-compatible and git-native as an opt-in backend mode.
+    2. Add a migration command that imports the current `TASKS.md` snapshot into `created`/`claimed`/`blocked` log events, preserving IDs, priority, metadata, comments that are still meaningful, and existing best-effort claim trailers where possible.
+    3. Write `.tasksmd.json` (or the final config file) with backend selection and migration metadata.
+    4. Make migration dry-run by default or provide a `--dry-run` mode that prints the generated events and changed files before writing.
+    5. Document rollback: how to keep file backend, how to regenerate `TASKS.md`, and how to abandon a failed migration without losing tasks.
+  - **Files**: `spec.md`, `packages/cli/src/commands/migrate.ts` (new), `packages/cli/src/backend/git-native.ts`, `packages/cli/src/config/`, `README.md`, `docs/user-stories/`
+  - **Acceptance**: A temp repo with an existing `TASKS.md` can run the migration dry-run and see deterministic log events; applying migration configures git-native mode and renders the same open queue; duplicate IDs and unsupported metadata fail safely with actionable output; rollback instructions are documented; `npm run build && npm test` pass.
+
+- [ ] Ship `tasks fleet init` and `tasks doctor` as the one-prompt install path for any repo
+  - **ID**: one-prompt-agent-owned-fleet-init
+  - **Tags**: cli, setup, adoption, fleet, one-prompt, hooks, ci, dx
+  - **Blocked by**: git-native-reference-adapter
+  - **Details**: The existing `one-prompt-setup` task covers basic file-backend bootstrap. The new direction requires a one-prompt path that an agent can run in any Git repo to install the agent-mediated workflow and, when requested, the git-native fleet backend. Humans should not need to know which files to edit; they paste one prompt and the agent runs setup, verifies it, and reports the installed commands.
+
+    Required changes:
+    1. Add `tasks fleet init` to configure `.tasksmd.json`, the `tasks-claims` ref, local hook manager, projection workflow, and backend-aware agent commands.
+    2. Add `tasks doctor` to verify backend config, command installation, hooks, claims ref access, projection workflow, and conformance smoke tests.
+    3. Reuse `lefthook` for hook installation by default; do not hand-roll hook merging unless a documented blocker rules lefthook out.
+    4. Emit GitHub Rulesets setup as `gh api`, Terraform `github_repository_ruleset`, or Probot Settings snippets rather than building a bespoke ruleset sync engine.
+    5. Make setup idempotent and safe in repos that already have `TASKS.md`, `AGENTS.md`, agent command dirs, or `.tasksmd.json`.
+    6. Provide Node-present and Node-absent paths consistent with the existing one-prompt setup task.
+  - **Files**: `packages/cli/src/commands/`, `packages/cli/src/cli.ts`, `packages/cli/src/commands/*.test.ts`, `commands/setup.md`, `README.md`, `.github/workflows/`, `.tasksmd.json` examples
+  - **Acceptance**: In a fresh temp Git repo, one copied prompt installs the selected task backend, agent commands, lefthook/workflows, and verifies with `tasks doctor`; a second run is a no-op; setup never clobbers existing user content; GitHub ruleset setup is delegated to documented existing tools; docs show the one prompt as the primary install path.
+
+- [ ] Add Phase 2 robust leases, heartbeats, crash recovery, and log compaction
+  - **ID**: fleet-phase2-leases-heartbeats-compaction
+  - **Tags**: stability, git-native, leases, heartbeat, crash-recovery, compaction, offline
+  - **Blocked by**: git-native-reference-adapter, conformance-backend-protocol
+  - **Details**: The v1 plan intentionally assumes always-on machines and uses long leases as a cheap dead-owner backstop. That assumption is honest but incomplete: mixed fleets will include sleeping laptops, crashed agent processes, interrupted pushes, and long-lived logs. File the Phase 2 stability work explicitly so it is not lost after v1 ships.
+
+    Required changes:
+    1. Define heartbeat semantics, renewal cadence, and stale-owner fencing behavior.
+    2. Add crash-recovery flows for agents that restart with or without their prior instance ID.
+    3. Add log snapshot/compaction rules that keep fold performance bounded while preserving auditability.
+    4. Extend conformance with heartbeat expiry, restart, compaction, and snapshot-roundtrip cases.
+    5. Document when laptop/offline fleets become supported and what remains out of scope.
+  - **Files**: `spec.md`, `packages/conformance/`, `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `docs/plans/deterministic-fleet-claiming.md`, `README.md`
+  - **Acceptance**: Lease renewal and expiry are specified and tested; restarted agents cannot complete with stale fencing data; compacted logs fold to the same state as full logs; `tasks doctor` reports stale heartbeats and compaction health; docs remove the always-on limitation only where Phase 2 is actually implemented.
+
+- [ ] Add Phase 3 server-side path-scoped enforcement for protected repos
+  - **ID**: fleet-phase3-server-side-enforcement
+  - **Tags**: deployment-infra, ci, github-rulesets, pre-receive, enforcement, security, git-native
+  - **Blocked by**: git-native-reference-adapter, security-threat-model-git-native-claiming
+  - **Details**: v1 client hooks are ergonomic and bypassable. Repos that need an unbypassable claim gate need the Phase 3 server-side layer promised by the plan: a path-scoped required check on hosted platforms and server hooks where available. This is deployment infrastructure and must be a first-class task, not a vague future phase.
+
+    Required changes:
+    1. Add a reusable required-check workflow that rejects non-markdown changes without a live claim and matching `Task-Claim` fencing token, and passes markdown-only changes, including generated `TASKS.md` snapshots.
+    2. Use `git interpret-trailers` for `Task:` / `Task-Claim:` parsing and writing instead of custom commit-message regex.
+    3. Add GitHub Repository Rulesets setup guidance via `gh api`, Terraform, or Probot Settings for protecting `main` and the `tasks-claims` ref without force-push/delete loopholes; do not build a bespoke repo-settings manager unless these are blocked.
+    4. Add a GHE/GitLab/Gitea `pre-receive` reference implementation or documented recipe using the same path logic.
+    5. Cover executable files under `docs/` so docs-directory code cannot bypass the claim gate.
+    6. Make `tasks doctor` report whether server-side enforcement is absent, advisory, or hard-enforced.
+  - **Files**: `.github/workflows/`, `scripts/`, `packages/cli/src/commands/doctor.ts`, `docs/security/git-native-claims-threat-model.md`, `README.md`, `spec.md`
+  - **Acceptance**: A code change without a live claim and matching `Task-Claim` token fails the required check; markdown-only changes pass; generated `TASKS.md` snapshot PRs pass by the same path rule as human docs changes; `tasks-claims` cannot be force-pushed or deleted in the documented GitHub setup; server-hook recipe covers GHE/GitLab/Gitea; tests cover code-under-docs.
+
+- [ ] Add contention observability and Phase 4 scale tripwires before adopting CRDT or HRW work
+  - **ID**: fleet-phase4-contention-observability
+  - **Tags**: observability, git-native, scale, crdt, hrw, contention, reuse
+  - **Blocked by**: git-native-engine-bakeoff, git-native-reference-adapter
+  - **Details**: The plan says CRDT adoption, HRW partitioning, and per-host batching only happen if measured contention proves the v1 CAS path insufficient. There is currently no task to collect those measurements or define the tripwire. Add that feedback loop before anyone starts building Phase 4 machinery by intuition.
+
+
+    Required changes:
+    1. Instrument claim attempts, non-fast-forward rejects, retry counts, backoff duration, claim latency, and pushes/minute against the remote.
+    2. Add `tasks doctor` or `tasks fleet stats` output that summarizes contention without leaking task contents.
+    3. Define numeric tripwires for when to revisit CRDT engine adoption, HRW partitioning, or per-host batching.
+    4. Add a quarterly "Replace? Relocate?" check per the reuse rule: can an upstream engine now replace the adapter?
+  - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `packages/cli/src/commands/fleet-stats.ts` (new), `docs/research/gitbug-reuse-spike.md`, `docs/plans/deterministic-fleet-claiming.md`
+  - **Acceptance**: Fleet stats report contention metrics; thresholds are documented; no Phase 4 CRDT/HRW implementation task can proceed without measured data crossing a threshold or a written operator override; reuse re-evaluation is scheduled/documented.
+
+- [ ] Update canonical agent commands for backend-aware, agent-owned task workflows
+  - **ID**: commands-agent-owned-backend-workflow
+  - **Tags**: commands, generated, next-task, setup, agent-owned, backend, docs
+  - **Blocked by**: spec-agent-mediated-task-commands, backend-interface-agent-owned-protocol, one-prompt-agent-owned-fleet-init
+  - **Details**: `commands/next-task.md` and its generated variants still instruct agents to read and mutate `TASKS.md` directly. The canonical commands must become backend-aware: file backend may still mutate the file, but git-native mode must operate through backend operations and treat `TASKS.md` as a generated snapshot.
+
+    Required changes:
+    1. Update `commands/next-task.md` to resolve backend mode before claiming or completing.
+    2. Add or update canonical commands for setup, add/update/review tasks, and lint/doctor workflows.
+    3. Regenerate all six agent variants via `tasks generate-commands`.
+    4. Remove generic instructions that tell agents to hand-edit `TASKS.md` when the active backend is generated/log-first.
+    5. Keep file-backend behavior documented as a backend-specific fallback, not the global model.
+  - **Files**: `commands/next-task.md`, `commands/lint-tasks.md`, `commands/setup.md`, `commands/README.md`, `commands/claude/`, `commands/codex/`, `commands/cursor/`, `commands/devin/`, `commands/gemini/`, `commands/windsurf/`, `packages/cli/src/commands/generate-commands.ts`, `packages/cli/src/commands/generate-commands.test.ts`
+  - **Acceptance**: Generated command variants are regenerated from canonical sources; `commands-drift` passes; commands explain backend-aware task mutation; `/next-task` does not tell agents to edit generated `TASKS.md` in git-native mode; `npm test && npm run lint` pass.
+
+- [ ] Align README, architecture, roadmap, examples, and user stories with agent-owned backends
+  - **ID**: docs-align-agent-owned-backends
+  - **Tags**: docs, readme, architecture, roadmap, user-stories, examples, agent-owned, backend
+  - **Blocked by**: vision-agent-owned-task-semantics, spec-git-native-log-first-backend, commands-agent-owned-backend-workflow
+  - **Details**: The public docs currently teach humans to create and edit `TASKS.md` directly and describe the mutable-file claim/remove workflow as universal. After the spec and commands are updated, all docs must be split by backend and re-centered on the new rule: tasks are human-readable, but task state changes are performed by agents/tools from a single prompt or explicit task-management command.
+
+    Required changes:
+    1. Rewrite README Quick Start around the single prompt, not manual file editing.
+    2. Add a README backend section with capability levels and clear "when to use file vs git-native vs issues vs broker/queue" guidance.
+    3. Update `ARCHITECTURE.md` with separate file-backend and git-native-backend data-flow diagrams.
+    4. Update `ROADMAP.md` so git-native fleet coordination is visible as the G7 primary-use-case capability.
+    5. Add/update user stories for agent-mediated task creation/review, one-prompt install in any repo, and fleet-safe git-native coordination.
+    6. Update examples so manual `TASKS.md` editing appears only in file-backend examples, not as the universal path.
+  - **Files**: `README.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `docs/user-stories/`, `examples/`, `docs/index.html`, `docs/blog/why-your-ai-agent-needs-a-backlog.md`
+  - **Acceptance**: A reader can understand that humans read task queues and command agents/tools to mutate them; README no longer presents manual editing as the primary universal workflow; architecture and roadmap mention git-native fleet mode; user-story index includes the new workflows; docs/examples remain lint-valid and `npm run build:site` passes.
+
+- [ ] Align repo and downstream agent instructions with backend-aware task policy
+  - **ID**: agent-instructions-backend-policy
+  - **Tags**: docs, agents, contributing, instructions, agent-owned, backend, drift
+  - **Blocked by**: commands-agent-owned-backend-workflow, docs-align-agent-owned-backends
+  - **Details**: The public docs are not the only place teaching the old model. This repo's `AGENTS.md`, `CONTRIBUTING.md`, and the global agent-rule snippets operators copy into other repos still say to claim by appending `(@agent)` and hand-edit `TASKS.md`. After the backend-aware commands exist, publish one canonical Task Queue Policy snippet and update this repo's instructions so agents stop learning the wrong default.
+
+    Required changes:
+    1. Update `AGENTS.md` and `CONTRIBUTING.md` so direct file edits and inline claim trailers are explicitly file-backend behavior, not universal guidance.
+    2. Add a canonical backend-aware policy snippet that other `AGENTS.md` / `CLAUDE.md` / Cursor-rule files can copy.
+    3. Explain how an agent determines the active backend before claiming, completing, or adding tasks.
+    4. Preserve current repo workflow while this repo remains on the file backend: `TASKS.md` is still valid here until git-native mode is configured.
+    5. File or document downstream follow-ups for global instructions outside this repo rather than silently leaving known drift.
+  - **Files**: `AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `docs/user-stories/`, `docs/templates/`
+  - **Acceptance**: `AGENTS.md` and `CONTRIBUTING.md` no longer present append-claim/direct-edit as backend-agnostic rules; a copyable backend-aware policy snippet exists; docs explain the transition for repos still using the file backend; known downstream global-rule drift is recorded with exact file paths and replacement text.
+
+- [ ] Align package READMEs and the generated site with backend-aware operations
+  - **ID**: package-docs-site-backend-alignment
+  - **Tags**: docs, package-readmes, site, cli, mcp, parser, lint, backend
+  - **Blocked by**: docs-align-agent-owned-backends, cli-mcp-agent-mediated-operations
+  - **Details**: The root README task covers public narrative docs, but package-level READMEs are independent entry points. `packages/mcp/README.md` currently describes direct file mutation tools, `packages/cli/README.md` describes a file-only command set, and parser/lint docs frame claims as inline file syntax. Align those docs and rebuild the generated site so npm users do not install stale semantics.
+
+    Required changes:
+    1. Update CLI docs for backend selection, operation commands, and JSON result shapes.
+    2. Update MCP docs so mutation tools are backend-mediated and unsupported operations return typed statuses.
+    3. Update parser/lint docs to distinguish file-format parsing from backend state semantics.
+    4. Rebuild `docs/index.html` and any generated docs that embed README/spec excerpts.
+    5. Keep all file-backend examples valid while labeling them as file-backend examples.
+  - **Files**: `packages/cli/README.md`, `packages/mcp/README.md`, `packages/parser/README.md`, `packages/lint/README.md`, `docs/index.html`, `scripts/build-site.js`, `README.md`
+  - **Acceptance**: Every package README describes backend-aware behavior consistently with the root docs; MCP docs do not promise file-only mutation semantics for every backend; parser/lint docs stay scoped to format validation; `npm run build:site` regenerates a clean site; package docs contain no universal stale "append `(@agent)`" instructions.
+
+- [ ] Add mechanical drift checks so docs cannot regress to the old human-edit workflow
+  - **ID**: docs-drift-agent-owned-task-model
+  - **Tags**: lint, docs, ci, drift, agent-owned, feedback-loop
+  - **Blocked by**: docs-align-agent-owned-backends, agent-instructions-backend-policy, package-docs-site-backend-alignment
+  - **Details**: The fresh review found many stale docs because the vision changed faster than the spec, README, commands, repo instructions, package docs, and user stories. Per the feedback-loop rule, recurring doc/model drift should become a deterministic check, not just a review comment. Add a lightweight CI/lint guard that catches universal claims like "edit TASKS.md directly" or "append `(@agent)`" outside file-backend-specific sections.
+
+    Required changes:
+    1. Add a repo-local script or lint rule that scans docs/commands for banned or backend-scoped phrases.
+    2. Allow the phrases in explicit file-backend sections and examples.
+    3. Wire the check into CI or `npm run lint`.
+    4. Document how to update the allowlist when wording changes intentionally.
+  - **Files**: `scripts/`, `package.json`, `.github/workflows/ci.yml`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `commands/`, `docs/user-stories/`, `packages/*/README.md`
+  - **Acceptance**: The check fails on a deliberately added universal "humans edit TASKS.md" or "append `(@agent)`" instruction outside file-backend context; legitimate file-backend docs pass; repo instructions and package READMEs are scanned; `npm run lint` includes the guard; CI stays green.
 
 ## P1
 
@@ -438,6 +716,37 @@
     The one remaining piece is **cross-backend aggregation**: when `workspace-mode-nested-repos` lands, its ranked aggregation must mix markdown repos and `github-issues` repos in a single list (a workspace repo may declare `task_backend: github-issues`). This is blocked until workspace mode exists — the backend-agnostic `Task` shape is already in place for it to build on.
   - **Files**: packages/cli/src/backend/, packages/mcp/src/backend.ts, packages/parser/src/
   - **Acceptance**: workspace-mode aggregation produces one priority-ranked list spanning both markdown and issue-backed repos; existing single-backend behavior unchanged.
+
+- [ ] Publish backend conformance docs and a self-certification path only after adapter stability
+  - **ID**: backend-conformance-self-certification
+  - **Tags**: conformance, backend, docs, ecosystem, adapters, no-lock-in, adoption
+  - **Blocked by**: conformance-backend-protocol, backend-interface-agent-owned-protocol, git-native-reference-adapter
+  - **Details**: G4/G5 promise that every backend works behind one surface, but publishing conformance before multiple real adapters pass would freeze an unstable API. Keep the harness internal until file, GitHub Issues, and git-native adapters have exercised the contract. Then publish the adapter contract, runner docs, sample adapter, and report format so external backends can self-certify without copying internal tests.
+
+    Required changes:
+    1. Verify the internal harness has run against file, GitHub Issues, and git-native adapters, with explicit skips for unsupported capability classes.
+    2. Document how a backend implements the `TaskBackend` contract and runs the conformance suite.
+    3. Provide a minimal fixture adapter and an intentionally broken adapter so users can see pass/fail behavior.
+    4. Emit a machine-readable conformance report that can be linked from backend docs or CI.
+    5. Define self-certification language: what "passes tasks.md conformance" means and what it does not mean.
+    6. Add npm/README guidance for backend authors without making tasks.md a backend registry yet.
+  - **Files**: `packages/conformance/README.md`, `packages/conformance/examples/`, `packages/cli/src/backend/types.ts`, `README.md`, `spec.md`, `docs/user-stories/`
+  - **Acceptance**: The harness is proven against at least file, GitHub Issues, and git-native adapters before public self-certification docs ship; a third-party backend author can run the conformance suite from a README without reading source; the report format is documented; broken-adapter output is understandable; conformance docs explicitly distinguish file compatibility, operation compatibility, and collision-free claim compatibility.
+
+- [ ] Define fleet-safe workspace and cross-repo claiming semantics
+  - **ID**: fleet-claim-workspace-semantics
+  - **Tags**: workspace, git-native, fleet, backend, multi-repo, multi-workspace, claiming
+  - **Blocked by**: workspace-mode-nested-repos, git-native-reference-adapter
+  - **Details**: The approved fleet plan is explicitly single-repo v1, while workspace mode aggregates many repos and backends. Before making workspace mode fleet-aware, define the semantics: a global workspace picker may rank across repos, but claims are written to the selected repo's backend. Cross-repo/cross-workspace blockers must be read consistently without pretending there is a global atomic transaction.
+
+    Required changes:
+    1. Specify how workspace aggregation discovers each repo's backend and capability flags.
+    2. Define claim flow for a ranked cross-workspace pick: pick globally, claim atomically in the target repo backend, then re-rank on claim loss.
+    3. Define cross-repo blocker resolution when some repos use file backend and others use git-native or issues.
+    4. State what is not supported: atomic multi-repo claim/complete, global leases spanning repos, and cross-repo generated snapshot writes unless a later backend provides them.
+    5. Add conformance or integration tests for two agents racing through workspace aggregation into the same target repo.
+  - **Files**: `spec.md`, `packages/parser/src/workspace.ts`, `packages/cli/src/commands/next.ts`, `packages/mcp/src/tools/findNextTaskAcrossWorkspaces.ts`, `packages/conformance/`, `README.md`
+  - **Acceptance**: Workspace docs explain per-repo backend capabilities; concurrent workspace picks cannot both claim the same target-repo task when that repo uses git-native; mixed-backend limitations are explicit; tests cover claim-loss re-rank and cross-repo blocker resolution.
 
 - [ ] Workspace mode: parser, CLI, MCP, and `/next-task` aggregate TASKS.md files across nested repos in **one or more workspaces** on one host
   - **ID**: workspace-mode-nested-repos

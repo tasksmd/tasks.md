@@ -11,7 +11,7 @@ goals:
     description: commands/next-task.md and commands/lint-tasks.md are the canonical sources; per-agent variants regenerate from them and CI rejects manual edits to a generated variant. One workflow, every agent — which is what makes G4 (no lock-in) real at the command layer.
   - id: G3
     name: One TASKS.md per repo, optionally federated
-    description: A repo's queue is one file at its root, the source of truth. Workspace-mode aggregates per-host and cross-repo queues for picking, but never replaces the per-repo file.
+    description: A repo exposes one root TASKS.md task surface. In the file backend that file is the source of truth; in generated backends it is the human-readable projection of the backend source. Workspace-mode aggregates per-host and cross-repo queues for picking, but never replaces the per-repo surface.
   - id: G4
     name: No vendor lock-in
     description: Every agent and every backend works against the same spec. Switching agents, or switching the coordination backend (G5), is configuration — never migration. The portable layer is the spec, never the storage.
@@ -23,7 +23,7 @@ goals:
     description: tasks.md owns ONLY the portable semantic layer — the format, priority, tags, blocked-by, removable-not-toggleable completion, and the /next-task workflow. Everything the ecosystem already solves — atomic dequeue, locking, leases, scheduling, merge serialization — is delegated to a backend (G5), never reimplemented. The default is GET (adopt an existing tool) over BUILD; bespoke distributed-systems code must first prove no backend is adaptable. This principle is the reason G1 and G5 hold.
   - id: G7
     name: Fleet coordination is the primary use case
-    description: The flagship reason to adopt tasks.md is to run a TEAM of machines — each running a PARALLEL fleet of agents — against one queue with zero duplicate work and deterministic selection. tasks.md supplies the agent-readable layer and delegates the collision-free, two-tier coordination to a backend (G5/G6) — git-native by default, because agents are file-native (see Core beliefs); a server-backed queue is offered only where that infra already exists. The solo case (one agent, one file) is the zero-setup default; the fleet case is what the design must never break.
+    description: The flagship reason to adopt tasks.md is to run a TEAM of machines — each running a PARALLEL fleet of agents — against one queue with zero duplicate successful claims and deterministic selection for a known state snapshot. tasks.md supplies the agent-readable layer and delegates the collision-free, two-tier coordination to a backend (G5/G6) — git-native by default, because agents are file-native (see Core beliefs); a server-backed queue is offered only where that infra already exists. The solo case (one agent, one file) is the zero-setup default; the fleet case is what the design must never break.
 non_goals:
   - id: NG1
     name: Not a project management tool
@@ -52,7 +52,7 @@ Today's options all fail at that one job:
 
 ## Primary use case: the fleet
 
-The most demanding — and most valuable — scenario is a **fleet**: a *team of machines* working one queue at the same time, each machine running a *parallel fleet of agents*. The hard requirement is that **no two agents anywhere pick the same task**, and that selection is **deterministic** and reproducible. This two-tier shape — a team of hosts × per-host agents — is the use case the design is built around (G7).
+The most demanding — and most valuable — scenario is a **fleet**: a *team of machines* working one queue at the same time, each machine running a *parallel fleet of agents*. The hard requirement is that **no two agents anywhere successfully claim and hold the same task**, and that selection is deterministic for a known state snapshot. Race winners are timing-dependent; the folded queue state is reproducible. This two-tier shape — a team of hosts × per-host agents — is the use case the design is built around (G7).
 
 The simplest scenario — one developer, one agent, one file — is the **zero-setup default**. The fleet is what the design must never break; the solo case is what it must never burden.
 
@@ -76,12 +76,12 @@ The coordination engine is pluggable, and every backend exposes the identical sp
 | Backend | What it is | When |
 |---|---|---|
 | **File** (default) | git-synced `TASKS.md`, best-effort `(@agent)` claim | solo, low-concurrency, offline |
-| **Git-native** (default for fleets) | **collision-free** claims via git's atomic ref-CAS on a CI-excluded `tasks-claims` log — the sole source of truth for task state; `TASKS.md` is a **single-writer generated snapshot** (agents never edit it → conflict-free). tasks.md ships the spec + conformance suite + a thin reference adapter; a reused CRDT engine (git-bug/grite) is an optional later phase, not required. **Single repo, no sidecar, no server** | a team of always-on machines × per-host agent fleets — the primary use case (G7) |
+| **Git-native** (default for fleets) | **collision-free** claims via git's atomic ref-CAS on a `tasks-claims` log excluded from normal CI — the sole source of truth for task state; `TASKS.md` is a **single-writer generated snapshot** (agents never edit it → conflict-free). tasks.md ships the spec + conformance suite + a thin reference adapter; a reused CRDT engine (git-bug/grite/Automerge-on-git) is an optional measured phase, not required for v1. **Single repo, no sidecar, no server** | a team of always-on machines × per-host agent fleets — the primary use case (G7) |
 | **Atomic queue** | pgmq / River on Postgres `SKIP LOCKED` (visibility-timeout = lease) | only where that infra already exists |
 | **MCP broker** | one `tasks-mcp` (HTTP) serializing pick / claim | agents already speak MCP; a single coordination point |
 | **Issues** | GitHub Issues / Projects (assignee, labels, `Closes #N`) | teams already living in a tracker |
 
-The format, tags, priority order, blocked-by graph, and `/next-task` commands are identical across all of them. **The spec is portable; the coordination is borrowed.** The default decision is *adopt*; building a bespoke coordinator is the last resort, gated on no backend being adaptable (G6). For fleet claiming specifically, tasks.md owns only the **spec + a runnable conformance suite** (the suite, not source ownership, is what keeps any backend honest) and a **thin reference adapter** that proves it by driving reused engines — the ledger (git-bug's model) and enforcement (lefthook / Rulesets / `pre-receive`) are never reimplemented here.
+The format, tags, priority order, blocked-by graph, and `/next-task` commands are identical across all of them. **The spec is portable; the coordination is borrowed.** The default decision is *adopt*; building a bespoke coordinator is the last resort, gated on no backend being adaptable (G6). For fleet claiming specifically, tasks.md owns only the **spec + a runnable conformance suite** (the suite, not source ownership, is what keeps any backend honest) and a **thin reference adapter**. v1 proves the path with git's ref-CAS first; heavier ledger engines and enforcement surfaces are reused only when evidence requires them.
 
 ## Strategy: spec first, packages second
 

@@ -33,6 +33,14 @@
    *cross-machine-over-git-no-server* claim; most competitors are single-host or
    server-backed.
 
+## Gap-audit update: v1 uses strict linear-CAS first
+
+This research identified Lamport/CRDT ordering as the robust answer when the claims ledger
+is allowed to fork and merge. The current v1 plan deliberately avoids that fork/merge case:
+keep `tasks-claims` strictly linear with git's non-fast-forward CAS and run that path
+against the conformance suite first. A reused CRDT engine remains the fallback when
+linear-CAS fails conformance or contention metrics exceed the documented tripwire.
+
 ## 1. Event-log-on-git: prior art + the determinism correction
 
 The append-only-log-on-git-refs model is **proven**, not novel:
@@ -149,9 +157,10 @@ proposed (backlog.so's TTL claims + commit trailers; lodestar's two-plane + leas
 
 ## 6. Corrections + actions for the plan
 
-- **Correction (v1 correctness):** replace "first claimed in commit order wins" with an
-  explicit **Lamport-clock total order** (`(lamport, actor_id, content_hash)`), and keep
-  the ledger ref rebase-only/linear as defense-in-depth. → amends Step 3/4 + acceptance #5.
+- **Correction (v1 correctness):** replace "first claimed in arbitrary git log order wins"
+  with either a strictly linear CAS ledger (the v1-first path) or, if forks/merges are
+  introduced later, an explicit **Lamport-clock total order**
+  (`(lamport, actor_id, content_hash)`). → amends Step 3/4 + acceptance #5.
 - **Adopt lefthook** for hook install (Step 6/7) instead of a bespoke installer.
 - **Default the claims ref to a plain `tasks-claims` branch** in the SAME repo; document
   `refs/tasks/*` as the alternative (Step 1). (Sidecar repo ruled out — §7.)

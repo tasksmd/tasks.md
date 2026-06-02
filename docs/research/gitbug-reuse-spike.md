@@ -38,6 +38,20 @@ tiebreak**, per its data-model design doc). **git-bug provides it out of the box
 not build the ordering, and we do not need to force a linear ledger** (a simplification
 over the plan's earlier rebase-only defense-in-depth).
 
+## Gap-audit update: linear-CAS is the v1 default
+
+Follow-up review found that git-bug/CRDT machinery is useful but not required for the v1
+guarantee if a strictly linear `tasks-claims` branch passes conformance. The current plan is
+therefore:
+
+1. Run a linear-CAS adapter against the conformance suite first.
+2. Ship linear-CAS as v1 if it passes and contention stays below the Phase-4 tripwire.
+3. Reuse git-bug, grite, Automerge-on-git, or another CRDT engine only if linear-CAS fails
+   conformance or measured contention justifies the dependency.
+
+The empirical git-bug result remains valuable as the fallback CRDT baseline, not as a
+mandatory v1 implementation choice.
+
 ## Mechanism findings
 
 - **CLI exposes only `bug` / `label` / `user`** — there is **no custom-entity command**.
@@ -52,9 +66,10 @@ over the plan's earlier rebase-only defense-in-depth).
 - **git-bug LACKS TTL leases and snapshot compaction** — both of which the claim ledger
   needs. They'd be added in the adapter (a small build, or borrowed from elsewhere).
 
-## Reuse-mechanism recommendation
+## Reuse-mechanism recommendation if CRDT is needed
 
-**v1: git-bug via a separate, GPL-licensed Go helper invoked as a subprocess.**
+If the conformance/metrics gate proves that linear-CAS is insufficient, the strongest
+git-bug reuse mechanism is a separate, GPL-licensed Go helper invoked as a subprocess.
 
 - The helper imports `entity/dag`, defines a first-class `Claim`/`Lease` entity (proven
   deterministic above), and ships as its own GPL binary; tasks.md's TS packages call it via
@@ -155,4 +170,3 @@ URLs: git-bug <https://github.com/git-bug/git-bug>; grite <https://github.com/ne
 Beads <https://github.com/gastownhall/beads>; Automerge <https://automerge.org>;
 Yjs <https://github.com/yjs/yjs>; git-warp <https://github.com/git-stunts/git-warp>;
 Radicle COB RFC 0662 <https://github.com/radicle-dev/radicle-link/blob/master/docs/rfc/0662-collaborative-objects.adoc>.
-
