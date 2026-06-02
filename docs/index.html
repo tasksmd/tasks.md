@@ -51,7 +51,19 @@
 
 - [ ] Add rate limiting to public API endpoints (@cursor-1)
   - **Tags**: backend
+  - **Estimate**: 1h
   - **Details**: Use express-rate-limit, 100 req/min per IP
+  - **Hypothesis**: Capping public endpoints at 100 req/min/IP drops the
+    abusive-traffic 5xx rate from ~3% to &lt;0.5% without affecting legitimate
+    users (steady-state p95 latency unchanged).
+  - **Success**: 5xx rate &lt;0.5% over a 24h window post-deploy; p95 latency delta within ±10ms.
+  - **Pivot**: if legitimate clients trip the limiter at &gt;1% rate, the per-IP
+    model is wrong — switch to per-API-key buckets instead of widening the cap.
+  - **Measurement**:
+    `curl -s https://api.example.com/metrics | grep http_5xx_rate_24h`
+  - **Anchor**: Beyer et al., *SRE* 2016, Ch. 5 (eliminating toil with rate limits).
+  - **Verification**: `vitest run tests/rate-limit.test.ts` exits 0; staging soak ≥1h with no false-positives.
+  - **Risk**: shared NAT egress (corp networks) could trip the limit. Mitigation: `X-Forwarded-For` honored when behind trusted proxy.
   - **Blocked by**: auth-fix
 
 ## P2
@@ -240,6 +252,61 @@
           <tr>
             <td>Last-enriched</td>
             <td>ISO date (`YYYY-MM-DD`) marking the last time an agent added research notes to the task. Used as an idempotency / cooldown gate so agents don't re-enrich the same task every session</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Estimate</td>
+            <td>Agent or human time estimate as free-form duration text — e.g., `30m`, `1h`, `2-3d`. Lets pickers reason about session-fit before claiming</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Verification</td>
+            <td>Procedure for confirming the task is done. Distinct from **Acceptance** (the definition-of-done criterion); **Verification** is the runnable procedure or steps that exercise that criterion</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Risk</td>
+            <td>Free-form `Risk: &lt;what could go wrong&gt;. Mitigation: &lt;how it's handled&gt;.` Surfaces the failure mode the author already considered so the agent doesn't re-discover it</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Hypothesis</td>
+            <td>Pre-registered prediction (rule-#9): which observable behaviour will improve, by how much, and why. The first half of the [pre-registration block](#rule-9-pre-registration-block)</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Success</td>
+            <td>Numeric or rubric threshold at or above which the change is kept. Pairs with **Hypothesis** and **Measurement**</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Pivot</td>
+            <td>Threshold below which the *approach* (not just the change) is abandoned. Pre-registers the give-up criterion so the team doesn't keep iterating on a dead end</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Measurement</td>
+            <td>Exact runnable shell / OTEL / CI command that produces the metric. No English instructions; reviewers must be able to copy-paste and reproduce</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Anchor</td>
+            <td>Literature citation or internal reference justifying the metric and its threshold. Keeps the threshold from being arbitrary</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Touches</td>
+            <td>Files this task is expected to **modify**. Comma-separated, backtick-stripped (same shape as **Files**). Distinct from **Files** (the broader "all relevant files" set, which may include read-only references) — **Touches** is the write-set. Used by orchestrators to detect file-set overlap when parallel-launching multiple agents; overlapping **Touches** sets indicate likely merge conflicts and should serialise rather than parallelise</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Surfaced-by</td>
+            <td>Provenance: which audit, lint, observer session, sweep, or external report surfaced this task. Free-form text. Lets reviewers tell whether the task came from author intent or a deterministic gate, and lets agents find sibling findings from the same source</td>
+            <td><code></code></td>
+          </tr>
+          <tr>
+            <td>Milestone</td>
+            <td>Milestone identifier this task contributes to. Free-form text; teams pick the format (e.g., `M1.1`, `Q3-2026`, `v0.2.0`, `north-star-A`). Used by milestone-alignment gates and roadmap views to filter tasks by the milestone they unblock</td>
             <td><code></code></td>
           </tr>
         </tbody>
