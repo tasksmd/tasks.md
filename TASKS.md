@@ -281,7 +281,9 @@
       full CI → merge-to-main path (optionally a merge queue); completion removes the
       task from TASKS.md in that PR and deletes the claim file. Claiming stays sub-second
       and CI-free; only real code is gated.
-  - **Files**: `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
+  - **Files**: `docs/plans/deterministic-fleet-claiming.md` (validated implementation
+    plan — reviewer-approved 2026-06-02; the phased steps + acceptance below derive from
+    it), `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
     done), `spec.md` (§ Claiming — Limitations / Stale Claims; a new § "Fleet
     coordination" documenting the GIT-NATIVE model + tier-aware `@machine/agent`
     identity), `.tasksmd.json` (backend selector), a git-native claim adapter in
