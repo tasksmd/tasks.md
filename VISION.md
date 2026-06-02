@@ -76,12 +76,12 @@ The coordination engine is pluggable, and every backend exposes the identical sp
 | Backend | What it is | When |
 |---|---|---|
 | **File** (default) | git-synced `TASKS.md`, best-effort `(@agent)` claim | solo, low-concurrency, offline |
-| **Git-native** (default for fleets) | per-task claim files + git-push CAS + TTL lease (the tq + Nautilus git-queue model) | a team of machines × per-host agent fleets, no server — the primary use case (G7) |
+| **Git-native** (default for fleets) | a thin reference adapter over a **reused** append-only Lamport-clock ledger (git-bug's model) + lefthook / Rulesets / `pre-receive` enforcement — tasks.md ships the spec + conformance suite + adapter, **not** the engine | a team of machines × per-host agent fleets, no server — the primary use case (G7) |
 | **Atomic queue** | pgmq / River on Postgres `SKIP LOCKED` (visibility-timeout = lease) | only where that infra already exists |
 | **MCP broker** | one `tasks-mcp` (HTTP) serializing pick / claim | agents already speak MCP; a single coordination point |
 | **Issues** | GitHub Issues / Projects (assignee, labels, `Closes #N`) | teams already living in a tracker |
 
-The format, tags, priority order, blocked-by graph, and `/next-task` commands are identical across all of them. **The spec is portable; the coordination is borrowed.** The default decision is *adopt*; building a bespoke coordinator is the last resort, gated on no backend being adaptable (G6).
+The format, tags, priority order, blocked-by graph, and `/next-task` commands are identical across all of them. **The spec is portable; the coordination is borrowed.** The default decision is *adopt*; building a bespoke coordinator is the last resort, gated on no backend being adaptable (G6). For fleet claiming specifically, tasks.md owns only the **spec + a runnable conformance suite** (the suite, not source ownership, is what keeps any backend honest) and a **thin reference adapter** that proves it by driving reused engines — the ledger (git-bug's model) and enforcement (lefthook / Rulesets / `pre-receive`) are never reimplemented here.
 
 ## Strategy: spec first, packages second
 
