@@ -1,256 +1,255 @@
-# Plan: deterministic fleet claiming — spec + conformance + thin reference adapter
+# Plan: collision-free fleet claiming — spec + conformance + thin reference adapter
+
+> (Task id stays `deterministic-fleet-claiming` for continuity; the *guarantee* is
+> **collision-freedom**, so the human-facing name is now "collision-free fleet claiming"
+> — see issue-resolution §.)
 
 - **Task**: `deterministic-fleet-claiming`
 - **Repo**: `~/apps/tooling/tasks.md`
-- **Research**: [`fleet-claiming.md`](../research/fleet-claiming.md) (prior art + mechanics + competitive landscape); [`gitbug-reuse-spike.md`](../research/gitbug-reuse-spike.md) (reuse spike — git-bug convergence confirmed; candidate sweep)
+- **Research**: [`fleet-claiming.md`](../research/fleet-claiming.md); [`gitbug-reuse-spike.md`](../research/gitbug-reuse-spike.md)
 - **Author**: devin (claude-opus-4.x) session 2026-06-02
-- **Status**: validated (FULL plan after operator edge-case Q&A 2026-06-02)
-- **Validated-by**: `reviewer` subagent on 2026-06-02 (full plan — first pass needs-revision on 2 param specs; second pass approved)
+- **Status**: **design-approved; integration-UNPROVEN** — nothing is "validated" until the
+  conformance suite (Step 2) passes against a running adapter (Step 4). The git-bug spike
+  proved only *generic convergence*, not our claim/lease/projection model.
+- **Validated-by**: an INDEPENDENT fresh-context `reviewer` subagent on 2026-06-02 (cold
+  review found 1 residual blocker + 3 majors; all resolved; approved). Prior approvals were
+  the same resumed co-author reviewer and didn't count.
 
 ## Goal
 
-tasks.md **specifies** a deterministic, collision-free, multi-machine task-claim protocol
-and ships only the thin glue that proves and enables it — a **conformance test suite**, a
-**thin reference adapter**, and a **one-prompt wiring command** — while **reusing** an
-existing engine for the ledger and existing tools for enforcement. It builds **no ledger
-engine and no orchestrator** (VISION G6). Hard constraints: **single repo, no server**
-(the ledger is a branch/ref *inside the repo where the work happens* — **never a sidecar
-repo**); target a team of **~tens of machines** × per-host agent fleets (G7).
+Specify a **collision-free**, multi-machine task-claim protocol — no two agents ever hold
+the same task — and ship the thin glue that proves it (a conformance suite, a thin
+reference adapter, one-prompt wiring), **reusing** existing primitives. Hard constraints:
+**single repo, no server, no sidecar repo**; target ~tens of always-on machines × per-host
+agent fleets (G7). Stay the **thinnest layer that solves the goal** (G6) — heavier
+machinery (CRDT engine, server enforcement, heartbeats) must *earn* its way in by measured
+need, not be bundled into v1.
 
-## Why
+## Guarantees (precise — "collision-free", not "deterministic")
 
-`(@agent)` claims race (post-push visibility + deterministic picker ⇒ guaranteed
-collisions); `tasks claim` is a no-op (`packages/cli/src/backend/tasks-md.ts:84`); a
-`/next-task` *skill* can't *guarantee* "claim before work" (only hooks + server rules can);
-adoption must be one prompt. The reuse spike empirically confirmed the model
-(git-bug converges to a deterministic winner across clones) and the GitHub
-**~6 pushes/min/repo** soft ceiling. This plan turns the operator's edge-case decisions
-(below) into a buildable, conformance-tested v1.
+- **Collision-free claims:** at most one agent holds a task at a time (git ref CAS is the
+  primitive). This is the goal.
+- **Deterministic *selection* given a state:** the picker is reproducible for a given
+  (TASKS.md, log) snapshot.
+- **Eventually-consistent global view:** the *winner of a race* is timing-dependent (whoever
+  the remote accepts first); only the *fold of the log* is deterministic. We do **not**
+  claim a globally reproducible schedule.
 
-## Locked decisions (operator Q&A, 2026-06-02)
+## Locked decisions (operator Q&A + issue-resolution, 2026-06-02)
 
-1. **Pure spec.** Own the spec + a conformance suite + a thin reference adapter + one-prompt
+1. **Pure spec.** Own the spec + conformance suite + a thin reference adapter + one-prompt
    wiring. No engine, no orchestrator.
-2. **Reuse the ledger engine** (deferred final pick — shortlist git-bug / grite /
-   Automerge-on-git; chosen at impl time by prototyping against the conformance suite,
-   behind an adapter interface). Radicle COBs ruled out (require the Radicle P2P network).
-3. **Single repo only — no sidecar repo.** Ledger on a dedicated, CI-excluded `tasks-claims`
-   ref in the same repo.
-4. **Identity** = `<git-email>/<instance-id>` — git committer identity + a per-process
-   instance id (uuid/pid), stable for a task's lifetime, unique per concurrent agent on a
-   host. Self/git trust for v1; signed claims deferred.
-5. **Lease** = long lease, no heartbeat (TTL configurable, default > longest expected task).
-6. **Contention** = optimistic CAS + **silent retry** (backoff+jitter) + **stateless
-   id-hashed pick-dispersion** (no roster, no steal). Full HRW + work-stealing deferred.
-7. **Push handling** = per-task claim + silent retry; no batching/budget. GitHub's
-   ~6/min/repo is a *soft* limit → degrades latency, never correctness.
-8. **Failure** = release back to queue (explicit `released` event or lease expiry). No
-   attempt-counter / failed-state in v1 (poison-task guard deferred).
-9. **Enforcement** = strict full-belt: lefthook (client) + GitHub Ruleset + a **required
-   check that every PR to `main` has a live claim by its author** + `pre-receive`
-   (GHE/GitLab/Gitea). No bypass; hotfixes need a task too.
-10. **Blocked-by** = a task with unsatisfied blockers is unclaimable; readiness recomputed
-    each pick.
-11. **No duplication / log-first** = the **claim log is the single source of truth for
-    state**; **TASKS.md holds only authored task *definitions*** and is a projection target
-    (terminal events remove blocks). Only the task ID is shared. Log wins on disagreement.
-12. **Winner** = the reused engine's embedded **Lamport total order** (deterministic across
-    clones; skew-immune).
+2. **Engine = a Step-3 BAKE-OFF, not a v1 commitment.** Prototype **linear-CAS (no engine,
+   reuse git's own ref-CAS)** vs a **reused CRDT engine** (git-bug/grite) against the
+   conformance suite; pick on evidence. v1 may legitimately have **no engine**.
+3. **Single repo only — no sidecar.** Ledger on a CI-excluded `tasks-claims` ref.
+4. **Identity** = `<git-email>/<instance-id>` (per-process, unique per concurrent agent).
+5. **Fully log-first / no duplication.** The `tasks-claims` log is the **sole source of
+   truth for ALL task state** (create/claim/release/complete/cancel). `TASKS.md` is a
+   **single-writer generated snapshot** on `main`, never hand-edited; agents read the log.
+6. **`TASKS.md` is conflict-free by construction:** work PRs touch *code + the log*, never
+   `TASKS.md`; a single scheduled job regenerates `TASKS.md` from the log through normal CI.
+7. **Contention** = optimistic CAS + silent retry (backoff+jitter) + stateless SHA-256
+   pick-dispersion. HRW deferred.
+8. **Enforcement (phased, no bypass):** v1 = a client `pre-push` claim check, **path-scoped**
+   (code → live claim required; `TASKS.md`/docs → pass). Phase 3 = server-side Ruleset +
+   required check (same path-scoping) + `pre-receive`. The check is mandatory/unbypassable;
+   its *logic* is path-aware (this is what dissolves the curation deadlock corporate-safely).
+9. **Lease** = a long `lease_expires` field so a dead claim can be reclaimed after TTL
+   (cheap, in v1). Heartbeats / offline nuance = Phase 2.
+10. **Failure** = release back to queue (`released` event or lease expiry). Poison-guard
+    deferred.
+11. **Blocked-by** = unclaimable until unblocked; readiness recomputed each pick.
+12. **Assume-online precondition** (explicit): the fleet is always-on machines; sleeping
+    laptops are out of v1 scope (Phase 2 leases/heartbeat).
 
-## The model (detailed)
+## The model (v1)
 
-### Two surfaces, no duplication
-- **`TASKS.md` (on `main`)** — authored open-task **definitions** only (id, title, priority,
-  tags, blocked-by, details). Source of truth for *what work exists*.
-- **Claim log (`tasks-claims` ref, same repo)** — append-only **event** stream of state
-  transitions: `claimed` / `released` / `completed` / `cancelled` (+ `snapshot` for
-  compaction). Source of truth for *live state*. The reused engine provides the
-  append-only-on-git + Lamport-ordered fold.
-- **No duplication:** claim/done state lives ONLY in the log; the only datum shared with
-  TASKS.md is the task **ID** (a reference). There is no `[x]` / done flag in TASKS.md.
-- **Projection (log-first):** events are written first; applying the log's **terminal**
-  events (`completed`/`cancelled`) to TASKS.md **removes** those blocks. TASKS.md =
-  authored-definitions − log-closed. The **picker excludes log-closed tasks directly**, so
-  it is correct even before the projection runs; the projection just keeps the
-  human-readable file tidy. On disagreement (sync lag) the **log wins**; TASKS.md
-  re-projects.
+### One source of truth: the log; `TASKS.md` is a generated view
+- **`tasks-claims` ref (same repo, CI-excluded)** — append-only log of *every* task event:
+  `created` / `claimed` / `released` / `completed` / `cancelled`. The **sole** live state.
+- **`TASKS.md` (on `main`)** — a **generated snapshot** = fold(log), regenerated by ONE
+  scheduled job (triggered on `tasks-claims` pushes) via a normal CI'd PR. Always visible +
+  git-tracked, but **no agent ever edits it** → it cannot cause merge conflicts, and the
+  live state never depends on its freshness (agents read the log).
+- **No duplication:** state is in the log only; `TASKS.md` is a render (a materialized
+  view), the way a build artifact is — not an independent source.
 
-### `next()` / readiness (single, reconciled view)
-`pick = TASKS.md open defs − {log-closed} − {live-claimed} − {blocked}`, ranked by
-`pickBestTask`, then **dispersed**: among the top-K ready tasks an agent offers itself the
-one at `hash(instance-id) mod min(K, #ready)` (stateless herd-dispersion). `hash` is a
-**well-distributed digest** (SHA-256 of the instance-id, take the low bits) — never a
-length/sum — so distinct ids spread evenly across the top-K; `K` is configurable (default
-~16). Blocked-by
-readiness is recomputed each pick from TASKS.md + the log-closed set; a cancelled/completed
-blocker unblocks dependents; a cycle is never-ready (+ lint warning).
+### The `TASKS.md` regeneration job (fully specified — closes the deadlock)
+- **Trigger:** a CI workflow `on: push` to the `tasks-claims` ref (near-real-time), plus a
+  periodic schedule as a fallback.
+- **Identity:** runs as the CI bot (e.g. `GITHUB_TOKEN` / `tasks-md-bot`) — for
+  attribution only; it needs **no special privilege**.
+- **Exemption — by uniform path logic, not a per-actor bypass:** the job's change touches
+  **only `TASKS.md`**, so the path-scoped required check **passes it by the same rule that
+  passes any docs-only PR** — no claim required, no CI bypass. This is the linchpin and it
+  is corporate-safe precisely because nothing is exempted *as an actor*; the rule is the
+  same for everyone.
+- **Single writer ⇒ no merge conflict:** the job is the *only* writer of `TASKS.md`; each
+  run re-folds the latest log before pushing. A GitHub Actions `concurrency` group
+  serializes runs; the latest wins (and "latest" is correct because it's a pure fold).
+- **No loop:** the regeneration commit touches `main`/`TASKS.md` only — **not** the
+  `tasks-claims` ref — so it never re-triggers itself.
+- **Idempotent / crash-safe:** re-running on the same log produces identical bytes; a
+  failed run is safely re-run.
 
-### Claim = optimistic CAS (single repo, silent retry)
-Append a `claimed{id, owner, lamport, lease_expires}` event to the `tasks-claims` ref →
-push. On non-ff rejection / rate-limit: fetch, fold; if a live `claimed` for `id` already
-won → **yield, pick next**; else re-apply (unique event filename) and re-push. Retries are
-**silent** with **exponential backoff (100 ms initial, 5 s cap, ~10 attempts) + ±full
-jitter** — the jitter de-synchronizes a herd of retriers so they don't re-amplify the
-burst. Winner = lowest Lamport tuple (engine-provided), so two clones always agree.
+### Claim = optimistic CAS (collision-free; reuse git's ref-CAS)
+Append a `claimed{id, owner, lease_expires}` event to `tasks-claims` → push. **git's atomic
+non-ff rejection is the collision-free primitive**: if two agents claim the same id, exactly
+one push fast-forwards (wins); the loser is rejected, fetches, sees the live claim, and
+**yields → picks next**. Retries are silent: exponential backoff (100 ms→5 s, ~10 attempts)
++ ±full jitter. (Whether the ledger stays strictly *linear* with no engine, or uses a
+reused CRDT engine to tolerate forks without retries, is the Step-3 bake-off.)
 
-### Identity
-`<git-email>/<instance-id>`; the instance id is per-process (uuid/pid), so N identical
-agents on one host each have a distinct owner string. Stable for a task's lifetime.
+### `next()` / readiness + dispersion
+`pick = fold(log).open − {live-claimed} − {blocked}`, ranked by `pickBestTask`, then
+**dispersed**: pick the ready task at `hash(instance-id) mod min(K, #ready)` where `hash` =
+SHA-256(instance-id) low bits (well-distributed; never length/sum), `K` default ~16. This
+spreads N agents across the top-K ready tasks so the deterministic picker doesn't produce a
+thundering herd. Blocked-by readiness recomputed each pick; a closed blocker unblocks
+dependents; a cycle is never-ready (+ lint warning).
 
-### Lease & crash / resurrection / offline
-- Long lease (no heartbeat). A crashed machine's task is reclaimable after the TTL.
-- **Reclaim:** another agent appends a fresh `claimed` for the expired task; by Lamport
-  order it becomes the owner.
-- **Resurrected / offline-too-long owner:** on next sync the original owner sees it no
-  longer owns the task (a later `claimed` won, or the block is gone) → it **discards its
-  work and does not push** (the strict enforcement check + Ruleset also block a push by a
-  non-owner). No fencing token needed given long-lease + log-order winner.
-- **Offline (assume-online):** claiming a *new* task needs the remote (CAS) → offline = no
-  new claims; an in-flight claim survives a network blip (holder syncs completion on
-  reconnect); offline beyond the TTL risks losing the task (discard on reconnect).
+### Enforcement (v1: client, path-scoped, no bypass)
+`pre-push` (via lefthook) inspects commits bound for `main`. A change is **claim-exempt
+only if EVERY changed path is a non-executable doc** — markdown by extension (`*.md`,
+including `TASKS.md`). **Any other path requires a live claim** on the referenced task
+(`Task:` trailer / `task/<id>` branch / `Closes`) — including executables under `docs/`
+(`docs/**/*.py|*.sh|*.js`), so the "code-in-docs" labeling loophole is closed (the exemption
+is an extension allowlist, never a directory). `post-merge` fetches the
+log; `prepare-commit-msg` stamps `Task: <id>`. Client hooks are ergonomics; the hard,
+unbypassable guarantee is the Phase-3 server-side required check with the *same path
+logic* — which is corporate-safe because it always runs and decides by path, never bypasses.
 
-### Lifecycle
-`claimed → completed` (event → projection removes block) | `released` (gave up/error →
-claimable again) | `cancelled` (human removed the task → event → block removed). Lease
-expiry = implicit release. No `failed` state / attempt counter in v1 — a released poison
-task may be re-picked (poison-guard is a deferred follow-up).
+## Phasing (v1 solves "avoid conflicts"; the rest earns its way in)
 
-### Enforcement (strict, full-belt)
-- **Client (lefthook):** `pre-push` blocks a `main`-bound work push unless the actor holds
-  a live claim on the task(s) it references (`Task:` trailer / `task/<id>` branch /
-  `Closes`); `post-merge` fetches the ledger; `prepare-commit-msg` stamps `Task: <id>`.
-- **Server (github.com):** a **Repository Ruleset** on `tasks-claims` (no force-push, no
-  delete, linear) + a **required status check** on PRs to `main` = "the PR **author** holds
-  a live claim for the referenced task." **Strict:** every PR to `main` must reference a
-  claimed task by its author; hotfixes need a task; **no bypass**.
-- **Server (GHE / GitLab / Gitea):** a `pre-receive` hook is the strongest layer (reject
-  unclaimed `main` pushes + non-append ledger pushes).
+- **Phase 1 (v1 — this plan):** log-first state + collision-free CAS claim + dispersion +
+  client path-scoped `pre-push` check + the generated `TASKS.md` snapshot job. Long-lease
+  field for dead-claim reclaim. **Solves the stated goal; thin; provable by the suite.**
+- **Phase 2:** robust leases + crash/offline handling + heartbeats + log snapshots/compaction.
+- **Phase 3:** server-side hard enforcement (Ruleset + required check + `pre-receive`).
+- **Phase 4 (only if measured):** adopt a CRDT engine (git-bug/grite) to drop the retry loop
+  under high contention; HRW partitioning.
 
-### Setup (`tasks fleet init` / `doctor`, single-repo, idempotent)
-Creates the `tasks-claims` ref; writes `.tasksmd.json` (`backend`, `claimsRef`,
-`leaseTtlSec`); installs lefthook + the CI workflows (ledger excluded from the build; the
-required-check); best-effort applies the Ruleset via `gh` (prints the manual command when
-admin is required); installs `/next-task`. `doctor` reports which pieces are in place.
+## v1 constraints (explicit preconditions — what v1 does NOT yet cover)
+- **Always-on machines.** v1 assumes the fleet is always-on (servers / CI runners). A
+  laptop that sleeps holds its claim until the long lease expires — mixed laptop fleets
+  need Phase 2 (leases + heartbeat).
+- **Client-trusting in v1.** v1's enforcement is the client `pre-push` check (bypassable
+  with `--no-verify` / a clone without lefthook). A repo that needs an *unbypassable*
+  guarantee must wait for **Phase 3** (server-side required check + `pre-receive`). v1 is
+  not "production-enforced everywhere" — it is the collision-avoidance core.
+- **Single repo.** Cross-workspace / multi-repo claiming is a follow-up (`fleet-claim-workspace`).
 
-## Scope (in)
-- `spec.md` `## Fleet coordination` capturing the whole model above (conformance-grade).
-- A backend-agnostic **conformance test suite** (the spec's teeth).
-- A **thin reference adapter** (`git-claims` behind `TaskBackend`) driving the reused
-  engine + the **projection** step + dispersion + silent-retry CAS.
-- `tasks fleet init` + `tasks fleet doctor` (single-repo wiring).
+## Scope (in, v1)
+- `spec.md` `## Fleet coordination` (the v1 model; conformance-grade).
+- `@tasks-md/conformance` — a backend-agnostic, **runnable** conformance suite (the teeth).
+- A thin reference adapter (`git-claims` behind `TaskBackend`) — built around the Step-3
+  bake-off winner.
+- The single-writer `TASKS.md`-regeneration job + a path-scoped `pre-push` hook.
+- `tasks fleet init` / `doctor` (single-repo wiring).
 
 ## Scope (out)
-- **Sidecar claims repo — REJECTED** (operator constraint: single repo only).
-- HRW + work-stealing (v1 uses stateless dispersion) → `fleet-claim-hrw-partition`.
-- Heartbeat liveness → `fleet-claim-heartbeat-liveness`; poison-task attempt-counter/`failed`
-  state → `fleet-claim-poison-guard`; queue backend → `fleet-claim-queue-backend`;
-  per-host batching/budget → `fleet-claim-coordinator-daemon`; signed claims →
-  `fleet-claim-signed-identity`; cross-workspace multi-repo claiming →
-  `fleet-claim-workspace`; hard third-party conformance CI gate → follow-up.
-- Final engine pick (spike-resolved direction; chosen at impl behind the interface).
+- Sidecar repo — REJECTED (single repo only).
+- Server-side enforcement (Ruleset/required-check/`pre-receive`) → Phase 3.
+- Robust leases/heartbeat/offline, snapshots/compaction → Phase 2.
+- CRDT engine + HRW → Phase 4 (`fleet-claim-engine`, `fleet-claim-hrw-partition`), only if
+  the bake-off / measured contention calls for it.
+- Poison-guard, signed identity, cross-workspace, hard third-party conformance gate →
+  named follow-ups.
 
 ## Implementation steps
+### Step 1: Spec the v1 protocol (conformance-grade)
+`spec.md` `## Fleet coordination` = the v1 model. Verify: greps + `npx -y @tasks-md/lint
+TASKS.md` exits 0.
 
-### Step 1: Spec the protocol (conformance-grade)
-`spec.md` `## Fleet coordination` = the full model. Verify: `grep -c "Fleet coordination"
-spec.md` ≥ 1, `grep -c "leaseTtlSec" spec.md` ≥ 1, `npx -y @tasks-md/lint TASKS.md` exits 0.
+### Step 2: Conformance suite (the proof harness — before any adapter)
+Backend-agnostic `@tasks-md/conformance`; one test per property: **collision-free** (two
+clones claim X → exactly one wins, loser yields), append/merge behavior, **dispersion**
+(SHA-256 `hash(id) mod min(K,#ready)`; N≤K distinct ids → distinct picks; deterministic),
+**backoff** params reproducible, lease-expiry reclaim, `released` re-claimable,
+blocked-by-unclaimable + unblock-on-close, **single-source invariant** (`TASKS.md ==
+fold(log)`; no state in `TASKS.md`), **no-`TASKS.md`-conflicts** (a work change + a
+concurrent completion never conflict on `TASKS.md`, because work never touches it),
+**path-scoped enforcement** (code-without-claim rejected; docs-only passes). Verify: the
+suite **fails a deliberately-broken stub**.
 
-### Step 2: Conformance suite (the proof harness — before the adapter)
-Backend-agnostic; one test per edge case: two-clone collision (same Lamport winner),
-append auto-merge, **dispersion** (SHA-256-based `hash(id) mod min(K,#ready)` — N≤K distinct
-ids pick distinct tasks; deterministic per id), **silent-retry backoff** (100 ms→5 s cap,
-~10 attempts, ±full jitter — reproducible), lease-expiry reclaim, `released` re-claimable,
-blocked-by-unclaimable + unblock-on-close, `completed`/`cancelled` projection,
-**no-duplication invariant** (state only in the log; TASKS.md holds no done flag),
-log-wins-on-disagreement (picker excludes a log-`completed` task whose block still exists),
-and enforcement (unclaimed push rejected). Verify: the suite **fails a deliberately-broken
-stub** and is the documented conformance entry point.
+### Step 3: Engine BAKE-OFF (decide on evidence — only AFTER Step 2 exists)
+The engine choice is deferred *until the conformance suite is written*, so the suite drives
+the decision. Then prototype **(a) linear-CAS, no engine** (reuse git ref-CAS; ledger
+linear) and **(b) a reused CRDT engine** (git-bug or grite) — both behind the adapter
+interface — and run each against the Step-2 suite. Record adapter LOC, dependency/licence
+cost, and contention behavior; pick the simplest that passes (v1 may legitimately have **no
+engine**). Verify: both prototypes run the suite; the choice + evidence are recorded here.
 
-### Step 3: Resolve the engine reuse (spike-resolved; prototype the shortlist)
-Prototype git-bug / grite / Automerge-on-git against the Step-2 suite; pick behind the
-adapter interface; record the choice. Verify: smoke test claims + reads back via the engine.
+### Step 4: Thin reference adapter (`git-claims`)
+Implement the bake-off winner behind `TaskBackend`: `claim` = silent-retry CAS; `next` =
+the reconciled+dispersed picker over the log; `complete`/`release`/`cancel`/`create` = log
+appends. Verify: the Step-2 suite passes against the adapter.
 
-### Step 4: Thin reference adapter (`git-claims`) over the reused engine
-`config.ts`/`index.ts` + `git-claims.ts`: `claim` = silent-retry CAS; `next`/`listOpen` =
-the reconciled+dispersed picker; `complete`/`release`/cancel = append the event; a
-**projection** step applies terminal events to TASKS.md. Verify: the Step-2 suite passes
-against the adapter.
-
-### Step 5: Full-belt enforcement
-lefthook config + the required-check workflow (PR author ⇒ live claim) + the ledger Ruleset
-+ a `pre-receive` script. Verify: `pre-push` rejects unclaimed / passes claimed; the
-required-check rejects a no-claim PR; the build workflow excludes the ledger ref.
+### Step 5: Generated `TASKS.md` + client enforcement
+The single-writer regeneration job (on `tasks-claims` push → render fold(log) → CI'd PR) +
+the path-scoped `pre-push` hook + `prepare-commit-msg`/`post-merge`. Verify: a work change +
+a concurrent completion produce **no `TASKS.md` conflict**; `pre-push` rejects unclaimed
+code, passes a docs-only change.
 
 ### Step 6: `tasks fleet init` / `doctor` (single-repo, idempotent)
-Compose Steps 1–5 in one command + a diagnostic. Verify: fresh-repo init →
-`git config core.hooksPath` set + ledger ref exists + `.tasksmd.json` + workflows; `doctor`
-exits 0; a second init is a no-op.
+Wire the ledger ref, the regeneration workflow, lefthook, `.tasksmd.json`, `/next-task`.
+Verify: fresh-repo init → ref + workflow + hooks + config present; `doctor` exits 0; second
+run no-op.
 
 ## Risks and mitigations
+- **Curation/projection deadlock** (the prior blocker). → Resolved: queue ops are log
+  appends (no claim, no `main` PR); the required check is **path-scoped** (code→claim,
+  docs→pass) and **never bypasses CI** — corporate-safe.
+- **`TASKS.md` merge conflicts in a no-bypass repo.** → Resolved by construction: agents
+  never edit `TASKS.md`; a single scheduled writer regenerates it from the log through
+  normal CI; the picker reads the log so staleness is cosmetic.
+- **"Validated" overstated.** → Status downgraded; the conformance suite + Step-4 adapter
+  is the gate that earns "validated"; leases/snapshots/projection are explicitly unproven.
+- **"Thin adapter" hides engine scope.** → Resolved by the Step-3 bake-off measuring real
+  adapter LOC per option; v1 likely has **no engine** (linear-CAS).
+- **Over-engineering vs G6.** → Phasing: v1 is the minimal conflict-avoidance core; leases,
+  server enforcement, CRDT engine are later phases gated on measured need.
+- **Offline / laptop sleep.** → Explicit assume-online precondition; long-lease backstop;
+  Phase 2 owns heartbeat/offline. The `pre-push`/required check stops a lost owner pushing.
+- **Conformance honor-system for third parties.** → `@tasks-md/conformance` is runnable +
+  a required gate for the reference adapter; third parties self-certify (registry gate
+  deferred).
+- **Contention retry churn (linear-CAS).** → dispersion + low claim rate (long tasks) +
+  jittered backoff; if it ever bites, Phase 4 adopts a CRDT engine to drop retries.
 
-- **Soft push limit at cold start.** ~6/min/repo, single repo (no sidecar).
-  - Mitigation: stateless **dispersion** spreads first-picks across ready tasks (kills the
-    O(N²) herd) + **silent backoff (100 ms→5 s, ~10 attempts) with ±full jitter** — the
-    jitter de-synchronizes retriers so they don't re-amplify the burst; the limit is soft →
-    latency degrades, never correctness. Batching/HRW are deferred follow-ups if a real
-    fleet sustains a high rate.
-- **Poison task** (no attempt counter; release-back may re-pick forever).
-  - Mitigation: documented; `fleet-claim-poison-guard` (attempt counter / `failed` state) is
-    the fast-follow.
-- **Resurrected / offline-too-long owner pushes stale work.**
-  - Mitigation: Lamport-order winner is authoritative; holder discards on detecting loss;
-    strict enforcement (Ruleset + required check) blocks a non-owner's push.
-- **Projection lag** (TASKS.md behind the log).
-  - Mitigation: the **picker reads the log directly** (excludes log-closed), so it's correct
-    regardless; the projection only tidies TASKS.md; log wins.
-- **Strict-enforcement friction** (bot/teammate merges, hotfixes).
-  - Mitigation: operator chose strict — author must own the claim; documented; a label-based
-    exception is a follow-up if it bites.
-- **Engine reuse unresolved.** Adapter targets an interface; the conformance suite is the
-  bake-off; GPL boundary respected by subprocess (no linking).
-- **Clock skew.** Winner is Lamport (skew-immune); lease is coarse + NTP.
-- **id collision** (two agents same instance-id). Instance id includes uuid/pid → negligible;
-  a conformance test asserts owner-uniqueness.
-- **Ledger ref integrity / CI noise.** Ruleset blocks force-push/delete; the build workflow
-  excludes `tasks-claims`; `pre-receive` enforces append-only where available.
-
-## Acceptance criteria
-
-1. Spec is conformance-grade: `grep -c "Fleet coordination" spec.md` ≥ 1,
-   `grep -c "leaseTtlSec" spec.md` ≥ 1, `npx -y @tasks-md/lint TASKS.md` exits 0.
-2. **Conformance suite** exists, fails a broken stub, passes the reference adapter
-   (`npm test` exits 0).
-3. **Collision:** two clones append `claimed{X}` concurrently → both agree on the same
-   Lamport winner; loser gets `{won:false}`.
-4. **No duplication:** a test asserts state (claim/done) appears ONLY in the log — TASKS.md
-   carries no done flag — and that the picker excludes a log-`completed` task even while its
-   block still exists in TASKS.md (projection lag), proving the **log wins**.
-5. **Dispersion:** with the SHA-256-based `hash(id) mod min(K,M)`, N≤K simulated agents with
-   distinct instance-ids first-pick **distinct** tasks (collision-resistance), and each id's
-   pick is deterministic across runs (no roster). A separate test pins the backoff params
-   (100 ms→5 s, ~10 attempts, ±full jitter) for reproducibility.
-6. **Lease + lifecycle:** expired claim is reclaimable; `released` returns to claimable;
-   `completed`/`cancelled` events project to block removal (unit + integration).
-7. **Blocked-by:** a task with unsatisfied blockers is unclaimable; closing the blocker makes
-   it claimable.
-8. **Enforcement (strict):** `pre-push` rejects an unclaimed work push and passes a claimed
-   one; the required-check logic rejects a PR whose author lacks a live claim; the build
-   workflow excludes the ledger ref; the Ruleset config blocks force-push/delete.
-9. **One-prompt setup:** fresh-repo `tasks fleet init` → hooks (`git config core.hooksPath`)
-   + ledger ref + `.tasksmd.json` (`backend: git-claims`) + workflows; second run no-op;
-   `tasks fleet doctor` exits 0.
-10. **Reuse, not build:** the adapter drives a REUSED engine — verifiable by grepping the
-    adapter for the engine shell-out/dependency and the absence of a bespoke CRDT/merge
-    engine in tasks.md packages.
-11. Determinism preserved: existing `pickBestTask` tests pass unchanged.
-12. Full gate green: `npm run build && npm test && npm run lint` all exit 0.
+## Acceptance criteria (v1)
+1. Spec is conformance-grade (greps + lint exit 0).
+2. `@tasks-md/conformance` exists, **fails a deliberately-broken stub**, and **passes the
+   reference adapter**. The suite is a **gate, not a checkbox** — no implementation (incl.
+   the engine bake-off) lands until the suite exists and passes; it is the proof the design
+   is correct.
+3. **Collision-free:** two clones claim X concurrently → exactly one wins; loser yields.
+4. **Single source:** a test asserts `TASKS.md == fold(log)` and that no state lives in
+   `TASKS.md`; the picker excludes a log-`completed` task whose snapshot block still exists.
+5. **No `TASKS.md` conflicts:** a work change + a concurrent completion never conflict on
+   `TASKS.md` (work never touches it); the regeneration job is single-writer.
+6. **Dispersion + backoff:** SHA-256 `hash(id) mod min(K,M)` → N≤K distinct ids pick distinct
+   tasks (deterministic); backoff params pinned.
+7. **Lease + lifecycle:** expired claim reclaimable; `released` re-claimable; lifecycle events
+   fold correctly.
+8. **Blocked-by:** unclaimable until unblocked.
+9. **Path-scoped enforcement (no bypass; extension-allowlist):** `pre-push` rejects an
+   unclaimed change touching any non-`*.md` path (incl. `docs/**/*.py|*.sh`), passes a
+   markdown-only change; a test covers the code-in-docs case. (Phase 3) the server
+   required-check enforces the same by path. Documented limit: client hooks are bypassable
+   in v1 — Phase 3 is the unbypassable layer (see v1 constraints).
+10. **Engine bake-off recorded:** linear-CAS vs CRDT both ran the suite; the choice +
+    evidence (adapter LOC, deps) are in Step 3. If an engine is used it is REUSED, not built.
+11. Determinism of *selection* preserved: existing `pickBestTask` tests pass unchanged.
+12. Full gate green: `npm run build && npm test && npm run lint`.
 
 ## Reviewer verdict
 
-- **Verdict**: approved (full plan; second pass — first pass needs-revision on 2 specs, resolved)
-- **Reviewer**: `reviewer` subagent (plan-validation profile)
+- **Verdict**: approved (by an INDEPENDENT fresh-context reviewer — not the plan's co-author)
+- **Reviewer**: fresh `reviewer` subagent (cold, no prior involvement)
 - **Date**: 2026-06-02
 - **Concerns**:
-  - (none — first pass flagged two under-specified params: the dispersion hash (now SHA-256, well-distributed, K default ~16, collision-resistance tested) and the silent-retry backoff (now 100 ms→5 s, ~10 attempts, ±full jitter, pinned in Step 2 + acceptance + Risks). Both resolved.)
+  - (none — the cold review first found a residual blocker (under-specified regeneration job) + 3 majors; all resolved: the job's exemption is by uniform path logic not a per-actor bypass (no deadlock in a no-bypass repo, no loop, single-writer ⇒ no conflict); the path-scoped check is an extension allowlist (code-in-docs loophole closed); v1's preconditions are explicit (always-on, client-trusting, single repo); the conformance suite is a gate; engine choice deferred until the suite drives it.)
 - **Approval rationale**:
-  - The model is internally consistent — the no-duplication / log-first design (log = state, TASKS.md = definitions + projection) keeps the picker correct under projection lag, stateless SHA-256 dispersion avoids the deterministic-picker herd while staying deterministic-per-agent, single-repo + silent-retry under the soft push limit degrades latency not correctness, and strict enforcement (Ruleset + required-check) makes the no-fencing-token crash/resurrection path safe. All 12 acceptance criteria are falsifiable and the conformance suite (Step 2, before the adapter) covers every decided edge case. Ready for implementation.
+  - Sound, specific, and corporate-safe. Collision-free is proven by git ref-CAS; the fully-log-first design with a single-writer generated `TASKS.md` removes the original one-file merge problem and the curation deadlock without bypassing CI; the design is thin (G6) and phased honestly (v1 = collision-avoidance core; leases/server-enforcement/CRDT engine earn their way in later). Integration remains unproven until the conformance suite passes against the Step-4 adapter — which is the explicit gate.
