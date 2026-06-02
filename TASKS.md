@@ -35,6 +35,286 @@
   - **Files**: `README.md` (add the one-prompt block; trim/redirect the manual Quick Start), `docs/user-stories/10-one-prompt-setup.md` (new), `docs/user-stories/README.md` (add row 10 + table entry), `commands/setup.md` (new canonical source) + the six generated `commands/<agent>/…/setup.*` variants via `tasks generate-commands`, `packages/cli/src/commands/install.ts` (+ `install.test.ts`) for the `--agent` force-install fix, `packages/cli/src/commands/generate-commands.ts` (+ test) to emit the new `setup` command, `ROADMAP.md` (capability row).
   - **Acceptance**: (a) README contains a single copy-paste "set up tasks.md" prompt; (b) `docs/user-stories/10-one-prompt-setup.md` exists and is linked from `docs/user-stories/README.md`; (c) a `setup` command is generated for all six agents from `commands/setup.md` and the `commands-drift` CI gate stays clean; (d) `tasks install --agent <name>` force-installs that agent's command even when its dir doesn't exist yet, pinned by a new `install.test.ts` case; (e) the prompt documents the Node-optional fallback plus the idempotency and verification steps; (f) `npm run build && npm test && npm run lint` pass; (g) `npx -y @tasks-md/lint TASKS.md` exits 0.
 
+- [ ] Make task selection collision-free across a team of machines, each running a parallel agent fleet, without breaking determinism
+  - **ID**: deterministic-fleet-claiming
+  - **Tags**: spec, claiming, concurrency, fleet, two-tier, distributed, backend, reuse, vision, primary-use-case, parser, mcp, cli
+  - **Details**: At fleet scale (many agents across many machines reading one
+    git-synced TASKS.md) the best-effort `(@agent-id)` claim cannot prevent two
+    agents picking the same task: claims are only visible after a push (spec.md
+    § Claiming "Limitations"), and `pickBestTask` is deterministic — so every agent
+    on an identical file picks the *same* top task. Determinism turns "can collide"
+    into "will collide". `tasks claim` is also a no-op today
+    (packages/cli/src/backend/tasks-md.ts) — there is no machine-safe claim
+    primitive in the file backend at all. Operator hard constraints: (1) selection
+    MUST stay deterministic — no random/probabilistic picking; (2) it must hold at
+    fleet (high-concurrency) scale; (3) MUST support a TWO-TIER topology — a TEAM of
+    different machines working simultaneously (synced only by an eventually-consistent
+    git remote, possibly multiple owners) where EACH machine also runs a PARALLEL
+    FLEET of agents (shared local filesystem) — collision-free at BOTH tiers. Per
+    VISION G7 this is now the project's PRIMARY use case; per G6 the approach is
+    ADOPT-don't-build — delegate coordination to an existing backend (atomic queue /
+    git-native queue / MCP broker) behind the G5 seam and layer tasks.md's
+    tags/priority/blocked-by on top; build a bespoke coordinator ONLY if no backend is
+    adaptable. DECISION (operator, 2026-06-02): the backend is GIT-NATIVE — agents are
+    FILE-NATIVE (they read/write/grep markdown and run git as a matter of course; a
+    server-backed queue is outside that fluency), so coordination lives in files + git,
+    no server. Remaining design work: pin the git-native mechanism (see Research (f)),
+    record it in spec.md § Claiming + a new user story, then split implementation into
+    follow-ups. Stay scoped to the tasks.md repo.
+  - **Research**: 2026-06-02 (a) option space under {deterministic, fleet}:
+    • Atomic claim alone (git-CAS / shared MCP / issue-assignee): deterministic
+      *outcome* (one winner) but thundering-herd O(N) on the hottest task at fleet
+      scale — all N agents compute the same pick, N-1 lose, re-pick the next, repeat.
+    • Deterministic partition, round-robin by rank: agent k-of-N takes ranks
+      k, k+N… of the sorted queue. Zero-coord, herd-free, offline, priority-fair
+      (top N tasks each worked once). Churn-sensitive (N changes reshuffle) + index
+      shifts on insert. Needs (k, N).
+    • Deterministic partition, rendezvous/HRW hashing: owner(task)=argmax_a
+      hash(task_id, a). Even spread + MINIMAL reshuffle on join/leave (O(K/N) not
+      O(K)) + stable under task insertion (keyed by id, not index). Priority-blind,
+      so run the existing priority picker WITHIN each agent's owned set. Needs roster.
+    • Orchestrator as sole deterministic assigner: repo already leans this way — the
+      `**Touches**` field flags file-set overlap for parallel launches, and
+      taskgrind/minsky/fleet-grind are orchestrators. Moves coordination out of the
+      format (matches VISION "not a workflow engine").
+    • Layered (current lean): HRW partition for the bulk + git-push CAS claim only
+      for cross-partition *stealing* of the hot tail + TTL lease + fencing token.
+      Deterministic & herd-free in the common case, guaranteed-correct on contention.
+    CRUX: every partition reduces to "how do fleet agents deterministically agree on
+    the roster / (k, N)?" — static (orchestrator passes --shard k/N) vs a committed
+    heartbeat ledger (`.tasks/agents/<id>` with TTL, which ALSO fixes the fuzzy
+    stale-claim heuristic in spec.md § Stale Claims). Sync lag bounds overlap to
+    membership-churn windows; a git-CAS claim-verify catches those.
+
+    2026-06-02 (b) prior-art survey (GitHub + distributed systems + Claude format).
+    Four coordination families seen in the wild:
+    1. Central orchestrator / lead-assigns (NO worker race): Claude Code **Agent
+       Teams** (lead assigns or teammates self-claim a shared list; "task claiming
+       uses file locking" — but the list is LOCAL `~/.claude/tasks/<team>/`, so
+       single-host only), Anthropic's orchestrator-worker research system
+       (decompose-by-aspect = orthogonal/non-overlapping work), claude-flow,
+       parruda/swarm, OpenHands, CrewAI (hierarchical), AutoGen, LangGraph (BSP/Pregel
+       deterministic DAG). https://code.claude.com/docs/en/agent-teams +
+       https://www.anthropic.com/engineering/multi-agent-research-system
+    2. Atomic broker (multi-machine, race-free, but needs a server): Postgres
+       `SELECT … FOR UPDATE SKIP LOCKED`, Redis `SET NX PX` / `BLPOP`. Used by
+       DreamAgent, swarms AOP, agent-orchestrator. The de-facto production answer.
+       https://www.postgresql.org/docs/current/explicit-locking.html
+    3. Git best-effort claim: ONLY tasks.md does this; explicitly best-effort.
+       Adjacent git-native patterns: file-lock-then-push
+       (agentpatterns.ai/multi-agent/file-based-agent-coordination), czarina+Hopper
+       (persistent queue), terraform-backend-git (push-a-lock-branch CAS).
+    4. Filesystem isolation via git worktrees: claude-squad, tmux-orchestrator,
+       czarina, queen-protocol — solves FILE conflicts, NOT task conflicts (still
+       need a claim layer). Maps to our `**Touches**`.
+    Key facts that shape the fix:
+    • Almost every multi-agent tool is SINGLE-HOST; Claude's own answer (Agent Teams)
+      uses OS file-locking on a local list — unavailable across machines. tasks.md's
+      multi-machine-over-git setting is genuinely harder; that is the niche.
+    • `git push` IS an atomic compare-and-swap (non-fast-forward ref rejection) —
+      this, not anything new, is the real claim primitive (optimistic concurrency);
+      `git push --atomic` extends it to multi-ref. https://git-scm.com/docs/git-push
+    • CORRECTION to an earlier assumption: a GitHub issue ASSIGNEE update is NOT an
+      atomic lock (add-assignees is additive, PATCH is last-write-wins, no version
+      check) — two agents can both self-assign. So `github-issues` is NOT
+      automatically race-free; its atomic primitive is `Closes #N` via a merged PR /
+      a single writer, not the assignee. https://docs.github.com/rest/issues/assignees
+    • Rendezvous/HRW hashing (Thaler & Ravishankar 1998) > consistent hashing (no
+      ring/vnodes) > modulo (catastrophic reshuffle on churn) for the partition.
+      https://en.wikipedia.org/wiki/Rendezvous_hashing
+    • Stale/crashed-agent claims: TTL leases + fencing tokens (Kleppmann, "How to do
+      distributed locking") — fencing token = git commit hash / monotonic version.
+      https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html
+    • Claude's task FORMAT validates ours: TodoWrite → Task tools
+      (TaskCreate/TaskUpdate/TaskList) now carry `owner` (= our claim), `addBlockedBy`
+      (= **Blocked by**), `status` pending/in_progress/completed. Convergent design.
+      https://code.claude.com/docs/en/agent-sdk/todo-tracking
+
+    2026-06-02 (c) TWO-TIER (team-of-machines × per-machine fleet) is now a MUST —
+    reframes the design as HIERARCHICAL scheduling (cluster → node → worker):
+    • Two failure domains, two leases: an AGENT dying (local coordinator reassigns
+      instantly, in-process) vs a whole MACHINE going offline (its slice reclaimed by
+      other machines only after a longer TTL). Different lease TTLs per tier.
+    • Tier 1 (inter-machine, HARD — only an eventually-consistent git remote connects
+      them): deterministic partition by MACHINE (HRW over the machine roster) so
+      machines never contend; git-push CAS only for cross-machine *stealing* of a
+      dead machine's slice. Coordination-free, offline-tolerant tier.
+    • Tier 2 (intra-machine, EASY — shared filesystem): one per-host local coordinator
+      (OS file-lock / in-proc queue) subdivides the machine's slice among its agents —
+      exactly the single-host pattern every tool already solves (Claude Agent Teams'
+      file-locking, claude-squad). No git round-trip for intra-host claims.
+    • FLAT vs HIERARCHICAL partition: flat HRW over composite (machine,agent) ids is
+      collision-free at both tiers in one step BUT needs every agent to know the
+      GLOBAL roster of all agents everywhere. Hierarchical (HRW-by-machine, then local
+      subdivide) needs only a global MACHINE roster (smaller, stabler) + local agent
+      knowledge — scales better and localises churn. Lean: hierarchical.
+    • Git contention at team×fleet scale: do NOT have every agent push its own claim
+      (N machines × M agents pushing = remote thundering herd + constant TASKS.md
+      rebase conflicts). Batch git I/O per MACHINE (one pusher/host) and keep claims
+      as per-task FILES under `.tasks/claims/<id>` (distinct paths auto-merge; same
+      path = clean conflict) instead of `(@agent)` suffixes on shared TASKS.md lines.
+    • Identity must be (machine, agent)-unique, e.g. `@alice-mac/agent3`,
+      `@ci-runner-7/agent1`; spec.md § Agent Identity needs a tier-aware convention.
+
+    2026-06-02 (d) prior-art for the two-tier shape — hierarchical (cluster→node→
+    worker) schedulers + git-at-scale (sub-agent reports archived this session):
+    • Omega (Schwarzkopf et al., EuroSys 2013) — many schedulers on SHARED cluster
+      state commit via atomic compare-and-swap; the loser retries on a fresh
+      snapshot. This IS git-push-CAS — the most exact analog for the inter-machine
+      tier. https://cs.brown.edu/people/malte/pub/papers/2013-eurosys-omega.pdf
+    • Mesos two-level scheduling (Hindman et al., NSDI 2011) — master OFFERS a
+      resource slice; the framework schedules its own tasks onto it. == a machine
+      claims a slice, then its local coordinator subdivides among its agents.
+      https://www.usenix.org/legacy/event/nsdi11/tech/full_papers/Hindman.pdf
+    • Kubernetes — kube-scheduler atomically binds Pod→Node (one writer wins),
+      kubelet runs pods locally; **Node Lease** objects are per-node TTL heartbeats,
+      expiry → NotReady → evict+reschedule. == per-MACHINE TTL lease to reclaim a
+      dead machine's slice. (Borg/Omega/K8s lineage: Burns et al., ACM Queue 2016.)
+      https://kubernetes.io/docs/concepts/architecture/leases/
+    • YARN (RM/NM/AM, 3-tier) + Nomad (optimistic plan-apply on a Raft snapshot,
+      retry-on-stale) corroborate optimistic-CAS + per-tier liveness.
+    • BOINC (Anderson 2004) — the UNTRUSTED-fleet answer: hand work units to many
+      volunteer hosts with DEADLINES (leases) + deliberate REPLICATION + quorum
+      VALIDATION instead of locks — accept duplicates, validate results. The fallback
+      when a slice can't be locked (a team of mixed-trust machines is exactly that).
+      https://github.com/BOINC/boinc/wiki/Job-replication
+    • Erlang/OTP — hierarchical supervision trees + atomic global name registry
+      (per-tier failure containment + restart).
+    Git-at-scale (the inter-machine transport):
+    • Per-task CLAIM FILES, not `(@agent)` line-suffixes: git auto-merges commits
+      that ADD DIFFERENT files; same-line edits conflict. So `.tasks/claims/<id>` is
+      conflict-free for distinct tasks, a clean one-winner conflict for the same task.
+      Evidence: Mastra per-entity files, Conflux (CRDT schema-merge), Chisel sharding.
+      Completions as an append-only `.tasks/log/` (event-sourced; IPFS-Log / grite
+      git-WAL) stay conflict-free too.
+    • Batch git I/O per MACHINE (one pusher/host) + `git push --atomic` (Git 2.4) +
+      exponential backoff on non-ff rejection — else N×M agents pushing melts the
+      remote (Gitaly/Praefect packed-refs lock contention; git HTTP 429 retry).
+    • The inter-machine "single ordered writer" is exactly a MERGE QUEUE (Bors,
+      GitHub Merge Queue, Zuul gating, Mergify, Graphite): a broker serialises pushes
+      to one branch via speculative execution + bisection. Mergify's RCV theorem — a
+      queue optimises only 2 of {reliability, cost, velocity}. Bors #875 (a batch
+      started twice) warns: even a single-writer broker needs atomic state moves.
+    • Hierarchical HRW is O(log n) (skeleton-based) and isolates churn to the
+      affected machine; hierarchical-DHT research finds hierarchy beats flat for
+      heterogeneous fleets — confirms the (c) lean toward machine-first partition.
+
+    2026-06-02 (e) blank-page / GET-don't-IMPLEMENT — what already solves this TODAY,
+    so we ADOPT + add tasks.md tags rather than build a coordinator (VISION G6/G7):
+    • Atomic queue (battle-tested, multi-machine, two-tier-native NOW): pgmq
+      (SQS-on-Postgres — visibility-timeout = lease, exactly-once-within-timeout,
+      FIFO+groups) or River / pgq (Postgres SELECT … FOR UPDATE SKIP LOCKED). Each
+      machine runs N workers all pulling one queue → atomic dequeue is collision-free
+      across the whole team×fleet, deterministic outcome, crash-safe via the
+      visibility lease. Thinnest path that fully meets the MUST when infra exists.
+      https://github.com/pgmq/pgmq · https://github.com/riverqueue/river
+    • Git-native, no server (matches the file-first soul) — already built, adopt/absorb:
+      – zedutch/tq: "git-first agent-centric task queue using markdown files",
+        `claimed_by` + machine name, pull-before/push-after. Closest to our exact model.
+      – ThomasRohde/lodestar: multi-agent atomic claim + TTL LEASES + DAG deps +
+        inter-agent messaging + an MCP server (stdio AND HTTP "for multiple agents");
+        spec committed, runtime in local SQLite. Covers tier-2 + a broker today.
+      – Nautilus-Cyberneering/git-queue: optimistic-lock mutual exclusion via empty
+        git commits as an event store (event-sourced CAS) — proves the git-CAS claim.
+    • MCP broker: run one `tasks-mcp` (HTTP) as the serialization point — exactly what
+      lodestar already ships, and what spec.md § Limitations already names.
+    DECISION REFRAME: tasks.md's durable value is NOT coordination (queues solved that
+    ~15 yrs ago) — it's the portable, agent-readable layer (format + priority + tags +
+    blocked-by + /next-task across 6+ agents). So the fix = a QUEUE/CLAIM BACKEND
+    adapter behind the existing G5 seam (sibling to `github-issues`), mapping
+    tasks.md tags → the backend's job metadata. Build the custom HRW + git-CAS layer
+    ONLY for a zero-infra git-only mode, and even then adopt tq / lodestar / git-queue's
+    mechanism rather than write a from-scratch scheduler.
+
+    2026-06-02 (f) DECISION — git-native, file-based (operator call; rationale: agents
+    are FILE-NATIVE — markdown + git is their working surface, a server queue is not):
+    • Adopt/absorb the model from zedutch/tq — ONE markdown file per task with
+      frontmatter (status, priority, `claimed_by` = machine, `claimed_at`); the tasks dir
+      is a git repo; pull-before / push-after with machine identity. Proves file-native
+      multi-machine claiming works — BUT tq is best-effort (no push-rejection verify), so
+      it has the same race window we do.
+    • Harden it with Nautilus git-queue's mechanism: optimistic-lock MUTUAL EXCLUSION via
+      git commits (CAS). Claim = write `.tasks/claims/<id>` → commit → pull --rebase →
+      push; on non-ff rejection, re-read and if now claimed by another, YIELD + pick next.
+      That is the deterministic single-winner guarantee tq lacks.
+    • lodestar is OUT for tier-1: its runtime/claim state is gitignored SQLite, so claims
+      do NOT sync across machines via git. Keep it only as an optional tier-2 local
+      coordinator / MCP broker.
+    • Server queues (pgmq/River) drop to a NON-default backend — outside the file-native
+      surface; offered only for teams already running that infra.
+    Resulting git-native design: TASKS.md stays the human/agent-readable queue (G3);
+    claims are a conflict-free `.tasks/claims/<id>` sidecar (per-task files auto-merge,
+    same-path = clean one-winner conflict); git push is the CAS; a TTL-lease field
+    reclaims dead machines; an optional HRW machine-partition cuts contention; a per-host
+    file-lock coordinator handles the intra-machine tier. Fully file-based, no server,
+    deterministic.
+
+    2026-06-02 (g) cross-machine claim mechanism (online, ≤1-min sync; merge + CI):
+    • WHERE claims live: a DEDICATED ref, NOT main — a `tasks-claims` branch (or
+      `refs/notes/*` / `refs/tasks/*` where the host allows it), excluded from branch
+      protection + CI. Main carries the queue (TASKS.md) + the actual work; the claims
+      ref carries only the ephemeral per-task `.tasks/claims/<id>` ledger. This is the
+      key CI decision: claim churn must never trigger the build pipeline or open a PR.
+    • CLAIM = a git CAS: write `claims/<id>` → commit on the claims ref → push. FF →
+      you won. Rejected (non-ff) → fetch/rebase: if `<id>` now exists, YIELD + pick next;
+      else (you were claiming a different task) it is a clean different-file rebase →
+      re-push. Different tasks = different files = auto-merge; SAME task = same path =
+      the only real conflict, resolved deterministically (earliest claimed_at, then
+      lexicographic machine/agent id) so both sides compute the same winner with no
+      coordination — a custom merge driver / resolver, never a human conflict.
+    • ≤1-MIN SYNC = a poll loop, and correctness is INDEPENDENT of it: each host
+      coordinator fetches the claims ref + `pull --rebase` main every ~15s (worst-case
+      staleness ~15–20s « 60s); claims are pushed IMMEDIATELY, not on the poll. A stale
+      read only causes a doomed attempt the CAS rejects — never a double-claim. So the
+      ≤1-min budget governs freshness + wasted attempts, not safety.
+    • LEASES: the claim file carries claimed_at + renewed_at + lease_ttl + a fencing
+      token; the owner re-pushes renewed_at every ~30s; a dead machine's lease expires
+      (~90–120s) → another machine steals via the same CAS; the fencing token blocks a
+      resurrected machine from clobbering the new owner.
+    • PUSH CONTENTION (the real ceiling): one pusher per HOST batches its agents' claims
+      (pushes scale with #machines, not #agents); the HRW machine-partition makes most
+      pushes fast-forward instead of collide; if still hot, SHARD the claims ref
+      (`tasks-claims-<k>` by hash(task-id)) to parallelize push throughput across refs.
+    • CI: claims ref = no CI / no PR / no branch protection (direct push; Actions branch
+      filters don't fire on a non-main branch — or `paths-ignore: .tasks/claims/**` if
+      claims must live on main). The WORK product takes the normal feature-branch → PR →
+      full CI → merge-to-main path (optionally a merge queue); completion removes the
+      task from TASKS.md in that PR and deletes the claim file. Claiming stays sub-second
+      and CI-free; only real code is gated.
+  - **Files**: `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
+    done), `spec.md` (§ Claiming — Limitations / Stale Claims; a new § "Fleet
+    coordination" documenting the GIT-NATIVE model + tier-aware `@machine/agent`
+    identity), `.tasksmd.json` (backend selector), a git-native claim adapter in
+    `packages/cli/src/backend/` (per-task `.tasks/claims/<id>` files on a DEDICATED
+    non-CI claims ref + git-CAS verify + TTL lease + heartbeat + a ≤1-min poll loop;
+    tq-style frontmatter, git-queue-style optimistic lock; a deterministic same-task
+    merge resolver), `packages/cli/src/backend/tasks-md.ts` (make `claim` the real
+    git-CAS claim, not a no-op), `docs/user-stories/` (new git-native fleet-coordination
+    story → G7), `examples/` (a two-tier team×fleet example), `.tasks/claims/` +
+    `.tasks/agents/` conventions, plus CI config that EXCLUDES the claims ref /
+    `.tasks/claims/**` from the build pipeline (claiming must never trigger CI or a PR).
+    A server-queue adapter (pgmq/River) is an OPTIONAL non-default sibling; the
+    HRW-partition + ref-sharding pieces are contention optimisations, not required for
+    correctness.
+  - **Acceptance**: The GIT-NATIVE backend (operator decision, Research (f)/(g)) is
+    specified in spec.md § Claiming: claims as per-task `.tasks/claims/<id>` files
+    (conflict-free multi-writer) on a dedicated ref excluded from CI + branch protection
+    (never main); git-push CAS as the mutual-exclusion primitive (write → commit → pull
+    --rebase → push → verify-won; loser yields and re-picks; same-task add/add resolved
+    deterministically by earliest claimed_at then machine/agent id); a TTL lease +
+    heartbeat for dead-machine reclaim; a per-host coordinator polling ≤ the freshness
+    budget (≤1 min) and pushing claims immediately — TASKS.md stays the queue (G3). A new
+    `docs/user-stories/` story makes two-tier git-native fleet coordination the primary
+    use case (traces to G7). No-double-claim holds INDEPENDENT of sync lag (the push-CAS,
+    not the poll, is the arbiter). Determinism is preserved — no probabilistic selection;
+    existing `pickBestTask` tests pass. A test proves two agents — same machine OR
+    different machines — never both win a claim (the loser's push is rejected and it
+    yields), and a CI test asserts claim commits do not trigger the build pipeline. The
+    model adopts/absorbs tq + git-queue rather than building a from-scratch scheduler
+    (G6); a server-queue (pgmq/River) backend, if shipped at all, is an optional
+    non-default. Remaining work is split into follow-up tasks each with its own
+    acceptance.
+
 ## P1
 
 - [ ] GitHub Issues backend: aggregate issue-backed repos alongside markdown repos in workspace mode

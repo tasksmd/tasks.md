@@ -1,83 +1,121 @@
 ---
 schema: vision-v1
-version: 1
-last_reviewed: 2026-05-29
+version: 3
+last_reviewed: 2026-06-02
 goals:
   - id: G1
     name: Spec first, packages second
-    description: spec.md is canonical. parser, lint, mcp, cli are reference implementations that exist to validate the spec.
+    description: spec.md is canonical; the parser, lint, MCP, and CLI packages are reference implementations that exist only to validate the spec and bootstrap adoption. A behaviour change starts in spec.md and propagates to every package and command in the same commit. The format is the product (G6).
   - id: G2
     name: Cross-agent commands are generated, not hand-edited
-    description: commands/next-task.md and commands/lint-tasks.md are canonical; per-agent variants regenerate. CI rejects manual edits to generated variants.
+    description: commands/next-task.md and commands/lint-tasks.md are the canonical sources; per-agent variants regenerate from them and CI rejects manual edits to a generated variant. One workflow, every agent — which is what makes G4 (no lock-in) real at the command layer.
   - id: G3
     name: One TASKS.md per repo, optionally federated
-    description: Workspace-mode aggregates per-host queues; per-repo queues stay the source of truth.
+    description: A repo's queue is one file at its root, the source of truth. Workspace-mode aggregates per-host and cross-repo queues for picking, but never replaces the per-repo file.
   - id: G4
     name: No vendor lock-in
-    description: Every agent that adopts the spec works against the same file. Switching agents requires no migration.
+    description: Every agent and every backend works against the same spec. Switching agents, or switching the coordination backend (G5), is configuration — never migration. The portable layer is the spec, never the storage.
   - id: G5
     name: File-first, pluggable backends
-    description: TASKS.md (local markdown) is the default, canonical backend. The spec, parser, CLI, and MCP MAY target an alternative backend (e.g. GitHub Issues/Projects) as an explicit, off-by-default opt-in, so a team already living in an issue tracker can adopt the tasks.md workflow without migrating. The file backend stays the reference implementation; other backends are adapters behind the same spec surface, preserving G4 (the spec, not the storage, is the portable layer).
+    description: A local markdown TASKS.md is the default, zero-infra backend and the reference implementation. The same spec / parser / CLI / MCP surface MAY target another backend — GitHub Issues, an atomic queue, a git-native queue, or an MCP broker — as an explicit opt-in. Backends are adapters behind one surface; this is the mechanism by which coordination is delegated (G6) and the fleet is served (G7).
+  - id: G6
+    name: Thinnest layer that solves the goal
+    description: tasks.md owns ONLY the portable semantic layer — the format, priority, tags, blocked-by, removable-not-toggleable completion, and the /next-task workflow. Everything the ecosystem already solves — atomic dequeue, locking, leases, scheduling, merge serialization — is delegated to a backend (G5), never reimplemented. The default is GET (adopt an existing tool) over BUILD; bespoke distributed-systems code must first prove no backend is adaptable. This principle is the reason G1 and G5 hold.
+  - id: G7
+    name: Fleet coordination is the primary use case
+    description: The flagship reason to adopt tasks.md is to run a TEAM of machines — each running a PARALLEL fleet of agents — against one queue with zero duplicate work and deterministic selection. tasks.md supplies the agent-readable layer and delegates the collision-free, two-tier coordination to a backend (G5/G6) — git-native by default, because agents are file-native (see Core beliefs); a server-backed queue is offered only where that infra already exists. The solo case (one agent, one file) is the zero-setup default; the fleet case is what the design must never break.
 non_goals:
   - id: NG1
     name: Not a project management tool
-    description: No GUI, no team assignments beyond claim suffixes, no time tracking. Use Jira/Linear for those.
+    description: No GUI, no time tracking, no assignment model beyond the (@agent) claim suffix. For Jira/Linear semantics, integrate with those tools or use the Issues backend (G5) — don't reinvent them.
   - id: NG2
-    name: Not a workflow engine
-    description: TASKS.md describes what work exists, not how it gets routed.
+    name: Not a workflow engine or scheduler
+    description: TASKS.md describes what work exists, not how it is routed or executed. Fleet coordination (G7) is delegated to a backend (G6) — tasks.md never ships its own scheduler, lock service, or router.
   - id: NG3
     name: Not a graph database
-    description: Blocked-by edges are a flat list, not a topological sort.
+    description: blocked-by edges are a flat list of IDs, not a topological engine. Agents pick tasks; humans curate priority.
 ---
 
 # Vision
 
-> **A lightweight, machine-readable spec for AI agent task queues.** The "what to work on" companion to [AGENTS.md](https://agents.md/)'s "how to work."
+> **A lightweight, machine-readable spec for AI-agent task queues** — the "what to work on" companion to [AGENTS.md](https://agents.md/)'s "how to work."
 
-## Who it's for
+## The one job
 
-**Primary audience: any team that has AI agents picking up coding work.** Today's agents (Claude Code, Cursor, Windsurf, Devin, Codex, Gemini CLI, Codium, OpenHands, and 30+ others) need a way to ask *"what should I work on?"* and get back a structured, prioritized, tooling-friendly answer.
+An AI coding agent that starts a session asks one question: *"What should I work on?"* `tasks.md` is the open standard that answers it — a `TASKS.md` file at the repo root that any agent (Claude Code, Cursor, Windsurf, Devin, Codex, Gemini CLI, OpenHands, and 30+ others) reads, claims from, and updates through one shared format. AGENTS.md tells an agent *how* to work in a repo; TASKS.md tells it *what* to work on.
 
-The current options all fail:
-- **GitHub Issues as your only queue** — too heavy for sub-PR-sized work, no priority semantics, no claim mechanics, requires network. tasks.md stays file-first for exactly these reasons; teams already living in Issues can opt into an Issues *backend* (G5) and keep the same spec / CLI / MCP surface, trading the file's offline simplicity for tracker integration.
+Today's options all fail at that one job:
+
+- **Issues / Jira as the only queue** — too heavy for sub-PR work, no priority or claim semantics, network-bound. (Teams already living there opt into an Issues *backend* — G5 — and keep the same surface.)
 - **Plain markdown checklists** — no parser, no lint, no claims, no metadata.
-- **Per-tool todo formats** — fragment by agent. A task written for Claude can't be picked up by Cursor.
+- **Per-tool todo formats** — fragment by agent; a task written for one agent can't be picked up by another.
 
-`tasks.md` is the open standard that fills the gap: one file, one spec, parsed by `@tasks-md/parser`, validated by `@tasks-md/lint`, exposed via `tasks-mcp`, manipulated through `@tasks-md/cli`, and consumed by `/next-task` skills in every major agent.
+## Primary use case: the fleet
+
+The most demanding — and most valuable — scenario is a **fleet**: a *team of machines* working one queue at the same time, each machine running a *parallel fleet of agents*. The hard requirement is that **no two agents anywhere pick the same task**, and that selection is **deterministic** and reproducible. This two-tier shape — a team of hosts × per-host agents — is the use case the design is built around (G7).
+
+The simplest scenario — one developer, one agent, one file — is the **zero-setup default**. The fleet is what the design must never break; the solo case is what it must never burden.
+
+## The governing principle: thinnest layer that solves the goal
+
+tasks.md does **not** solve the fleet by building a coordinator. Collision-free work distribution across many machines and workers is a decades-solved problem — it is, in the end, a job queue. So tasks.md owns only the part the ecosystem *hasn't* standardised — the portable, agent-readable task layer — and **delegates** the rest (G6).
+
+| tasks.md owns (the spec) | Delegated to a backend (G5) |
+|---|---|
+| The markdown format, priority (P0–P3), tags, **blocked-by**, claims | Atomic dequeue / mutual exclusion |
+| Removable-not-toggleable completion (history in git log) | Leases, crash recovery, fencing tokens |
+| The cross-agent `/next-task` + `/lint-tasks` workflow | Scheduling, routing, merge serialization |
+| The parser, linter, and the spec that ties them together | Multi-machine transport |
+
+This is why **"spec first" (G1) and "fleet-primary" (G7) are the same idea, not competing ones**: the spec stays tiny *because* the hard machinery is borrowed.
+
+## Backends: one surface, several engines
+
+The coordination engine is pluggable, and every backend exposes the identical spec / parser / CLI / MCP surface — so switching is configuration, not migration (G4, G5). Because agents are file-native (see Core beliefs), the **git-native** path is the default for fleets; the others exist for teams whose infra or habits point elsewhere:
+
+| Backend | What it is | When |
+|---|---|---|
+| **File** (default) | git-synced `TASKS.md`, best-effort `(@agent)` claim | solo, low-concurrency, offline |
+| **Git-native** (default for fleets) | per-task claim files + git-push CAS + TTL lease (the tq + Nautilus git-queue model) | a team of machines × per-host agent fleets, no server — the primary use case (G7) |
+| **Atomic queue** | pgmq / River on Postgres `SKIP LOCKED` (visibility-timeout = lease) | only where that infra already exists |
+| **MCP broker** | one `tasks-mcp` (HTTP) serializing pick / claim | agents already speak MCP; a single coordination point |
+| **Issues** | GitHub Issues / Projects (assignee, labels, `Closes #N`) | teams already living in a tracker |
+
+The format, tags, priority order, blocked-by graph, and `/next-task` commands are identical across all of them. **The spec is portable; the coordination is borrowed.** The default decision is *adopt*; building a bespoke coordinator is the last resort, gated on no backend being adaptable (G6).
 
 ## Strategy: spec first, packages second
 
-The format is the product. The TypeScript packages and MCP server are reference implementations — they exist to validate the spec and bootstrap adoption.
-
-1. **Spec is canonical.** [`spec.md`](spec.md) defines TASKS.md format. Examples in [`examples/`](examples/) are normative fixtures. Behavior shifts in `spec.md` propagate to parser, lint, MCP, CLI, and every `/next-task` variant in the same commit.
-2. **Reference packages stay small.** Each of `parser`, `lint`, `mcp`, `cli` does exactly one thing. No package gains features that don't serve the spec.
-3. **Cross-agent commands are generated, not hand-edited.** [`commands/next-task.md`](commands/next-task.md) and [`commands/lint-tasks.md`](commands/lint-tasks.md) are the canonical sources; per-agent variants under `commands/{claude,codex,cursor,devin,gemini,windsurf}/` regenerate from those. CI rejects manual edits to generated variants.
-
-## Non-goals
-
-- **A project management tool.** No GUI, no team assignments beyond `(@agent-id)` claim suffixes, no time tracking. If you need Jira/Linear semantics, integrate with those tools — don't reinvent them in tasks.md.
-- **A workflow engine.** TASKS.md describes what work exists, not how it gets routed. Routing belongs to the agent + the human supervising it.
-- **A graph database.** Blocked-by edges are a flat list, not a topological sort. Agents pick tasks; humans curate priority.
-
-## Core beliefs
-
-- **Tickets are agent prompts.** ([source](https://dheer.co/tickets-are-prompts/)) Tasks describe the outcome a human wants, not the implementation. The agent decomposes. This belief shapes every spec decision.
-- **Removable, not toggleable.** Completed tasks are *removed entirely* (history lives in git log), not marked `[x]`. Toggles accumulate noise; removal forces decisions.
-- **One TASKS.md per repo, optionally federated.** Workspace-mode (planned) aggregates per-host queues; per-repo queues stay the source of truth.
-- **No vendor lock-in.** Every agent that adopts the spec works against the same file. Switching agents doesn't require migration.
+1. **Spec is canonical.** [`spec.md`](spec.md) defines the format; [`examples/`](examples/) are normative fixtures. A change in `spec.md` propagates to parser, lint, MCP, CLI, and every `/next-task` variant in the same commit.
+2. **Reference packages stay small.** `parser`, `lint`, `mcp`, and `cli` each do one thing; none gains a feature that doesn't serve the spec (G6).
+3. **Commands are generated.** [`commands/next-task.md`](commands/next-task.md) and [`commands/lint-tasks.md`](commands/lint-tasks.md) are canonical; per-agent variants under `commands/{claude,codex,cursor,devin,gemini,windsurf}/` regenerate, and CI rejects hand-edits (G2).
 
 ## Where this fits in the agent ecosystem
 
 | Spec | Tells agents… | Maintained by |
 |---|---|---|
-| [AGENTS.md](https://agents.md/) | *how* to work in this repo (conventions, tests, build) | The agents.md community |
+| [AGENTS.md](https://agents.md/) | *how* to work in this repo (conventions, tests, build) | the agents.md community |
 | **TASKS.md (this spec)** | *what* to work on (queue, priority, claims) | tasksmd contributors |
-| [Devin instructions](https://devin.ai/docs) / Claude `CLAUDE.md` / Cursor rules | per-agent customization on top of AGENTS.md | Each agent vendor |
+| [Devin instructions](https://devin.ai/docs) / Claude `CLAUDE.md` / Cursor rules | per-agent customization on top of AGENTS.md | each agent vendor |
 
-The three layers compose: AGENTS.md sets repo conventions, TASKS.md lists work, agent-specific files refine behavior.
+The three layers compose: AGENTS.md sets repo conventions, TASKS.md lists the work, and agent-specific files refine behaviour.
+
+## Non-goals
+
+Each of these falls straight out of G6 — it is something the ecosystem already does better:
+
+- **Not a project management tool** (NG1). No GUI, no time tracking, no assignment model beyond `(@agent)`. Integrate Jira/Linear, or use the Issues backend.
+- **Not a workflow engine or scheduler** (NG2). TASKS.md says what work exists, not how it is routed. Fleet coordination is *delegated*, never built here.
+- **Not a graph database** (NG3). blocked-by is a flat list of IDs, not a topological engine.
+
+## Core beliefs
+
+- **Thinnest layer that solves the goal** (G6). Own the format and the workflow; delegate everything the ecosystem already provides. GET before BUILD.
+- **Agents are file-native.** Agents read, write, grep, and diff files and run git as a matter of course — so coordination that lives in files + git is coordination an agent can actually see and reason about. This is why the fleet path is git-native by default (per-task claim files + git-push compare-and-swap), and why a server-backed queue, however capable, is offered only where that infra already exists: it sits outside the agent's native surface.
+- **Tickets are agent prompts.** ([source](https://dheer.co/tickets-are-prompts/)) A task describes the outcome a human wants, not the implementation; the agent decomposes. This shapes every spec decision.
+- **Removable, not toggleable.** Completed tasks are removed entirely (history lives in git log), never marked `[x]`. Removal forces decisions; toggles accumulate noise.
+- **No vendor lock-in** (G4). The same file for every agent, the same surface for every backend. Switching either needs no migration.
+- **One TASKS.md per repo, optionally federated** (G3). Per-repo files are the source of truth; workspace-mode aggregates them for picking.
 
 ## Adoption
 
-The spec lands in the wild any time an agent supports `/next-task` or reads `TASKS.md` at the repo root. The current `commands/` directory ships skill/command variants for Claude Code, Codex, Cursor, Devin, Gemini CLI, and Windsurf — install via `npx tasks generate-commands` or via the upstream agent's marketplace.
-
-Adoption is the only metric that matters. The spec's success is measured by how many repos have a TASKS.md at their root, not by how many features `@tasks-md/cli` ships.
+Adoption is the only metric that matters: the number of repos with a `TASKS.md` at their root, not the feature count of any package. The spec lands in the wild any time an agent supports `/next-task` or reads `TASKS.md` at the repo root. Ready-made commands ship today for Claude Code, Codex, Cursor, Devin, Gemini CLI, and Windsurf — install via `npx tasks generate-commands` or through the upstream agent's marketplace. When a new agent vendor ships first-class `/next-task` support, that is a milestone.
