@@ -345,6 +345,16 @@
     vs Option B grite (MIT, NATIVE leases+snapshots, immature) vs git-warp (TS-native,
     immature); Beads + git-appraise ruled out (non-deterministic). Adapter stays behind
     an interface → engine swappable; upstream CONTRIBUTE to git-bug runs in parallel.
+
+    2026-06-02 (l) operator review of the spike: engine choice DEFERRED — keep it behind
+    the adapter interface and choose at implementation time by prototyping the top
+    candidates against the conformance suite; upstream contribution NOT NOW. Broadened
+    candidate sweep DONE (~15 tools, in the spike doc): Radicle Collaborative Objects
+    RULED OUT (generic CRDT-on-git but hard-requires the Radicle P2P network — not
+    GitHub-syncable); sit/ipfs-log/ticgit unmaintained; OrbitDB/Fossil wrong substrate.
+    Two reuse families: full engines (git-bug/grite/Beads) vs CRDT cores you wrap
+    (Automerge/Yjs/git-warp). Prototype shortlist: git-bug (proven baseline), grite
+    (native leases, MIT), Automerge-on-git (mature CRDT + TS-native).
   - **Files**: `docs/research/gitbug-reuse-spike.md` (reuse-mechanism spike),
     `docs/research/fleet-claiming.md` (prior-art research),
     `docs/plans/deterministic-fleet-claiming.md` (validated implementation

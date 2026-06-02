@@ -97,12 +97,12 @@ folds identically) — so we reuse its ordering, not build it, and need no linea
 Findings: the CLI exposes only `bug`/`label`/`user` (no custom entity), but `entity/dag` is
 an importable Go lib (GPL-3.0); git-bug lacks TTL leases + snapshots (build thin in the
 adapter). **Recommended mechanism:** git-bug via a separate GPL Go helper invoked as a
-subprocess (first-class `Claim` entity + clean license boundary; TS stays MIT). **Open
-operator decision:** Option A git-bug (proven, GPL, build lease/snapshot) vs. Option B
-grite (MIT, native leases+snapshots, immature) vs. git-warp (TS-native, immature) — the
-adapter targets an interface so the engine stays swappable; an upstream CONTRIBUTE of a
-claim/lease entity to git-bug runs in parallel. Verify: smoke test claims + reads back
-through the chosen engine.
+subprocess (first-class `Claim` entity + clean license boundary; TS stays MIT). **Operator
+decision (2026-06-02): engine choice DEFERRED** — kept behind the adapter interface and
+chosen at implementation time by prototyping the top candidates against the conformance
+suite (Step 2). The candidate set is being broadened beyond git-bug / grite / git-warp
+(e.g. Radicle Collaborative Objects + others — see the spike doc). Upstream contribution:
+**not now**. Verify: smoke test claims + reads back through the chosen engine.
 
 ### Step 4: Thin reference adapter over the reused engine
 
