@@ -76,7 +76,7 @@ The coordination engine is pluggable, and every backend exposes the identical sp
 | Backend | What it is | When |
 |---|---|---|
 | **File** (default) | git-synced `TASKS.md`, best-effort `(@agent)` claim | solo, low-concurrency, offline |
-| **Git-native** (default for fleets) | a thin reference adapter over a **reused** append-only Lamport-clock ledger (git-bug's model) + lefthook / Rulesets / `pre-receive` enforcement — tasks.md ships the spec + conformance suite + adapter, **not** the engine | a team of machines × per-host agent fleets, no server — the primary use case (G7) |
+| **Git-native** (default for fleets) | a thin reference adapter over a **reused** append-only Lamport-clock ledger (git-bug's model) + lefthook / Rulesets / `pre-receive` enforcement — tasks.md ships the spec + conformance suite + adapter, **not** the engine. **Single repo** (ledger on a `tasks-claims` ref, never a sidecar repo); the log is the source of truth for state, so claim/done state is **not duplicated** in `TASKS.md` | a team of machines × per-host agent fleets, no server — the primary use case (G7) |
 | **Atomic queue** | pgmq / River on Postgres `SKIP LOCKED` (visibility-timeout = lease) | only where that infra already exists |
 | **MCP broker** | one `tasks-mcp` (HTTP) serializing pick / claim | agents already speak MCP; a single coordination point |
 | **Issues** | GitHub Issues / Projects (assignee, labels, `Closes #N`) | teams already living in a tracker |
