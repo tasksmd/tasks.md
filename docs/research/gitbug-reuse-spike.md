@@ -84,18 +84,75 @@ is the most battle-tested but not the only — or most feature-complete — opti
   graph-oriented and immature.
 - **Beads** and **git-appraise** fail the determinism bar → ruled out.
 
-## Decision needed (the spike surfaced a fork)
+## Decision (operator review, 2026-06-02)
 
-The empirical question is settled (git-bug works). But the evidence complicates "just
-git-bug," so the engine choice is a real decision:
+The empirical question is settled (git-bug works). The evidence complicates "just
+git-bug," so rather than lock an engine now:
 
-- **Option A — honor the steer:** git-bug v1 via the GPL Go helper subprocess; keep grite
-  as a watch-and-swap candidate (cheap to swap behind the adapter interface). Most proven,
-  but GPL + we build lease/snapshot.
-- **Option B — follow the evidence:** adopt **grite** (native leases + snapshots, MIT) and
-  accept its immaturity — or **git-warp** for TS-nativeness.
-- **Parallel either way:** open an upstream CONTRIBUTE issue proposing a `claim`/`lease`
-  entity to git-bug — the ideal end-state, non-blocking, but uncertain (its Board entity
-  has been WIP for years).
+- **Engine choice is DEFERRED** — kept behind the adapter interface and chosen at
+  implementation time by **prototyping the top candidates against the conformance suite**
+  (plan Step 2). git-bug is the proven baseline; grite/git-warp are MIT alternatives that
+  cover more natively.
+- **Broaden the candidate set first** (operator directive) — see the expanded matrix below;
+  notably **Radicle Collaborative Objects**, a generic CRDT-on-git-refs framework.
+- **Upstream contribution: not now** — revisit once an engine is chosen and the adapter
+  exists.
 
-Whichever engine wins, the adapter targets an interface, so the choice stays reversible.
+The adapter targets an interface, so the eventual choice stays reversible.
+
+## Expanded candidate sweep (broadening beyond the first five)
+
+_Researched 2026-06-02 per the operator's "research other tools" directive (~15 tools
+swept). Two reuse families emerged._
+
+**Family 1 — full git-native ledger engines** (append-only on git + deterministic order;
+some add claims/leases):
+
+| Engine | Determinism | TTL leases | Snapshots | Reuse surface | Lang | License | Maturity |
+|---|---|---|---|---|---|---|---|
+| **git-bug** | ✅ Lamport (proven here) | ❌ build it | ❌ build it | binary (bugs only) / Go lib | Go | GPL-3.0 | ✅ mature (since 2018) |
+| **grite** | ✅ CRDT (LWW+sets) | ✅ **native** | ✅ **native** | binary / Rust lib | Rust | MIT | ⚠️ new (2026) |
+| **Beads** | ⚠️ Dolt cell-merge (not a CRDT) | ❌ | ✅ compaction | binary + `@beads/bd` npm wrapper | Go | MIT | ✅ active, but **Dolt-backed (not pure git)** |
+
+**Family 2 — CRDT cores** (deterministic merge engine; you add the git-storage + claim/lease
+layer yourself — the approach Radicle takes wrapping Automerge):
+
+| Core | Determinism | Reuse surface | Lang | License | Maturity | Note |
+|---|---|---|---|---|---|---|
+| **Automerge** | ✅ (formally verified SEC) | npm / Rust / WASM | TS+Rust | MIT | ✅ mature (v3) | no git storage, no leases — add a thin layer |
+| **Yjs** | ✅ (version vectors) | npm | TS | MIT | ✅ huge (~4.8M dl/wk) | same as Automerge |
+| **git-warp** | ✅ Lamport (OR-Set+LWW) | npm / JSR (direct import) | TS | MIT | ⚠️ immature | **already git-native**; no leases |
+
+**Ruled out / not GitHub-reusable:**
+
+- **Radicle Collaborative Objects** — a generic CRDT-on-git-refs framework (Automerge-based,
+  `refs/cobs/<type>/<id>`, MIT/Apache, mature, custom types via `rad cob`). **Disqualified
+  for our use case:** it hard-requires the Radicle P2P network / a running node + git
+  namespaces and **cannot sync via plain `git push` to GitHub** (`git-remote-rad` uses
+  `rad://`; the `radicle-sync` GH Action is deprecated precisely because the protocol
+  doesn't work over GitHub). Excellent *if* we ever go Radicle-native — a different
+  architecture. (RFC 0662; heartwood v1.7.0, 2026-03.)
+- **sit** (dead since 2018), **ipfs-log** (archived 2023), **ticgit-ng** (stale) — unmaintained.
+- **OrbitDB** (IPFS-dependent), **Fossil** (not git; C/SQLite) — wrong substrate.
+- **git-issue** (dspinellis), **git-native-issue** — deterministic 3-way-merge *rules* but
+  shell-only, no reusable lib → useful as a **format** reference, not an engine.
+
+**Prototype shortlist for the deferred, conformance-suite-driven decision:**
+
+1. **git-bug** — proven baseline (convergence empirically confirmed above); GPL via a
+   subprocess helper; we build the thin lease/snapshot layer.
+2. **grite** — best *single* fit (native leases + snapshots, MIT); immaturity is the risk.
+3. **Automerge-on-git** (thin DIY layer) — mature, formally-verified CRDT + TS-native +
+   full control of claim/lease/snapshot; the Radicle pattern minus the P2P lock-in.
+   (**git-warp** is the already-git-native TS variant of this idea.)
+
+**Net:** no single tool has all the properties we want. The real fork is *"adopt a fuller
+engine and accept its gaps (git-bug / grite)"* vs. *"adopt a proven CRDT core and own the
+thin git + lease layer (Automerge / git-warp)."* The conformance suite (plan Step 2) is the
+decider — which is exactly why the engine choice is deferred behind the adapter interface.
+
+URLs: git-bug <https://github.com/git-bug/git-bug>; grite <https://github.com/neul-labs/grite>;
+Beads <https://github.com/gastownhall/beads>; Automerge <https://automerge.org>;
+Yjs <https://github.com/yjs/yjs>; git-warp <https://github.com/git-stunts/git-warp>;
+Radicle COB RFC 0662 <https://github.com/radicle-dev/radicle-link/blob/master/docs/rfc/0662-collaborative-objects.adoc>.
+
