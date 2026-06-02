@@ -1,287 +1,187 @@
-# Plan: git-native deterministic fleet claiming
+# Plan: deterministic fleet claiming — spec + conformance + thin reference adapter
 
 - **Task**: `deterministic-fleet-claiming`
 - **Repo**: `~/apps/tooling/tasks.md`
 - **Research**: [`docs/research/fleet-claiming.md`](../research/fleet-claiming.md) (prior art + mechanics + competitive landscape)
 - **Author**: devin (claude-opus-4.x) session 2026-06-02
-- **Status**: validated (event-log + enforcement redesign; hardened by research 2026-06-02)
-- **Validated-by**: `reviewer` subagent on 2026-06-02 (redesign: first pass needs-revision; second pass approved after resolving the six concerns; then research-driven hardening — Lamport winner rule, lefthook, Rulesets, ~6/min push limit)
+- **Status**: validated (PURE-SPEC reframe after operator review 2026-06-02)
+- **Validated-by**: `reviewer` subagent on 2026-06-02 (pure-spec reframe — approved)
 
 ## Goal
 
-Let a team of machines — each running a parallel fleet of agents — pull from one
-`TASKS.md` queue with **zero duplicate work** and **deterministic selection**, git-native
-(no server). The model has two planes: `TASKS.md` on `main` is the queue (task
-definitions, edited as plain markdown); an **append-only event log** on a dedicated,
-CI-excluded ref is the claim ledger. The protocol is enforced **deterministically by git
-hooks + branch protection + a CI check** — not just the `/next-task` skill — so it works
-reliably in *any* adopting repo (e.g. `oncall-hub-api`). Adoption is **one prompt**
-(`tasks fleet init`, an extension of the `one-prompt-setup` task).
+tasks.md **specifies** a deterministic, collision-free, multi-machine claim protocol and
+ships only the thin glue that proves and enables it — a **conformance test suite**, a
+**one-prompt wiring command**, and a **thin reference adapter** — while **reusing** existing
+engines for the hard parts: **git-bug's** append-only Lamport-clock op-log as the claim
+ledger, and **lefthook + GitHub Rulesets + `pre-receive`** for enforcement. tasks.md builds
+**no ledger engine and no orchestrator** (VISION G6: thinnest layer; operator decision
+2026-06-02 — "pure spec, as thin as possible, yet requirements fully met"). Target: a team
+of **~tens of machines** × per-host agent fleets, git-native, no server (G7).
 
 ## Why
 
-Three failure modes:
+Four drivers:
 
-1. **Best-effort claiming races.** `(@agent)` claims are visible only after a push, and
-   `pickBestTask` is deterministic, so two agents on an identical file pick the *same*
-   top task. `tasks claim` is a no-op (`packages/cli/src/backend/tasks-md.ts:84`) — no
-   machine-safe claim primitive exists.
-2. **Skills are probabilistic.** A `/next-task` skill *suggests* "claim before you work";
-   it cannot *guarantee* it. An agent (or a human, or a different vendor's agent) can
-   forget to claim, push work uncoordinated, or clobber the ledger. "Reliable in every
-   repo" demands a **deterministic enforcement layer** — the feedback-loop principle:
-   *linters/hooks enforce, instructions suggest.* Hence git hooks + branch protection +
-   a CI required check, with the skill as the *how* and the hooks as the *guarantee*.
-3. **Setup friction kills adoption.** If wiring the ledger ref, hooks, and CI is a manual
-   checklist, teams will do it wrong or not at all. It must be one idempotent command.
+1. **Best-effort races + no claim primitive.** `(@agent)` claims are post-push and
+   `pickBestTask` is deterministic → guaranteed collisions; `tasks claim` is a no-op
+   (`packages/cli/src/backend/tasks-md.ts:84`).
+2. **Skills are probabilistic → enforcement must be deterministic.** A `/next-task` skill
+   can't *guarantee* "claim before work"; only hooks + server-side rules can.
+3. **Adoption must be one prompt** or teams wire it wrong.
+4. **Operator review (2026-06-02):** pure-spec (own the format + protocol + conformance,
+   not the engine); **reuse git-bug** (don't reimplement); **full-belt** enforcement;
+   **medium scale**. Research ([`fleet-claiming.md`](../research/fleet-claiming.md)) proved
+   the git-bug model (production since 2018) and the GitHub **~6 pushes/min/repo** ceiling
+   that makes per-host batching + an optional sidecar claims repo necessary at this scale.
 
-Design choices (operator decision, task Research (f)/(g)/(h)): stay git-native (agents
-are file-native); adopt the event-log model from `Nautilus git-queue` (optimistic lock
-via commits) + the per-task-file idea from `zedutch/tq`, hardened so that **the winner of
-a task is simply the first `claimed` event in the ref's commit order** — no timestamp
-resolver, no merge driver, clock-skew-immune.
+The thinness insight: the only thing nobody else ships is a **portable conformance spec**
+for cross-machine-over-git claiming. So tasks.md owns the spec + the test suite that makes
+"requirements met" *verifiable*, plus a thin reference adapter that proves it by composing
+reused tools — not another engine.
 
-## Scope (in)
+## Scope (in) — what tasks.md owns
 
-- `spec.md` new `## Fleet coordination`: the two-plane model; the ref layout / where the
-  logs live and how they sync; the claim CAS; the deterministic fold; `@machine/agent`
-  identity; the `.tasksmd.json` fields (`backend`, `claimsRef`, `leaseTtlSec`).
-- The `git-claims` backend: append-only event store + fold + `git`-CAS append + snapshot
-  compaction, behind the existing `TaskBackend` seam.
-- **Enforcement layer (deterministic):** committed git hooks installed via
-  `core.hooksPath` — `pre-push` (block a work push to `main` for a task this actor does
-  not hold a live claim on), `post-merge`/`post-checkout` (auto-fetch the ledger),
-  `prepare-commit-msg` (stamp the `Task: <id>` trailer); **branch protection** on the
-  claims ref (no force-push / no delete); a **CI required check** that a PR to `main`
-  references a live-claimed task; and the CI exclusion of the claims ref from the build.
-- **One-prompt setup:** `tasks fleet init` (idempotent) — create the ledger ref, write
-  `.tasksmd.json`, install hooks + set `core.hooksPath`, install the CI workflows,
-  best-effort apply branch protection via `gh` (print the exact manual command when it
-  needs admin), install the `/next-task` command variants — plus a `tasks fleet doctor`
-  diagnostic. Extends `one-prompt-setup`.
-- Tests: two-clone collision, append-only auto-merge, fold/`isClaimLive` units,
-  reconciliation, `pre-push` rejects an unclaimed work push, and `tasks fleet init`
-  idempotency.
+- **`spec.md` § Fleet coordination** — the claim protocol, precise enough to be
+  conformance-testable: append-only event ledger on a dedicated `tasks-claims` branch;
+  winner = embedded **Lamport total order** `(lamport, actor_id, content_hash)`; the fold +
+  `snapshot` compaction; TTL lease; `@machine/agent` identity; the **full-belt enforcement
+  requirements**; the **medium-scale deployment** (per-host batching, optional sidecar
+  claims repo); `.tasksmd.json` fields (`backend`, `claimsRef`, `leaseTtlSec`).
+- **A conformance test suite** — the mechanism that makes "requirements provably met" real;
+  runnable against ANY backend that asserts conformance (the reference adapter and any
+  third-party tool). This is tasks.md's enforcement of the spec.
+- **A thin reference adapter** (`git-claims` behind the existing `TaskBackend` seam) that
+  satisfies the spec by **driving a reused ledger engine** (git-bug the leading candidate)
+  — never a hand-rolled engine — plus **minimal per-host batching** (one pusher/host) for
+  the push ceiling.
+- **`tasks fleet init` + `tasks fleet doctor`** — one-prompt idempotent wiring that
+  *composes the reused tools*: ledger engine, lefthook hooks, GitHub Rulesets + required
+  check, `pre-receive` where available; writes `.tasksmd.json`; installs `/next-task`.
+  Extends `one-prompt-setup`.
 
 ## Scope (out)
 
-- **Per-host coordinator daemon** (poll loop, batch pusher, local file-lock). Throughput
-  optimization → `fleet-claim-coordinator-daemon`.
-- **Heartbeat liveness** (per-machine force-pushed refs). v1 uses a lease only (no
-  heartbeat). → `fleet-claim-heartbeat-liveness`.
-- **HRW machine-partition** + **ref-sharding** + stale-claim **reaper**/compaction tuning.
-  → `fleet-claim-hrw-partition`, `fleet-claim-ref-sharding`.
-- **Server-side `pre-receive` enforcement** (the bypass-proof layer; GHE/self-hosted
-  only). → `fleet-claim-server-enforcement`.
-- **Server-queue backend** (pgmq/River) — the scale trip-wire fallback. →
+- **OPEN SPIKE — the git-bug reuse mechanism** (binary shell-out vs. library vs.
+  contributing a `claim`/`lease` entity upstream). Operator undecided ("not sure"); the
+  adapter is written to an interface so the spike picks the mechanism. →
+  `fleet-claim-gitbug-reuse-spike`.
+- **Building any ledger engine or orchestrator** — explicitly NOT (reuse).
+- Coordinator daemon beyond minimal per-host batching, HRW partition, ref-sharding →
+  `fleet-claim-coordinator-daemon`, `fleet-claim-hrw-partition`, `fleet-claim-ref-sharding`.
+- Heartbeat liveness (per-machine refs); v1 uses a lease only →
+  `fleet-claim-heartbeat-liveness`.
+- **Server-queue backend (pgmq/River)** — only past the medium-scale trip-wire →
   `fleet-claim-queue-backend`.
-- The canonical setup *prompt/command text* lands in the `one-prompt-setup` task; this
-  plan specifies the fleet-specific additions it must perform.
+- The canonical setup *prompt text* lands in `one-prompt-setup`.
 
 ## Implementation steps
 
-### Step 1: Spec the two-plane model + ref layout (where the logs live)
+### Step 1: Spec the protocol (conformance-grade)
 
-`spec.md` `## Fleet coordination`: `TASKS.md` on `main` = queue (Plane 1); an append-only
-event log on a dedicated ref (`tasks-claims` branch by default; `refs/tasks/*` where the
-host allows; or a sidecar repo for locked-down orgs) = claim ledger (Plane 2). Events are
-immutable files `.tasks/events/<ulid>.json` `{v,type,task,owner,lamport,ts,lease_expires}` with
-`type ∈ {claimed,released,completed,cancelled,snapshot}`. Sharing = ordinary
-`git push`/`fetch` of that ref to the shared remote; the push IS the CAS. Document
-`@machine/agent` identity and the `.tasksmd.json` fields. Verify:
-`grep -c "Fleet coordination" spec.md` ≥ 1; `grep -c "leaseTtlSec" spec.md` ≥ 1;
-`npx -y @tasks-md/lint TASKS.md` exits 0.
+Write `spec.md` `## Fleet coordination` covering everything in Scope (in) bullet 1, written
+so each requirement maps to a test. Verify: `grep -c "Fleet coordination" spec.md` ≥ 1,
+`grep -c "leaseTtlSec" spec.md` ≥ 1, `npx -y @tasks-md/lint TASKS.md` exits 0.
 
-### Step 2: Backend selection plumbing
+### Step 2: Conformance test suite (the proof harness — write before the adapter)
 
-Add `git-claims` to `BackendKind` (`config.ts`), `isBackendKind`, the unknown-backend
-error message, and the `createBackend` switch (`index.ts`). Verify:
-`npm run build -w packages/cli`; a `config.test.ts` case asserts `git-claims` resolves and
-an unknown value throws.
+A backend-agnostic suite that drives a backend through the protocol and asserts every
+requirement (collision, append-merge, fold determinism, snapshot, lease reclaim,
+reconciliation, enforcement). Verify: the suite runs and **fails a deliberately-broken
+stub backend** (proving it has teeth) and is documented as the conformance entry point.
 
-### Step 3: Event store + fold (pure, no git)
+### Step 3: Resolve enough of the reuse spike to wire the engine
 
-New module, pure functions: parse/serialize an event file; `fold(events) → Map<taskId,
-ownerState>` where the owner of a task is the actor of the **winning `claimed` event**
-(by the winner rule below), unless a later `released`/`completed`/`cancelled` supersedes it;
-`isClaimLive(state, now)` (lease not expired). **Winner rule (corrected — see
-[`docs/research/fleet-claiming.md`](../research/fleet-claiming.md) §1):** git's commit
-order is NOT deterministic on concurrent ties (`git log --topo-order`/`--date-order` can
-yield different orderings across clones), so the winner is decided by an **explicit total
-order embedded in each event** — a **Lamport clock** with tiebreak
-`(lamport, actor_id, content_hash)` (git-bug's proven approach), independent of git
-ordering. Defense-in-depth: keep the ledger ref strictly **linear** (rebase-only CAS push;
-never a merge) so the order is structurally unambiguous too. A **`snapshot`** event
-`{v, type:"snapshot", tasks:{<id>:{owner,lease_expires}}, snapshotAt:<commit>}` lets a fold
-start mid-log: validate `git merge-base --is-ancestor <snapshotAt> HEAD`; if invalid or
-missing, fall back to folding the whole log (slower, always correct). Verify: unit tests
-for serialize/parse round-trip (events + snapshot), `fold` determinism (same events → same
-owners), winner = min `(lamport, actor_id, content_hash)`, snapshot validation +
-fold-from-snapshot equals fold-from-zero, and `isClaimLive` boundaries
-(`now <`/`==`/`>` `lease_expires`).
+Evaluate the git-bug reuse mechanism (binary shell-out vs. lib) far enough to drive it from
+the adapter; record the choice + rationale in the spike task and the research doc. Verify:
+a smoke test claims + reads back through the reused engine.
 
-### Step 4: Git-CAS append (the core, highest-risk)
+### Step 4: Thin reference adapter over the reused engine
 
-`appendEvent(event)`: operate the claims ref through a detached worktree (gitignored cache
-path) or pure plumbing (`hash-object`/`commit-tree`/`update-ref`); write
-`.tasks/events/<ulid>.json`; commit; `git push`. On non-ff rejection: `git fetch`; fold;
-if claiming and a *live* `claimed` for the task already exists → return `{won:false}`;
-else the event re-applies cleanly (unique filename, never a same-path conflict) → re-push.
-Retries use **exponential backoff** (100ms initial, 5s cap, 10 max); on exhaustion return
-`{won:false}` with `claim rejected: too many rebase conflicts`. A `snapshot` event
-(written via the same CAS) compacts the log: it records live claims as of commit C; folds
-start from the latest snapshot. Verify: the two-clone integration test (Acceptance #3/#4).
+Implement `git-claims` behind `TaskBackend` (`config.ts`/`index.ts` + `git-claims.ts`),
+delegating ledger ops to the reused engine and adding minimal per-host batching. Verify:
+the **conformance suite (Step 2) passes against the adapter**, including the two-clone
+collision test.
 
-### Step 5: Wire the `TaskBackend` surface + reconciliation
+### Step 5: Full-belt enforcement
 
-`git-claims.ts`: `listOpen`/`next` rank via `pickBestTask` but drop tasks with a live
-claim (fold of the ledger); a `claimed` event whose task is absent from `TASKS.md` is
-ignored; an expired/absent claim → claimable. `claim(id)` calls `appendEvent(claimed)`;
-`complete(id)` removes the `TASKS.md` block (work PR on `main`) **and** appends
-`completed`; cancelling a task is `complete(id, {reason:"cancelled"})`, which removes the
-block and appends `cancelled`. Orphaned claims (events for tasks no longer in `TASKS.md`
-that nobody cancelled) are swept by a deferred `tasks fleet cleanup` — until then they are
-simply ignored by the fold and expire by lease. Verify: end-to-end temp-repo test
-(claim → next skips → complete → next returns it gone).
+Ship the lefthook config (`pre-push` claim-before-work, `post-merge` ledger fetch,
+`prepare-commit-msg` task trailer), the GitHub Actions required-check workflow (reads the
+ledger, asserts a live `claimed` by `github.actor`), and a `pre-receive` script for
+GHE/GitLab/Gitea. Verify: a test drives `pre-push` (rejects unclaimed, passes claimed); a
+test of the required-check logic (rejects a PR with no live claim); the build workflow
+excludes the claims ref.
 
-### Step 6: Enforcement layer (deterministic — the reliability mechanism)
+### Step 6: One-prompt wiring (`tasks fleet init` / `doctor`)
 
-- Install client hooks via **lefthook** (ADOPT, don't hand-roll an installer — research
-  §3: single Go binary, committed `lefthook.yml`, idempotent `lefthook install`,
-  language-agnostic). `tasks fleet init` runs the install; `core.hooksPath` is per-clone
-  so the install is the one-time step. If another hook manager already owns
-  `core.hooksPath`, chain rather than clobber, and warn:
-  - `pre-push`: for commits pushed to `main`, extract task id(s) from the `Task: <id>`
-    trailer / `task/<id>` branch / `closes <id>` (require a live claim on ALL ids found;
-    reject "task not found" if an id isn't in TASKS.md); fetch the (cached) ledger; if no
-    live claim by this actor → reject with a fix-it message (or auto-claim if configured).
-  - `post-merge` / `post-checkout`: `git fetch` the claims ref so the local fold is fresh.
-  - `prepare-commit-msg`: stamp `Task: <id>` from the current claim/branch.
-- A CI workflow (`.github/workflows/tasks-claim.yml`): (a) build/test workflows
-  `paths-ignore` / branch-exclude the claims ref; (b) a **required check** that extracts
-  the task id(s) from the PR (title / body / `task/<id>` branch / `Closes`), fetches the
-  ledger, and asserts a live `claimed` event by `github.actor` (the merge trigger) for ≥1
-  of them — failing with `PR author must own the claimed task (re-author or claim under
-  your identity)` when the author isn't the owner. Required-before-merge (branch
-  protection enforces ordering), and idempotent on re-run.
-- A **Repository Ruleset** (newer than legacy branch protection — research §3: rulesets
-  aggregate, pattern-match `tasks-claims*`, settable via `gh api`) on the claims ref: no
-  force-push, no delete, `required_linear_history` — server-side, portable to github.com,
-  makes the append-only invariant bypass-proof. (Where a `pre-receive` server hook exists
-  — GHE / GitLab / Gitea — that is the strongest layer; not available on github.com.)
-Verify: a test drives `pre-push` and asserts it rejects an unclaimed work push and passes
-a claimed one; a test asserts the build workflow does not trigger on the claims ref.
-
-### Step 7: One-prompt setup (`tasks fleet init`)
-
-Idempotent command/prompt that performs Steps 1–6's wiring in one shot: assert a git
-remote + push access exist (else print a fix-it message); create the orphan ledger ref +
-push; write `.tasksmd.json`; install `.tasks/hooks/*` + set `core.hooksPath` (with the
-back-up/merge behaviour from Step 6); install the CI workflows; best-effort `gh api`
-branch protection (print the exact manual command if it needs admin); install
-`/next-task` variants. Re-running diffs current state and writes only what's missing
-(no-op when already set up). A companion **`tasks fleet doctor`** diagnoses an adopting
-repo — it checks: (1) `core.hooksPath` = `.tasks/hooks`; (2) the hooks exist and are
-executable; (3) the ledger ref is reachable; (4) `.tasksmd.json` has `backend:
-git-claims`; (5) the CI workflows are installed — exit 0 if all pass, 1 otherwise. Verify:
-on a fresh temp repo, `tasks fleet init` → `git config core.hooksPath` returns
-`.tasks/hooks` and `tasks fleet doctor` exits 0; a second `tasks fleet init` makes no
-changes.
+Compose Steps 1–5's reused tools in one idempotent command + a diagnostic. Verify: on a
+fresh temp repo, `tasks fleet init` → `git config core.hooksPath` is set + ledger ref
+exists + `.tasksmd.json` has `backend: git-claims` + workflows installed; `tasks fleet
+doctor` exits 0; a second `tasks fleet init` is a no-op.
 
 ## Risks and mitigations
 
-- **Risk: client hooks are bypassable (`--no-verify`) or not installed.** They're
-  ergonomics, not the guarantee.
-  - Mitigation: the hard guarantees are **server-side** and portable to github.com —
-    branch protection (no force/delete on the ledger ref) + the required CI check
-    (no merge to `main` without a live claim). `pre-receive` (strongest) is deferred to
-    `fleet-claim-server-enforcement` where the host supports it. Client hooks are the
-    fast local guardrail on top.
-- **Risk: hooks don't reliably reach every clone.** `core.hooksPath` must be set per
-  clone.
-  - Mitigation: `tasks fleet init` sets it and commits the hooks; `tasks fleet doctor`
-    checks it; the CI required check backstops any clone that skipped setup.
-- **Risk: merge-loop / two-winners.** (The historical worry.)
-  - Mitigation: the event log makes appends conflict-free (unique filenames) and the
-    winner is *first-claimed-in-log-order* — no merge driver, no resolver. Covered by the
-    two-clone collision test + a randomized-interleaving property test.
-- **Risk: event-log growth.** Unbounded logs slow the fold.
-  - Mitigation: heartbeats are NOT in the log (deferred to per-machine refs), so growth ∝
-    task throughput (~2–4 events/task), not wall-clock; `snapshot` compaction truncates.
-- **Risk: push-throughput / rate-limit ceiling.** GitHub recommends **≤ ~6 pushes/min/repo**
-  (research §2) — concrete and low.
-  - Mitigation: minute-plus task workload keeps claim rates low; **per-host batching is
-    NEEDED on github.com (not a late optimization)** — one pusher/host coalescing its
-    agents' events. NOTE: the limit is **per-repo**, so ref-sharding within one repo does
-    NOT raise it — only batching or a **sidecar claims repo** does. **Trip-wire**:
-    sustained claims beyond this or fleet > ~tens of hosts → `fleet-claim-queue-backend`.
-- **Risk: clock skew / non-deterministic git ordering.** Git commit order is not stable
-  on concurrent ties (research §1); lease expiry uses wall-clock.
-  - Mitigation: the *winner* is decided by the embedded **Lamport-clock total order**
-    (`(lamport, actor_id, content_hash)`), skew-immune and independent of git ordering;
-    only the *coarse* lease uses wall-clock → require NTP + minutes-granular `leaseTtlSec`.
-- **Risk: setup needs admin (branch protection) — a human-blocked step.**
-  - Mitigation: `tasks fleet init` does everything `gh` permits and prints the exact
-    `gh api` / UI step for the rest; never silently half-configures.
-- **Risk: ledger ↔ TASKS.md drift / orphaned events.**
-  - Mitigation: read-time reconciliation in `next()`; `completed`/`cancelled` events;
-    `snapshot` compaction drops events for absent tasks; lease makes stragglers inert.
-- **Risk: ref portability / branch-protection-everywhere orgs.**
-  - Mitigation: default to a plain `tasks-claims` branch; `tasks fleet init` probes for
-    `refs/tasks/*`; a sidecar ledger repo is the escape hatch for locked-down code repos.
-- **Risk: snapshot corruption or staleness.** A bad/incomplete snapshot makes the fold
-  wrong.
-  - Mitigation: validate the snapshot is reachable (`git merge-base --is-ancestor
-    <snapshotAt> HEAD`) before trusting it; on any failure, fold the whole log from zero
-    (slower, always correct). Snapshots are derived/rebuildable, never the source of truth.
-- **Risk: event-format evolution.** A schema change could make older agents misread newer
-  events.
-  - Mitigation: the `v` schema-version field; readers tolerate unknown fields and treat an
-    unreadable/newer-`v` event as opaque-but-LIVE (never silently ignore a claim);
-    format-breaking changes require a major bump + migration window.
-- **Risk: CI required-check race (PR merged before the check runs).**
-  - Mitigation: the check is *required before merge* (branch protection enforces ordering
-    on github.com) and idempotent on a given commit; a merge can't land until it's green.
+- **Risk: the reuse mechanism is unresolved (operator "not sure").**
+  - Mitigation: the adapter targets an interface; `fleet-claim-gitbug-reuse-spike` (Step 3)
+    picks binary-shell-out vs. lib vs. upstream-contribution before the adapter hardens; a
+    GPL boundary is respected by shelling out to a separate binary (no linking).
+- **Risk: pure-spec means tasks.md can't *force* third-party backends to be correct.**
+  - Mitigation: the **conformance suite IS the guarantee** — a backend is "tasks.md fleet
+    conformant" iff it passes; the reference adapter is the existence proof.
+- **Risk: winner non-determinism / clock skew.** Git commit order is unstable on concurrent
+  ties (research §1).
+  - Mitigation: winner = embedded **Lamport total order** `(lamport, actor_id,
+    content_hash)` (git-bug's model), independent of git ordering; ledger kept linear
+    (rebase-only) as defense-in-depth; lease is coarse + NTP.
+- **Risk: push-throughput ceiling.** GitHub recommends **≤ ~6 pushes/min/repo** (research §2).
+  - Mitigation: per-host batching is **in the reference adapter** (one pusher/host), not a
+    late add; the limit is **per-repo** so ref-sharding within a repo doesn't help — a
+    **sidecar claims repo** does; **trip-wire** past medium scale → `fleet-claim-queue-backend`.
+- **Risk: client hooks are bypassable.**
+  - Mitigation: full-belt — server-side **Rulesets + required check** (bypass-proof on
+    github.com) and **`pre-receive`** (GHE/GitLab/Gitea, strongest); lefthook is the local
+    ergonomic layer. (Adopt lefthook; don't hand-roll the installer — research §3.)
+- **Risk: setup needs admin (Rulesets/pre-receive).**
+  - Mitigation: `tasks fleet init` does what `gh` permits, prints the exact manual command
+    for the rest; `tasks fleet doctor` reports gaps.
+- **Risk: ledger ↔ TASKS.md drift / event-format evolution / snapshot staleness.**
+  - Mitigation: read-time reconciliation; `completed`/`cancelled` events; `v` schema field
+    (unknown/newer `v` = opaque-but-live); snapshot validated reachable, else full fold.
 
 ## Acceptance criteria
 
-1. Spec documents the two-plane model, the ref layout / transport, the enforcement layer,
-   and the `.tasksmd.json` fields: `grep -c "Fleet coordination" spec.md` ≥ 1,
+1. Spec is conformance-grade: `grep -c "Fleet coordination" spec.md` ≥ 1,
    `grep -c "leaseTtlSec" spec.md` ≥ 1, `npx -y @tasks-md/lint TASKS.md` exits 0.
-2. `git-claims` backend selectable: `config.test.ts` proves it resolves + unknown throws;
-   `npm test -w packages/cli` exits 0.
-3. **Collision (core gate):** two clones append `claimed{X}` concurrently → both clones,
-   after fetch, agree on the SAME winner by the Lamport total order
-   (`(lamport, actor_id, content_hash)`); the loser's `claim` returns `{won:false}`.
-4. **Append auto-merge:** two clones append events for different tasks → both land, no
-   manual conflict (unique filenames).
-5. `fold` determinism + winner = min `(lamport, actor_id, content_hash)` (two-clone
-   concurrent-claim agreement) + snapshot validation (fold-from-snapshot ==
-   fold-from-zero) + `isClaimLive` boundaries (unit tests).
-6. `next()`/`listOpen()` reconcile: skip live-claimed; ignore claims for absent tasks;
-   surface expired-claim tasks (backend test).
-7. `complete(id)` removes the `TASKS.md` block AND appends `completed`; delete appends
-   `cancelled` (end-to-end test).
-8. **Enforcement:** a test drives the `pre-push` hook and asserts it rejects a work push
-   for an unclaimed task and allows a claimed one; a test of the CI required-check logic
-   rejects a PR with no live claim by the author and allows one with a claim; a test
-   asserts the build CI workflow excludes the claims ref; `tasks fleet init` produces the
-   branch-protection + required-check config.
-9. **One-prompt setup:** on a fresh temp repo, `tasks fleet init` yields a working ledger
-   ref + installed hooks (`git config core.hooksPath` returns `.tasks/hooks`) +
-   `.tasksmd.json` (`backend: git-claims`) + CI workflows; a second run changes nothing
-   (idempotent — `git config core.hooksPath` still `.tasks/hooks`); `tasks fleet doctor`
-   exits 0.
-10. Determinism preserved: existing `pickBestTask` tests pass unchanged
-    (`npm test -w packages/parser` exits 0).
-11. Full gate green: `npm run build && npm test && npm run lint` all exit 0.
+2. **Conformance suite exists**, fails a deliberately-broken stub, and passes the reference
+   adapter (`npm test` exits 0).
+3. **Collision (core gate, as a conformance test):** two clones append `claimed{X}`
+   concurrently → both agree on the SAME winner by the Lamport order; loser gets
+   `{won:false}`.
+4. Append auto-merge: different-task events both land, no manual conflict.
+5. fold determinism + winner = min `(lamport, actor_id, content_hash)` + snapshot validation
+   + `isClaimLive` boundaries (unit tests).
+6. `next()`/`listOpen()` reconcile (skip live-claimed; ignore claims for absent tasks;
+   surface expired).
+7. `complete(id)` removes the `TASKS.md` block + appends `completed`; cancel appends
+   `cancelled`.
+8. **Full-belt enforcement:** `pre-push` rejects an unclaimed work push (client); the
+   required-check logic rejects a PR with no live claim by the author (server); the Ruleset
+   blocks force-push/delete on the ledger ref; a `pre-receive` script rejects an unclaimed
+   push (where the host supports it).
+9. **One-prompt setup:** `tasks fleet init` on a fresh temp repo yields hooks
+   (`git config core.hooksPath`) + ledger ref + `.tasksmd.json` (`backend: git-claims`) +
+   workflows; second run no-op; `tasks fleet doctor` exits 0.
+10. **Reuse, not build:** the reference adapter drives a REUSED engine — no hand-rolled
+    ledger (verifiable by grepping the adapter for the git-bug shell-out / dependency, and
+    by the absence of a bespoke CRDT/merge engine in tasks.md packages).
+11. Determinism preserved: existing `pickBestTask` tests pass unchanged.
+12. Full gate green: `npm run build && npm test && npm run lint` all exit 0.
 
 ## Reviewer verdict
 
-- **Verdict**: approved (event-log redesign; second pass — first pass needs-revision, six concerns resolved)
+- **Verdict**: approved (pure-spec reframe)
 - **Reviewer**: `reviewer` subagent (plan-validation profile)
 - **Date**: 2026-06-02
 - **Concerns**:
-  - (none remaining — the six concerns of the redesigned plan were resolved: snapshot format + validation + fallback; deterministic log ordering with commit-hash tiebreak; the `cancelled` trigger via `complete(id,{reason})`; `tasks fleet doctor` defined with five checks; the CI required-check extraction + author-match logic; and hook-conflict backup/merge/warn — plus added risks for snapshot staleness, event-format evolution, and the CI-check race.)
+  - (none — the reframe is internally consistent: spec → conformance suite → thin adapter over a reused engine; no remnants of the old build-it framing; the reuse mechanism is correctly an explicit spike gating the adapter; acceptance #2/#10 are falsifiable; per-host batching is justified as necessary at medium scale, not an optional optimization.)
 - **Approval rationale**:
-  - The event-log design (winner = first `claimed` event in commit order) is clock-skew-immune and merge-loop-free, and the enforcement layer is layered honestly — client hooks for ergonomics, server-side branch protection + a required CI check as the real bypass-proof guarantee, with `pre-receive` deferred. `tasks fleet init`/`doctor` make adoption one idempotent command with concrete acceptance checks, and the scope is appropriately tight for v1 with throughput optimizations and server-side enforcement deferred to named follow-ups.
+  - tasks.md correctly owns the portable protocol spec + the conformance suite (the enforcement mechanism), while delegating the ledger to git-bug (reuse, not build) and enforcement to lefthook + Rulesets + `pre-receive`. The conformance suite is the TDD harness that proves any backend; the reuse mechanism is sequenced as a spike (Step 3) gating the adapter (Step 4), written to an interface so it doesn't block. All acceptance criteria are falsifiable and no contradictions remain from the build-it framing.

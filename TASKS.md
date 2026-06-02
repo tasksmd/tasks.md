@@ -315,6 +315,22 @@
     field (Backlog.md, backlog.so, lodestar, railyard, agent-kanban) but the
     cross-machine-over-git-no-server niche (G7) is largely open. Adopt-X follow-ups:
     `fleet-claim-adopt-gitbug-model`, `fleet-claim-adopt-lefthook`.
+
+    2026-06-02 (j) operator review — REFRAMED to PURE-SPEC (plan rewritten, re-validated):
+    • tasks.md owns ONLY the spec + a runnable CONFORMANCE TEST SUITE + a THIN reference
+      adapter (so the `tasks` CLI claims out-of-the-box) + one-prompt wiring. It builds NO
+      ledger engine and NO orchestrator. The conformance suite — not source ownership — is
+      how "requirements are provably met" for any backend.
+    • REUSE git-bug for the ledger (do NOT reimplement). The exact reuse mechanism (binary
+      shell-out vs library vs contribute a claim/lease entity upstream) is UNDECIDED →
+      OPEN SPIKE `fleet-claim-gitbug-reuse-spike` (resolve before the adapter hardens; a
+      GPL boundary is respected by shelling out, never linking).
+    • ENFORCEMENT = full belt: lefthook (client) + GitHub Rulesets + required CI check
+      (server, github.com) + `pre-receive` (GHE/GitLab/Gitea, strongest).
+    • SCALE = medium (~tens of machines): per-host batching is IN the reference adapter
+      (one pusher/host); a sidecar claims repo is the escape hatch (ref-sharding within a
+      repo can't dodge GitHub's ~6 push/min/REPO limit); a queue backend only past the
+      trip-wire.
   - **Files**: `docs/research/fleet-claiming.md` (prior-art research),
     `docs/plans/deterministic-fleet-claiming.md` (validated implementation
     plan — reviewer-approved 2026-06-02; the phased steps + acceptance below derive from

@@ -159,3 +159,21 @@ proposed (backlog.so's TTL claims + commit trailers; lodestar's two-plane + leas
 - **Adopt-X follow-ups to file:** `fleet-claim-adopt-gitbug-model` (port the Lamport-clock
   op-log/fold design), `fleet-claim-adopt-lefthook` (hook install), and fold the Rulesets
   recipe into `fleet-claim-server-enforcement`.
+
+## 7. Operator review decisions (2026-06-02)
+
+After reviewing this research the operator set the direction:
+
+- **Pure spec, thinnest possible — but requirements provably met.** tasks.md owns the
+  spec + a runnable **conformance suite** + a **thin reference adapter** + one-prompt
+  wiring; it builds **no ledger engine and no orchestrator**. The conformance suite (not
+  source ownership) is how the requirements are guaranteed for any backend.
+- **Reuse git-bug — do NOT reimplement.** Language-agnostic (TS preferred by default). The
+  exact reuse mechanism (binary shell-out vs. library vs. contributing a `claim`/`lease`
+  entity upstream) is **undecided** → open spike `fleet-claim-gitbug-reuse-spike`.
+- **Full-belt enforcement** (lefthook + Rulesets + required check + `pre-receive`).
+- **Medium scale (~tens of machines):** per-host batching lives in the reference adapter; a
+  sidecar claims repo is the escape hatch; a queue backend only past the trip-wire.
+
+These supersede the build-it framing in earlier plan revisions; see the rewritten
+[`docs/plans/deterministic-fleet-claiming.md`](../plans/deterministic-fleet-claiming.md).
