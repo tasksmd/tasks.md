@@ -762,6 +762,65 @@ describe("CLI", () => {
     }
   });
 
+  it("claim/unclaim/cancel --json round-trip on the git-native backend", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    spawnSync("git", ["init"], { cwd: dir });
+    const gn = ["--backend", "git-native"];
+    try {
+      spawnSync("node", [CLI, "create", "Round trip", ...gn], { encoding: "utf-8", cwd: dir });
+
+      const claim = spawnSync("node", [CLI, "claim", "round-trip", ...gn, "--as", "@alice", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(claim.status).toBe(0);
+      const claimed = JSON.parse(claim.stdout.trim());
+      expect(claimed).toMatchObject({ status: "claimed", owner: "alice" });
+      expect(claimed.claimId).toMatch(/^claim-/);
+
+      // A second claim by another actor must fail (collision-free).
+      const second = spawnSync("node", [CLI, "claim", "round-trip", ...gn, "--as", "@bob", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(second.status).toBe(1);
+      expect(JSON.parse(second.stdout.trim()).status).toBe("already_claimed");
+
+      const unclaim = spawnSync("node", [CLI, "unclaim", "round-trip", ...gn, "--as", "@alice", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(unclaim.status).toBe(0);
+      expect(JSON.parse(unclaim.stdout.trim())).toMatchObject({ status: "ok", operation: "release" });
+
+      // render returns the generated snapshot.
+      const render = spawnSync("node", [CLI, "render", ...gn], { encoding: "utf-8", cwd: dir });
+      expect(render.status).toBe(0);
+      expect(render.stdout).toContain("Round trip");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("update is unsupported on the file backend with an actionable message", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Edit me\n  - **ID**: edit-me\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "update", "edit-me", "--title", "New", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(1);
+      expect(JSON.parse(result.stdout.trim())).toMatchObject({
+        status: "unsupported",
+        operation: "update",
+      });
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
   it("watch --help advertises the --fix flag", () => {
     const result = spawnSync("node", [CLI, "watch", "--help"], { encoding: "utf-8" });
     expect(result.status).toBe(0);

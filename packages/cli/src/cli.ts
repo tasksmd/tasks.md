@@ -19,8 +19,13 @@ import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
 import { createLinearSource } from "./sync/linear.js";
-import { formatClaimResult, getBackend, resolveBackendConfig } from "./backend/index.js";
-import type { BackendTask } from "./backend/index.js";
+import {
+  formatClaimResult,
+  formatOperationResult,
+  getBackend,
+  resolveBackendConfig,
+} from "./backend/index.js";
+import type { ActorOptions, BackendTask, OperationResult } from "./backend/index.js";
 
 
 const pkg = JSON.parse(
@@ -464,6 +469,16 @@ program
 
 interface BackendOpts {
   backend?: string;
+  as?: string;
+  json?: boolean;
+}
+
+/** Actor identity for a mutating op: `--as`, else $TASKS_ACTOR / $TASKS_INSTANCE. */
+function actorOptions(opts: BackendOpts): ActorOptions {
+  return {
+    actorId: opts.as ?? process.env.TASKS_ACTOR,
+    instanceId: process.env.TASKS_INSTANCE,
+  };
 }
 
 function formatTask(task: BackendTask): string {
@@ -516,21 +531,50 @@ program
   .description("File a new task in the active backend")
   .argument("<title>", "Task title")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
   .option("--priority <p>", "Priority: P0 | P1 | P2 | P3", "P2")
   .option("--body <text>", "Task body / details")
   .option("--tag <tag...>", "Label/tag (repeatable)")
+  .option("--json", "Emit the created task as JSON")
   .action(
     async (
       title: string,
       opts: BackendOpts & { priority?: string; body?: string; tag?: string[] },
     ) => {
-      const task = await getBackend(process.cwd(), opts.backend).create({
-        title,
-        priority: opts.priority,
-        body: opts.body,
-        tags: opts.tag,
-      });
-      console.log(`Created ${task.url ?? task.id}: ${task.title}`);
+      const task = await getBackend(process.cwd(), opts.backend).create(
+        { title, priority: opts.priority, body: opts.body, tags: opts.tag },
+        actorOptions(opts),
+      );
+      if (opts.json) {
+        console.log(JSON.stringify(task, null, 2));
+      } else {
+        console.log(`Created ${task.url ?? task.id}: ${task.title}`);
+      }
+    },
+  );
+
+program
+  .command("update")
+  .description("Update a task's fields in the active backend")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--title <text>", "New title")
+  .option("--priority <p>", "New priority: P0 | P1 | P2 | P3")
+  .option("--body <text>", "New body / details")
+  .option("--tag <tag...>", "Replace tags (repeatable)")
+  .option("--json", "Emit the operation result as JSON")
+  .action(
+    async (
+      id: string,
+      opts: BackendOpts & { title?: string; priority?: string; body?: string; tag?: string[] },
+    ) => {
+      const result = await getBackend(process.cwd(), opts.backend).update(
+        id,
+        { title: opts.title, priority: opts.priority, body: opts.body, tags: opts.tag },
+        actorOptions(opts),
+      );
+      emitOperationResult(result, opts);
     },
   );
 
@@ -539,9 +583,28 @@ program
   .description("Claim a task (assign it to you)")
   .argument("<id>", "Task id (issue number for github-issues)")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--json", "Emit the claim result as JSON")
   .action(async (id: string, opts: BackendOpts) => {
-    const result = await getBackend(process.cwd(), opts.backend).claim(id);
-    console.log(formatClaimResult(result));
+    const result = await getBackend(process.cwd(), opts.backend).claim(id, actorOptions(opts));
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatClaimResult(result));
+    }
+    if (result.status !== "claimed") process.exitCode = 1;
+  });
+
+program
+  .command("unclaim")
+  .description("Release a claimed task back to the queue")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--json", "Emit the operation result as JSON")
+  .action(async (id: string, opts: BackendOpts) => {
+    const result = await getBackend(process.cwd(), opts.backend).release(id, actorOptions(opts));
+    emitOperationResult(result, opts);
   });
 
 program
@@ -549,9 +612,50 @@ program
   .description("Complete a task (close the issue / remove the TASKS.md block)")
   .argument("<id>", "Task id (issue number for github-issues)")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--json", "Emit the operation result as JSON")
   .action(async (id: string, opts: BackendOpts) => {
-    await getBackend(process.cwd(), opts.backend).complete(id);
-    console.log(`Completed ${id}.`);
+    const result = await getBackend(process.cwd(), opts.backend).complete(id, actorOptions(opts));
+    emitOperationResult(result, opts);
+  });
+
+program
+  .command("cancel")
+  .description("Cancel a task without completing the work")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--json", "Emit the operation result as JSON")
+  .action(async (id: string, opts: BackendOpts) => {
+    const result = await getBackend(process.cwd(), opts.backend).cancel(id, actorOptions(opts));
+    emitOperationResult(result, opts);
+  });
+
+program
+  .command("render")
+  .description("Render the human-readable TASKS.md snapshot from the active backend")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--json", "Emit the render result as JSON")
+  .action(async (opts: BackendOpts) => {
+    const result = await getBackend(process.cwd(), opts.backend).render();
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else if (result.status === "ok") {
+      process.stdout.write(result.content ?? "");
+    } else {
+      console.error(`render unsupported: ${result.reason ?? result.backend}`);
+    }
+    if (result.status !== "ok") process.exitCode = 1;
   });
 
 program.parse();
+
+/** Print an operation result and set a nonzero exit code on anything but `ok`. */
+function emitOperationResult(result: OperationResult, opts: BackendOpts): void {
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(formatOperationResult(result));
+  }
+  if (result.status !== "ok" && result.status !== "noop") process.exitCode = 1;
+}

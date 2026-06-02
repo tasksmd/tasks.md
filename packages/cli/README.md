@@ -45,6 +45,20 @@ tasks sync github --merge             # sync GitHub Issues into TASKS.md
 | `watch` | `[<dir>]`, `--fix` | Watch TASKS.md and auto-lint on save. `--fix` reuses `tasks-lint --fix` to remove `[x]` completed tasks |
 | `sync <provider>` | provider-specific (below) | Sync issues from `github`, `jira`, or `linear` into TASKS.md |
 
+### Task operations (backend-neutral)
+
+These run against the active backend (`tasks-md`, `github-issues`, or `git-native`; see [`spec.md` § Task backends](../../spec.md#task-backends)). `--backend <kind>` overrides per-invocation; `--as <actor>` sets the claim identity (default `$TASKS_ACTOR`); `--json` emits a structured result so generated agent commands never parse prose. An operation a backend cannot perform returns a typed `unsupported` result and a nonzero exit code rather than pretending to succeed.
+
+| Command | Flags | What it does |
+|---------|-------|--------------|
+| `create <title>` | `--priority`, `--body`, `--tag`, `--as`, `--json` | File a new task |
+| `update <id>` | `--title`, `--priority`, `--body`, `--tag`, `--as`, `--json` | Update a task's fields (file backend is human-editable → `unsupported`) |
+| `claim <id>` | `--as`, `--json` | Claim a task. Best-effort on the file backend; collision-free (with a `claimId` fencing token) on git-native |
+| `unclaim <id>` | `--as`, `--json` | Release a claimed task back to the queue |
+| `complete <id>` | `--as`, `--json` | Complete a task (remove the block / close the issue / append a `completed` event) |
+| `cancel <id>` | `--as`, `--json` | Drop a task without completing the work |
+| `render` | `--json` | Print the human-readable `TASKS.md` snapshot from the backend (the file itself for `tasks-md`; the folded log for git-native) |
+
 `tasks sync <provider>` is the canonical sync surface. The legacy `sync-issues`, `sync-jira`, and `sync-linear` commands still work but print a deprecation warning the first time you call them.
 
 ```bash

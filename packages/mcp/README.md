@@ -34,6 +34,8 @@ Add the server to your MCP client config. Example for Claude Code:
 
 The server discovers every `TASKS.md` from the git root down and parses each file via [`@tasks-md/parser`](../parser/), so its filter and pick behavior matches `@tasks-md/cli` exactly.
 
+**Backend-mediated mutations.** On the default `tasks-md` backend the tools edit `TASKS.md` directly. When the repo declares a non-file backend in `.tasksmd.json` (`github-issues` or `git-native`; see [`spec.md` § Task backends](../../spec.md#task-backends)), the mutation tools (`add_task`, `claim_task`, `unclaim_task`, `complete_task`, `pick_task`) delegate to the `tasks` CLI so every backend goes through one collision-free implementation rather than the MCP duplicating file-only semantics.
+
 To build from source:
 
 ```bash

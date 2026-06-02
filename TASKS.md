@@ -417,20 +417,6 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Implement backend-neutral CLI and MCP commands for agent-mediated task operations
-  - **ID**: cli-mcp-agent-mediated-operations
-  - **Tags**: cli, mcp, backend, commands, agent-owned, task-operations
-  - **Details**: The spec task defines backend-neutral operations, but the user-facing surfaces must actually expose them. Today the CLI is mostly list/pick/sync and the MCP mutation tools directly edit files. Add a public CLI/MCP operation layer so agents can create, update, review, claim, release, complete, cancel, enrich, and render tasks without knowing whether the active backend is a mutable file, GitHub Issues, or git-native log-first storage.
-
-    Required changes:
-    1. Add or align a grouped CLI surface such as `tasks task <add|update|review|claim|release|complete|cancel|enrich|render>` around the typed `TaskBackend` results; avoid nine new top-level commands unless the spec records why a grouped command is worse.
-    2. Make MCP tools delegate to the same backend operations instead of duplicating file-only mutation semantics.
-    3. Return explicit statuses for unsupported, blocked, already-claimed, stale-fenced, lease-expired, and rendered-snapshot-stale outcomes.
-    4. Keep the file backend usable, but label its claim mutation as best-effort and non-fleet-safe.
-    5. Add JSON output shapes stable enough for generated agent commands to consume.
-  - **Files**: `packages/cli/src/commands/`, `packages/cli/src/cli.ts`, `packages/cli/src/backend/`, `packages/mcp/src/index.ts`, `packages/mcp/src/tools.ts`, `packages/mcp/src/backend.ts`, `packages/cli/README.md`, `packages/mcp/README.md`
-  - **Acceptance**: CLI and MCP expose the same backend-neutral task operation set through a small grouped surface; file, GitHub Issues, and git-native backends either perform each operation or return an actionable unsupported result; generated commands can consume `--json` without parsing prose; tests cover file and at least one non-file backend path; `npm run build && npm test` pass.
-
 - [ ] Ship migration and versioning for moving existing file queues to git-native mode
   - **ID**: migrate-file-queue-to-git-native
   - **Tags**: migration, backend, git-native, cli, spec-version, adoption, compatibility
@@ -552,7 +538,7 @@
 - [ ] Align package READMEs and the generated site with backend-aware operations
   - **ID**: package-docs-site-backend-alignment
   - **Tags**: docs, package-readmes, site, cli, mcp, parser, lint, backend
-  - **Blocked by**: docs-align-agent-owned-backends, cli-mcp-agent-mediated-operations
+  - **Blocked by**: docs-align-agent-owned-backends
   - **Details**: The root README task covers public narrative docs, but package-level READMEs are independent entry points. `packages/mcp/README.md` currently describes direct file mutation tools, `packages/cli/README.md` describes a file-only command set, and parser/lint docs frame claims as inline file syntax. Align those docs and rebuild the generated site so npm users do not install stale semantics.
 
     Required changes:
