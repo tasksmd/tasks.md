@@ -417,40 +417,9 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Specify the agent-mediated task command surface before changing backend code
-  - **ID**: spec-agent-mediated-task-commands
-  - **Tags**: spec, commands, agent-owned, human-interface, setup, adoption
-  - **Details**: The new direction makes task mutation an agent/tool responsibility, not a human hand-edit workflow. Before implementing storage, define the command surface humans use to ask agents to maintain the queue: add a task, update a task, review/prioritize tasks, lint tasks, run the next task, and install the workflow in a repo. This should preserve the low-friction promise without telling users to manually edit queue state.
-
-    Required changes:
-    1. Add a spec section describing the human-facing command verbs and the backend-neutral operations they invoke (`create`, `update`, `review`, `claim`, `release`, `complete`, `cancel`, `render`).
-    2. Decide which commands are canonical files under `commands/` (`setup`, `add-task`, `update-task`, `review-tasks`, or equivalent) and which remain CLI/MCP-only.
-    3. Define how commands behave in file backend vs git-native backend without exposing backend internals to the human.
-    4. Define minimum verification after an agent mutates tasks: lint for file backend, fold/projection check for git-native backend.
-  - **Files**: `spec.md`, `commands/README.md`, `commands/next-task.md`, `packages/cli/src/backend/types.ts`, `packages/mcp/src/tools.ts`
-  - **Acceptance**: `spec.md` has a backend-neutral "agent-mediated task operations" section; humans are instructed to command agents/tools rather than hand-edit task state; every operation is mapped to the `TaskBackend`/MCP surface; the planned canonical command names and install paths are explicit enough for an implementation PR.
-
-- [ ] Specify the git-native log-first backend protocol in `spec.md`
-  - **ID**: spec-git-native-log-first-backend
-  - **Tags**: spec, git-native, fleet, conformance, backend, collision-free, generated-snapshot
-  - **Blocked by**: spec-agent-mediated-task-commands
-  - **Details**: The approved plan lives in `docs/plans/deterministic-fleet-claiming.md`, but the canonical spec still documents only best-effort inline `(@agent)` claims. Per G1, the protocol must move into `spec.md` before backend code lands. This spec must be conformance-grade and explicitly distinguish file backend semantics from git-native fleet semantics.
-
-    Required changes:
-    1. Add `git-native` as a backend kind in the spec, with `tasks-claims` ref naming, event-log source-of-truth rules, event types, event schema, actor identity, lease fields, and projection semantics.
-    2. Pin canonical event serialization: schema version, event ID, JSON/JSONL format, key order/hash input, duplicate handling, malformed-event behavior, actor ID normalization, timestamp rules, and whether commits carry one event or batches.
-    3. Define task creation/edit/update in git-native mode as log events, not human edits to generated `TASKS.md`.
-    4. Define claim lifecycle: claim, `claim_id` fencing token, release, lease expiry, completion, cancellation, stale-owner fencing, loser-yields behavior.
-    5. Define generated `TASKS.md`: single writer, stable projection branch/PR, idempotent fold, staleness is cosmetic, agents pick from folded log state.
-    6. Preserve file backend behavior as the zero-setup backend: humans may edit `TASKS.md` in file-backend repos; git-native generated snapshots are not hand-edited.
-    7. Define actor privacy defaults so public snapshots do not expose raw git emails unless configured.
-  - **Files**: `spec.md`, `examples/`, `docs/plans/deterministic-fleet-claiming.md`, `docs/research/fleet-claiming.md`
-  - **Acceptance**: `spec.md` documents both file and git-native backends without contradiction; `git-native` has a canonical event schema, lifecycle, and `claim_id` fencing model; stale generated snapshots and projection PR lifecycle are specified; file backend remains human-editable but explicitly not collision-free; public actor rendering is privacy-safe by default; `npx -y @tasks-md/lint TASKS.md` exits 0.
-
 - [ ] Write the security and trust model for git-native fleet claiming before implementation
   - **ID**: security-threat-model-git-native-claiming
   - **Tags**: security, git-native, threat-model, enforcement, ci, rulesets, agent-owned
-  - **Blocked by**: spec-git-native-log-first-backend
   - **Details**: The approved fleet plan depends on git refs, CI, rulesets, local hooks, and actor identities. Those are security boundaries, not just implementation details. Before adapter code lands, document the trust model so the v1 limitations are explicit and the conformance/server-enforcement tasks know which abuse cases they must cover.
 
     Required coverage:
@@ -464,7 +433,6 @@
 - [ ] Build the backend conformance suite before implementing the git-native adapter
   - **ID**: conformance-backend-protocol
   - **Tags**: tests, conformance, backend, git-native, fleet, collision-free, ci
-  - **Blocked by**: spec-git-native-log-first-backend
   - **Details**: The plan's proof gate is a runnable backend-agnostic conformance suite, not another prose review. Write the suite before any real adapter so the tests drive the backend interface and the linear-CAS-first decision. Keep it internal-first until the adapter contract stabilizes; publishing a public package too early would freeze the wrong API. The suite must fail a deliberately broken stub so it cannot become a checkbox.
 
     Required checks:
@@ -485,7 +453,7 @@
 - [ ] Reshape `TaskBackend` for agent-owned operations, leases, fencing, and backend capabilities
   - **ID**: backend-interface-agent-owned-protocol
   - **Tags**: cli, mcp, backend, types, agent-owned, lease, conformance
-  - **Blocked by**: spec-agent-mediated-task-commands, spec-git-native-log-first-backend, conformance-backend-protocol
+  - **Blocked by**: conformance-backend-protocol
   - **Details**: The current backend interface exposes `claim(id): Promise<void>` with no actor identity, lease, fencing token, or result status, and the file backend claim is a no-op. That shape cannot implement the git-native protocol or agent-mediated task operations. Redesign the interface around explicit operation results while preserving compatibility for file and GitHub Issues backends.
 
     Required changes:
@@ -622,7 +590,7 @@
 - [ ] Update canonical agent commands for backend-aware, agent-owned task workflows
   - **ID**: commands-agent-owned-backend-workflow
   - **Tags**: commands, generated, next-task, setup, agent-owned, backend, docs
-  - **Blocked by**: spec-agent-mediated-task-commands, backend-interface-agent-owned-protocol, one-prompt-agent-owned-fleet-init
+  - **Blocked by**: backend-interface-agent-owned-protocol, one-prompt-agent-owned-fleet-init
   - **Details**: `commands/next-task.md` and its generated variants still instruct agents to read and mutate `TASKS.md` directly. The canonical commands must become backend-aware: file backend may still mutate the file, but git-native mode must operate through backend operations and treat `TASKS.md` as a generated snapshot.
 
     Required changes:
@@ -637,7 +605,7 @@
 - [ ] Align README, architecture, roadmap, examples, and user stories with agent-owned backends
   - **ID**: docs-align-agent-owned-backends
   - **Tags**: docs, readme, architecture, roadmap, user-stories, examples, agent-owned, backend
-  - **Blocked by**: spec-git-native-log-first-backend, commands-agent-owned-backend-workflow
+  - **Blocked by**: commands-agent-owned-backend-workflow
   - **Details**: The public docs currently teach humans to create and edit `TASKS.md` directly and describe the mutable-file claim/remove workflow as universal. After the spec and commands are updated, all docs must be split by backend and re-centered on the new rule: tasks are human-readable, but task state changes are performed by agents/tools from a single prompt or explicit task-management command.
 
     Required changes:
