@@ -281,6 +281,25 @@
       full CI → merge-to-main path (optionally a merge queue); completion removes the
       task from TASKS.md in that PR and deletes the claim file. Claiming stays sub-second
       and CI-free; only real code is gated.
+
+    2026-06-02 (h) design refinement (folded into the plan; re-validated):
+    • Claim ledger = an APPEND-ONLY EVENT LOG (`claimed`/`released`/`completed`/
+      `cancelled`/`snapshot` as immutable `.tasks/events/<ulid>.json` files on a
+      dedicated ref), not mutable `.tasks/claims/<id>` files. Winner of a task = the
+      FIRST `claimed` event in the ref's commit order → no timestamp resolver, no merge
+      driver, clock-skew-immune. Two-plane model: TASKS.md on main = the queue (tasks
+      edited/deleted as plain markdown); the event log = who-owns-what-now.
+    • RELIABILITY must be DETERMINISTIC, not skill-dependent (a `/next-task` skill can't
+      guarantee an agent claims before working). Enforce via git hooks (`pre-push`
+      blocks a work push for an unclaimed task; `post-merge` auto-fetches the ledger;
+      `prepare-commit-msg` stamps `Task: <id>`) installed through committed
+      `core.hooksPath`, PLUS branch protection on the ledger ref (no force/delete) and a
+      required CI check (no merge to main without a live claim) — the server-side layers
+      are bypass-proof on github.com; a `pre-receive` hook (GHE) is the optional
+      strongest layer (`fleet-claim-server-enforcement`).
+    • Must work in ANY adopting repo (e.g. oncall-hub-api) via ONE PROMPT:
+      `tasks fleet init` (idempotent) wires the ledger ref + hooks + CI + best-effort
+      branch protection + `/next-task` — an extension of the `one-prompt-setup` task.
   - **Files**: `docs/plans/deterministic-fleet-claiming.md` (validated implementation
     plan — reviewer-approved 2026-06-02; the phased steps + acceptance below derive from
     it), `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
