@@ -2,7 +2,7 @@
 
 - **Task**: `deterministic-fleet-claiming`
 - **Repo**: `~/apps/tooling/tasks.md`
-- **Research**: [`docs/research/fleet-claiming.md`](../research/fleet-claiming.md) (prior art + mechanics + competitive landscape)
+- **Research**: [`docs/research/fleet-claiming.md`](../research/fleet-claiming.md) (prior art + mechanics + competitive landscape); [`docs/research/gitbug-reuse-spike.md`](../research/gitbug-reuse-spike.md) (reuse-mechanism spike — git-bug convergence empirically confirmed)
 - **Author**: devin (claude-opus-4.x) session 2026-06-02
 - **Status**: validated (PURE-SPEC reframe after operator review 2026-06-02)
 - **Validated-by**: `reviewer` subagent on 2026-06-02 (pure-spec reframe — approved)
@@ -89,11 +89,20 @@ requirement (collision, append-merge, fold determinism, snapshot, lease reclaim,
 reconciliation, enforcement). Verify: the suite runs and **fails a deliberately-broken
 stub backend** (proving it has teeth) and is documented as the conformance entry point.
 
-### Step 3: Resolve enough of the reuse spike to wire the engine
+### Step 3: Resolve the reuse spike (DONE — see [`docs/research/gitbug-reuse-spike.md`](../research/gitbug-reuse-spike.md))
 
-Evaluate the git-bug reuse mechanism (binary shell-out vs. lib) far enough to drive it from
-the adapter; record the choice + rationale in the spike task and the research doc. Verify:
-a smoke test claims + reads back through the reused engine.
+Spike executed 2026-06-02. **Empirically confirmed** git-bug converges to a deterministic
+winner across clones under true concurrency (fork+merge DAG + Lamport fold; fresh re-clone
+folds identically) — so we reuse its ordering, not build it, and need no linear ref.
+Findings: the CLI exposes only `bug`/`label`/`user` (no custom entity), but `entity/dag` is
+an importable Go lib (GPL-3.0); git-bug lacks TTL leases + snapshots (build thin in the
+adapter). **Recommended mechanism:** git-bug via a separate GPL Go helper invoked as a
+subprocess (first-class `Claim` entity + clean license boundary; TS stays MIT). **Open
+operator decision:** Option A git-bug (proven, GPL, build lease/snapshot) vs. Option B
+grite (MIT, native leases+snapshots, immature) vs. git-warp (TS-native, immature) — the
+adapter targets an interface so the engine stays swappable; an upstream CONTRIBUTE of a
+claim/lease entity to git-bug runs in parallel. Verify: smoke test claims + reads back
+through the chosen engine.
 
 ### Step 4: Thin reference adapter over the reused engine
 

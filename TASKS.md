@@ -331,7 +331,22 @@
       (one pusher/host); a sidecar claims repo is the escape hatch (ref-sharding within a
       repo can't dodge GitHub's ~6 push/min/REPO limit); a queue backend only past the
       trip-wire.
-  - **Files**: `docs/research/fleet-claiming.md` (prior-art research),
+
+    2026-06-02 (k) reuse spike DONE — `docs/research/gitbug-reuse-spike.md`. Ran a real
+    two-clone git-bug v0.10.1 experiment: concurrent non-commutative edits to one
+    entity, push (B rejected → pull/merge → push). The ledger FORKED + MERGED (DAG) yet
+    BOTH clones AND a fresh independent re-clone folded to the SAME winner → git-bug's
+    Lamport+lexicographic fold gives deterministic cross-clone resolution OUT OF THE BOX
+    (no need to build ordering, no need for a linear ref). Mechanism findings: CLI
+    exposes only bug/label/user (no custom entity); `entity/dag` is an importable Go lib
+    but GPL-3.0; git-bug lacks TTL leases + snapshots. RECOMMENDED: git-bug via a
+    separate GPL Go helper invoked as a subprocess (first-class Claim entity + TS stays
+    MIT). OPEN DECISION surfaced: Option A git-bug (proven, GPL, build lease/snapshot)
+    vs Option B grite (MIT, NATIVE leases+snapshots, immature) vs git-warp (TS-native,
+    immature); Beads + git-appraise ruled out (non-deterministic). Adapter stays behind
+    an interface → engine swappable; upstream CONTRIBUTE to git-bug runs in parallel.
+  - **Files**: `docs/research/gitbug-reuse-spike.md` (reuse-mechanism spike),
+    `docs/research/fleet-claiming.md` (prior-art research),
     `docs/plans/deterministic-fleet-claiming.md` (validated implementation
     plan — reviewer-approved 2026-06-02; the phased steps + acceptance below derive from
     it), `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
