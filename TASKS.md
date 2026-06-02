@@ -6,6 +6,14 @@
 
 ## P0
 
+- [ ] Restore npm release publishing for `v0.9.0` and future releases
+  - **ID**: npm-release-publishing-blocker
+  - **Tags**: release, deployment-infra, npm, ci, trusted-publishing, p0
+  - **Blocked**: needs-npm-maintainer-auth — npm package trust/access settings require maintainer auth for `@tasks-md/parser`, `@tasks-md/lint`, `@tasks-md/cli`, and `tasks-mcp`; unauthenticated `npm trust list` returns E401 and the npm package access UI redirects to login.
+  - **Details**: GitHub release `v0.9.0` exists, but publish workflow run `26844766304` failed at `npm publish --access=public --provenance` for `@tasks-md/parser@0.9.0` with `npm error code E404` / `404 Not Found - PUT https://registry.npmjs.org/@tasks-md%2fparser`. npm latest remains `0.7.0` for all four packages. The previous `v0.8.0` token-based workflow run `26240628732` failed with the same package PUT E404, so the unblock is package-level npm authorization, not tests/build. Preferred fix: as an npm maintainer, configure trusted publishing for each package using `npm trust github <pkg> --repo tasksmd/tasks.md --file publish.yml --allow-publish --registry=https://registry.npmjs.org/`, or replace `NPM_TOKEN` with a package-scoped granular token that has read-write publish permission and bypasses 2FA. See `docs/human-blocked-actions/npm-release-publishing-2026-06-02.md`.
+  - **Files**: `.github/workflows/publish.yml`, `packages/*/package.json`, `docs/human-blocked-actions/npm-release-publishing-2026-06-02.md`
+  - **Acceptance**: (a) each package has either a trusted publisher for `tasksmd/tasks.md` + `.github/workflows/publish.yml` with publish allowed, or the repo `NPM_TOKEN` secret is replaced by a valid publish-capable token; (b) rerunning the `v0.9.0` publish workflow or creating a replacement release publishes `@tasks-md/parser`, `@tasks-md/lint`, `@tasks-md/cli`, and `tasks-mcp`; (c) `npm view @tasks-md/parser version --registry=https://registry.npmjs.org/`, `npm view @tasks-md/lint version --registry=https://registry.npmjs.org/`, `npm view @tasks-md/cli version --registry=https://registry.npmjs.org/`, and `npm view tasks-mcp version --registry=https://registry.npmjs.org/` all return `0.9.0` or newer; (d) the release workflow's version-bump commit lands on `main`; (e) `npm run lint` and `npx -y @tasks-md/lint TASKS.md` pass.
+
 - [ ] One-prompt setup: a developer tells their agent to "use tasks.md" and the agent does the entire setup
   - **ID**: one-prompt-setup
   - **Tags**: docs, user-story, onboarding, cli, commands, adoption, dx
