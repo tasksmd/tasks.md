@@ -16,16 +16,18 @@ This file is the root-level milestone summary that the `load-project-context` ru
 | **Cross-agent command generation** — single source of truth for `/next-task` + `/lint-tasks` | ✅ Stable | [`commands/`](commands/) + `tasks generate-commands` + `commands-drift` CI |
 | **Per-agent variants** — Claude Code, Codex, Cursor, Devin, Gemini CLI, Windsurf | ✅ Shipped | [`commands/{claude,codex,cursor,devin,gemini,windsurf}/`](commands/) |
 | **Plan-first workflow** — agents write `docs/plans/<task-id>.md` before non-trivial work, validated by a reviewer subagent | ✅ Stable | [`docs/plans/next-task-plan-first-workflow.md`](docs/plans/next-task-plan-first-workflow.md), [`docs/templates/plan-template.md`](docs/templates/plan-template.md) |
+| **Git-native fleet coordination (G7)** — collision-free claims across a team of machines × per-host agent fleets | 🟡 Designed | [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md), [`VISION.md` G7](VISION.md) |
 | **Workspace mode** — `next-task` aggregates TASKS.md files across nested repos in one or more workspaces | 🟡 In progress | [`TASKS.md` § "Workspace mode"](TASKS.md) |
 | **Site / docs hub** — public website at tasksmd.github.io | ✅ Live | [tasksmd.github.io/tasks.md](https://tasksmd.github.io/tasks.md/) |
 
 ## Active focus
 
-The current operating mode is **spec hardening and user-story coverage.** New work is curated tech-lead-style (see policy comment at the top of [`TASKS.md`](TASKS.md)) and stays scoped to: (a) sharpening user-story acceptance criteria, (b) simplifying CLI features that overlap, (c) avoiding scope creep beyond the `tasks.md` repo.
+The current operating mode is **fleet coordination + backend semantics** (VISION.md G7) — making `tasks.md` collision-free for a team of machines, each running a parallel agent fleet, against one queue. The portable spec layer stays the product (G1/G6); the coordination is delegated to a **backend** (G5), git-native by default. New work is curated tech-lead-style (see the policy comment at the top of [`TASKS.md`](TASKS.md)) and stays scoped to the `tasks.md` repo.
 
-The next two capabilities on the queue:
-1. **Workspace mode** — multi-repo, multi-workspace aggregation. Parser, CLI, MCP, and `/next-task` all learn to traverse nested repos under one or more workspace roots. ([details in TASKS.md](TASKS.md))
-2. **Per-package release automation** — Trusted Publishing (OIDC) is wired up via `.github/workflows/`; per-package release notes generation is next.
+The active capability track:
+1. **Git-native fleet coordination (G7)** — the primary use case. Task state lives in an append-only `tasks-claims` log; claims are **collision-free** via git's atomic ref compare-and-swap. The guarantee is collision-freedom, not a globally reproducible race winner — only the *fold of the log* is reproducible. In this backend `TASKS.md` is a single-writer generated snapshot; the file backend keeps `TASKS.md` human-editable. Design is approved in [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md); the spec, conformance suite, and reference adapter are the in-flight work. ([details in TASKS.md](TASKS.md))
+2. **Workspace mode** — multi-repo, multi-workspace aggregation. Parser, CLI, MCP, and `/next-task` all learn to traverse nested repos under one or more workspace roots. ([details in TASKS.md](TASKS.md))
+3. **Per-package release automation** — Trusted Publishing (OIDC) is wired up via `.github/workflows/`; per-package release notes generation is next.
 
 ## Adoption signals
 

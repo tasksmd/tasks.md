@@ -417,28 +417,9 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Propagate backend-scoped truth semantics from vision into roadmap and user stories
-  - **ID**: vision-agent-owned-task-semantics
-  - **Tags**: vision, strategy, agent-owned, backend, fleet, docs, g1, g3, g5, g7
-  - **Details**: `VISION.md` now defines backend-scoped truth: file backend uses mutable `TASKS.md`, generated backends expose `TASKS.md` as a projection, and git-native fleet mode guarantees collision-free claiming rather than globally reproducible race winners. The remaining public roadmap and user-story docs still teach the older universal mutable-file workflow. Propagate the vision into those docs without removing the file backend's zero-setup manual-edit path.
-
-    Current gaps to fix:
-    - `ROADMAP.md` still lists the current active focus as workspace mode and release automation, not fleet coordination and backend semantics.
-    - `docs/user-stories/README.md` and story 03 still frame `/next-task` as direct file mutation without backend-aware claim semantics.
-    - `README.md` and user stories still need backend-scoped language: manual `TASKS.md` editing is a file-backend path, not the universal workflow.
-
-    Required changes:
-    1. Verify `VISION.md` remains backend-scoped and does not regress to global `TASKS.md` source-of-truth wording.
-    2. Update `ROADMAP.md` so git-native fleet coordination is visible as the active G7 capability track.
-    3. Add the human/agent contract to user-story docs: humans can read task queues and issue commands to agents; agents/tools mutate task state in generated backends.
-    4. Add backend capability language to public docs: spec-compatible, collision-free, fleet-default, offline-capable, infra-required.
-  - **Files**: `VISION.md`, `ROADMAP.md`, `docs/user-stories/README.md`
-  - **Acceptance**: `VISION.md` still has no global `TASKS.md` vs log source-of-truth contradiction; ROADMAP and user-story index expose the fleet/backend-semantics track; docs name collision-free claiming rather than globally reproducible race winners; public docs state that generated-backend task mutation is agent/tool-mediated while file-backend `TASKS.md` remains human-editable.
-
 - [ ] Specify the agent-mediated task command surface before changing backend code
   - **ID**: spec-agent-mediated-task-commands
   - **Tags**: spec, commands, agent-owned, human-interface, setup, adoption
-  - **Blocked by**: vision-agent-owned-task-semantics
   - **Details**: The new direction makes task mutation an agent/tool responsibility, not a human hand-edit workflow. Before implementing storage, define the command surface humans use to ask agents to maintain the queue: add a task, update a task, review/prioritize tasks, lint tasks, run the next task, and install the workflow in a repo. This should preserve the low-friction promise without telling users to manually edit queue state.
 
     Required changes:
@@ -452,7 +433,7 @@
 - [ ] Specify the git-native log-first backend protocol in `spec.md`
   - **ID**: spec-git-native-log-first-backend
   - **Tags**: spec, git-native, fleet, conformance, backend, collision-free, generated-snapshot
-  - **Blocked by**: vision-agent-owned-task-semantics, spec-agent-mediated-task-commands
+  - **Blocked by**: spec-agent-mediated-task-commands
   - **Details**: The approved plan lives in `docs/plans/deterministic-fleet-claiming.md`, but the canonical spec still documents only best-effort inline `(@agent)` claims. Per G1, the protocol must move into `spec.md` before backend code lands. This spec must be conformance-grade and explicitly distinguish file backend semantics from git-native fleet semantics.
 
     Required changes:
@@ -656,7 +637,7 @@
 - [ ] Align README, architecture, roadmap, examples, and user stories with agent-owned backends
   - **ID**: docs-align-agent-owned-backends
   - **Tags**: docs, readme, architecture, roadmap, user-stories, examples, agent-owned, backend
-  - **Blocked by**: vision-agent-owned-task-semantics, spec-git-native-log-first-backend, commands-agent-owned-backend-workflow
+  - **Blocked by**: spec-git-native-log-first-backend, commands-agent-owned-backend-workflow
   - **Details**: The public docs currently teach humans to create and edit `TASKS.md` directly and describe the mutable-file claim/remove workflow as universal. After the spec and commands are updated, all docs must be split by backend and re-centered on the new rule: tasks are human-readable, but task state changes are performed by agents/tools from a single prompt or explicit task-management command.
 
     Required changes:
