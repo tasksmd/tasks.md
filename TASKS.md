@@ -417,19 +417,6 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Write the security and trust model for git-native fleet claiming before implementation
-  - **ID**: security-threat-model-git-native-claiming
-  - **Tags**: security, git-native, threat-model, enforcement, ci, rulesets, agent-owned
-  - **Details**: The approved fleet plan depends on git refs, CI, rulesets, local hooks, and actor identities. Those are security boundaries, not just implementation details. Before adapter code lands, document the trust model so the v1 limitations are explicit and the conformance/server-enforcement tasks know which abuse cases they must cover.
-
-    Required coverage:
-    1. Trust boundaries: local clone, agent process, git remote, `tasks-claims` ref, generated `TASKS.md` PR, CI status check, repository ruleset, and optional server hook.
-    2. Threats: forged actor identity, stale or stolen `claim_id` fencing tokens, missing GitHub-actor-to-claim-owner mapping, force-push/delete of the claims ref, replayed or edited log events, malicious generated-snapshot PRs, local hook bypass, sleeping laptops, PR-workflow injection, raw-email leakage, and `pull_request_target` misuse.
-    3. v1 mitigations vs deferred mitigations: what client hooks catch, what only Phase 3 server checks can catch, and what remains an operator policy decision.
-    4. Token-scope and workflow guidance for GitHub.com, GitHub Enterprise, GitLab, and Gitea where behavior differs.
-  - **Files**: `docs/security/git-native-claims-threat-model.md` (new), `spec.md`, `docs/plans/deterministic-fleet-claiming.md`, `.github/workflows/`
-  - **Acceptance**: A threat-model doc exists with a threat/mitigation/status table; the spec links to it from the git-native backend section; CI workflow guidance forbids `pull_request_target` for untrusted claim checks; Phase 3 enforcement requirements trace to concrete threats and validate `Task-Claim` fencing tokens; privacy-safe actor rendering is documented; docs do not claim v1 is unbypassably secure.
-
 - [ ] Build the backend conformance suite before implementing the git-native adapter
   - **ID**: conformance-backend-protocol
   - **Tags**: tests, conformance, backend, git-native, fleet, collision-free, ci
@@ -559,7 +546,7 @@
 - [ ] Add Phase 3 server-side path-scoped enforcement for protected repos
   - **ID**: fleet-phase3-server-side-enforcement
   - **Tags**: deployment-infra, ci, github-rulesets, pre-receive, enforcement, security, git-native
-  - **Blocked by**: git-native-reference-adapter, security-threat-model-git-native-claiming
+  - **Blocked by**: git-native-reference-adapter
   - **Details**: v1 client hooks are ergonomic and bypassable. Repos that need an unbypassable claim gate need the Phase 3 server-side layer promised by the plan: a path-scoped required check on hosted platforms and server hooks where available. This is deployment infrastructure and must be a first-class task, not a vague future phase.
 
     Required changes:

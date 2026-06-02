@@ -7,6 +7,7 @@
 - **Task**: `deterministic-fleet-claiming`
 - **Repo**: `~/apps/tooling/tasks.md`
 - **Research**: [`fleet-claiming.md`](../research/fleet-claiming.md); [`gitbug-reuse-spike.md`](../research/gitbug-reuse-spike.md)
+- **Security**: [`git-native-claims-threat-model.md`](../security/git-native-claims-threat-model.md) — trust boundaries, threats, v1-vs-Phase-3 mitigations, CI guidance
 - **Author**: devin (claude-opus-4.x) session 2026-06-02
 - **Status**: **design-approved; integration-UNPROVEN** — nothing is "validated" until the
   conformance suite (Step 2) passes against a running adapter (Step 4). The git-bug spike

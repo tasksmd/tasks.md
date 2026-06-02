@@ -681,6 +681,10 @@ Identity is `<actor-id>/<instance-id>`. `actor-id` defaults to a configured hand
 
 The file backend stays valid and zero-setup; git-native is the opt-in path for fleets. The two never contradict because each owns its own source of truth.
 
+### Security model
+
+The `tasks-claims` ref, the generated snapshot PR, the claim-check CI, and the local hooks are security boundaries. v1 enforcement is a **bypassable** client `pre-push` hook; the unbypassable guarantee is the Phase 3 server-side required check. The full trust boundaries, threats, mitigations, CI guidance (use `pull_request`, never `pull_request_target`), and per-platform token scopes are in [`docs/security/git-native-claims-threat-model.md`](docs/security/git-native-claims-threat-model.md). v1 does not claim to be unbypassably secure.
+
 > **Status.** The git-native event log, fold, claim-via-CAS, and snapshot rendering are implemented in the reference CLI (`@tasks-md/cli`). Robust leases/heartbeats, the projection job, and server-side enforcement are phased — see the active [`TASKS.md`](TASKS.md) queue and [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md).
 
 ## Agent Behavior
