@@ -195,6 +195,13 @@ never conflict on `TASKS.md`, because work never touches it), **path-scoped enfo
 real adapters pass; publish it only after the interface stabilizes. Verify: the suite **fails
 a deliberately-broken stub**.
 
+> **Status (Step 2 done):** `packages/conformance/` ships the runnable harness — a
+> `ConformanceTarget` contract + `runConformance()` runner + 11 checks. An in-memory
+> reference target passes all 11; a deliberately-broken stub fails exactly 5 (same-task
+> race, lease-steal, claim fencing, idempotent projection, path-scoped enforcement). The
+> package is `private` until file/Issues/git-native adapters exercise it (public path =
+> `backend-conformance-self-certification`).
+
 ### Step 3: Linear-CAS first; CRDT only if earned
 The engine choice is deferred *until the conformance suite is written*, so the suite drives
 the decision. Implement a **linear-CAS prototype first** (reuse git ref-CAS; no engine). If

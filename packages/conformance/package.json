@@ -1,0 +1,46 @@
+{
+  "name": "@tasks-md/conformance",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Backend-agnostic conformance suite for tasks.md backends. Internal-first: not published until file, GitHub Issues, and git-native adapters exercise the same harness.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!dist/**/*.test.*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --exclude dist",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "tasks",
+    "conformance",
+    "backend",
+    "fleet",
+    "ai-agents"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tasksmd/tasks.md.git",
+    "directory": "packages/conformance"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "4.0.18"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -417,30 +417,9 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Build the backend conformance suite before implementing the git-native adapter
-  - **ID**: conformance-backend-protocol
-  - **Tags**: tests, conformance, backend, git-native, fleet, collision-free, ci
-  - **Details**: The plan's proof gate is a runnable backend-agnostic conformance suite, not another prose review. Write the suite before any real adapter so the tests drive the backend interface and the linear-CAS-first decision. Keep it internal-first until the adapter contract stabilizes; publishing a public package too early would freeze the wrong API. The suite must fail a deliberately broken stub so it cannot become a checkbox.
-
-    Required checks:
-    - Same-task race: two clones claim the same task concurrently; exactly one wins and the loser yields without starting work.
-    - Different-task race: two clones claim different tasks concurrently; both eventually win without dropping either event.
-    - Stale snapshot: generated `TASKS.md` still shows a completed task, but folded log excludes it from picks.
-    - Human command path: task creation/update through the supported operation appears in fold(log) and the generated snapshot.
-    - Lease expiry and stale-owner fencing.
-    - Canonical serialization: duplicate, malformed, unknown-version, and reordered-key events behave deterministically.
-    - Claim fencing: implementation commits without a matching `Task-Claim` token fail the claim gate.
-    - Release and re-claim.
-    - Blocked-by unclaimable until the blocker closes.
-    - Idempotent projection bytes for the same log.
-    - Path-scoped enforcement: markdown-only change passes; any non-`.md` change without live claim fails, including executable code under `docs/`.
-  - **Files**: `packages/conformance/`, `package.json`, `vitest.config.mjs`, `packages/cli/src/backend/types.ts`, `docs/plans/deterministic-fleet-claiming.md`
-  - **Acceptance**: A new internal conformance workspace package exists; it runs against a deliberately broken stub and fails for the expected reasons; it exposes a reusable runner that real backends can import; root `npm test` includes the conformance package; public npm publishing is explicitly deferred until adapter stability; `npm run build && npm test && npm run lint` pass.
-
 - [ ] Reshape `TaskBackend` for agent-owned operations, leases, fencing, and backend capabilities
   - **ID**: backend-interface-agent-owned-protocol
   - **Tags**: cli, mcp, backend, types, agent-owned, lease, conformance
-  - **Blocked by**: conformance-backend-protocol
   - **Details**: The current backend interface exposes `claim(id): Promise<void>` with no actor identity, lease, fencing token, or result status, and the file backend claim is a no-op. That shape cannot implement the git-native protocol or agent-mediated task operations. Redesign the interface around explicit operation results while preserving compatibility for file and GitHub Issues backends.
 
     Required changes:
@@ -470,7 +449,7 @@
 - [ ] Prove linear-CAS first, and prototype a CRDT engine only if evidence requires it
   - **ID**: git-native-engine-bakeoff
   - **Tags**: prototype, git-native, conformance, reuse, crdt, backend, decision
-  - **Blocked by**: conformance-backend-protocol, backend-interface-agent-owned-protocol
+  - **Blocked by**: backend-interface-agent-owned-protocol
   - **Details**: The approved plan defers engine choice until the suite exists, but v1 should not pay CRDT complexity unless the simple path fails. Run linear git ref-CAS first, behind the same adapter interface and conformance suite. Prototype a reused engine/core candidate such as git-bug, grite, or Automerge-on-git only if linear-CAS fails conformance or contention metrics cross the Phase-4 tripwire. Apply GET/WRAP before IMPLEMENT and record evidence, not vibes.
 
     Required changes:
@@ -531,7 +510,7 @@
 - [ ] Add Phase 2 robust leases, heartbeats, crash recovery, and log compaction
   - **ID**: fleet-phase2-leases-heartbeats-compaction
   - **Tags**: stability, git-native, leases, heartbeat, crash-recovery, compaction, offline
-  - **Blocked by**: git-native-reference-adapter, conformance-backend-protocol
+  - **Blocked by**: git-native-reference-adapter
   - **Details**: The v1 plan intentionally assumes always-on machines and uses long leases as a cheap dead-owner backstop. That assumption is honest but incomplete: mixed fleets will include sleeping laptops, crashed agent processes, interrupted pushes, and long-lived logs. File the Phase 2 stability work explicitly so it is not lost after v1 ships.
 
     Required changes:
@@ -664,7 +643,7 @@
 - [ ] Publish backend conformance docs and a self-certification path only after adapter stability
   - **ID**: backend-conformance-self-certification
   - **Tags**: conformance, backend, docs, ecosystem, adapters, no-lock-in, adoption
-  - **Blocked by**: conformance-backend-protocol, backend-interface-agent-owned-protocol, git-native-reference-adapter
+  - **Blocked by**: backend-interface-agent-owned-protocol, git-native-reference-adapter
   - **Details**: G4/G5 promise that every backend works behind one surface, but publishing conformance before multiple real adapters pass would freeze an unstable API. Keep the harness internal until file, GitHub Issues, and git-native adapters have exercised the contract. Then publish the adapter contract, runner docs, sample adapter, and report format so external backends can self-certify without copying internal tests.
 
     Required changes:
