@@ -2,9 +2,10 @@
 
 - **Task**: `deterministic-fleet-claiming`
 - **Repo**: `~/apps/tooling/tasks.md`
+- **Research**: [`docs/research/fleet-claiming.md`](../research/fleet-claiming.md) (prior art + mechanics + competitive landscape)
 - **Author**: devin (claude-opus-4.x) session 2026-06-02
-- **Status**: validated (event-log + enforcement redesign)
-- **Validated-by**: `reviewer` subagent on 2026-06-02 (redesign: first pass needs-revision; second pass approved after resolving the six concerns)
+- **Status**: validated (event-log + enforcement redesign; hardened by research 2026-06-02)
+- **Validated-by**: `reviewer` subagent on 2026-06-02 (redesign: first pass needs-revision; second pass approved after resolving the six concerns; then research-driven hardening — Lamport winner rule, lefthook, Rulesets, ~6/min push limit)
 
 ## Goal
 
@@ -84,7 +85,7 @@ resolver, no merge driver, clock-skew-immune.
 `spec.md` `## Fleet coordination`: `TASKS.md` on `main` = queue (Plane 1); an append-only
 event log on a dedicated ref (`tasks-claims` branch by default; `refs/tasks/*` where the
 host allows; or a sidecar repo for locked-down orgs) = claim ledger (Plane 2). Events are
-immutable files `.tasks/events/<ulid>.json` `{v,type,task,owner,ts,lease_expires}` with
+immutable files `.tasks/events/<ulid>.json` `{v,type,task,owner,lamport,ts,lease_expires}` with
 `type ∈ {claimed,released,completed,cancelled,snapshot}`. Sharing = ordinary
 `git push`/`fetch` of that ref to the shared remote; the push IS the CAS. Document
 `@machine/agent` identity and the `.tasksmd.json` fields. Verify:
@@ -101,17 +102,21 @@ an unknown value throws.
 ### Step 3: Event store + fold (pure, no git)
 
 New module, pure functions: parse/serialize an event file; `fold(events) → Map<taskId,
-ownerState>` where the owner of a task is the actor of the **first `claimed` event for
-that task in log order**, unless a later `released`/`completed`/`cancelled` supersedes it;
-`isClaimLive(state, now)` (lease not expired). **Log order** = position in
-`git log --reverse` (topological + commit date); ties (equal date) are broken by commit
-hash (lexicographic) — deterministic across clones, and no wall-clock comparison decides
-the winner. A **`snapshot`** event
+ownerState>` where the owner of a task is the actor of the **winning `claimed` event**
+(by the winner rule below), unless a later `released`/`completed`/`cancelled` supersedes it;
+`isClaimLive(state, now)` (lease not expired). **Winner rule (corrected — see
+[`docs/research/fleet-claiming.md`](../research/fleet-claiming.md) §1):** git's commit
+order is NOT deterministic on concurrent ties (`git log --topo-order`/`--date-order` can
+yield different orderings across clones), so the winner is decided by an **explicit total
+order embedded in each event** — a **Lamport clock** with tiebreak
+`(lamport, actor_id, content_hash)` (git-bug's proven approach), independent of git
+ordering. Defense-in-depth: keep the ledger ref strictly **linear** (rebase-only CAS push;
+never a merge) so the order is structurally unambiguous too. A **`snapshot`** event
 `{v, type:"snapshot", tasks:{<id>:{owner,lease_expires}}, snapshotAt:<commit>}` lets a fold
 start mid-log: validate `git merge-base --is-ancestor <snapshotAt> HEAD`; if invalid or
 missing, fall back to folding the whole log (slower, always correct). Verify: unit tests
 for serialize/parse round-trip (events + snapshot), `fold` determinism (same events → same
-owners), winner = first-claimed, tie-break by commit hash, snapshot validation +
+owners), winner = min `(lamport, actor_id, content_hash)`, snapshot validation +
 fold-from-snapshot equals fold-from-zero, and `isClaimLive` boundaries
 (`now <`/`==`/`>` `lease_expires`).
 
@@ -141,11 +146,11 @@ simply ignored by the fold and expire by lease. Verify: end-to-end temp-repo tes
 
 ### Step 6: Enforcement layer (deterministic — the reliability mechanism)
 
-- Commit hooks under `.tasks/hooks/` and have `tasks fleet init` set
-  `git config core.hooksPath .tasks/hooks` so they travel with the repo and apply to
-  every clone. If `core.hooksPath` is already set to something else, `tasks fleet init`
-  backs the existing hooks up to `.tasks/hooks.bak/`, merges (chains the prior hook), and
-  warns — it never silently clobbers another tool's hooks:
+- Install client hooks via **lefthook** (ADOPT, don't hand-roll an installer — research
+  §3: single Go binary, committed `lefthook.yml`, idempotent `lefthook install`,
+  language-agnostic). `tasks fleet init` runs the install; `core.hooksPath` is per-clone
+  so the install is the one-time step. If another hook manager already owns
+  `core.hooksPath`, chain rather than clobber, and warn:
   - `pre-push`: for commits pushed to `main`, extract task id(s) from the `Task: <id>`
     trailer / `task/<id>` branch / `closes <id>` (require a live claim on ALL ids found;
     reject "task not found" if an id isn't in TASKS.md); fetch the (cached) ledger; if no
@@ -159,8 +164,11 @@ simply ignored by the fold and expire by lease. Verify: end-to-end temp-repo tes
   of them — failing with `PR author must own the claimed task (re-author or claim under
   your identity)` when the author isn't the owner. Required-before-merge (branch
   protection enforces ordering), and idempotent on re-run.
-- Branch protection on the claims ref (no force-push, no delete) — server-side, portable
-  to github.com, makes the append-only invariant bypass-proof.
+- A **Repository Ruleset** (newer than legacy branch protection — research §3: rulesets
+  aggregate, pattern-match `tasks-claims*`, settable via `gh api`) on the claims ref: no
+  force-push, no delete, `required_linear_history` — server-side, portable to github.com,
+  makes the append-only invariant bypass-proof. (Where a `pre-receive` server hook exists
+  — GHE / GitLab / Gitea — that is the strongest layer; not available on github.com.)
 Verify: a test drives `pre-push` and asserts it rejects an unclaimed work push and passes
 a claimed one; a test asserts the build workflow does not trigger on the claims ref.
 
@@ -200,13 +208,18 @@ changes.
 - **Risk: event-log growth.** Unbounded logs slow the fold.
   - Mitigation: heartbeats are NOT in the log (deferred to per-machine refs), so growth ∝
     task throughput (~2–4 events/task), not wall-clock; `snapshot` compaction truncates.
-- **Risk: push-throughput / rate-limit ceiling.** Every claim is a serialized push.
-  - Mitigation: minute-plus task workload keeps claim rates low; per-host batching +
-    ref-sharding are deferred follow-ups; **trip-wire**: sustained claims > ~tens/min or
-    fleet > ~tens of hosts → `fleet-claim-queue-backend`.
-- **Risk: clock skew.** Lease expiry uses wall-clock.
-  - Mitigation: the *winner* is log-order (skew-immune); only the *coarse* lease uses
-    wall-clock → require NTP + minutes-granular `leaseTtlSec`.
+- **Risk: push-throughput / rate-limit ceiling.** GitHub recommends **≤ ~6 pushes/min/repo**
+  (research §2) — concrete and low.
+  - Mitigation: minute-plus task workload keeps claim rates low; **per-host batching is
+    NEEDED on github.com (not a late optimization)** — one pusher/host coalescing its
+    agents' events. NOTE: the limit is **per-repo**, so ref-sharding within one repo does
+    NOT raise it — only batching or a **sidecar claims repo** does. **Trip-wire**:
+    sustained claims beyond this or fleet > ~tens of hosts → `fleet-claim-queue-backend`.
+- **Risk: clock skew / non-deterministic git ordering.** Git commit order is not stable
+  on concurrent ties (research §1); lease expiry uses wall-clock.
+  - Mitigation: the *winner* is decided by the embedded **Lamport-clock total order**
+    (`(lamport, actor_id, content_hash)`), skew-immune and independent of git ordering;
+    only the *coarse* lease uses wall-clock → require NTP + minutes-granular `leaseTtlSec`.
 - **Risk: setup needs admin (branch protection) — a human-blocked step.**
   - Mitigation: `tasks fleet init` does everything `gh` permits and prints the exact
     `gh api` / UI step for the rest; never silently half-configures.
@@ -237,12 +250,14 @@ changes.
    `grep -c "leaseTtlSec" spec.md` ≥ 1, `npx -y @tasks-md/lint TASKS.md` exits 0.
 2. `git-claims` backend selectable: `config.test.ts` proves it resolves + unknown throws;
    `npm test -w packages/cli` exits 0.
-3. **Collision (core gate):** two clones append `claimed{X}` concurrently → exactly one is
-   the first live claim in log order; the loser's `claim` returns `{won:false}`.
+3. **Collision (core gate):** two clones append `claimed{X}` concurrently → both clones,
+   after fetch, agree on the SAME winner by the Lamport total order
+   (`(lamport, actor_id, content_hash)`); the loser's `claim` returns `{won:false}`.
 4. **Append auto-merge:** two clones append events for different tasks → both land, no
    manual conflict (unique filenames).
-5. `fold` determinism + winner-is-first-claimed + tie-break-by-commit-hash + snapshot
-   validation (fold-from-snapshot == fold-from-zero) + `isClaimLive` boundaries (unit tests).
+5. `fold` determinism + winner = min `(lamport, actor_id, content_hash)` (two-clone
+   concurrent-claim agreement) + snapshot validation (fold-from-snapshot ==
+   fold-from-zero) + `isClaimLive` boundaries (unit tests).
 6. `next()`/`listOpen()` reconcile: skip live-claimed; ignore claims for absent tasks;
    surface expired-claim tasks (backend test).
 7. `complete(id)` removes the `TASKS.md` block AND appends `completed`; delete appends

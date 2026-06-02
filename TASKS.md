@@ -300,7 +300,23 @@
     • Must work in ANY adopting repo (e.g. oncall-hub-api) via ONE PROMPT:
       `tasks fleet init` (idempotent) wires the ledger ref + hooks + CI + best-effort
       branch protection + `/next-task` — an extension of the `one-prompt-setup` task.
-  - **Files**: `docs/plans/deterministic-fleet-claiming.md` (validated implementation
+
+    2026-06-02 (i) full prior-art research — `docs/research/fleet-claiming.md`. Key
+    findings folded into the plan: (1) CORRECTION — "winner = first claimed in git commit
+    order" is NOT deterministic (git's topo/date order has unstable ties); decide by an
+    embedded Lamport total order `(lamport, actor_id, content_hash)` + keep the ledger
+    linear (git-bug's proven model). (2) ADOPT git-bug's append-only-op-log-on-refs DESIGN
+    (Go+GPL, so design not code) and `lefthook` for hook install (don't hand-roll). (3)
+    Claims-ref default = a plain `tasks-claims` BRANCH (refs/notes unsupported on GitLab;
+    custom refs aren't CI-visible). (4) GitHub ~6 pushes/min/REPO → per-host batching is
+    needed (not optional) and ref-sharding within a repo can't dodge the per-repo limit; a
+    sidecar repo can. (5) Server-side guarantee on github.com = Rulesets + a required
+    status check (no pre-receive there; pre-receive is GHE/GitLab/Gitea). (6) Crowded
+    field (Backlog.md, backlog.so, lodestar, railyard, agent-kanban) but the
+    cross-machine-over-git-no-server niche (G7) is largely open. Adopt-X follow-ups:
+    `fleet-claim-adopt-gitbug-model`, `fleet-claim-adopt-lefthook`.
+  - **Files**: `docs/research/fleet-claiming.md` (prior-art research),
+    `docs/plans/deterministic-fleet-claiming.md` (validated implementation
     plan — reviewer-approved 2026-06-02; the phased steps + acceptance below derive from
     it), `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
     done), `spec.md` (§ Claiming — Limitations / Stale Claims; a new § "Fleet
