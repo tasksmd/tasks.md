@@ -22,9 +22,10 @@
 4. **Portable claims-ref default = a plain `tasks-claims` branch** (not `refs/notes/*`,
    not a custom `refs/tasks/*`). It's the only namespace that's universally pushable AND
    CI-visible AND branch-protectable across GitHub/GitLab/Gitea/Bitbucket.
-5. **GitHub's ~6 pushes/min/repo limit makes per-host batching nearly mandatory**, not a
-   late optimization — and ref-sharding *within one repo* does NOT dodge it (the limit is
-   per-repo). A sidecar claims repo is the real escape hatch at scale.
+5. **GitHub's ~6 pushes/min/repo limit** is a *soft* secondary limit (throttles, never
+   corrupts) — ref-sharding *within one repo* does NOT dodge it (the limit is per-repo).
+   Operator decision: **single repo only — no sidecar repo**; the rate is instead managed
+   by stateless pick-dispersion + silent backoff (degrade latency, not correctness — §7).
 6. **On github.com the server-side guarantee = Rulesets + a required status check** (no
    `pre-receive` exists there); `pre-receive` is GHE/GitLab/Gitea only. Client hooks are
    ergonomics, never the guarantee.
@@ -81,11 +82,12 @@ Refs: git-log <https://git-scm.com/docs/git-log>; commit-graph corrected-dates
   pushable everywhere but is **not** visible to CI triggers or branch-protection;
   `refs/notes/*` is unsupported on GitLab and UI-dropped on GitHub. A plain branch is the
   only universally pushable + CI-visible + protectable option. <https://git-scm.com/docs/git-push>
-- **Throughput ceiling is concrete: GitHub recommends ≤ ~6 pushes/min/repo.** That's ~1
-  claim / 10 s — so at fleet scale you **must** batch per host (one pusher coalescing its
-  agents' events). Critically, the limit is **per-repo**, so sharding the ledger across
-  multiple refs in the *same* repo does NOT raise it — only per-host batching or a
-  **sidecar claims repo** does. (Self-hosted Gitaly/reftable scales much higher.)
+- **Throughput ceiling: GitHub recommends ≤ ~6 pushes/min/repo** (a *soft* secondary
+  limit — throttles, never corrupts). It is **per-repo**, so sharding the ledger across
+  multiple refs in the *same* repo does NOT raise it, and (per the operator constraint) a
+  separate repo is off the table. Within one repo the rate is managed by **stateless
+  pick-dispersion + silent backoff** (v1) and per-host batching (deferred). (Self-hosted
+  Gitaly/reftable scales much higher.)
   <https://docs.github.com/repositories> (repo limits); reftable
   <https://handbook.gitlab.com/handbook/engineering/architecture/design-documents/gitaly_reftable_rollout/>.
 
@@ -123,7 +125,8 @@ Refs: git-log <https://git-scm.com/docs/git-log>; commit-graph corrected-dates
 - **`gh api` rulesets** — concrete idempotent calls exist (POST `/repos/{o}/{r}/rulesets`);
   best-effort, and print the manual command when the actor lacks admin.
 - **Enterprise reality** (PRs-for-everything, protected `main`): use a **bot identity** to
-  push the ledger ref, or a **sidecar claims repo**, or unprotected `tasks-claims*` refs.
+  push the ledger ref, or unprotected `tasks-claims*` refs. (A separate repo is NOT an
+  option — operator constraint, §7.)
 
 ## 5. Competitive landscape (strategic)
 
@@ -150,11 +153,11 @@ proposed (backlog.so's TTL claims + commit trailers; lodestar's two-plane + leas
   explicit **Lamport-clock total order** (`(lamport, actor_id, content_hash)`), and keep
   the ledger ref rebase-only/linear as defense-in-depth. → amends Step 3/4 + acceptance #5.
 - **Adopt lefthook** for hook install (Step 6/7) instead of a bespoke installer.
-- **Default the claims ref to a plain `tasks-claims` branch**; document `refs/tasks/*` and
-  sidecar-repo as alternatives (Step 1).
-- **Promote per-host batching from "optimization" to "needed on github.com"** (~6
-  pushes/min/repo); note ref-sharding doesn't dodge the per-repo limit — a sidecar repo
-  does. → sharpens the throughput risk + `fleet-claim-coordinator-daemon`.
+- **Default the claims ref to a plain `tasks-claims` branch** in the SAME repo; document
+  `refs/tasks/*` as the alternative (Step 1). (Sidecar repo ruled out — §7.)
+- **Manage the push rate within one repo** (~6/min/repo soft limit) via stateless
+  pick-dispersion + silent backoff (v1); per-host batching is a deferred follow-up. →
+  throughput risk + `fleet-claim-coordinator-daemon`.
 - **Use Rulesets (not legacy branch protection)** for the server-side config (Step 6).
 - **Adopt-X follow-ups to file:** `fleet-claim-adopt-gitbug-model` (port the Lamport-clock
   op-log/fold design), `fleet-claim-adopt-lefthook` (hook install), and fold the Rulesets
@@ -172,8 +175,10 @@ After reviewing this research the operator set the direction:
   exact reuse mechanism (binary shell-out vs. library vs. contributing a `claim`/`lease`
   entity upstream) is **undecided** → open spike `fleet-claim-gitbug-reuse-spike`.
 - **Full-belt enforcement** (lefthook + Rulesets + required check + `pre-receive`).
-- **Medium scale (~tens of machines):** per-host batching lives in the reference adapter; a
-  sidecar claims repo is the escape hatch; a queue backend only past the trip-wire.
+- **Medium scale (~tens of machines), SINGLE REPO — no sidecar (hard constraint):** the
+  push rate is managed within the one repo by stateless pick-dispersion + silent backoff
+  (the ~6/min limit is soft → degrades latency, not correctness); per-host batching and a
+  queue backend are deferred follow-ups past the trip-wire.
 
 These supersede the build-it framing in earlier plan revisions; see the rewritten
 [`docs/plans/deterministic-fleet-claiming.md`](../plans/deterministic-fleet-claiming.md).

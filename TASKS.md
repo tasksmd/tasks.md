@@ -355,6 +355,22 @@
     Two reuse families: full engines (git-bug/grite/Beads) vs CRDT cores you wrap
     (Automerge/Yjs/git-warp). Prototype shortlist: git-bug (proven baseline), grite
     (native leases, MIT), Automerge-on-git (mature CRDT + TS-native).
+
+    2026-06-02 (m) FULL-PLAN edge-case Q&A — the plan is now the definitive v1 design.
+    Locked decisions: SINGLE REPO ONLY, no sidecar (ledger on a `tasks-claims` ref in the
+    same repo). NO DUPLICATION / log-first: the claim log is the sole source of truth for
+    state; TASKS.md holds only authored task DEFINITIONS and is a projection target
+    (terminal events remove blocks); the picker excludes log-closed tasks directly; log
+    wins on disagreement. Identity = `<git-email>/<instance-id>` (per-process, unique per
+    concurrent agent). Lease = long, no heartbeat. Contention = optimistic CAS + silent
+    retry/backoff + STATELESS id-hashed pick-dispersion (no roster/steal); full
+    HRW+work-stealing deferred. Failure = release-back-to-queue (no attempt counter/failed
+    state in v1). Enforcement = STRICT full-belt (every main PR needs a live claim by its
+    author; no bypass). Blocked-by = unclaimable until unblocked. Winner = reused engine's
+    Lamport order. New deferred follow-ups: `fleet-claim-hrw-partition`,
+    `fleet-claim-heartbeat-liveness`, `fleet-claim-poison-guard`,
+    `fleet-claim-coordinator-daemon`, `fleet-claim-signed-identity`, `fleet-claim-workspace`,
+    `fleet-claim-queue-backend`.
   - **Files**: `docs/research/gitbug-reuse-spike.md` (reuse-mechanism spike),
     `docs/research/fleet-claiming.md` (prior-art research),
     `docs/plans/deterministic-fleet-claiming.md` (validated implementation
