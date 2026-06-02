@@ -371,11 +371,29 @@
     `fleet-claim-heartbeat-liveness`, `fleet-claim-poison-guard`,
     `fleet-claim-coordinator-daemon`, `fleet-claim-signed-identity`, `fleet-claim-workspace`,
     `fleet-claim-queue-backend`.
+
+    2026-06-02 (n) independent (fresh-context) review found a BLOCKER + majors; resolved
+    them while keeping the vision. Fixes: (1) rename to COLLISION-FREE (not
+    "deterministic" — that oversold; the guarantee is collision-freedom via git ref-CAS).
+    (2) FULLY log-first: the `tasks-claims` log is the SOLE source of state; TASKS.md is a
+    SINGLE-WRITER GENERATED SNAPSHOT on main — agents never edit it, so it's conflict-free
+    by construction (kills the original one-file-merge problem) and needs no CI bypass.
+    (3) Enforcement deadlock resolved by a PATH-SCOPED required check (code→needs a claim;
+    TASKS.md/docs→pass) that never bypasses CI — corporate-safe. (4) Engine is now a
+    Step-3 BAKE-OFF: linear-CAS (no engine, reuse git's own ref-CAS) vs a reused CRDT
+    engine, decided on evidence against the conformance suite — v1 may have NO engine.
+    (5) Status downgraded to design-approved/integration-UNPROVEN (the git-bug spike
+    proved only generic convergence). (6) PHASED: v1 = collision-free core; leases+offline
+    (P2), server enforcement (P3), CRDT engine+HRW (P4, only if measured). (7) assume-online
+    made an explicit precondition. (8) conformance shipped as a runnable `@tasks-md/conformance`
+    package (required gate for the reference adapter; self-cert for third parties). Prior
+    "validations" were the same resumed reviewer (not independent) — future reviews use a
+    fresh context.
   - **Files**: `docs/research/gitbug-reuse-spike.md` (reuse-mechanism spike),
     `docs/research/fleet-claiming.md` (prior-art research),
-    `docs/plans/deterministic-fleet-claiming.md` (validated implementation
-    plan — reviewer-approved 2026-06-02; the phased steps + acceptance below derive from
-    it), `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
+    `docs/plans/deterministic-fleet-claiming.md` (implementation plan — design-approved,
+    integration-UNPROVEN; collision-free, fully-log-first, phased v1; the steps +
+    acceptance below derive from it), `VISION.md` (G6 thinnest-layer + G7 fleet-primary + file-native belief —
     done), `spec.md` (§ Claiming — Limitations / Stale Claims; a new § "Fleet
     coordination" documenting the GIT-NATIVE model + tier-aware `@machine/agent`
     identity), `.tasksmd.json` (backend selector), a git-native claim adapter in
