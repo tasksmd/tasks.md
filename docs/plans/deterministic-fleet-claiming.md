@@ -222,6 +222,11 @@ Implement the chosen path behind `TaskBackend`: `claim` = silent-retry CAS; `nex
 reconciled+dispersed picker over the log; `complete`/`release`/`cancel`/`create` = log
 appends. Verify: the Step-2 suite passes against the adapter.
 
+> **Status (Step 4 done):** `git-native` is wired into `.tasksmd.json`/`createBackend`,
+> implements create/update/claim/release/complete/cancel/render over the log, verifies
+> claim win/loss against the remote (non-ff → yield), and silent-retries append ops with
+> bounded backoff+jitter. It passes `@tasks-md/conformance`. Engine = linear-CAS, no CRDT.
+
 ### Step 5: Generated `TASKS.md` + client enforcement
 The single-writer regeneration job (on `tasks-claims` push → render fold(log) → update the
 stable generated-snapshot PR) + the path-scoped `pre-push` hook +

@@ -418,6 +418,44 @@ function renderTask(task: BackendTask): string[] {
   return lines;
 }
 
+const MAX_PUSH_ATTEMPTS = 8;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Exponential backoff (100ms → ~5s) with full jitter, per the plan.
+function backoffMs(attempt: number): number {
+  const cap = Math.min(5000, 100 * 2 ** attempt);
+  return Math.floor(cap / 2 + Math.random() * (cap / 2));
+}
+
+// Append an event and push it, silently retrying on a non-fast-forward
+// rejection (the remote advanced with an UNRELATED event). A fresh event is
+// rebuilt each attempt so it chains onto the latest fetched tip. Used by every
+// append op EXCEPT claim — a claim conflict means a competing claim on the
+// SAME task, where the loser must yield, not retry (see `claim`).
+async function appendWithRetry(
+  directory: string,
+  build: () => GitNativeEvent,
+  opName: string,
+): Promise<void> {
+  for (let attempt = 0; attempt < MAX_PUSH_ATTEMPTS; attempt += 1) {
+    fetchClaimsRef(directory);
+    appendEvent(directory, build());
+    if (pushClaimsRef(directory)) {
+      return;
+    }
+    if (attempt < MAX_PUSH_ATTEMPTS - 1) {
+      await sleep(backoffMs(attempt));
+    }
+  }
+  fetchClaimsRef(directory);
+  throw new Error(
+    `Could not push ${opName} event to tasks-claims after ${MAX_PUSH_ATTEMPTS} attempts (the remote kept advancing).`,
+  );
+}
+
 export async function renderGitNativeSnapshot(directory: string): Promise<string> {
   fetchClaimsRef(directory);
   const tasks = sortedTasks(foldLog(directory));
@@ -446,32 +484,37 @@ export function createGitNativeBackend(directory: string): TaskBackend {
       return open.find((task) => !task.assignee) ?? null;
     },
 
-    async create(input: CreateTaskInput): Promise<BackendTask> {
-      fetchClaimsRef(directory);
-      const tasks = foldLog(directory);
-      const id = uniqueTaskId(input.title, tasks);
+    async create(
+      input: CreateTaskInput,
+      options?: ClaimTaskOptions,
+    ): Promise<BackendTask> {
       const priority = priorityValue(input.priority);
-      const task = {
-        id,
-        title: input.title,
-        priority,
-        tags: input.tags ?? [],
-        body: input.body,
-      };
-      appendEvent(
-        directory,
-        makeEvent(id, "created", undefined, {
-          title: task.title,
-          priority: task.priority,
-          tags: task.tags,
-          body: task.body,
-        }),
-      );
-      if (!pushClaimsRef(directory)) {
+      const tags = input.tags ?? [];
+      for (let attempt = 0; attempt < MAX_PUSH_ATTEMPTS; attempt += 1) {
         fetchClaimsRef(directory);
-        throw new Error("Could not push created task to tasks-claims.");
+        // Recompute the id against the latest fold so a concurrent create with
+        // the same title slug still gets a unique id.
+        const id = uniqueTaskId(input.title, foldLog(directory));
+        appendEvent(
+          directory,
+          makeEvent(id, "created", options, {
+            title: input.title,
+            priority,
+            tags,
+            body: input.body,
+          }),
+        );
+        if (pushClaimsRef(directory)) {
+          return { id, title: input.title, priority, tags, body: input.body };
+        }
+        if (attempt < MAX_PUSH_ATTEMPTS - 1) {
+          await sleep(backoffMs(attempt));
+        }
       }
-      return task;
+      fetchClaimsRef(directory);
+      throw new Error(
+        `Could not push created task to tasks-claims after ${MAX_PUSH_ATTEMPTS} attempts.`,
+      );
     },
 
     async claim(
@@ -548,29 +591,22 @@ export function createGitNativeBackend(directory: string): TaskBackend {
       if (patch.priority !== undefined) payload.priority = priorityValue(patch.priority);
       if (patch.body !== undefined) payload.body = patch.body;
       if (patch.tags !== undefined) payload.tags = patch.tags;
-      appendEvent(directory, makeEvent(id, "updated", options, payload));
-      pushOrThrow(directory, "updated");
+      await appendWithRetry(directory, () => makeEvent(id, "updated", options, payload), "updated");
       return { status: "ok", backend: "git-native", operation: "update", taskId: id };
     },
 
     async release(id: string, options?: ActorOptions): Promise<OperationResult> {
-      fetchClaimsRef(directory);
-      appendEvent(directory, makeEvent(id, "released", options, {}));
-      pushOrThrow(directory, "released");
+      await appendWithRetry(directory, () => makeEvent(id, "released", options, {}), "released");
       return { status: "ok", backend: "git-native", operation: "release", taskId: id };
     },
 
     async complete(id: string, options?: ActorOptions): Promise<OperationResult> {
-      fetchClaimsRef(directory);
-      appendEvent(directory, makeEvent(id, "completed", options, {}));
-      pushOrThrow(directory, "completed");
+      await appendWithRetry(directory, () => makeEvent(id, "completed", options, {}), "completed");
       return { status: "ok", backend: "git-native", operation: "complete", taskId: id };
     },
 
     async cancel(id: string, options?: ActorOptions): Promise<OperationResult> {
-      fetchClaimsRef(directory);
-      appendEvent(directory, makeEvent(id, "cancelled", options, {}));
-      pushOrThrow(directory, "cancelled");
+      await appendWithRetry(directory, () => makeEvent(id, "cancelled", options, {}), "cancelled");
       return { status: "ok", backend: "git-native", operation: "cancel", taskId: id };
     },
 
@@ -582,11 +618,4 @@ export function createGitNativeBackend(directory: string): TaskBackend {
       };
     },
   };
-}
-
-function pushOrThrow(directory: string, eventType: GitNativeEventType): void {
-  if (!pushClaimsRef(directory)) {
-    fetchClaimsRef(directory);
-    throw new Error(`Could not push ${eventType} event to tasks-claims.`);
-  }
 }

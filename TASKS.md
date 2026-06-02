@@ -431,24 +431,9 @@
   - **Files**: `packages/cli/src/commands/`, `packages/cli/src/cli.ts`, `packages/cli/src/backend/`, `packages/mcp/src/index.ts`, `packages/mcp/src/tools.ts`, `packages/mcp/src/backend.ts`, `packages/cli/README.md`, `packages/mcp/README.md`
   - **Acceptance**: CLI and MCP expose the same backend-neutral task operation set through a small grouped surface; file, GitHub Issues, and git-native backends either perform each operation or return an actionable unsupported result; generated commands can consume `--json` without parsing prose; tests cover file and at least one non-file backend path; `npm run build && npm test` pass.
 
-- [ ] Implement the git-native reference adapter behind `TaskBackend`
-  - **ID**: git-native-reference-adapter
-  - **Tags**: cli, backend, git-native, fleet, conformance, collision-free, adapter
-  - **Details**: Build the thin reference adapter only after the spec, conformance suite, backend interface, and engine bake-off exist. The adapter is the out-of-the-box proof path for `tasks fleet init`, not a bespoke scheduler. It must operate inside a single repo, use the `tasks-claims` ref, and keep generated `TASKS.md` as a view rather than live state.
-
-    Required changes:
-    1. Add `git-native` to backend config and instantiate it from `packages/cli/src/backend/index.ts`.
-    2. Implement log append/fetch/fold operations around the linear-CAS path first; wrap a selected engine only if `git-native-engine-bakeoff` justifies it.
-    3. Implement `next`, `create`, `update`, `claim`, `release`, `complete`, `cancel`, and projection rendering through the backend interface.
-    4. Verify claim win/loss against the remote before returning success.
-    5. Keep all remote writes silent-retry with bounded backoff and actionable failure output.
-  - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/backend/git-native.test.ts`, `packages/cli/src/backend/config.ts`, `packages/cli/src/backend/index.ts`, `packages/conformance/`, `packages/mcp/src/backend.ts`, `packages/mcp/src/tools.ts`
-  - **Acceptance**: `git-native` backend passes `@tasks-md/conformance`; two local clones cannot both win the same claim; successful claims produce `claim_id` fencing tokens; generated snapshots are byte-idempotent; file and GitHub Issues backend tests still pass; `npm run build && npm test && npm run lint` pass.
-
 - [ ] Ship migration and versioning for moving existing file queues to git-native mode
   - **ID**: migrate-file-queue-to-git-native
   - **Tags**: migration, backend, git-native, cli, spec-version, adoption, compatibility
-  - **Blocked by**: git-native-reference-adapter
   - **Details**: Existing adopters have hand-maintained `TASKS.md` files and global instructions that assume the file backend. The fleet path changes the source of truth to a log, so adoption needs an explicit migration/versioning story rather than asking agents to reinterpret old files on the fly.
 
     Required changes:
@@ -463,7 +448,6 @@
 - [ ] Ship `tasks fleet init` and `tasks doctor` as the one-prompt install path for any repo
   - **ID**: one-prompt-agent-owned-fleet-init
   - **Tags**: cli, setup, adoption, fleet, one-prompt, hooks, ci, dx
-  - **Blocked by**: git-native-reference-adapter
   - **Details**: The existing `one-prompt-setup` task covers basic file-backend bootstrap. The new direction requires a one-prompt path that an agent can run in any Git repo to install the agent-mediated workflow and, when requested, the git-native fleet backend. Humans should not need to know which files to edit; they paste one prompt and the agent runs setup, verifies it, and reports the installed commands.
 
     Required changes:
@@ -479,7 +463,6 @@
 - [ ] Add Phase 2 robust leases, heartbeats, crash recovery, and log compaction
   - **ID**: fleet-phase2-leases-heartbeats-compaction
   - **Tags**: stability, git-native, leases, heartbeat, crash-recovery, compaction, offline
-  - **Blocked by**: git-native-reference-adapter
   - **Details**: The v1 plan intentionally assumes always-on machines and uses long leases as a cheap dead-owner backstop. That assumption is honest but incomplete: mixed fleets will include sleeping laptops, crashed agent processes, interrupted pushes, and long-lived logs. File the Phase 2 stability work explicitly so it is not lost after v1 ships.
 
     Required changes:
@@ -494,7 +477,6 @@
 - [ ] Add Phase 3 server-side path-scoped enforcement for protected repos
   - **ID**: fleet-phase3-server-side-enforcement
   - **Tags**: deployment-infra, ci, github-rulesets, pre-receive, enforcement, security, git-native
-  - **Blocked by**: git-native-reference-adapter
   - **Details**: v1 client hooks are ergonomic and bypassable. Repos that need an unbypassable claim gate need the Phase 3 server-side layer promised by the plan: a path-scoped required check on hosted platforms and server hooks where available. This is deployment infrastructure and must be a first-class task, not a vague future phase.
 
     Required changes:
@@ -510,7 +492,6 @@
 - [ ] Add contention observability and Phase 4 scale tripwires before adopting CRDT or HRW work
   - **ID**: fleet-phase4-contention-observability
   - **Tags**: observability, git-native, scale, crdt, hrw, contention, reuse
-  - **Blocked by**: git-native-reference-adapter
   - **Details**: The plan says CRDT adoption, HRW partitioning, and per-host batching only happen if measured contention proves the v1 CAS path insufficient. There is currently no task to collect those measurements or define the tripwire. Add that feedback loop before anyone starts building Phase 4 machinery by intuition.
 
 
@@ -612,7 +593,6 @@
 - [ ] Publish backend conformance docs and a self-certification path only after adapter stability
   - **ID**: backend-conformance-self-certification
   - **Tags**: conformance, backend, docs, ecosystem, adapters, no-lock-in, adoption
-  - **Blocked by**: git-native-reference-adapter
   - **Details**: G4/G5 promise that every backend works behind one surface, but publishing conformance before multiple real adapters pass would freeze an unstable API. Keep the harness internal until file, GitHub Issues, and git-native adapters have exercised the contract. Then publish the adapter contract, runner docs, sample adapter, and report format so external backends can self-certify without copying internal tests.
 
     Required changes:
@@ -628,7 +608,7 @@
 - [ ] Define fleet-safe workspace and cross-repo claiming semantics
   - **ID**: fleet-claim-workspace-semantics
   - **Tags**: workspace, git-native, fleet, backend, multi-repo, multi-workspace, claiming
-  - **Blocked by**: workspace-mode-nested-repos, git-native-reference-adapter
+  - **Blocked by**: workspace-mode-nested-repos
   - **Details**: The approved fleet plan is explicitly single-repo v1, while workspace mode aggregates many repos and backends. Before making workspace mode fleet-aware, define the semantics: a global workspace picker may rank across repos, but claims are written to the selected repo's backend. Cross-repo/cross-workspace blockers must be read consistently without pretending there is a global atomic transaction.
 
     Required changes:
