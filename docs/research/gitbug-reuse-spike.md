@@ -170,3 +170,30 @@ URLs: git-bug <https://github.com/git-bug/git-bug>; grite <https://github.com/ne
 Beads <https://github.com/gastownhall/beads>; Automerge <https://automerge.org>;
 Yjs <https://github.com/yjs/yjs>; git-warp <https://github.com/git-stunts/git-warp>;
 Radicle COB RFC 0662 <https://github.com/radicle-dev/radicle-link/blob/master/docs/rfc/0662-collaborative-objects.adoc>.
+
+## Bake-off RESULT — linear-CAS wins v1; no CRDT engine adopted (`git-native-engine-bakeoff`)
+
+The conformance suite is now real (`@tasks-md/conformance`) and the git-native backend
+(`packages/cli/src/backend/git-native.ts`) was run against it
+(`packages/cli/src/backend/git-native.conformance.test.ts`). **Decision: ship v1 on
+linear-CAS with NO CRDT engine.** Evidence, not preference:
+
+| Dimension | Linear-CAS (git ref non-ff rejection) | A CRDT engine (git-bug / grite / Automerge-on-git) |
+|---|---|---|
+| New runtime dependencies | **0** — `git` is already required | a Go binary (git-bug/grite, GPL boundary) or a CRDT lib (Automerge/Yjs) |
+| Adapter LOC | the existing ~590-line `git-native.ts` | that + an engine integration layer + lease/snapshot shims the engines lack |
+| Licence constraints | none | git-bug/grite are GPL-3.0 (shell-out boundary only); Automerge is MIT |
+| Conformance result | **6/6 applicable checks pass** (same/different-task race, stale-snapshot, human-command path, release/reclaim, idempotent projection) | not prototyped — the trigger to do so never fired |
+| Contention behaviour | optimistic CAS + silent retry on non-ff; fine at v1 scale (~tens of machines, long tasks) | only justified if measured contention crosses the Phase-4 tripwire (`fleet-phase4-contention-observability`) |
+
+The bug-hunt value was immediate: the suite **caught a real defect** — `complete`/`release`/
+`cancel`/`update` appended an event without fetching the claims ref first, so on a fresh
+clone (which has only `refs/remotes/origin/tasks-claims`) they created an orphan commit that
+the remote non-ff-rejected. Fixed by fetching before append.
+
+**Skipped checks are honest v1 gaps, not failures:** `lease-expiry` (Phase 2),
+`claim-fencing` + `path-scoped-enforcement` (Phase 3), `canonical-serialization` (raw-event
+injection not exposed), `blocked-by` (not yet modelled in the fold). Each maps to a queued
+follow-up. A CRDT engine is reconsidered ONLY when conformance fails or
+`fleet-phase4-contention-observability` reports contention past the tripwire — and even then
+it must be REUSED (git-bug via subprocess, or Automerge), never reimplemented.

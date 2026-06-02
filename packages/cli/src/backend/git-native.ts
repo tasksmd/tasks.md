@@ -537,11 +537,11 @@ export function createGitNativeBackend(directory: string): TaskBackend {
       patch: UpdateTaskInput,
       options?: ActorOptions,
     ): Promise<OperationResult> {
+      // Fetch first so the local claims ref exists (a fresh clone only has
+      // refs/remotes/origin/tasks-claims) and the new event fast-forwards.
+      fetchClaimsRef(directory);
       if (!foldLog(directory).get(id)) {
-        fetchClaimsRef(directory);
-        if (!foldLog(directory).get(id)) {
-          return { status: "missing", backend: "git-native", operation: "update", taskId: id };
-        }
+        return { status: "missing", backend: "git-native", operation: "update", taskId: id };
       }
       const payload: Record<string, unknown> = {};
       if (patch.title !== undefined) payload.title = patch.title;
@@ -554,18 +554,21 @@ export function createGitNativeBackend(directory: string): TaskBackend {
     },
 
     async release(id: string, options?: ActorOptions): Promise<OperationResult> {
+      fetchClaimsRef(directory);
       appendEvent(directory, makeEvent(id, "released", options, {}));
       pushOrThrow(directory, "released");
       return { status: "ok", backend: "git-native", operation: "release", taskId: id };
     },
 
     async complete(id: string, options?: ActorOptions): Promise<OperationResult> {
+      fetchClaimsRef(directory);
       appendEvent(directory, makeEvent(id, "completed", options, {}));
       pushOrThrow(directory, "completed");
       return { status: "ok", backend: "git-native", operation: "complete", taskId: id };
     },
 
     async cancel(id: string, options?: ActorOptions): Promise<OperationResult> {
+      fetchClaimsRef(directory);
       appendEvent(directory, makeEvent(id, "cancelled", options, {}));
       pushOrThrow(directory, "cancelled");
       return { status: "ok", backend: "git-native", operation: "cancel", taskId: id };

@@ -431,24 +431,9 @@
   - **Files**: `packages/cli/src/commands/`, `packages/cli/src/cli.ts`, `packages/cli/src/backend/`, `packages/mcp/src/index.ts`, `packages/mcp/src/tools.ts`, `packages/mcp/src/backend.ts`, `packages/cli/README.md`, `packages/mcp/README.md`
   - **Acceptance**: CLI and MCP expose the same backend-neutral task operation set through a small grouped surface; file, GitHub Issues, and git-native backends either perform each operation or return an actionable unsupported result; generated commands can consume `--json` without parsing prose; tests cover file and at least one non-file backend path; `npm run build && npm test` pass.
 
-- [ ] Prove linear-CAS first, and prototype a CRDT engine only if evidence requires it
-  - **ID**: git-native-engine-bakeoff
-  - **Tags**: prototype, git-native, conformance, reuse, crdt, backend, decision
-  - **Details**: The approved plan defers engine choice until the suite exists, but v1 should not pay CRDT complexity unless the simple path fails. Run linear git ref-CAS first, behind the same adapter interface and conformance suite. Prototype a reused engine/core candidate such as git-bug, grite, or Automerge-on-git only if linear-CAS fails conformance or contention metrics cross the Phase-4 tripwire. Apply GET/WRAP before IMPLEMENT and record evidence, not vibes.
-
-    Required changes:
-    1. Prototype linear-CAS behind the conformance adapter interface.
-    2. Run linear-CAS against the full conformance suite before any CRDT prototype.
-    3. Prototype at least one reused CRDT/ledger engine candidate only when linear-CAS fails conformance or measured contention exceeds the documented threshold; otherwise record why no CRDT was needed for v1.
-    4. Measure adapter LOC, dependencies, license constraints, contention behavior, and which conformance cases pass/fail.
-    5. Update the plan/research docs with the selected v1 path and rejected alternatives.
-  - **Files**: `docs/plans/deterministic-fleet-claiming.md`, `docs/research/gitbug-reuse-spike.md`, `packages/conformance/`, `packages/cli/src/backend/`
-  - **Acceptance**: Linear-CAS has run against `@tasks-md/conformance` first; any CRDT prototype is justified by conformance failure or contention metrics, not preference; the decision is documented with evidence; any selected engine is reused/wrapped rather than reimplemented unless a written ABSORB rationale exists.
-
 - [ ] Implement the git-native reference adapter behind `TaskBackend`
   - **ID**: git-native-reference-adapter
   - **Tags**: cli, backend, git-native, fleet, conformance, collision-free, adapter
-  - **Blocked by**: git-native-engine-bakeoff
   - **Details**: Build the thin reference adapter only after the spec, conformance suite, backend interface, and engine bake-off exist. The adapter is the out-of-the-box proof path for `tasks fleet init`, not a bespoke scheduler. It must operate inside a single repo, use the `tasks-claims` ref, and keep generated `TASKS.md` as a view rather than live state.
 
     Required changes:
@@ -525,7 +510,7 @@
 - [ ] Add contention observability and Phase 4 scale tripwires before adopting CRDT or HRW work
   - **ID**: fleet-phase4-contention-observability
   - **Tags**: observability, git-native, scale, crdt, hrw, contention, reuse
-  - **Blocked by**: git-native-engine-bakeoff, git-native-reference-adapter
+  - **Blocked by**: git-native-reference-adapter
   - **Details**: The plan says CRDT adoption, HRW partitioning, and per-host batching only happen if measured contention proves the v1 CAS path insufficient. There is currently no task to collect those measurements or define the tripwire. Add that feedback loop before anyone starts building Phase 4 machinery by intuition.
 
 

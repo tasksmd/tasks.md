@@ -2,6 +2,10 @@
 // throw into a `fail` result and a missing capability into a `skip`. Checks map
 // 1:1 to the required properties in spec.md § "Fleet coordination" and the
 // `conformance-backend-protocol` task acceptance.
+//
+// Checks treat the id RETURNED by `createTask` as canonical — a backend may
+// honor a requested id (file/in-memory) or mint its own (git-native slugs from
+// the title), so checks never assume the requested id survives.
 
 import type {
   ConformanceCapabilities,
@@ -40,10 +44,10 @@ export const checks: Check[] = [
     name: "same-task-race",
     requires: ["collisionFree"],
     run: async (world) => {
-      await world.createTask("seed", { id: "race", title: "Race target" });
+      const task = await world.createTask("seed", { id: "race", title: "Race target" });
       const [a, b] = await Promise.all([
-        world.claim("@alice", "race"),
-        world.claim("@bob", "race"),
+        world.claim("@alice", task.id),
+        world.claim("@bob", task.id),
       ]);
       await world.sync();
       const winners = [a, b].filter((outcome) => outcome.status === "claimed");
@@ -57,11 +61,11 @@ export const checks: Check[] = [
         `loser must yield (lost/already_claimed), got "${loser.status}"`,
       );
       const open = await world.listOpen("@alice");
-      const task = open.find((entry) => entry.id === "race");
-      assert(task !== undefined, "claimed task must still be open");
+      const found = open.find((entry) => entry.id === task.id);
+      assert(found !== undefined, "claimed task must still be open");
       assert(
-        task?.assignee === winners[0]?.owner,
-        `folded assignee (${task?.assignee}) must be the winner (${winners[0]?.owner})`,
+        found?.assignee === winners[0]?.owner,
+        `folded assignee (${found?.assignee}) must be the winner (${winners[0]?.owner})`,
       );
     },
   },
@@ -69,11 +73,11 @@ export const checks: Check[] = [
     name: "different-task-race",
     requires: ["collisionFree"],
     run: async (world) => {
-      await world.createTask("seed", { id: "x", title: "Task X" });
-      await world.createTask("seed", { id: "y", title: "Task Y" });
+      const x = await world.createTask("seed", { id: "x", title: "Task X" });
+      const y = await world.createTask("seed", { id: "y", title: "Task Y" });
       const [a, b] = await Promise.all([
-        world.claim("@alice", "x"),
-        world.claim("@bob", "y"),
+        world.claim("@alice", x.id),
+        world.claim("@bob", y.id),
       ]);
       await world.sync();
       assert(
@@ -81,30 +85,21 @@ export const checks: Check[] = [
         `both different-task claims must win, got ${a.status}/${b.status}`,
       );
       const open = await world.listOpen("@alice");
-      assert(
-        open.find((t) => t.id === "x")?.assignee === "alice",
-        "task x must be owned by alice",
-      );
-      assert(
-        open.find((t) => t.id === "y")?.assignee === "bob",
-        "task y must be owned by bob",
-      );
+      assert(open.find((t) => t.id === x.id)?.assignee === "alice", "task x must be owned by alice");
+      assert(open.find((t) => t.id === y.id)?.assignee === "bob", "task y must be owned by bob");
     },
   },
   {
     name: "stale-snapshot",
     requires: ["generatedSnapshot"],
     run: async (world) => {
-      await world.createTask("seed", { id: "done-soon", title: "Finish me" });
+      const task = await world.createTask("seed", { id: "done-soon", title: "Finish me" });
       const before = await world.render();
-      assert(
-        before.includes("done-soon"),
-        "snapshot must show the open task before completion",
-      );
-      await world.complete("@alice", "done-soon");
+      assert(before.includes(task.id), "snapshot must show the open task before completion");
+      await world.complete("@alice", task.id);
       const open = await world.listOpen("@alice");
       assert(
-        open.find((t) => t.id === "done-soon") === undefined,
+        open.find((t) => t.id === task.id) === undefined,
         "folded log must exclude a completed task even if a stale snapshot still shows it",
       );
     },
@@ -113,27 +108,29 @@ export const checks: Check[] = [
     name: "human-command-path",
     requires: [],
     run: async (world) => {
-      await world.createTask("@alice", { id: "hcp", title: "Original" });
-      await world.update("@alice", "hcp", { title: "Updated title" });
+      const task = await world.createTask("@alice", { id: "hcp", title: "Original" });
+      await world.update("@alice", task.id, { title: "Updated title" });
       const open = await world.listOpen("@alice");
-      const task = open.find((t) => t.id === "hcp");
-      assert(task?.title === "Updated title", "update must appear in fold(log)");
+      assert(
+        open.find((t) => t.id === task.id)?.title === "Updated title",
+        "update must appear in fold(log)",
+      );
     },
   },
   {
     name: "lease-expiry-and-steal",
     requires: ["leases"],
     run: async (world) => {
-      await world.createTask("seed", { id: "leased", title: "Leased task" });
-      const first = await world.claim("@alice", "leased");
+      const task = await world.createTask("seed", { id: "leased", title: "Leased task" });
+      const first = await world.claim("@alice", task.id);
       assert(first.status === "claimed", "first claim must succeed");
-      const contested = await world.claim("@bob", "leased");
+      const contested = await world.claim("@bob", task.id);
       assert(
         contested.status === "already_claimed",
         `a live claim blocks a second claimer, got "${contested.status}"`,
       );
-      await world.expireLease?.("leased");
-      const stolen = await world.claim("@bob", "leased");
+      await world.expireLease?.(task.id);
+      const stolen = await world.claim("@bob", task.id);
       assert(
         stolen.status === "claimed",
         `an expired lease must be reclaimable, got "${stolen.status}"`,
@@ -194,22 +191,22 @@ export const checks: Check[] = [
     name: "claim-fencing",
     requires: ["pathScopedEnforcement"],
     run: async (world) => {
-      await world.createTask("seed", { id: "fenced", title: "Fenced task" });
-      const claim = await world.claim("@alice", "fenced");
+      const task = await world.createTask("seed", { id: "fenced", title: "Fenced task" });
+      const claim = await world.claim("@alice", task.id);
       assert(claim.status === "claimed" && claim.claimId, "claim must yield a fencing token");
       const ok = await world.checkWorkPush?.({
         paths: ["src/feature.ts"],
-        taskId: "fenced",
+        taskId: task.id,
         claimId: claim.claimId,
       });
       assert(ok === "allowed", "a code push with the live fencing token must be allowed");
       const wrong = await world.checkWorkPush?.({
         paths: ["src/feature.ts"],
-        taskId: "fenced",
+        taskId: task.id,
         claimId: "claim-wrong",
       });
       assert(wrong === "rejected", "a stale/wrong fencing token must be rejected");
-      const none = await world.checkWorkPush?.({ paths: ["src/feature.ts"], taskId: "fenced" });
+      const none = await world.checkWorkPush?.({ paths: ["src/feature.ts"], taskId: task.id });
       assert(none === "rejected", "a code push with no fencing token must be rejected");
     },
   },
@@ -217,11 +214,11 @@ export const checks: Check[] = [
     name: "release-and-reclaim",
     requires: [],
     run: async (world) => {
-      await world.createTask("seed", { id: "rr", title: "Release/reclaim" });
-      const first = await world.claim("@alice", "rr");
+      const task = await world.createTask("seed", { id: "rr", title: "Release/reclaim" });
+      const first = await world.claim("@alice", task.id);
       assert(first.status === "claimed", "first claim must succeed");
-      await world.release("@alice", "rr");
-      const second = await world.claim("@bob", "rr");
+      await world.release("@alice", task.id);
+      const second = await world.claim("@bob", task.id);
       assert(second.status === "claimed", `released task must be reclaimable, got "${second.status}"`);
     },
   },
@@ -229,15 +226,19 @@ export const checks: Check[] = [
     name: "blocked-by-unclaimable",
     requires: ["blockedBy"],
     run: async (world) => {
-      await world.createTask("seed", { id: "blocker", title: "Blocker" });
-      await world.createTask("seed", { id: "dependent", title: "Dependent", blockedBy: ["blocker"] });
-      const blocked = await world.claim("@alice", "dependent");
+      const blocker = await world.createTask("seed", { id: "blocker", title: "Blocker" });
+      const dependent = await world.createTask("seed", {
+        id: "dependent",
+        title: "Dependent",
+        blockedBy: [blocker.id],
+      });
+      const blocked = await world.claim("@alice", dependent.id);
       assert(
         blocked.status === "blocked",
         `a blocked task must be unclaimable, got "${blocked.status}"`,
       );
-      await world.complete("@bob", "blocker");
-      const unblocked = await world.claim("@alice", "dependent");
+      await world.complete("@bob", blocker.id);
+      const unblocked = await world.claim("@alice", dependent.id);
       assert(
         unblocked.status === "claimed",
         `a task must be claimable once its blocker closes, got "${unblocked.status}"`,
@@ -248,9 +249,9 @@ export const checks: Check[] = [
     name: "idempotent-projection",
     requires: ["generatedSnapshot"],
     run: async (world) => {
-      await world.createTask("seed", { id: "p0a", title: "Alpha", priority: "P0" });
+      const alpha = await world.createTask("seed", { id: "p0a", title: "Alpha", priority: "P0" });
       await world.createTask("seed", { id: "p1b", title: "Beta", priority: "P1" });
-      await world.claim("@alice", "p0a");
+      await world.claim("@alice", alpha.id);
       const first = await world.render();
       const second = await world.render();
       assert(first === second, "render() must be byte-idempotent for the same log");
@@ -267,11 +268,11 @@ export const checks: Check[] = [
         codeInDocs === "rejected",
         "executable code under docs/ without a live claim must be rejected",
       );
-      await world.createTask("seed", { id: "mix", title: "Mixed change" });
-      const claim = await world.claim("@alice", "mix");
+      const task = await world.createTask("seed", { id: "mix", title: "Mixed change" });
+      const claim = await world.claim("@alice", task.id);
       const mixed = await world.checkWorkPush?.({
         paths: ["docs/readme.md", "src/code.ts"],
-        taskId: "mix",
+        taskId: task.id,
         claimId: claim.claimId,
       });
       assert(mixed === "allowed", "a claimed mixed change must be allowed");

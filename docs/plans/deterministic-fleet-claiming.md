@@ -211,6 +211,12 @@ only when linear-CAS fails conformance or measured contention justifies the depe
 Record adapter LOC, dependency/licence cost, and contention behavior for whichever path is
 chosen.
 
+> **Status (Step 3 done — linear-CAS wins):** the git-native backend (linear-CAS, the only
+> "engine" is git's ref-CAS) was run against `@tasks-md/conformance` and passes 6/6
+> applicable checks. v1 ships with **no CRDT engine** (0 new deps). The bake-off evidence
+> table + the real bug the suite caught are in
+> [`../research/gitbug-reuse-spike.md`](../research/gitbug-reuse-spike.md) § "Bake-off RESULT".
+
 ### Step 4: Thin reference adapter (`git-claims`)
 Implement the chosen path behind `TaskBackend`: `claim` = silent-retry CAS; `next` = the
 reconciled+dispersed picker over the log; `complete`/`release`/`cancel`/`create` = log
