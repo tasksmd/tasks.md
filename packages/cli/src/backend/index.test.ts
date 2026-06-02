@@ -16,11 +16,14 @@ describe("createBackend", () => {
       );
 
       expect(backend.name).toBe("git-native");
-      expect(backend.capabilities).toEqual({
+      expect(backend.capabilities).toMatchObject({
         claims: "collision-free",
         sourceOfTruth: "log",
         generatedSnapshot: true,
+        supportsLeases: true,
+        humanEditableSnapshot: false,
       });
+      expect(backend.capabilities.operations.render).toBe(true);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

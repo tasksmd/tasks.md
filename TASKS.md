@@ -417,24 +417,9 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Reshape `TaskBackend` for agent-owned operations, leases, fencing, and backend capabilities
-  - **ID**: backend-interface-agent-owned-protocol
-  - **Tags**: cli, mcp, backend, types, agent-owned, lease, conformance
-  - **Details**: The current backend interface exposes `claim(id): Promise<void>` with no actor identity, lease, fencing token, or result status, and the file backend claim is a no-op. That shape cannot implement the git-native protocol or agent-mediated task operations. Redesign the interface around explicit operation results while preserving compatibility for file and GitHub Issues backends.
-
-    Required changes:
-    1. Add backend capability metadata (for example: `collisionFreeClaims`, `supportsLeases`, `generatedSnapshot`, `requiresRemote`, `humanEditableSnapshot`).
-    2. Replace void mutation methods with typed results for `create`, `update`, `claim`, `release`, `complete`, `cancel`, and `render`.
-    3. Pass an explicit actor identity (`git-email` + `instance-id`, or the final spec shape) into claim/release/complete operations.
-    4. Add `claim_id` lease/fencing metadata to backend task state where the backend supports it.
-    5. Update CLI and MCP delegation so unsupported operations fail with actionable messages rather than pretending to be fleet-safe.
-  - **Files**: `packages/cli/src/backend/types.ts`, `packages/cli/src/backend/config.ts`, `packages/cli/src/backend/index.ts`, `packages/cli/src/backend/tasks-md.ts`, `packages/cli/src/backend/github-issues.ts`, `packages/mcp/src/backend.ts`, `packages/mcp/src/tools.ts`, `packages/cli/src/backend/*.test.ts`, `packages/mcp/src/*.test.ts`
-  - **Acceptance**: TypeScript exposes a protocol-grade backend interface; `tasks-md` and `github-issues` still pass existing tests with honest capability flags; `tasks claim` no longer reports a successful file-backend claim when no mutation occurred; successful claim operations return fencing metadata when supported; MCP tools surface the same operation results as the CLI; `npm run build && npm test` pass.
-
 - [ ] Implement backend-neutral CLI and MCP commands for agent-mediated task operations
   - **ID**: cli-mcp-agent-mediated-operations
   - **Tags**: cli, mcp, backend, commands, agent-owned, task-operations
-  - **Blocked by**: backend-interface-agent-owned-protocol
   - **Details**: The spec task defines backend-neutral operations, but the user-facing surfaces must actually expose them. Today the CLI is mostly list/pick/sync and the MCP mutation tools directly edit files. Add a public CLI/MCP operation layer so agents can create, update, review, claim, release, complete, cancel, enrich, and render tasks without knowing whether the active backend is a mutable file, GitHub Issues, or git-native log-first storage.
 
     Required changes:
@@ -449,7 +434,6 @@
 - [ ] Prove linear-CAS first, and prototype a CRDT engine only if evidence requires it
   - **ID**: git-native-engine-bakeoff
   - **Tags**: prototype, git-native, conformance, reuse, crdt, backend, decision
-  - **Blocked by**: backend-interface-agent-owned-protocol
   - **Details**: The approved plan defers engine choice until the suite exists, but v1 should not pay CRDT complexity unless the simple path fails. Run linear git ref-CAS first, behind the same adapter interface and conformance suite. Prototype a reused engine/core candidate such as git-bug, grite, or Automerge-on-git only if linear-CAS fails conformance or contention metrics cross the Phase-4 tripwire. Apply GET/WRAP before IMPLEMENT and record evidence, not vibes.
 
     Required changes:
@@ -556,7 +540,7 @@
 - [ ] Update canonical agent commands for backend-aware, agent-owned task workflows
   - **ID**: commands-agent-owned-backend-workflow
   - **Tags**: commands, generated, next-task, setup, agent-owned, backend, docs
-  - **Blocked by**: backend-interface-agent-owned-protocol, one-prompt-agent-owned-fleet-init
+  - **Blocked by**: one-prompt-agent-owned-fleet-init
   - **Details**: `commands/next-task.md` and its generated variants still instruct agents to read and mutate `TASKS.md` directly. The canonical commands must become backend-aware: file backend may still mutate the file, but git-native mode must operate through backend operations and treat `TASKS.md` as a generated snapshot.
 
     Required changes:
@@ -643,7 +627,7 @@
 - [ ] Publish backend conformance docs and a self-certification path only after adapter stability
   - **ID**: backend-conformance-self-certification
   - **Tags**: conformance, backend, docs, ecosystem, adapters, no-lock-in, adoption
-  - **Blocked by**: backend-interface-agent-owned-protocol, git-native-reference-adapter
+  - **Blocked by**: git-native-reference-adapter
   - **Details**: G4/G5 promise that every backend works behind one surface, but publishing conformance before multiple real adapters pass would freeze an unstable API. Keep the harness internal until file, GitHub Issues, and git-native adapters have exercised the contract. Then publish the adapter contract, runner docs, sample adapter, and report format so external backends can self-certify without copying internal tests.
 
     Required changes:

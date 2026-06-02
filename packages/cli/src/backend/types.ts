@@ -32,15 +32,69 @@ export interface CreateTaskInput {
 export type ClaimMode = "best-effort" | "collision-free" | "external";
 export type SourceOfTruth = "tasks-md" | "log" | "github-issues";
 
+/** The backend-neutral task operations (spec.md § "Agent-mediated task operations"). */
+export type TaskOperation =
+  | "create"
+  | "update"
+  | "claim"
+  | "release"
+  | "complete"
+  | "cancel"
+  | "render"
+  | "list";
+
 export interface BackendCapabilities {
+  /** How claiming behaves: best-effort (file), collision-free (git-native), external (issues). */
   claims: ClaimMode;
   sourceOfTruth: SourceOfTruth;
+  /** `TASKS.md` is a generated projection of backend state, not the source. */
   generatedSnapshot: boolean;
+  /** Claims carry an expiring lease that lets a dead owner be reclaimed. */
+  supportsLeases: boolean;
+  /** The backend needs a git remote / network to coordinate. */
+  requiresRemote: boolean;
+  /** A human may safely hand-edit the human-readable surface (`TASKS.md`). */
+  humanEditableSnapshot: boolean;
+  /** Which operations this backend performs; the rest return `unsupported`. */
+  operations: Record<TaskOperation, boolean>;
 }
 
 export interface ClaimTaskOptions {
   actorId?: string;
   instanceId?: string;
+}
+
+/** Actor context threaded into every mutating operation. */
+export type ActorOptions = ClaimTaskOptions;
+
+export interface UpdateTaskInput {
+  title?: string;
+  priority?: string;
+  body?: string;
+  tags?: string[];
+}
+
+export type OperationStatus =
+  | "ok"
+  | "unsupported"
+  | "missing"
+  | "blocked"
+  | "noop";
+
+export interface OperationResult {
+  status: OperationStatus;
+  backend: string;
+  operation: TaskOperation;
+  taskId?: string;
+  reason?: string;
+}
+
+export interface RenderResult {
+  status: "ok" | "unsupported";
+  backend: string;
+  /** The rendered human-readable snapshot, when `status` is `ok`. */
+  content?: string;
+  reason?: string;
 }
 
 export type ClaimTaskStatus =
@@ -66,9 +120,13 @@ export interface TaskBackend {
   readonly capabilities: BackendCapabilities;
   listOpen(): Promise<BackendTask[]>;
   next(): Promise<BackendTask | null>;
-  create(input: CreateTaskInput): Promise<BackendTask>;
+  create(input: CreateTaskInput, options?: ActorOptions): Promise<BackendTask>;
+  update(id: string, patch: UpdateTaskInput, options?: ActorOptions): Promise<OperationResult>;
   claim(id: string, options?: ClaimTaskOptions): Promise<ClaimTaskResult>;
-  complete(id: string): Promise<void>;
+  release(id: string, options?: ActorOptions): Promise<OperationResult>;
+  complete(id: string, options?: ActorOptions): Promise<OperationResult>;
+  cancel(id: string, options?: ActorOptions): Promise<OperationResult>;
+  render(): Promise<RenderResult>;
 }
 
 /** Priority bucket → sort rank (P0 most urgent). */
@@ -105,4 +163,24 @@ export function formatClaimResult(result: ClaimTaskResult): string {
     return `${result.taskId} ${result.status}: ${result.reason}`;
   }
   return `${result.taskId} ${result.status}.`;
+}
+
+export function unsupportedResult(
+  backend: string,
+  operation: TaskOperation,
+  reason: string,
+  taskId?: string,
+): OperationResult {
+  return { status: "unsupported", backend, operation, taskId, reason };
+}
+
+export function formatOperationResult(result: OperationResult): string {
+  const where = result.taskId ? ` ${result.taskId}` : "";
+  if (result.status === "ok") {
+    return `${result.operation}${where}: ok (${result.backend}).`;
+  }
+  if (result.reason) {
+    return `${result.operation}${where} ${result.status}: ${result.reason}`;
+  }
+  return `${result.operation}${where} ${result.status} (${result.backend}).`;
 }

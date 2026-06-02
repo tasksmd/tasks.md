@@ -1,12 +1,17 @@
 import { execFileSync } from "node:child_process";
 import {
+  type ActorOptions,
   type BackendTask,
   type BackendCapabilities,
   type ClaimTaskOptions,
   type ClaimTaskResult,
   type CreateTaskInput,
+  type OperationResult,
+  type RenderResult,
   type TaskBackend,
+  type UpdateTaskInput,
   sortByPriority,
+  unsupportedResult,
 } from "./types.js";
 
 // Labels that map onto a priority bucket. We write `priority/P0`..`priority/P3`
@@ -88,6 +93,19 @@ export function createGitHubIssuesBackend(
     claims: "external",
     sourceOfTruth: "github-issues",
     generatedSnapshot: false,
+    supportsLeases: false,
+    requiresRemote: true,
+    humanEditableSnapshot: false,
+    operations: {
+      create: true,
+      update: false,
+      claim: true,
+      release: true,
+      complete: true,
+      cancel: true,
+      render: false,
+      list: true,
+    },
   };
 
   function gh(args: string[]): string {
@@ -196,9 +214,39 @@ export function createGitHubIssuesBackend(
       };
     },
 
-    async complete(id: string): Promise<void> {
+    async update(id: string, _patch: UpdateTaskInput): Promise<OperationResult> {
+      return unsupportedResult(
+        "GitHub Issues",
+        "update",
+        "edit the issue fields in GitHub (or `gh issue edit`) — the issue is the source of truth",
+        id,
+      );
+    },
+
+    async release(id: string): Promise<OperationResult> {
+      assertAuth();
+      gh(["issue", "edit", id, ...repoArgs, "--remove-assignee", "@me"]);
+      return { status: "ok", backend: "GitHub Issues", operation: "release", taskId: id };
+    },
+
+    async complete(id: string): Promise<OperationResult> {
       assertAuth();
       gh(["issue", "close", id, ...repoArgs]);
+      return { status: "ok", backend: "GitHub Issues", operation: "complete", taskId: id };
+    },
+
+    async cancel(id: string): Promise<OperationResult> {
+      assertAuth();
+      gh(["issue", "close", id, ...repoArgs, "--reason", "not planned"]);
+      return { status: "ok", backend: "GitHub Issues", operation: "cancel", taskId: id };
+    },
+
+    async render(): Promise<RenderResult> {
+      return {
+        status: "unsupported",
+        backend: "GitHub Issues",
+        reason: "issues have no single generated snapshot — use `tasks list`",
+      };
     },
   };
 }

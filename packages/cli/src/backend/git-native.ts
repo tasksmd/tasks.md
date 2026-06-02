@@ -4,15 +4,25 @@ import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type {
+  ActorOptions,
   BackendCapabilities,
   BackendTask,
   ClaimTaskOptions,
   ClaimTaskResult,
   CreateTaskInput,
+  OperationResult,
+  RenderResult,
   TaskBackend,
+  UpdateTaskInput,
 } from "./types.js";
 
-type GitNativeEventType = "created" | "claimed" | "completed" | "released";
+type GitNativeEventType =
+  | "created"
+  | "updated"
+  | "claimed"
+  | "completed"
+  | "released"
+  | "cancelled";
 
 interface GitNativeEvent {
   schema_version: number;
@@ -40,6 +50,22 @@ const capabilities: BackendCapabilities = {
   claims: "collision-free",
   sourceOfTruth: "log",
   generatedSnapshot: true,
+  supportsLeases: true,
+  // The log is a local git ref that works offline; collision-freedom ACROSS
+  // machines additionally needs an origin, but the backend itself does not
+  // require one to operate.
+  requiresRemote: false,
+  humanEditableSnapshot: false,
+  operations: {
+    create: true,
+    update: true,
+    claim: true,
+    release: true,
+    complete: true,
+    cancel: true,
+    render: true,
+    list: true,
+  },
 };
 
 function git(
@@ -233,9 +259,11 @@ function stringArrayValue(value: unknown): string[] | undefined {
 function eventTypeValue(value: unknown): GitNativeEventType | undefined {
   if (
     value === "created" ||
+    value === "updated" ||
     value === "claimed" ||
     value === "completed" ||
-    value === "released"
+    value === "released" ||
+    value === "cancelled"
   ) {
     return value;
   }
@@ -329,6 +357,20 @@ function foldEvents(events: GitNativeEvent[]): Map<string, FoldedTask> {
         completed: false,
       });
     }
+    if (event.event_type === "updated") {
+      const folded = tasks.get(event.task_id);
+      if (folded && !folded.completed) {
+        const title = stringValue(event.payload.title);
+        const body = stringValue(event.payload.body);
+        const tags = stringArrayValue(event.payload.tags);
+        if (title) folded.task.title = title;
+        if (event.payload.priority !== undefined) {
+          folded.task.priority = priorityValue(event.payload.priority);
+        }
+        if (body !== undefined) folded.task.body = body;
+        if (tags) folded.task.tags = tags;
+      }
+    }
     if (event.event_type === "claimed") {
       const folded = tasks.get(event.task_id);
       if (folded && !folded.completed && !folded.task.assignee) {
@@ -343,7 +385,7 @@ function foldEvents(events: GitNativeEvent[]): Map<string, FoldedTask> {
         folded.claimId = undefined;
       }
     }
-    if (event.event_type === "completed") {
+    if (event.event_type === "completed" || event.event_type === "cancelled") {
       const folded = tasks.get(event.task_id);
       if (folded) {
         folded.completed = true;
@@ -490,12 +532,58 @@ export function createGitNativeBackend(directory: string): TaskBackend {
       };
     },
 
-    async complete(id: string): Promise<void> {
-      appendEvent(directory, makeEvent(id, "completed", undefined, {}));
-      if (!pushClaimsRef(directory)) {
+    async update(
+      id: string,
+      patch: UpdateTaskInput,
+      options?: ActorOptions,
+    ): Promise<OperationResult> {
+      if (!foldLog(directory).get(id)) {
         fetchClaimsRef(directory);
-        throw new Error("Could not push completed task to tasks-claims.");
+        if (!foldLog(directory).get(id)) {
+          return { status: "missing", backend: "git-native", operation: "update", taskId: id };
+        }
       }
+      const payload: Record<string, unknown> = {};
+      if (patch.title !== undefined) payload.title = patch.title;
+      if (patch.priority !== undefined) payload.priority = priorityValue(patch.priority);
+      if (patch.body !== undefined) payload.body = patch.body;
+      if (patch.tags !== undefined) payload.tags = patch.tags;
+      appendEvent(directory, makeEvent(id, "updated", options, payload));
+      pushOrThrow(directory, "updated");
+      return { status: "ok", backend: "git-native", operation: "update", taskId: id };
+    },
+
+    async release(id: string, options?: ActorOptions): Promise<OperationResult> {
+      appendEvent(directory, makeEvent(id, "released", options, {}));
+      pushOrThrow(directory, "released");
+      return { status: "ok", backend: "git-native", operation: "release", taskId: id };
+    },
+
+    async complete(id: string, options?: ActorOptions): Promise<OperationResult> {
+      appendEvent(directory, makeEvent(id, "completed", options, {}));
+      pushOrThrow(directory, "completed");
+      return { status: "ok", backend: "git-native", operation: "complete", taskId: id };
+    },
+
+    async cancel(id: string, options?: ActorOptions): Promise<OperationResult> {
+      appendEvent(directory, makeEvent(id, "cancelled", options, {}));
+      pushOrThrow(directory, "cancelled");
+      return { status: "ok", backend: "git-native", operation: "cancel", taskId: id };
+    },
+
+    async render(): Promise<RenderResult> {
+      return {
+        status: "ok",
+        backend: "git-native",
+        content: await renderGitNativeSnapshot(directory),
+      };
     },
   };
+}
+
+function pushOrThrow(directory: string, eventType: GitNativeEventType): void {
+  if (!pushClaimsRef(directory)) {
+    fetchClaimsRef(directory);
+    throw new Error(`Could not push ${eventType} event to tasks-claims.`);
+  }
 }
