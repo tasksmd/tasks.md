@@ -24,28 +24,50 @@ export interface BackendTask {
 
 export interface CreateTaskInput {
   title: string;
-  /** "P0".."P3"; defaults to P2 when omitted. */
   priority?: string;
   body?: string;
   tags?: string[];
 }
 
-/**
- * The uniform surface every backend implements. Read ops (listOpen/next) work
- * everywhere; write ops (create/claim/complete) mutate the backing store.
- */
+export type ClaimMode = "best-effort" | "collision-free" | "external";
+export type SourceOfTruth = "tasks-md" | "log" | "github-issues";
+
+export interface BackendCapabilities {
+  claims: ClaimMode;
+  sourceOfTruth: SourceOfTruth;
+  generatedSnapshot: boolean;
+}
+
+export interface ClaimTaskOptions {
+  actorId?: string;
+  instanceId?: string;
+}
+
+export type ClaimTaskStatus =
+  | "claimed"
+  | "already_claimed"
+  | "blocked"
+  | "missing"
+  | "lost";
+
+export interface ClaimTaskResult {
+  status: ClaimTaskStatus;
+  backend: string;
+  taskId: string;
+  capabilities: BackendCapabilities;
+  owner?: string;
+  currentOwner?: string;
+  claimId?: string;
+  reason?: string;
+}
+
 export interface TaskBackend {
-  /** Human-readable backend name, e.g. "GitHub Issues" or "TASKS.md". */
   readonly name: string;
-  /** Open tasks, sorted highest-priority (P0) first. */
+  readonly capabilities: BackendCapabilities;
   listOpen(): Promise<BackendTask[]>;
-  /** Highest-priority open + unclaimed task, or null when the queue is empty. */
   next(): Promise<BackendTask | null>;
-  /** File a new task; returns the created task. */
   create(input: CreateTaskInput): Promise<BackendTask>;
-  /** Claim a task (assign it to the current actor). */
-  claim(id: string): Promise<void>;
-  /** Mark a task complete (close the issue / remove the TASKS.md block). */
+  claim(id: string, options?: ClaimTaskOptions): Promise<ClaimTaskResult>;
   complete(id: string): Promise<void>;
 }
 
@@ -67,4 +89,20 @@ export function sortByPriority<T extends { priority: string }>(tasks: T[]): T[] 
       return ra === rb ? a.index - b.index : ra - rb;
     })
     .map((entry) => entry.task);
+}
+
+export function formatClaimResult(result: ClaimTaskResult): string {
+  if (result.status === "claimed" && result.claimId && result.owner) {
+    return `Claimed ${result.taskId} for ${result.owner} with claim ${result.claimId}.`;
+  }
+  if (result.status === "claimed" && result.owner) {
+    return `Claimed ${result.taskId} for ${result.owner} using ${result.capabilities.claims} ${result.backend} claims.`;
+  }
+  if (result.status === "already_claimed" && result.currentOwner) {
+    return `${result.taskId} is already claimed by ${result.currentOwner}.`;
+  }
+  if (result.reason) {
+    return `${result.taskId} ${result.status}: ${result.reason}`;
+  }
+  return `${result.taskId} ${result.status}.`;
 }

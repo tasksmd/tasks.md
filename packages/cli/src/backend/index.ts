@@ -1,4 +1,5 @@
 import { type BackendConfig, resolveBackendConfig } from "./config.js";
+import { createGitNativeBackend } from "./git-native.js";
 import { createGitHubIssuesBackend } from "./github-issues.js";
 import { createTasksMdBackend } from "./tasks-md.js";
 import type { TaskBackend } from "./types.js";
@@ -10,6 +11,9 @@ export function createBackend(
 ): TaskBackend {
   if (config.backend === "github-issues") {
     return createGitHubIssuesBackend({ repo: config.repo, label: config.label });
+  }
+  if (config.backend === "git-native") {
+    return createGitNativeBackend(directory);
   }
   return createTasksMdBackend(directory);
 }
@@ -24,4 +28,12 @@ export function getBackend(directory: string, override?: string): TaskBackend {
 
 export { resolveBackendConfig } from "./config.js";
 export type { BackendConfig, BackendKind } from "./config.js";
-export type { BackendTask, CreateTaskInput, TaskBackend } from "./types.js";
+export { formatClaimResult } from "./types.js";
+export type {
+  BackendCapabilities,
+  BackendTask,
+  ClaimTaskOptions,
+  ClaimTaskResult,
+  CreateTaskInput,
+  TaskBackend,
+} from "./types.js";

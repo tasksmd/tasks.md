@@ -27,6 +27,11 @@ describe("resolveBackendConfig", () => {
     expect(resolveBackendConfig(dir)).toEqual({ backend: "github-issues", repo: "o/r", label: "queue" });
   });
 
+  it("reads git-native backend config from .tasksmd.json", () => {
+    writeConfig({ backend: "git-native" });
+    expect(resolveBackendConfig(dir)).toEqual({ backend: "git-native", repo: undefined, label: "tasks.md" });
+  });
+
   it("an explicit override beats the config file", () => {
     writeConfig({ backend: "github-issues" });
     expect(resolveBackendConfig(dir, "tasks-md").backend).toBe("tasks-md");

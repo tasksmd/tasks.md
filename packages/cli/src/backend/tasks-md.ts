@@ -10,6 +10,8 @@ import {
 } from "@tasks-md/parser";
 import {
   type BackendTask,
+  type ClaimTaskOptions,
+  type ClaimTaskResult,
   type CreateTaskInput,
   type TaskBackend,
   sortByPriority,
@@ -26,6 +28,10 @@ function toTask(task: Task): BackendTask {
   };
 }
 
+function normalizeActor(options?: ClaimTaskOptions): string {
+  return options?.actorId?.replace(/^@/, "") ?? "agent";
+}
+
 /**
  * Local TASKS.md backend — the canonical, file-first default (VISION.md G5).
  * Reads delegate to the parser's deterministic picker so `next` matches the
@@ -37,6 +43,11 @@ export function createTasksMdBackend(directory: string): TaskBackend {
 
   return {
     name: "TASKS.md",
+    capabilities: {
+      claims: "best-effort",
+      sourceOfTruth: "tasks-md",
+      generatedSnapshot: false,
+    },
 
     async listOpen(): Promise<BackendTask[]> {
       const taskFiles = loadAllTasks(directory);
@@ -81,14 +92,35 @@ export function createTasksMdBackend(directory: string): TaskBackend {
       return { id, title: input.title, priority, tags: input.tags ?? [], body: input.body };
     },
 
-    async claim(id: string): Promise<void> {
-      // Claiming a TASKS.md task is an inline `(@id)` suffix; left to the
-      // agent workflow (the parser reads it). No-op here keeps the backend
-      // surface uniform without guessing the claimant identity.
+    async claim(id: string, options?: ClaimTaskOptions): Promise<ClaimTaskResult> {
       const taskFiles = loadAllTasks(directory);
-      if (findTasksById(taskFiles, id).length === 0) {
+      const matches = findTasksById(taskFiles, id);
+      if (matches.length === 0) {
         throw new Error(`No TASKS.md task with id "${id}".`);
       }
+      const task = matches[0];
+      if (task.claimed) {
+        return {
+          status: "already_claimed",
+          backend: "TASKS.md",
+          taskId: id,
+          currentOwner: task.claimed,
+          capabilities: this.capabilities,
+        };
+      }
+
+      const lines = readFileSync(task.file, "utf-8").split("\n");
+      const taskLineIndex = task.startLine - 1;
+      const owner = normalizeActor(options);
+      lines[taskLineIndex] = `${lines[taskLineIndex]} (@${owner})`;
+      writeFileSync(task.file, lines.join("\n"));
+      return {
+        status: "claimed",
+        backend: "TASKS.md",
+        taskId: id,
+        owner,
+        capabilities: this.capabilities,
+      };
     },
 
     async complete(id: string): Promise<void> {

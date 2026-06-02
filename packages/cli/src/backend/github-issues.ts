@@ -1,6 +1,9 @@
 import { execFileSync } from "node:child_process";
 import {
   type BackendTask,
+  type BackendCapabilities,
+  type ClaimTaskOptions,
+  type ClaimTaskResult,
   type CreateTaskInput,
   type TaskBackend,
   sortByPriority,
@@ -81,6 +84,11 @@ export function createGitHubIssuesBackend(
   config: GitHubIssuesConfig,
 ): TaskBackend {
   const repoArgs = config.repo ? ["--repo", config.repo] : [];
+  const capabilities: BackendCapabilities = {
+    claims: "external",
+    sourceOfTruth: "github-issues",
+    generatedSnapshot: false,
+  };
 
   function gh(args: string[]): string {
     return execFileSync("gh", args, {
@@ -117,6 +125,7 @@ export function createGitHubIssuesBackend(
 
   return {
     name: "GitHub Issues",
+    capabilities,
 
     async listOpen(): Promise<BackendTask[]> {
       assertAuth();
@@ -175,9 +184,16 @@ export function createGitHubIssuesBackend(
       };
     },
 
-    async claim(id: string): Promise<void> {
+    async claim(id: string, options?: ClaimTaskOptions): Promise<ClaimTaskResult> {
       assertAuth();
       gh(["issue", "edit", id, ...repoArgs, "--add-assignee", "@me"]);
+      return {
+        status: "claimed",
+        backend: "GitHub Issues",
+        taskId: id,
+        owner: options?.actorId ?? "@me",
+        capabilities,
+      };
     },
 
     async complete(id: string): Promise<void> {

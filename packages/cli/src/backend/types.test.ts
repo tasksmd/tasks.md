@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { PRIORITY_RANK, sortByPriority } from "./types.js";
+import {
+  formatClaimResult,
+  PRIORITY_RANK,
+  sortByPriority,
+  type BackendCapabilities,
+  type ClaimTaskResult,
+} from "./types.js";
 
 describe("sortByPriority", () => {
   it("orders P0 before P1 before P2 before P3", () => {
@@ -32,5 +38,45 @@ describe("sortByPriority", () => {
 
   it("PRIORITY_RANK maps P0..P3 to 0..3", () => {
     expect([PRIORITY_RANK.P0, PRIORITY_RANK.P1, PRIORITY_RANK.P2, PRIORITY_RANK.P3]).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe("claim results", () => {
+  it("formats collision-free claims with their fencing token", () => {
+    const capabilities: BackendCapabilities = {
+      claims: "collision-free",
+      sourceOfTruth: "log",
+      generatedSnapshot: true,
+    };
+    const result: ClaimTaskResult = {
+      status: "claimed",
+      backend: "git-native",
+      taskId: "ship-fleet-claims",
+      claimId: "claim-123",
+      owner: "devin",
+      capabilities,
+    };
+
+    expect(formatClaimResult(result)).toBe(
+      "Claimed ship-fleet-claims for devin with claim claim-123.",
+    );
+  });
+
+  it("formats best-effort file claims without pretending they are fenced", () => {
+    const result: ClaimTaskResult = {
+      status: "claimed",
+      backend: "TASKS.md",
+      taskId: "local-task",
+      owner: "devin",
+      capabilities: {
+        claims: "best-effort",
+        sourceOfTruth: "tasks-md",
+        generatedSnapshot: false,
+      },
+    };
+
+    expect(formatClaimResult(result)).toBe(
+      "Claimed local-task for devin using best-effort TASKS.md claims.",
+    );
   });
 });
