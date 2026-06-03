@@ -130,6 +130,7 @@ function makeTarget(roots: string[]): ConformanceTarget {
       collisionFree: true,
       generatedSnapshot: true,
       leases: true, // Phase 2: lease expiry + steal + fresh fencing token
+      mutableUpdate: true, // `update` patches a task in the log
       pathScopedEnforcement: true, // Phase 3: doc-only vs claim-fenced code pushes
       // The following are honest gaps for v1 (later phases):
       rawEventAppend: false, // raw-event injection not exposed by the backend

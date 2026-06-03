@@ -5,6 +5,7 @@ export type {
   ClaimStatus,
   ConformanceCapabilities,
   ConformanceReport,
+  ConformanceSummary,
   ConformanceTarget,
   ConformanceTask,
   ConformanceWorld,
@@ -13,7 +14,7 @@ export type {
   UpdateInput,
   WorkChange,
 } from "./types.js";
-export { allPassed, failed } from "./types.js";
+export { allPassed, failed, summarizeReport } from "./types.js";
 export { checks, runConformance } from "./runner.js";
 export { InMemoryFleet } from "./model.js";
 export { referenceTarget } from "./reference.js";

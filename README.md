@@ -182,6 +182,8 @@ The contract is the same on every backend: **humans read the queue and tell agen
 
 "Collision-free" means no two agents ever hold the same task at once — not a globally reproducible race winner; only the *fold of the log* is reproducible. Move an existing file queue to git-native with `tasks migrate` (dry-run by default). The portable layer is the spec; the coordination is borrowed.
 
+**Writing your own backend?** Any backend works behind the same surface if it passes the capability-scoped [`@tasks-md/conformance`](packages/conformance/) suite — implement a `ConformanceTarget`, run it, and publish the JSON report. tasks.md is not a backend registry; you self-certify which compatibility classes (file / operation / collision-free) you support.
+
 ## Writing Good Tasks
 
 The quality of your task description directly affects the quality of the agent's output. A task is a small contract between you and the agent — the more specific you are, the better the result.

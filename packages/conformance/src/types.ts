@@ -72,6 +72,8 @@ export interface ConformanceCapabilities {
   rawEventAppend: boolean;
   /** `blocked-by` tasks are unclaimable until their blockers close. */
   blockedBy: boolean;
+  /** `update` programmatically patches a task (false for human-edited file backends). */
+  mutableUpdate: boolean;
 }
 
 /**
@@ -125,4 +127,31 @@ export function allPassed(report: ConformanceReport): boolean {
 
 export function failed(report: ConformanceReport): CheckResult[] {
   return report.results.filter((result) => result.status === "fail");
+}
+
+export interface ConformanceSummary {
+  target: string;
+  certified: boolean;
+  passed: number;
+  failed: number;
+  skipped: number;
+  results: CheckResult[];
+}
+
+/**
+ * A stable, machine-readable summary that backend docs / CI can link or assert
+ * against. `certified` is true iff no check failed (skips are allowed — they
+ * mean "this backend doesn't claim that capability class").
+ */
+export function summarizeReport(report: ConformanceReport): ConformanceSummary {
+  const count = (status: CheckStatus) =>
+    report.results.filter((result) => result.status === status).length;
+  return {
+    target: report.target,
+    certified: allPassed(report),
+    passed: count("pass"),
+    failed: count("fail"),
+    skipped: count("skip"),
+    results: report.results,
+  };
 }

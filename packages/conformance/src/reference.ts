@@ -14,6 +14,7 @@ export const referenceTarget: ConformanceTarget = {
     pathScopedEnforcement: true,
     rawEventAppend: true,
     blockedBy: true,
+    mutableUpdate: true,
   },
   createWorld: () => new InMemoryFleet(),
 };

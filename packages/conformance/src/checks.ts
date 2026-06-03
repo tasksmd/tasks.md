@@ -106,7 +106,7 @@ export const checks: Check[] = [
   },
   {
     name: "human-command-path",
-    requires: [],
+    requires: ["mutableUpdate"],
     run: async (world) => {
       const task = await world.createTask("@alice", { id: "hcp", title: "Original" });
       await world.update("@alice", task.id, { title: "Updated title" });

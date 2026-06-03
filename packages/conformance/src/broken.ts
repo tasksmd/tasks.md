@@ -25,6 +25,7 @@ export const brokenTarget: ConformanceTarget = {
     pathScopedEnforcement: true,
     rawEventAppend: true,
     blockedBy: true,
+    mutableUpdate: true,
   },
   createWorld: () =>
     new InMemoryFleet({
