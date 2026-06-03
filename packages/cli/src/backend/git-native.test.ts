@@ -5,12 +5,14 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { runDoctor } from "../commands/fleet.js";
 import {
   autoRefreshEnabled,
   catFileBatch,
   compactGitNativeLog,
   createGitNativeBackend,
   forcePushCompaction,
+  gitNativeFleetStats,
   gitSpawnCount,
   parseGithubSlug,
   readEvents,
@@ -68,6 +70,32 @@ function makeClone(remote: string): string {
 
 function claimsTip(directory: string): string {
   return git(directory, ["rev-parse", "refs/heads/tasks-claims"]);
+}
+
+// Append a tasks-claims commit carrying a malformed event blob (mirrors
+// appendEvent) so the read path has a corrupt event to skip + count.
+function injectCorruptEvent(directory: string): void {
+  const indexPath = join(tmpdir(), `tasksmd-test-index-${directories.length}-${Date.now()}`);
+  const env = {
+    GIT_INDEX_FILE: indexPath,
+    GIT_AUTHOR_NAME: "t",
+    GIT_AUTHOR_EMAIL: "t@t.invalid",
+    GIT_COMMITTER_NAME: "t",
+    GIT_COMMITTER_EMAIL: "t@t.invalid",
+  };
+  git(directory, ["read-tree", "refs/heads/tasks-claims"], undefined, env);
+  const blob = git(directory, ["hash-object", "-w", "--stdin"], "{ not valid json");
+  git(
+    directory,
+    ["update-index", "--add", "--cacheinfo", "100644", blob, "events/zzz-corrupt.json"],
+    undefined,
+    env,
+  );
+  const tree = git(directory, ["write-tree"], undefined, env);
+  const parent = git(directory, ["rev-parse", "refs/heads/tasks-claims"]);
+  const commit = git(directory, ["commit-tree", tree, "-p", parent, "-m", "corrupt"], undefined, env);
+  git(directory, ["update-ref", "refs/heads/tasks-claims", commit], undefined, env);
+  rmSync(indexPath, { force: true });
 }
 
 describe("git-native backend", () => {
@@ -428,4 +456,32 @@ describe("readEvents — bounded fold cost", () => {
     expect(bigSpawns).toBe(smallSpawns); // O(1): identical despite 8x more events
     expect(smallSpawns).toBeLessThanOrEqual(3); // ~2: git log + cat-file --batch
   }, 30_000);
+});
+
+describe("error + health visibility", () => {
+  it("counts corrupt events in fleet stats and keeps folding the valid ones", async () => {
+    const dir = makeRepo("tasksmd-corrupt-");
+    const backend = createGitNativeBackend(dir);
+    await backend.create({ title: "Valid one", priority: "P1" });
+    injectCorruptEvent(dir);
+
+    const stats = gitNativeFleetStats(dir);
+    expect(stats.corruptEvents).toBe(1); // the malformed event is counted, not silently dropped
+    expect(stats.tasksCreated).toBe(1); // the valid event still folds
+    const open = await backend.listOpen();
+    expect(open.map((t) => t.id)).toContain("valid-one"); // corrupt event doesn't break the fold
+  });
+
+  it("tasks doctor warns when the log has corrupt events", async () => {
+    const dir = makeRepo("tasksmd-corrupt-");
+    writeFileSync(join(dir, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    const backend = createGitNativeBackend(dir);
+    await backend.create({ title: "Valid", priority: "P1" });
+    injectCorruptEvent(dir);
+
+    const report = await runDoctor(dir);
+    const integrity = report.checks.find((c) => c.name === "log integrity");
+    expect(integrity?.level).toBe("warn");
+    expect(integrity?.detail).toMatch(/corrupt/i);
+  });
 });

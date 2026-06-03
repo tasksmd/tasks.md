@@ -90,6 +90,16 @@ export function gitSpawnCount(): number {
   return gitSpawns;
 }
 
+let corruptEvents = 0;
+
+// Count of event blobs that existed in the log but failed to parse (malformed
+// JSON / wrong shape). `readEvents` skips them silently to stay robust; this
+// counter makes the skip observable (surfaced via fleet stats + `tasks doctor`).
+// Read the delta around a `readEvents` call to count one fold's corrupt events.
+export function corruptEventCount(): number {
+  return corruptEvents;
+}
+
 function git(
   directory: string,
   args: string[],
@@ -489,6 +499,10 @@ export function readEvents(directory: string): GitNativeEvent[] {
     const event = blob ? parseEvent(blob.toString("utf-8")) : undefined;
     if (event) {
       events.push(event);
+    } else if (blob) {
+      // The blob exists but is malformed (corrupt JSON / wrong shape). Skip it
+      // to stay robust, but count it so the loss is observable, not silent.
+      corruptEvents += 1;
     }
   }
   return events;
@@ -594,6 +608,8 @@ export interface FleetStats {
   reclaimedTasks: number;
   /** Live claims whose lease has already expired (dead-owner / stale heartbeat). */
   staleClaims: number;
+  /** Event blobs present in the log but unparseable (malformed) — silently skipped. */
+  corruptEvents: number;
   /**
    * Churn proxy: reclaimed ÷ distinct-tasks-ever-claimed. The git-native CAS
    * rejects lost claims WITHOUT appending an event, so the log cannot count
@@ -605,7 +621,9 @@ export interface FleetStats {
 /** Fold the tasks-claims log into contention/observability metrics (Phase 4). */
 export function gitNativeFleetStats(directory: string, now: number = Date.now()): FleetStats {
   fetchClaimsRef(directory);
+  const corruptBefore = corruptEventCount();
   const events = readEvents(directory);
+  const corruptInFold = corruptEventCount() - corruptBefore;
   const eventsByType: Record<GitNativeEventType, number> = {
     created: 0,
     updated: 0,
@@ -650,6 +668,7 @@ export function gitNativeFleetStats(directory: string, now: number = Date.now())
     actors: actors.size,
     reclaimedTasks,
     staleClaims,
+    corruptEvents: corruptInFold,
     contentionRatio: tasksEverClaimed === 0 ? 0 : reclaimedTasks / tasksEverClaimed,
   };
 }
