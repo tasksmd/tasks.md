@@ -1116,7 +1116,10 @@ export function applyMigration(directory: string, tasks: MigrationTask[]): void 
       appendEvent(
         directory,
         makeEvent(task.id, "claimed", { actorId: owner }, {
-          claim_id: `claim-migrated-${task.id}`,
+          // Random suffix — NOT the public task id. The claim_id is a fencing
+          // capability; a predictable `claim-migrated-<id>` would let anyone who
+          // knows the task id forge ownership (pass check-push / complete --claim).
+          claim_id: `claim-migrated-${randomUUID()}`,
           // Give the migrated claim a normal lease so a crashed/abandoned owner
           // is reclaimable after it expires (a lease-less claim is treated as
           // permanently live — see the reclaim check — which would pin a
