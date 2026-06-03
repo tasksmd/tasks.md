@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-2c884c3d-803e-4867-994a-649e02a33031",
+  "task_id": "expand-git-native-conformance-coverage-for-fleet-edge-cases",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:04:27.395Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Expand git-native conformance coverage for fleet edge cases",
+    "priority": "P2",
+    "tags": [
+      "git-native,conformance,stability"
+    ],
+    "body": "The 10 active properties prove collision-free claims, fencing, leases, blocked-by, idempotent projection. Add properties for the untested scenarios that matter at fleet scale: large-log fold performance, compaction racing a concurrent claim, clock skew / non-monotonic time on lease expiry, heartbeat under contention, and fencing rejecting a stale owners heartbeat after a steal."
+  }
+}
