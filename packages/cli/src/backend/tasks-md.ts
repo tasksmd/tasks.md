@@ -9,12 +9,17 @@ import {
   pickBestTask,
 } from "@tasks-md/parser";
 import {
+  type ActorOptions,
   type BackendTask,
   type ClaimTaskOptions,
   type ClaimTaskResult,
   type CreateTaskInput,
+  type OperationResult,
+  type RenderResult,
   type TaskBackend,
+  type UpdateTaskInput,
   sortByPriority,
+  unsupportedResult,
 } from "./types.js";
 
 function toTask(task: Task): BackendTask {
@@ -47,6 +52,19 @@ export function createTasksMdBackend(directory: string): TaskBackend {
       claims: "best-effort",
       sourceOfTruth: "tasks-md",
       generatedSnapshot: false,
+      supportsLeases: false,
+      requiresRemote: false,
+      humanEditableSnapshot: true,
+      operations: {
+        create: true,
+        update: false,
+        claim: true,
+        release: true,
+        complete: true,
+        cancel: true,
+        render: true,
+        list: true,
+      },
     },
 
     async listOpen(): Promise<BackendTask[]> {
@@ -123,28 +141,68 @@ export function createTasksMdBackend(directory: string): TaskBackend {
       };
     },
 
-    async complete(id: string): Promise<void> {
-      const taskFiles = loadAllTasks(directory);
-      const matches = findTasksById(taskFiles, id);
+    async update(id: string, _patch: UpdateTaskInput): Promise<OperationResult> {
+      return unsupportedResult(
+        "TASKS.md",
+        "update",
+        "the file backend is human-editable — edit the task block in TASKS.md directly",
+        id,
+      );
+    },
+
+    async release(id: string, _options?: ActorOptions): Promise<OperationResult> {
+      const matches = findTasksById(loadAllTasks(directory), id);
       if (matches.length === 0) {
         throw new Error(`No TASKS.md task with id "${id}".`);
       }
-      // Remove the task's block from its file (history lives in git log).
-      const byFile = new Map<string, Task[]>();
-      for (const task of matches) {
-        const list = byFile.get(task.file) ?? [];
-        list.push(task);
-        byFile.set(task.file, list);
+      const task = matches[0];
+      if (!task.claimed) {
+        return { status: "noop", backend: "TASKS.md", operation: "release", taskId: id };
       }
-      for (const [file, tasks] of byFile) {
-        const lines = readFileSync(file, "utf-8").split("\n");
-        // remove from the bottom up so indices stay valid
-        const ordered = [...tasks].sort((a, b) => b.startLine - a.startLine);
-        for (const task of ordered) {
-          lines.splice(task.startLine, task.endLine - task.startLine + 1);
-        }
-        writeFileSync(file, lines.join("\n"));
-      }
+      const lines = readFileSync(task.file, "utf-8").split("\n");
+      const index = task.startLine - 1;
+      lines[index] = lines[index].replace(/\s*\(@[^)]+\)\s*$/, "");
+      writeFileSync(task.file, lines.join("\n"));
+      return { status: "ok", backend: "TASKS.md", operation: "release", taskId: id };
+    },
+
+    async complete(id: string): Promise<OperationResult> {
+      removeTaskBlocks(directory, id);
+      return { status: "ok", backend: "TASKS.md", operation: "complete", taskId: id };
+    },
+
+    async cancel(id: string): Promise<OperationResult> {
+      removeTaskBlocks(directory, id);
+      return { status: "ok", backend: "TASKS.md", operation: "cancel", taskId: id };
+    },
+
+    async render(): Promise<RenderResult> {
+      // The file IS the surface: "rendering" is just reading it back.
+      const content = existsSync(tasksFile) ? readFileSync(tasksFile, "utf-8") : "";
+      return { status: "ok", backend: "TASKS.md", content };
     },
   };
+}
+
+/** Remove a task's full block(s) from their file(s). History lives in git log. */
+function removeTaskBlocks(directory: string, id: string): void {
+  const matches = findTasksById(loadAllTasks(directory), id);
+  if (matches.length === 0) {
+    throw new Error(`No TASKS.md task with id "${id}".`);
+  }
+  const byFile = new Map<string, Task[]>();
+  for (const task of matches) {
+    const list = byFile.get(task.file) ?? [];
+    list.push(task);
+    byFile.set(task.file, list);
+  }
+  for (const [file, tasks] of byFile) {
+    const lines = readFileSync(file, "utf-8").split("\n");
+    // remove from the bottom up so indices stay valid
+    const ordered = [...tasks].sort((a, b) => b.startLine - a.startLine);
+    for (const task of ordered) {
+      lines.splice(task.startLine, task.endLine - task.startLine + 1);
+    }
+    writeFileSync(file, lines.join("\n"));
+  }
 }

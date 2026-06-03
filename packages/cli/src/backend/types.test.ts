@@ -47,6 +47,19 @@ describe("claim results", () => {
       claims: "collision-free",
       sourceOfTruth: "log",
       generatedSnapshot: true,
+      supportsLeases: true,
+      requiresRemote: false,
+      humanEditableSnapshot: false,
+      operations: {
+        create: true,
+        update: true,
+        claim: true,
+        release: true,
+        complete: true,
+        cancel: true,
+        render: true,
+        list: true,
+      },
     };
     const result: ClaimTaskResult = {
       status: "claimed",
@@ -72,6 +85,19 @@ describe("claim results", () => {
         claims: "best-effort",
         sourceOfTruth: "tasks-md",
         generatedSnapshot: false,
+        supportsLeases: false,
+        requiresRemote: false,
+        humanEditableSnapshot: true,
+        operations: {
+          create: true,
+          update: false,
+          claim: true,
+          release: true,
+          complete: true,
+          cancel: true,
+          render: true,
+          list: true,
+        },
       },
     };
 

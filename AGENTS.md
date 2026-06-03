@@ -110,6 +110,8 @@ Generated variants regenerated from each canonical source:
 |-----------|--------------------|
 | `commands/next-task.md` | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/devin/skills/next-task/SKILL.md`, `commands/gemini/next-task.toml`, `commands/windsurf/next-task.md` |
 | `commands/lint-tasks.md` | `commands/claude/skills/lint-tasks/SKILL.md`, `commands/codex/skills/lint-tasks/SKILL.md`, `commands/cursor/lint-tasks.md`, `commands/devin/skills/lint-tasks/SKILL.md`, `commands/gemini/lint-tasks.toml`, `commands/windsurf/lint-tasks.md` |
+| `commands/setup.md` | `commands/claude/skills/setup/SKILL.md`, `commands/codex/skills/setup/SKILL.md`, `commands/cursor/setup.md`, `commands/devin/skills/setup/SKILL.md`, `commands/gemini/setup.toml`, `commands/windsurf/setup.md` |
+| `commands/migrate.md` | `commands/claude/skills/migrate/SKILL.md`, `commands/codex/skills/migrate/SKILL.md`, `commands/cursor/migrate.md`, `commands/devin/skills/migrate/SKILL.md`, `commands/gemini/migrate.toml`, `commands/windsurf/migrate.md` |
 
 Other files that may need to change in the same commit when behavior
 shifts:
@@ -153,23 +155,78 @@ appropriate source repo.
 
 ## Task Queue Policy
 
-- Read `TASKS.md` before starting work and obey any `<!-- policy: ... -->`
-  comments.
-- Claim tasks by appending your agent identity, for example `(@devin-session-17)`.
+This repo runs the **git-native backend** (`.tasksmd.json` declares
+`"backend": "git-native"`) — it dogfoods the collision-free backend it recommends
+for collaborative repos (VISION G8). So **`TASKS.md` here is a generated snapshot,
+not the source of truth** — never hand-edit it. Task state lives in the
+`tasks-claims` git ref; you mutate it through the `tasks` CLI (or the `tasks-mcp`
+tools), and the projection job regenerates `TASKS.md`. The backend-aware snippet
+at the end of this section is what consumers copy; see also
+[`spec.md` § Task backends](spec.md#task-backends) and
+[§ Fleet coordination](spec.md#fleet-coordination).
+
+- Read `TASKS.md` (or `tasks list` / `tasks pick`) for available work. Treat
+  `tasks list` as authoritative — `TASKS.md` on disk may lag the log between
+  projection runs. **Repo policy** (the queue is tech-lead-curated): pick in
+  priority order, focus on hardening user stories and simplifying CLI features,
+  and do **not** roam beyond the `tasks.md` repo. (This lived in a `<!-- policy -->`
+  comment under the file backend; on git-native it lives here, since `TASKS.md`
+  is generated.)
+- **Claim before working:** `tasks claim <id>` — it returns a `claimId` fencing
+  token and is collision-free; a lost race exits nonzero, so pick another task.
 - For non-trivial tasks, write a plan to `docs/plans/<task-id>.md` by copying
   `docs/templates/plan-template.md`, then validate it with a reviewer subagent
   (`reviewer` profile, fallback chain `qa-engineer` → `researcher`). Commit
   the plan + the appended `## Reviewer verdict` block (`**Verdict**: approved`)
   before any implementation commit lands. Trivial tasks — single file under 30
-  minutes with an obvious fix — skip the plan step. The legacy `**Plan**:`
-  TASKS.md checklist is superseded; see `commands/next-task.md` § "Plan and
-  validate" for the full rules.
-- Do not mark completed tasks `[x]`; remove the entire task block, including all
-  metadata and plan lines. History lives in git.
+  minutes with an obvious fix — skip the plan step. See `commands/next-task.md`
+  § "Plan and validate" for the full rules.
+- **Complete via the CLI**, never by editing `TASKS.md`: `tasks complete <id>`
+  appends a `completed` event and the projection refreshes the snapshot. Add a
+  task with `tasks create "<title>"`, release one with `tasks unclaim <id>`.
+  History lives in the `tasks-claims` log + git.
 - If a task requires public writes, external purchases, publishing, or another
-  blocked action, add a `**Blocked**:` reason instead of attempting it.
+  blocked action, mark it blocked (`tasks update <id> --blocked "<reason>"`)
+  instead of attempting it — a blocked task is skipped by `tasks next` and
+  rejected by `tasks claim`.
+- Code commits that change non-markdown files should carry `Task: <id>` and
+  `Task-Claim: <claimId>` trailers — the path-scoped claim-check gate
+  (`.github/workflows/tasks-claim-check.yml`) requires them on protected branches.
 - Commit only scoped files or hunks. Never use `git add -A`, `git add .`,
   `git reset --hard`, `git checkout --`, or `git clean -fd` in a multi-agent
   worktree.
-- Commit TASKS.md claim/plan/block updates separately from implementation when
-  practical, then remove the completed task in the implementation commit.
+- The `tasks-claims` ref is local until pushed: a one-time
+  `git push origin refs/heads/tasks-claims` (operator action) makes the queue
+  live for CI's projection job and other contributors.
+
+### Canonical backend-aware policy snippet
+
+Copy this into another repo's `AGENTS.md` / `CLAUDE.md` / Cursor rules so agents
+learn the backend-aware default rather than a file-only one:
+
+```markdown
+## Task Management
+- Read `TASKS.md` for available work; obey any `<!-- policy: ... -->` comments.
+- Determine the backend from `.tasksmd.json` (default: file backend `tasks-md`).
+  - **File backend:** claim by appending `(@you)` to the task line; complete by
+    removing the whole task block (history lives in git log). Best-effort.
+  - **Generated backend** (`git-native` / `github-issues`): `TASKS.md` is a
+    generated snapshot — never hand-edit it. Use `tasks claim <id>` /
+    `tasks complete <id>` / `tasks create "<title>"` (or the `tasks-mcp` tools);
+    git-native claims are collision-free with a `claimId` fencing token.
+- Pick highest-priority unblocked task (P0→P3); skip others' claims and blocked tasks.
+```
+
+### Downstream drift (outside this repo)
+
+Operators have copied the older **file-only** snippet into other repos. Replace it
+with the snippet above wherever it appears. The exact file-backend-only phrasings to
+find-and-replace — "Claim tasks by appending `(@agent)`" / "edit `TASKS.md` directly" — appear at these locations: <!-- drift-allow: names the banned phrasings to replace -->
+
+- `~/.config/agentbrew/` shared rules and `global_rules.md` "TASKS.md Format" /
+  "Task Backend Configuration" sections.
+- Any downstream repo `AGENTS.md` / `CLAUDE.md` whose Task-Management section
+  predates the backend split.
+
+These live outside this repo, so they are recorded here rather than edited; a
+maintainer (or an `agentbrew sync`) propagates the backend-aware snippet.

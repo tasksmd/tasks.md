@@ -58,4 +58,42 @@ describe("tasks-md backend", () => {
   it("complete throws for an unknown id", async () => {
     await expect(createTasksMdBackend(dir).complete("nope")).rejects.toThrow(/No TASKS.md task/);
   });
+
+  it("complete returns an ok operation result", async () => {
+    const result = await createTasksMdBackend(dir).complete("fix-urgent");
+    expect(result).toMatchObject({ status: "ok", operation: "complete", taskId: "fix-urgent" });
+  });
+
+  it("cancel removes the block like complete", async () => {
+    const result = await createTasksMdBackend(dir).cancel("fix-urgent");
+    expect(result).toMatchObject({ status: "ok", operation: "cancel" });
+    expect(readFileSync(join(dir, "TASKS.md"), "utf-8")).not.toContain("fix-urgent");
+  });
+
+  it("claim then release strips the (@owner) suffix", async () => {
+    const backend = createTasksMdBackend(dir);
+    await backend.claim("fix-urgent", { actorId: "@alice" });
+    expect(readFileSync(join(dir, "TASKS.md"), "utf-8")).toContain("(@alice)");
+    const result = await backend.release("fix-urgent");
+    expect(result.status).toBe("ok");
+    expect(readFileSync(join(dir, "TASKS.md"), "utf-8")).not.toContain("(@alice)");
+  });
+
+  it("release on an unclaimed task is a no-op", async () => {
+    const result = await createTasksMdBackend(dir).release("fix-urgent");
+    expect(result.status).toBe("noop");
+  });
+
+  it("update is unsupported (file backend is human-editable)", async () => {
+    const result = await createTasksMdBackend(dir).update("fix-urgent", { title: "x" });
+    expect(result.status).toBe("unsupported");
+    expect(result.reason).toMatch(/human-editable/);
+  });
+
+  it("render returns the TASKS.md contents", async () => {
+    const result = await createTasksMdBackend(dir).render();
+    expect(result.status).toBe("ok");
+    expect(result.content).toContain("# Tasks");
+    expect(result.content).toContain("fix-urgent");
+  });
 });

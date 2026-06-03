@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  compactGitNativeLog,
   createGitNativeBackend,
   renderGitNativeSnapshot,
 } from "./git-native.js";
@@ -139,5 +140,99 @@ describe("git-native backend", () => {
     await expect(backend.listOpen()).resolves.toMatchObject([
       { id: "keep-valid-events" },
     ]);
+  });
+
+  it("renews a lease with a heartbeat so a live owner is not stolen from", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    let clock = 0;
+    const backend = createGitNativeBackend(directory, { now: () => clock, leaseMs: 1000 });
+    await backend.create({ title: "Leased", priority: "P1" });
+
+    const claim = await backend.claim("leased", { actorId: "@alice" }); // lease → 1000
+    expect(claim.status).toBe("claimed");
+
+    clock = 900; // before expiry; renew → lease → 1900
+    expect((await backend.heartbeat?.("leased", { actorId: "@alice" }))?.status).toBe("ok");
+
+    clock = 1500; // past the ORIGINAL lease (1000) but within the renewed one (1900)
+    const contested = await backend.claim("leased", { actorId: "@bob" });
+    expect(contested.status).toBe("already_claimed");
+
+    clock = 2000; // past the renewed lease → stealable
+    expect((await backend.claim("leased", { actorId: "@bob" })).status).toBe("claimed");
+  });
+
+  it("rejects a stale fencing token after the lease is stolen (crash recovery)", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    let clock = 0;
+    const backend = createGitNativeBackend(directory, { now: () => clock, leaseMs: 1000 });
+    await backend.create({ title: "Fenced", priority: "P0" });
+
+    const aliceClaim = await backend.claim("fenced", { actorId: "@alice" });
+    expect(aliceClaim.claimId).toBeDefined();
+
+    clock = 2000; // alice's lease expired
+    const bobClaim = await backend.claim("fenced", { actorId: "@bob" }); // steal
+    expect(bobClaim.status).toBe("claimed");
+    expect(bobClaim.claimId).not.toBe(aliceClaim.claimId);
+
+    // Alice restarts and tries to complete with her now-stale token → rejected.
+    const stale = await backend.complete("fenced", {
+      actorId: "@alice",
+      claimId: aliceClaim.claimId,
+    });
+    expect(stale.status).toBe("conflict");
+
+    // Bob, the live owner, completes with the current token.
+    const ok = await backend.complete("fenced", { actorId: "@bob", claimId: bobClaim.claimId });
+    expect(ok.status).toBe("ok");
+  });
+
+  it("models blocked + blocked-by: unpickable, unclaimable, and rendered", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    const backend = createGitNativeBackend(directory);
+    await backend.create({ title: "Blocker", priority: "P0" });
+    await backend.create({ title: "Dependent", priority: "P0", blockedBy: ["blocker"] });
+    await backend.create({ title: "External", priority: "P0", blocked: "needs-user-approval" });
+    await backend.create({ title: "Free work", priority: "P1" });
+
+    // next() skips the blocked-by-dependent and the externally-blocked task,
+    // and the P0 blocker outranks the free P1 — so the blocker is picked first.
+    expect((await backend.next())?.id).toBe("blocker");
+    // The dependent cannot be claimed while its blocker is open.
+    expect((await backend.claim("dependent", { actorId: "@a" })).status).toBe("blocked");
+    // The externally-blocked task cannot be claimed at all.
+    expect((await backend.claim("external", { actorId: "@a" })).status).toBe("blocked");
+
+    // Complete the blocker → the dependent becomes pickable + claimable.
+    await backend.complete("blocker", { actorId: "@a" });
+    expect((await backend.next())?.id).toBe("dependent");
+    expect((await backend.claim("dependent", { actorId: "@b" })).status).toBe("claimed");
+
+    // The snapshot round-trips the blocked metadata so it lints clean.
+    const snapshot = await renderGitNativeSnapshot(directory);
+    expect(snapshot).toContain("**Blocked**: needs-user-approval");
+    expect(snapshot).toContain("**Blocked by**: blocker");
+  });
+
+  it("compacts the log to a fold-equivalent open-task state", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    const backend = createGitNativeBackend(directory);
+    await backend.create({ title: "Keep open", priority: "P1", tags: ["a"] });
+    await backend.create({ title: "Keep claimed", priority: "P0" });
+    await backend.create({ title: "Will finish", priority: "P2" });
+    await backend.claim("keep-claimed", { actorId: "@alice" });
+    await backend.complete("will-finish", { actorId: "@bob" });
+
+    const before = await backend.listOpen();
+    const beforeSnapshot = await renderGitNativeSnapshot(directory);
+
+    const result = compactGitNativeLog(directory);
+    expect(result.after).toBeLessThan(result.before); // dropped the completed task's events
+
+    const after = await backend.listOpen();
+    expect(after).toEqual(before); // open-task fold is identical
+    expect(after.find((t) => t.id === "keep-claimed")?.assignee).toBe("alice");
+    expect(await renderGitNativeSnapshot(directory)).toBe(beforeSnapshot);
   });
 });

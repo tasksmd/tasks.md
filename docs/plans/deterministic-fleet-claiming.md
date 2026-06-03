@@ -7,6 +7,7 @@
 - **Task**: `deterministic-fleet-claiming`
 - **Repo**: `~/apps/tooling/tasks.md`
 - **Research**: [`fleet-claiming.md`](../research/fleet-claiming.md); [`gitbug-reuse-spike.md`](../research/gitbug-reuse-spike.md)
+- **Security**: [`git-native-claims-threat-model.md`](../security/git-native-claims-threat-model.md) — trust boundaries, threats, v1-vs-Phase-3 mitigations, CI guidance
 - **Author**: devin (claude-opus-4.x) session 2026-06-02
 - **Status**: **design-approved; integration-UNPROVEN** — nothing is "validated" until the
   conformance suite (Step 2) passes against a running adapter (Step 4). The git-bug spike
@@ -144,10 +145,28 @@ corporate-safe because it always runs and decides by path, never bypasses.
 - **Phase 1 (v1 — this plan):** log-first state + collision-free CAS claim + dispersion +
   client path-scoped `pre-push` check + the generated `TASKS.md` snapshot job. Long-lease
   field for dead-claim reclaim. **Solves the stated goal; thin; provable by the suite.**
-- **Phase 2:** robust leases + crash/offline handling + heartbeats + log snapshots/compaction.
-- **Phase 3:** server-side hard enforcement (Ruleset + required check + `pre-receive`).
+- **Phase 2 (done):** robust leases + heartbeats + steal + crash-recovery fencing + log
+  compaction. Shipped in `git-native.ts` (injectable clock, `heartbeat()`, fencing on
+  `complete`/`release`, `compactGitNativeLog`), surfaced via `tasks doctor` (stale-heartbeat
+  + compaction health) and `tasks fleet compact`, and proven by the conformance
+  `lease-expiry-and-steal` property + git-native unit tests. Laptop/offline fleets are now
+  supported; lease is renewed by heartbeats with a 24h dead-owner backstop.
+- **Phase 3 (shipped, operator-gated):** the path-scoped claim gate is one primitive —
+  `tasks check-push` / `checkWorkPush` (proven by the `path-scoped-enforcement` + `claim-fencing`
+  conformance properties) — wired into the generated `tasks-claim-check.yml` required check, the
+  client hook, and a `pre-receive` recipe (GHE/GitLab/Gitea). `tasks doctor` reports the
+  enforcement level (absent → advisory → hard). What's left to the operator: mark the check
+  *required* on a ruleset that also blocks force-push/delete of `tasks-claims`.
 - **Phase 4 (only if measured):** adopt a CRDT engine (git-bug/grite/Automerge-on-git) to
   drop the retry loop under high contention; HRW partitioning; per-host batching.
+
+> **Tripwire (concrete, shipped):** `tasks fleet stats` folds the `tasks-claims` log and
+> reports a **contention ratio** = reclaimed-tasks ÷ distinct-tasks-ever-claimed (the
+> CAS rejects lost claims without an event, so re-claims are the observable signal). The
+> tripwire is **contention ratio > 0.20** (`CONTENTION_TRIPWIRE` in
+> `packages/cli/src/commands/fleet.ts`). Below it, linear-CAS is sufficient and **no Phase-4
+> CRDT/HRW task may proceed**; above it (or with a written operator override), re-run the
+> engine bake-off. The command prints which side of the tripwire the repo is on.
 
 ## v1 constraints (explicit preconditions — what v1 does NOT yet cover)
 - **Always-on machines.** v1 assumes the fleet is always-on (servers / CI runners). A
@@ -194,6 +213,13 @@ never conflict on `TASKS.md`, because work never touches it), **path-scoped enfo
 real adapters pass; publish it only after the interface stabilizes. Verify: the suite **fails
 a deliberately-broken stub**.
 
+> **Status (Step 2 done):** `packages/conformance/` ships the runnable harness — a
+> `ConformanceTarget` contract + `runConformance()` runner + 11 checks. An in-memory
+> reference target passes all 11; a deliberately-broken stub fails exactly 5 (same-task
+> race, lease-steal, claim fencing, idempotent projection, path-scoped enforcement). The
+> package is `private` until file/Issues/git-native adapters exercise it (public path =
+> `backend-conformance-self-certification`).
+
 ### Step 3: Linear-CAS first; CRDT only if earned
 The engine choice is deferred *until the conformance suite is written*, so the suite drives
 the decision. Implement a **linear-CAS prototype first** (reuse git ref-CAS; no engine). If
@@ -203,10 +229,21 @@ only when linear-CAS fails conformance or measured contention justifies the depe
 Record adapter LOC, dependency/licence cost, and contention behavior for whichever path is
 chosen.
 
+> **Status (Step 3 done — linear-CAS wins):** the git-native backend (linear-CAS, the only
+> "engine" is git's ref-CAS) was run against `@tasks-md/conformance` and passes 6/6
+> applicable checks. v1 ships with **no CRDT engine** (0 new deps). The bake-off evidence
+> table + the real bug the suite caught are in
+> [`../research/gitbug-reuse-spike.md`](../research/gitbug-reuse-spike.md) § "Bake-off RESULT".
+
 ### Step 4: Thin reference adapter (`git-claims`)
 Implement the chosen path behind `TaskBackend`: `claim` = silent-retry CAS; `next` = the
 reconciled+dispersed picker over the log; `complete`/`release`/`cancel`/`create` = log
 appends. Verify: the Step-2 suite passes against the adapter.
+
+> **Status (Step 4 done):** `git-native` is wired into `.tasksmd.json`/`createBackend`,
+> implements create/update/claim/release/complete/cancel/render over the log, verifies
+> claim win/loss against the remote (non-ff → yield), and silent-retries append ops with
+> bounded backoff+jitter. It passes `@tasks-md/conformance`. Engine = linear-CAS, no CRDT.
 
 ### Step 5: Generated `TASKS.md` + client enforcement
 The single-writer regeneration job (on `tasks-claims` push → render fold(log) → update the

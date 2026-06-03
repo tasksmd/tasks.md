@@ -8,6 +8,8 @@ import {
   GEMINI_DESCRIPTION,
   LINT_TASKS_DESCRIPTION,
   LINT_TASKS_GEMINI_DESCRIPTION,
+  MIGRATE_DESCRIPTION,
+  MIGRATE_GEMINI_DESCRIPTION,
 } from "./generate-commands.js";
 
 let tempDir: string;
@@ -44,11 +46,28 @@ npx @tasks-md/lint --fix <file>
 \`\`\`
 `;
 
+const SETUP_CANONICAL = `## Set up tasks.md in this repo
+
+Install the workflow for the agent you are: \`tasks install --agent {{AGENT_EXAMPLE}}\`.
+`;
+
+const MIGRATE_CANONICAL = `## Migrate this repo to the git-native backend
+
+Convert the queue from the file backend to the collision-free git-native backend.
+
+\`\`\`bash
+npx -y @tasks-md/cli migrate --apply
+npx -y @tasks-md/cli fleet init
+\`\`\`
+`;
+
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), "gen-commands-test-"));
   mkdirSync(join(tempDir, "commands"), { recursive: true });
   writeFileSync(join(tempDir, "commands", "next-task.md"), NEXT_TASK_CANONICAL);
   writeFileSync(join(tempDir, "commands", "lint-tasks.md"), LINT_TASKS_CANONICAL);
+  writeFileSync(join(tempDir, "commands", "setup.md"), SETUP_CANONICAL);
+  writeFileSync(join(tempDir, "commands", "migrate.md"), MIGRATE_CANONICAL);
 });
 
 afterEach(() => {
@@ -67,6 +86,24 @@ describe("generateCommands", () => {
       expect(existsSync(join(tempDir, "commands/devin/skills/next-task/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/windsurf/next-task.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/gemini/next-task.toml"))).toBe(true);
+    });
+
+    it("generates the setup command for all 6 agents with per-agent install names", () => {
+      const result = generateCommands(tempDir);
+      expect(result.errors).toHaveLength(0);
+      expect(existsSync(join(tempDir, "commands/claude/skills/setup/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/codex/skills/setup/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/cursor/setup.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/devin/skills/setup/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/windsurf/setup.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/gemini/setup.toml"))).toBe(true);
+      // {{AGENT_EXAMPLE}} resolves to the agent's own install name.
+      expect(readFileSync(join(tempDir, "commands/devin/skills/setup/SKILL.md"), "utf-8")).toContain(
+        "tasks install --agent devin",
+      );
+      expect(readFileSync(join(tempDir, "commands/cursor/setup.md"), "utf-8")).toContain(
+        "tasks install --agent cursor",
+      );
     });
 
     it("substitutes agent examples in each file", () => {
@@ -231,6 +268,36 @@ describe("generateCommands", () => {
     });
   });
 
+  describe("migrate variants", () => {
+    it("generates all 6 migrate agent variants", () => {
+      const result = generateCommands(tempDir);
+      expect(result.errors).toHaveLength(0);
+      expect(existsSync(join(tempDir, "commands/claude/skills/migrate/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/codex/skills/migrate/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/cursor/migrate.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/devin/skills/migrate/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/windsurf/migrate.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/gemini/migrate.toml"))).toBe(true);
+    });
+
+    it("uses MIGRATE_DESCRIPTION across markdown variants and the gemini TOML description", () => {
+      generateCommands(tempDir);
+      for (const path of [
+        "commands/claude/skills/migrate/SKILL.md",
+        "commands/codex/skills/migrate/SKILL.md",
+        "commands/devin/skills/migrate/SKILL.md",
+        "commands/windsurf/migrate.md",
+      ]) {
+        expect(readFileSync(join(tempDir, path), "utf-8")).toContain(
+          `description: ${MIGRATE_DESCRIPTION}`,
+        );
+      }
+      expect(readFileSync(join(tempDir, "commands/gemini/migrate.toml"), "utf-8")).toContain(
+        `description = "${MIGRATE_GEMINI_DESCRIPTION}"`,
+      );
+    });
+  });
+
   describe("error handling", () => {
     it("returns error when next-task canonical source is missing", () => {
       rmSync(join(tempDir, "commands", "next-task.md"));
@@ -256,10 +323,12 @@ describe("generateCommands", () => {
     });
   });
 
-  it("reports generated entries for both commands", () => {
+  it("reports generated entries for all commands", () => {
     const result = generateCommands(tempDir);
-    expect(result.generated.length).toBe(12); // 6 agents × 2 commands
+    expect(result.generated.length).toBe(24); // 6 agents × 4 commands
     expect(result.generated).toContain("next-task/claude");
     expect(result.generated).toContain("lint-tasks/claude");
+    expect(result.generated).toContain("setup/claude");
+    expect(result.generated).toContain("migrate/claude");
   });
 });

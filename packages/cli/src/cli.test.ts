@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { existsSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { parseTasksContent, type TaskFile } from "@tasks-md/parser";
@@ -759,6 +759,187 @@ describe("CLI", () => {
       });
     } finally {
       rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("claim/unclaim/cancel --json round-trip on the git-native backend", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    spawnSync("git", ["init"], { cwd: dir });
+    const gn = ["--backend", "git-native"];
+    try {
+      spawnSync("node", [CLI, "create", "Round trip", ...gn], { encoding: "utf-8", cwd: dir });
+
+      const claim = spawnSync("node", [CLI, "claim", "round-trip", ...gn, "--as", "@alice", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(claim.status).toBe(0);
+      const claimed = JSON.parse(claim.stdout.trim());
+      expect(claimed).toMatchObject({ status: "claimed", owner: "alice" });
+      expect(claimed.claimId).toMatch(/^claim-/);
+
+      // A second claim by another actor must fail (collision-free).
+      const second = spawnSync("node", [CLI, "claim", "round-trip", ...gn, "--as", "@bob", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(second.status).toBe(1);
+      expect(JSON.parse(second.stdout.trim()).status).toBe("already_claimed");
+
+      const unclaim = spawnSync("node", [CLI, "unclaim", "round-trip", ...gn, "--as", "@alice", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(unclaim.status).toBe(0);
+      expect(JSON.parse(unclaim.stdout.trim())).toMatchObject({ status: "ok", operation: "release" });
+
+      // render returns the generated snapshot.
+      const render = spawnSync("node", [CLI, "render", ...gn], { encoding: "utf-8", cwd: dir });
+      expect(render.status).toBe(0);
+      expect(render.stdout).toContain("Round trip");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("update is unsupported on the file backend with an actionable message", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Edit me\n  - **ID**: edit-me\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "update", "edit-me", "--title", "New", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(result.status).toBe(1);
+      expect(JSON.parse(result.stdout.trim())).toMatchObject({
+        status: "unsupported",
+        operation: "update",
+      });
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("check-push allows doc-only pushes and fences code under docs/", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const docs = spawnSync(
+        "node",
+        [CLI, "check-push", "docs/readme.md", "TASKS.md"],
+        { encoding: "utf-8", cwd: dir },
+      );
+      expect(docs.status).toBe(0);
+      expect(docs.stdout).toMatch(/allowed/);
+
+      // Executable code under docs/ without a claim must be rejected.
+      const code = spawnSync("node", [CLI, "check-push", "docs/migrate.py"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(code.status).toBe(1);
+      expect(code.stderr).toMatch(/rejected/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("aggregates next across an explicit --workspaces list", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-ws-test-"));
+    try {
+      mkdirSync(join(dir, "tooling", "alpha"), { recursive: true });
+      mkdirSync(join(dir, "oncall", "api"), { recursive: true });
+      writeFileSync(join(dir, "tooling", "alpha", "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] FE\n  - **ID**: fe\n");
+      writeFileSync(join(dir, "oncall", "api", "TASKS.md"), "# Tasks\n\n## P0\n\n- [ ] API\n  - **ID**: api-fix\n");
+      const result = spawnSync(
+        "node",
+        [CLI, "next", "--workspaces", `${join(dir, "tooling")},${join(dir, "oncall")}`, "--json"],
+        { encoding: "utf-8", cwd: dir },
+      );
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed).toMatchObject({ picked: true, workspace: "oncall", repo: "api", id: "api-fix", priority: "P0" });
+      expect(parsed.ref).toBe("oncall::api:api-fix");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("workspaces add then list round-trips through the per-user config", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-ws-test-"));
+    const xdg = mkdtempSync(join(tmpdir(), "tasks-xdg-"));
+    const env = { ...process.env, XDG_CONFIG_HOME: xdg };
+    try {
+      mkdirSync(join(dir, "alpha"), { recursive: true });
+      writeFileSync(join(dir, "alpha", "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] A\n  - **ID**: a\n");
+      const add = spawnSync("node", [CLI, "workspaces", "add", dir, "--name", "demo"], { encoding: "utf-8", env });
+      expect(add.status).toBe(0);
+      expect(add.stdout).toMatch(/Added workspace "demo"/);
+
+      const list = spawnSync("node", [CLI, "workspaces", "list"], { encoding: "utf-8", env });
+      expect(list.stdout).toMatch(/demo/);
+
+      // No flag + a configured workspace → aggregates automatically.
+      const next = spawnSync("node", [CLI, "next", "--json"], { encoding: "utf-8", cwd: dir, env });
+      expect(JSON.parse(next.stdout.trim())).toMatchObject({ picked: true, workspace: "demo", id: "a" });
+    } finally {
+      rmSync(dir, { recursive: true });
+      rmSync(xdg, { recursive: true });
+    }
+  });
+
+  it("aggregates markdown and non-markdown (git-native) repos in one ranked list", () => {
+    const ws = mkdtempSync(join(tmpdir(), "tasks-ws-mixed-"));
+    try {
+      // Markdown repo with a P1 task.
+      mkdirSync(join(ws, "md-repo"), { recursive: true });
+      writeFileSync(join(ws, "md-repo", "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Frontend\n  - **ID**: fe\n");
+      // git-native repo declaring the backend, with a higher-priority P0 task.
+      const gn = join(ws, "gn-repo");
+      mkdirSync(gn, { recursive: true });
+      spawnSync("git", ["init"], { cwd: gn });
+      writeFileSync(join(gn, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+      const created = spawnSync(
+        "node",
+        [CLI, "create", "Urgent backend fix", "--backend", "git-native", "--priority", "P0"],
+        { encoding: "utf-8", cwd: gn },
+      );
+      expect(created.status).toBe(0);
+
+      const result = spawnSync("node", [CLI, "next", "--workspace", ws, "--json"], {
+        encoding: "utf-8",
+        cwd: ws,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      // The git-native P0 outranks the markdown P1 across backends.
+      expect(parsed).toMatchObject({ picked: true, repo: "gn-repo", priority: "P0", backend: "git-native" });
+    } finally {
+      rmSync(ws, { recursive: true });
+    }
+  });
+
+  it("falls back to single-repo pick when no workspace config or flags exist", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-ws-test-"));
+    const xdg = mkdtempSync(join(tmpdir(), "tasks-xdg-")); // empty → no config
+    try {
+      writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Solo\n  - **ID**: solo\n");
+      spawnSync("git", ["init"], { cwd: dir });
+      const result = spawnSync("node", [CLI, "pick", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+        env: { ...process.env, XDG_CONFIG_HOME: xdg },
+      });
+      expect(result.status).toBe(0);
+      // Single-repo shape (no `workspace`/`ref` keys).
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.picked).toBe(true);
+      expect(parsed.workspace).toBeUndefined();
+      expect(parsed.metadata.id).toBe("solo");
+    } finally {
+      rmSync(dir, { recursive: true });
+      rmSync(xdg, { recursive: true });
     }
   });
 

@@ -15,12 +15,33 @@ import { initTaskQueue } from "./commands/init.js";
 import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
+import { runMigrate } from "./commands/migrate.js";
+import { checkWorkPush } from "./backend/git-native.js";
+import {
+  pickAcrossWorkspaces,
+  resolveWorkspaceSelection,
+  runWorkspacesAdd,
+  runWorkspacesDetect,
+  runWorkspacesList,
+} from "./commands/workspaces.js";
+import {
+  formatDoctorReport,
+  runDoctor,
+  runFleetCompact,
+  runFleetInit,
+  runFleetStats,
+} from "./commands/fleet.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
 import { createLinearSource } from "./sync/linear.js";
-import { formatClaimResult, getBackend, resolveBackendConfig } from "./backend/index.js";
-import type { BackendTask } from "./backend/index.js";
+import {
+  formatClaimResult,
+  formatOperationResult,
+  getBackend,
+  resolveBackendConfig,
+} from "./backend/index.js";
+import type { ActorOptions, BackendTask, OperationResult } from "./backend/index.js";
 
 
 const pkg = JSON.parse(
@@ -77,7 +98,7 @@ program
       console.log(message);
     }
     console.log("");
-    console.log(`✓ ${result.generated.length} command files generated from commands/next-task.md and commands/lint-tasks.md`);
+    console.log(`✓ ${result.generated.length} command files generated from commands/next-task.md, commands/lint-tasks.md, commands/setup.md, and commands/migrate.md`);
   });
 
 // ── install (TypeScript-native) ──
@@ -251,12 +272,62 @@ program
 
 program
   .command("pick")
+  .alias("next")
   .description("Pick the best task to work on next")
   .option("--tags <tags>", "Filter by tags (comma-separated)")
   .option("--json", "Output as JSON for scripting")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
-  .action(async (opts: { tags?: string; json?: boolean; backend?: string }) => {
-    if (resolveBackendConfig(process.cwd(), opts.backend).backend !== "tasks-md") {
+  .option("--workspace <path|name>", "Pick within one workspace (path or config name)")
+  .option("--workspaces <p1,p2,...>", "Pick across a comma-separated list of workspaces")
+  .option("--workspace-name <name>", "Pick within a configured workspace by name")
+  .action(
+    async (opts: {
+      tags?: string;
+      json?: boolean;
+      backend?: string;
+      workspace?: string;
+      workspaces?: string;
+      workspaceName?: string;
+    }) => {
+      // Workspace mode: explicit --workspace* flags, or a configured set of
+      // workspaces when no flag is given. Falls through to single-repo otherwise.
+      const selection = resolveWorkspaceSelection(opts);
+      if (selection) {
+        const result = await pickAcrossWorkspaces(selection);
+        if (opts.json) {
+          console.log(
+            JSON.stringify(
+              result.pick
+                ? {
+                    picked: true,
+                    workspace: result.pick.entry.workspaceName,
+                    repo: result.pick.entry.repoName,
+                    id: result.pick.entry.id,
+                    summary: result.pick.entry.title,
+                    priority: result.pick.entry.priority,
+                    backend: result.pick.entry.backend,
+                    file: result.pick.entry.file,
+                    line: result.pick.entry.line,
+                    ref: result.pick.ref,
+                  }
+                : { picked: false, summary: result.summary },
+            ),
+          );
+        } else {
+          console.error(result.summary);
+          if (result.pick) {
+            console.log(result.pick.ref);
+            console.log(`  "${result.pick.entry.title}" (${result.pick.entry.priority})`);
+            console.log(`  File: ${result.pick.entry.file}:${result.pick.entry.line}`);
+          } else {
+            console.log("No eligible tasks found across the selected workspaces.");
+          }
+        }
+        if (!result.pick) process.exitCode = 1;
+        return;
+      }
+
+      if (resolveBackendConfig(process.cwd(), opts.backend).backend !== "tasks-md") {
       const backend = getBackend(process.cwd(), opts.backend);
       const task = await pickFromBackend(backend, opts.tags);
       if (opts.json) {
@@ -464,6 +535,16 @@ program
 
 interface BackendOpts {
   backend?: string;
+  as?: string;
+  json?: boolean;
+}
+
+/** Actor identity for a mutating op: `--as`, else $TASKS_ACTOR / $TASKS_INSTANCE. */
+function actorOptions(opts: BackendOpts): ActorOptions {
+  return {
+    actorId: opts.as ?? process.env.TASKS_ACTOR,
+    instanceId: process.env.TASKS_INSTANCE,
+  };
 }
 
 function formatTask(task: BackendTask): string {
@@ -516,21 +597,81 @@ program
   .description("File a new task in the active backend")
   .argument("<title>", "Task title")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
   .option("--priority <p>", "Priority: P0 | P1 | P2 | P3", "P2")
   .option("--body <text>", "Task body / details")
   .option("--tag <tag...>", "Label/tag (repeatable)")
+  .option("--blocked <reason>", "Mark the task blocked with a reason")
+  .option("--blocked-by <id...>", "Task ids this depends on (repeatable)")
+  .option("--json", "Emit the created task as JSON")
   .action(
     async (
       title: string,
-      opts: BackendOpts & { priority?: string; body?: string; tag?: string[] },
+      opts: BackendOpts & {
+        priority?: string;
+        body?: string;
+        tag?: string[];
+        blocked?: string;
+        blockedBy?: string[];
+      },
     ) => {
-      const task = await getBackend(process.cwd(), opts.backend).create({
-        title,
-        priority: opts.priority,
-        body: opts.body,
-        tags: opts.tag,
-      });
-      console.log(`Created ${task.url ?? task.id}: ${task.title}`);
+      const task = await getBackend(process.cwd(), opts.backend).create(
+        {
+          title,
+          priority: opts.priority,
+          body: opts.body,
+          tags: opts.tag,
+          blocked: opts.blocked,
+          blockedBy: opts.blockedBy,
+        },
+        actorOptions(opts),
+      );
+      if (opts.json) {
+        console.log(JSON.stringify(task, null, 2));
+      } else {
+        console.log(`Created ${task.url ?? task.id}: ${task.title}`);
+      }
+    },
+  );
+
+program
+  .command("update")
+  .description("Update a task's fields in the active backend")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--title <text>", "New title")
+  .option("--priority <p>", "New priority: P0 | P1 | P2 | P3")
+  .option("--body <text>", "New body / details")
+  .option("--tag <tag...>", "Replace tags (repeatable)")
+  .option("--blocked <reason>", "Set the blocked reason (empty string clears it)")
+  .option("--blocked-by <id...>", "Replace blocked-by task ids (repeatable)")
+  .option("--json", "Emit the operation result as JSON")
+  .action(
+    async (
+      id: string,
+      opts: BackendOpts & {
+        title?: string;
+        priority?: string;
+        body?: string;
+        tag?: string[];
+        blocked?: string;
+        blockedBy?: string[];
+      },
+    ) => {
+      const result = await getBackend(process.cwd(), opts.backend).update(
+        id,
+        {
+          title: opts.title,
+          priority: opts.priority,
+          body: opts.body,
+          tags: opts.tag,
+          blocked: opts.blocked,
+          blockedBy: opts.blockedBy,
+        },
+        actorOptions(opts),
+      );
+      emitOperationResult(result, opts);
     },
   );
 
@@ -539,9 +680,28 @@ program
   .description("Claim a task (assign it to you)")
   .argument("<id>", "Task id (issue number for github-issues)")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--json", "Emit the claim result as JSON")
   .action(async (id: string, opts: BackendOpts) => {
-    const result = await getBackend(process.cwd(), opts.backend).claim(id);
-    console.log(formatClaimResult(result));
+    const result = await getBackend(process.cwd(), opts.backend).claim(id, actorOptions(opts));
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatClaimResult(result));
+    }
+    if (result.status !== "claimed") process.exitCode = 1;
+  });
+
+program
+  .command("unclaim")
+  .description("Release a claimed task back to the queue")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--json", "Emit the operation result as JSON")
+  .action(async (id: string, opts: BackendOpts) => {
+    const result = await getBackend(process.cwd(), opts.backend).release(id, actorOptions(opts));
+    emitOperationResult(result, opts);
   });
 
 program
@@ -549,9 +709,143 @@ program
   .description("Complete a task (close the issue / remove the TASKS.md block)")
   .argument("<id>", "Task id (issue number for github-issues)")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--json", "Emit the operation result as JSON")
   .action(async (id: string, opts: BackendOpts) => {
-    await getBackend(process.cwd(), opts.backend).complete(id);
-    console.log(`Completed ${id}.`);
+    const result = await getBackend(process.cwd(), opts.backend).complete(id, actorOptions(opts));
+    emitOperationResult(result, opts);
+  });
+
+program
+  .command("cancel")
+  .description("Cancel a task without completing the work")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--json", "Emit the operation result as JSON")
+  .action(async (id: string, opts: BackendOpts) => {
+    const result = await getBackend(process.cwd(), opts.backend).cancel(id, actorOptions(opts));
+    emitOperationResult(result, opts);
+  });
+
+program
+  .command("render")
+  .description("Render the human-readable TASKS.md snapshot from the active backend")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--json", "Emit the render result as JSON")
+  .action(async (opts: BackendOpts) => {
+    const result = await getBackend(process.cwd(), opts.backend).render();
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else if (result.status === "ok") {
+      process.stdout.write(result.content ?? "");
+    } else {
+      console.error(`render unsupported: ${result.reason ?? result.backend}`);
+    }
+    if (result.status !== "ok") process.exitCode = 1;
+  });
+
+program
+  .command("migrate")
+  .description("Migrate the file-backend TASKS.md into a git-native event log")
+  .option("--apply", "Write the events + .tasksmd.json (default is a dry-run)")
+  .action((opts: { apply?: boolean }) => {
+    const result = runMigrate(process.cwd(), { apply: opts.apply });
+    for (const line of result.lines) console.log(line);
+  });
+
+const fleet = program.command("fleet").description("Set up git-native fleet coordination");
+fleet
+  .command("init")
+  .description("Install the agent-mediated fleet workflow in this repo (idempotent)")
+  .option("--backend <kind>", "Backend to configure: git-native | tasks-md", "git-native")
+  .option("--agent <name>", "Install commands for one agent (else auto-detect)")
+  .option("--all", "Install commands for all six agents")
+  .action((opts: { backend?: "git-native" | "tasks-md"; agent?: string; all?: boolean }) => {
+    const result = runFleetInit(process.cwd(), opts);
+    for (const line of result.lines) console.log(line);
+  });
+fleet
+  .command("stats")
+  .description("Report contention metrics for the git-native tasks-claims log")
+  .action(() => {
+    const report = runFleetStats(process.cwd());
+    for (const line of report.lines) console.log(line);
+  });
+fleet
+  .command("compact")
+  .description("Rewrite the tasks-claims log to a fold-equivalent minimum")
+  .action(() => {
+    for (const line of runFleetCompact(process.cwd())) console.log(line);
+  });
+
+const workspaces = program
+  .command("workspaces")
+  .description("Manage multi-repo workspaces for cross-repo task aggregation");
+workspaces
+  .command("list")
+  .description("List configured and auto-detected workspaces")
+  .action(() => {
+    for (const line of runWorkspacesList()) console.log(line);
+  });
+workspaces
+  .command("add")
+  .description("Add a workspace to the per-user config")
+  .argument("<path>", "Workspace root directory")
+  .option("--name <name>", "Workspace name (defaults to the directory name)")
+  .action((path: string, opts: { name?: string }) => {
+    for (const line of runWorkspacesAdd(path, opts.name)) console.log(line);
+  });
+workspaces
+  .command("detect")
+  .description("Scan for workspaces and print the ones found")
+  .option("--scan-root <path>", "Directory to scan (defaults to config scanRoots / ~/apps)")
+  .action((opts: { scanRoot?: string }) => {
+    for (const line of runWorkspacesDetect(opts.scanRoot)) console.log(line);
+  });
+
+program
+  .command("check-push")
+  .description("Path-scoped claim gate: allow doc-only pushes, fence code by claim")
+  .argument("<paths...>", "Changed file paths")
+  .option("--task <id>", "Task id from the commit's Task: trailer")
+  .option("--claim <claimId>", "Fencing token from the commit's Task-Claim: trailer")
+  .action((paths: string[], opts: { task?: string; claim?: string }) => {
+    const verdict = checkWorkPush(process.cwd(), {
+      paths,
+      taskId: opts.task,
+      claimId: opts.claim,
+    });
+    if (verdict === "allowed") {
+      console.log("allowed: doc-only change, or code change with a live matching claim.");
+    } else {
+      console.error(
+        "rejected: this push changes non-markdown files without a live claim + matching Task-Claim token. Claim a task (`tasks claim <id>`) and add `Task:`/`Task-Claim:` commit trailers.",
+      );
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command("doctor")
+  .description("Verify the fleet install: config, commands, hooks, claims ref, projection")
+  .option("--quiet", "Print only on failure (exit nonzero if a check fails)")
+  .action(async (opts: { quiet?: boolean }) => {
+    const report = await runDoctor(process.cwd());
+    if (!opts.quiet || !report.ok) {
+      console.log(formatDoctorReport(report));
+    }
+    if (!report.ok) process.exitCode = 1;
   });
 
 program.parse();
+
+/** Print an operation result and set a nonzero exit code on anything but `ok`. */
+function emitOperationResult(result: OperationResult, opts: BackendOpts): void {
+  if (opts.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(formatOperationResult(result));
+  }
+  if (result.status !== "ok" && result.status !== "noop") process.exitCode = 1;
+}

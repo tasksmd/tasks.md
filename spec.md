@@ -496,7 +496,7 @@ Teams can define their own identity convention in AGENTS.md. The key requirement
 
 ### Limitations
 
-Claiming is best-effort, not a distributed lock. Two agents can race to claim the same task if they read the file simultaneously. In practice this is rare — agents work on different timescales and the claim window is small. For stronger guarantees, use an MCP server as the coordination backend.
+Claiming **in the file backend** is best-effort, not a distributed lock. Two agents can race to claim the same task if they read the file simultaneously. In practice this is rare — agents work on different timescales and the claim window is small. For a **collision-free** guarantee across a fleet, use the git-native backend (see [Fleet coordination](#fleet-coordination)) or an MCP server as the coordination backend.
 
 Claims are only visible to other agents after the commit is pushed. An unpushed claim protects nothing in a multi-agent setup.
 
@@ -544,11 +544,13 @@ A repo declares its backend in a `.tasksmd.json` file at the git root (or the wo
 }
 ```
 
-- **`backend`** — `tasks-md` (default) or `github-issues`. Unknown values are rejected.
+- **`backend`** — `tasks-md` (default), `github-issues`, or `git-native` (the collision-free fleet backend — see [Fleet coordination](#fleet-coordination)). Unknown values are rejected.
 - **`repo`** — `owner/repo` for `github-issues`; omit to use the current directory's repo.
 - **`label`** — the marker label that identifies an issue as a task. Default `tasks.md`.
 
 `tasks-md` is assumed when no config file is present, so existing repos are unaffected. A `--backend <kind>` flag on the CLI overrides the config per-invocation.
+
+**Which to pick.** `tasks-md` is the zero-setup default for a solo or offline queue. Choose `git-native` the moment a repo has **more than one writer** — multiple contributors, or a fleet of machines each running parallel agents — so concurrent claims resolve by git ref-CAS instead of colliding on `TASKS.md` (see [Fleet coordination](#fleet-coordination)). Choose `github-issues` when the team already lives in a tracker. Converting an existing file-backed queue is `tasks migrate` (dry-run by default) followed by `tasks fleet init`; switching back is `rm .tasksmd.json` plus `git update-ref -d refs/heads/tasks-claims`.
 
 ### The `github-issues` backend
 
@@ -575,6 +577,170 @@ These operate identically across backends (`tasks-md` reads via the deterministi
 - `tasks complete <id>` — complete (close the issue / remove the TASKS.md block).
 
 Workspace-mode aggregation (planned) ranks tasks across repos by reading each repo's backend through this same uniform surface, so a host can mix markdown-backed and issue-backed repos in one queue.
+
+### Agent-mediated task operations
+
+The human/agent contract is the same across every backend: **a human reads the queue and tells an agent what to do; the agent (or a tool acting for it) performs the task-state change.** In the file backend, hand-editing `TASKS.md` stays a valid zero-setup path because the file *is* the surface. In a **generated backend** (git-native, GitHub Issues) the human-visible `TASKS.md` or issue list is a projection of backend state, so mutations go through operations rather than a hand-edit — the human still issues the request ("add a task", "mark it done"); the agent runs the operation.
+
+Every mutation reduces to one of eight **backend-neutral operations**. Each maps to a CLI subcommand, an MCP tool, and a `TaskBackend` method, so the same human request behaves identically regardless of backend:
+
+| Operation | Human asks the agent to… | CLI | MCP tool | `TaskBackend` method | File backend | Git-native backend |
+| --- | --- | --- | --- | --- | --- | --- |
+| `create` | add a task | `tasks create` | `add_task` | `create()` | append to the priority section | append a `created` event |
+| `update` | change a task's fields | `tasks update` | `enrich_task` | `update()` | edit the task block | append an `updated` event |
+| `review` | list / reprioritize / groom | `tasks list` | `list_tasks` | `listOpen()` | read the file | read `fold(log)` |
+| `claim` | take a task | `tasks claim` | `claim_task` | `claim()` | append `(@agent)` (best-effort) | append a `claimed` event behind a ref-CAS (collision-free) |
+| `release` | give a claimed task back | `tasks unclaim` | `unclaim_task` | `release()` | remove `(@agent)` | append a `released` event |
+| `complete` | finish a task | `tasks complete` | `complete_task` | `complete()` | remove the block | append a `completed` event |
+| `cancel` | drop a task without doing it | `tasks cancel` | `cancel_task` | `cancel()` | remove the block (reason in the commit) | append a `cancelled` event |
+| `render` | materialize the human-readable snapshot | `tasks render` | — | `render()` | no-op (the file is the surface) | regenerate `TASKS.md` = `fold(log)` |
+
+`create`, `claim`, `complete`, and `review`/`list` are implemented today; `update`, `release`, `cancel`, and `render` land with the agent-owned backend protocol (the `TaskBackend` reshape) — this table is the contract that implementation follows (G1). Backends that cannot perform an operation (for example, `render` against the file backend) return an actionable unsupported result rather than silently succeeding.
+
+**Canonical commands vs. operations.** To keep the surface thin (G6), only `setup`, `next-task`, and `lint-tasks` are canonical command files under [`commands/`](commands/) (generated per-agent, G2). The eight operations above are CLI subcommands and MCP tools the agent calls from within those commands — they are *not* given one command file each. A `setup` command installs the workflow; `next-task` reads, claims, and completes; `lint-tasks` verifies. Adding, updating, or reviewing tasks is something the agent does inline (via the operation) when a human asks, not a separate per-verb command.
+
+**Verification after a mutation.** Whichever operation an agent runs, it confirms the result before reporting done:
+
+- **File backend** — `npx -y @tasks-md/lint TASKS.md` exits 0 (the file is the state, so lint is the check).
+- **Git-native backend** — the appended event folds into the expected state and `render()` is byte-idempotent for that log (see [Fleet coordination](#fleet-coordination)); a stale generated `TASKS.md` snapshot is cosmetic and never blocks the operation.
+
+## Fleet coordination
+
+The **git-native backend** turns a single git repository into a collision-free task queue for a *fleet*: a team of machines, each running a parallel set of agents, all working one queue (VISION.md G7). It is an opt-in backend; the file backend (best-effort `(@agent)` claims) stays the zero-setup default and is **not** collision-free.
+
+The guarantee is **collision-freedom** — no two agents ever hold the same task at once — not a globally reproducible schedule. Selection is deterministic for a given state snapshot, but the *winner of a race* is whoever the remote accepts first; only the **fold of the log** is reproducible.
+
+### Source of truth: an append-only event log
+
+Git-native task state lives in an **append-only event log** on a dedicated `tasks-claims` ref (default branch `tasks-claims`), not in `TASKS.md`:
+
+- The log is the **sole source of truth** for every task's existence, fields, claim, and lifecycle.
+- `TASKS.md` on the default branch is a **single-writer generated snapshot** = `fold(log)`. Agents never hand-edit it in git-native mode, so it cannot cause merge conflicts. Staleness is cosmetic: agents pick from the folded log, never from the file.
+- The `tasks-claims` ref is **excluded from normal CI** (build/test pipelines ignore it); only the projection and claim-check workflows read it.
+
+### Event schema
+
+Each event is a JSON object stored as one file per event at `events/<event_id>.json` on the `tasks-claims` ref. A commit carries exactly **one** event — single-event commits keep merges and fences simple. Fields, in canonical order:
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `schema_version` | integer | Current version is `1`. An unknown version is ignored by the fold (forward-compatible) and reported by `tasks doctor`. |
+| `event_id` | string | Globally unique, e.g. `evt-<uuid>`. Duplicate `event_id`s: the fold keeps the first and ignores the rest. |
+| `task_id` | string | The kebab-case task ID the event applies to. |
+| `event_type` | string | One of `created`, `updated`, `claimed`, `heartbeat`, `released`, `completed`, `cancelled`. |
+| `actor_id` | string | The acting identity (see Actor identity), normalized by stripping a leading `@`. |
+| `instance_id` | string | Distinguishes concurrent agents of the same actor; `<actor-id>/<instance-id>` is globally unique. |
+| `created_at` | string | RFC 3339 / ISO 8601 UTC timestamp. Used for display and lease math only — never as the race tiebreaker (git ref-CAS decides the winner). |
+| `parent_event_ids` | string[] | Causal parents; `[]` under linear-CAS v1. Reserved for a future CRDT engine. |
+| `payload` | object | Event-type-specific data (below). |
+
+Serialization is canonical: `JSON.stringify(event, null, 2)` with a trailing newline and keys in the order above. A **malformed event** (invalid JSON, missing required field, unknown `event_type`, or `schema_version !== 1`) is **skipped** by the fold rather than aborting it, so one bad commit cannot poison the queue.
+
+Payloads by type:
+
+- `created` — `{ title, priority, tags, body, blocked?, blocked_by? }`; `blocked` is a free-form external-blocker reason and `blocked_by` is a list of task ids this depends on.
+- `updated` — the changed fields only (`{ title?, priority?, tags?, body?, blocked?, blocked_by? }`).
+- `claimed` — `{ claim_id, lease_expires_at }`; `claim_id` is a unique fencing token (e.g. `claim-<uuid>`) minted by the winner, and `lease_expires_at` is the epoch-ms expiry.
+- `heartbeat` — `{ lease_expires_at }`; renews the live owner's lease (only the current assignee's heartbeat counts).
+- `released` — `{ claim_id }`.
+- `completed` — `{ claim_id? }`.
+- `cancelled` — `{ reason? }`.
+
+### Folding the log
+
+`fold(log)` replays events in ref order: `created` introduces a task (with its `blocked`/`blocked_by`); `updated` patches its fields; `claimed` sets the owner + `claim_id` + lease (latest `claimed` wins — a legitimate steal is just a later claim); `heartbeat` renews the owner's lease; `released` clears the owner when it matches; `completed`/`cancelled` close the task (drop it from the open queue). The fold is **deterministic and idempotent** — the same log always produces the same open-task set and the same rendered `TASKS.md` bytes.
+
+A task is **blocked** (skipped by `next`/`pick` and rejected by `claim` with status `blocked`) when it carries a `blocked` reason, or any id in its `blocked_by` still refers to an open (non-completed) task in the fold. Completing/cancelling the blocker unblocks it on the next fold — no separate event needed.
+
+### Claim lifecycle (collision-free)
+
+1. **Claim.** Append a `claimed{ claim_id, lease_expires_at }` event and push the `tasks-claims` ref. **Git's atomic non-fast-forward rejection is the collision-free primitive**: if two agents claim the same task, exactly one push fast-forwards (the winner); the loser is rejected, fetches the ref, sees the live claim, and **yields → picks the next task**. Retries are silent with bounded backoff + jitter.
+2. **Fencing token.** A successful claim returns its `claim_id`. Work commits carry `Task: <task-id>` and `Task-Claim: <claim_id>` trailers (written/parsed with `git interpret-trailers`). A resurrected stale owner cannot clobber a new owner — `complete`/`release` reject a `claim_id` that no longer matches the live claim, so an agent that restarts after its lease was stolen cannot close work it no longer owns.
+3. **Heartbeat / lease renewal.** While working, the owner appends `heartbeat{ lease_expires_at }` events to push its lease forward. Only the current assignee's heartbeat renews; a non-owner heartbeat is rejected.
+4. **Lease expiry & steal.** A claim is live while `now < lease_expires_at`. Once expired (a crashed or sleeping owner stopped heartbeating), another agent steals the task via the same CAS, minting a **fresh** `claim_id` that fences out the dead owner. A claim with no lease is treated as live (a long-lease backstop), so legacy v1 claims are never stolen.
+5. **Completion / cancellation.** `completed` and `cancelled` close the task and remove it from the snapshot.
+
+### Log compaction
+
+The log grows unbounded as tasks churn. **Compaction** rewrites `tasks-claims` to the minimal event set that folds to the **same open-task state** — one `created` per open task plus one `claimed` (carrying its `claim_id` + `lease_expires_at`) per live claim; terminal (completed/cancelled) tasks are dropped (their history stays in the old ref's objects until git GC). Because the fold of open tasks is byte-identical before and after, compaction is transparent to readers. It rewrites history, so it is a **single-writer maintenance step** (like the projection job), never a concurrent operation. `tasks fleet compact` performs it locally; `tasks doctor` flags when the log is large enough to warrant it.
+
+### Generated `TASKS.md` projection
+
+A single scheduled job regenerates `TASKS.md` from the log:
+
+- **Trigger** — on push to the `tasks-claims` ref, plus a periodic fallback.
+- **Single writer** — only this job writes `TASKS.md`, so there are never competing edits. A concurrency group serializes runs; the latest fold wins.
+- **One branch, one PR** — it updates a stable projection branch and reuses one PR. Because the change touches only `TASKS.md` (markdown), it passes the path-scoped claim check by the same rule that passes any docs-only change — no per-actor CI bypass.
+- **No loop** — the regeneration commit lands on the default branch, not on `tasks-claims`, so it never re-triggers itself.
+- **Idempotent** — re-folding the same log yields identical bytes; a failed run is safely re-run.
+
+### Actor identity and privacy
+
+Identity is `<actor-id>/<instance-id>`. `actor-id` defaults to a configured handle or platform login; **a raw git email is never rendered into a public snapshot unless the operator explicitly opts in**. The rendered `TASKS.md` shows the privacy-safe `actor-id` (e.g. `@alice` or a configured handle), not an email.
+
+### File backend vs. git-native
+
+| | File (`tasks-md`) | Git-native |
+| --- | --- | --- |
+| Source of truth | `TASKS.md` (human-editable) | `tasks-claims` event log |
+| `TASKS.md` | the surface | generated snapshot (never hand-edited) |
+| Claims | best-effort `(@agent)` suffix | collision-free `claimed` event behind ref-CAS |
+| Concurrency | races possible | collision-free |
+| Setup | none | `tasks fleet init` |
+
+The file backend stays valid and zero-setup; git-native is the opt-in path for fleets. The two never contradict because each owns its own source of truth.
+
+### Migrating from the file backend
+
+The file backend is the v1-compatible default; git-native is an explicit opt-in. A repo moves to git-native with `tasks migrate`, which imports the current `TASKS.md` snapshot into `created` (and `claimed`, for tasks carrying an `(@agent)` suffix) log events, **preserving task ids, priority, tags, and details**. It is a **dry-run by default** — it prints the events it would append and the `.tasksmd.json` it would write — and applies only with `--apply`. Duplicate or missing ids abort before any write. Rollback is `rm .tasksmd.json` plus `git update-ref -d refs/heads/tasks-claims`; the original `TASKS.md` is never modified by the migration.
+
+### Security model
+
+The `tasks-claims` ref, the generated snapshot PR, the claim-check CI, and the local hooks are security boundaries. The path-scoped gate is one shared primitive — `tasks check-push` (proven by the `path-scoped-enforcement` + `claim-fencing` conformance properties) — invoked by the client hook, the generated `tasks-claim-check.yml` GitHub required check, and the `pre-receive` recipe for GHE/GitLab/Gitea. The client hook alone is **bypassable** (`--no-verify`); the unbypassable guarantee is making the required check (or `pre-receive`) mandatory on a branch ruleset that also blocks force-push/delete of `tasks-claims`. The full trust boundaries, threats, mitigations, CI guidance (use `pull_request`, never `pull_request_target`), the `pre-receive` recipe, and per-platform token scopes are in [`docs/security/git-native-claims-threat-model.md`](docs/security/git-native-claims-threat-model.md).
+
+> **Status.** The git-native event log, fold, claim-via-CAS, snapshot rendering, **leases + heartbeats + steal + crash-recovery fencing** (Phase 2), **log compaction**, and the **path-scoped claim gate** (`tasks check-push` + generated `tasks-claim-check.yml` + `pre-receive` recipe — Phase 3) are implemented in the reference CLI (`@tasks-md/cli`) and proven by `@tasks-md/conformance` (all 12 properties, including lease-expiry-and-steal, claim-fencing, path-scoped-enforcement, and blocked-by-unclaimable). What remains operator-side is making the generated check a *required* ruleset gate; the single-writer projection job is still a documented workflow template. See the active [`TASKS.md`](TASKS.md) queue and [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md). Laptop/offline fleets are supported via heartbeat-renewed leases.
+
+## Workspaces
+
+A **workspace** is a directory whose immediate children are repos, each carrying its own `TASKS.md` — the common "one parent folder, many checkouts" layout. Workspace mode lets `/next-task` (and `tasks next`/`list`) aggregate and rank across every repo in a workspace, or across several workspaces on one host, instead of reading a single `./TASKS.md`.
+
+- **What is a workspace.** Any directory marked by a `.tasks-md-workspace` sentinel file, OR a directory with ≥ 2 immediate child directories that each contain a `TASKS.md`. The sentinel takes precedence.
+- **Repos within a workspace.** Each immediate child directory containing a `TASKS.md` is a repo (plus the workspace root itself if it has one). The repo's directory name is its identifier.
+
+### Multiple workspaces on one host
+
+Several workspaces are declared in a per-user config at `$XDG_CONFIG_HOME/tasks-md/workspaces.json` (default `~/.config/tasks-md/workspaces.json`). One workspace is just `N = 1` of the same model — there is no separate single-workspace code path. The file is tool-managed (`tasks workspaces add` writes it), so it's plain JSON — no extra dependency. Each entry's `exclude` and `priorityWeight` are optional; `discovery.scanRoots` is where `tasks workspaces detect` looks.
+
+```json
+{
+  "workspaces": [
+    { "name": "tooling", "root": "~/apps/tooling", "exclude": ["archived-repo"], "priorityWeight": 1.0 },
+    { "name": "oncall-hub", "root": "~/apps/oncall-hub" }
+  ],
+  "discovery": { "scanRoots": ["~/apps"], "autoDetect": true }
+}
+```
+
+**Blocker references** carry an optional scope so a task can depend on one in another repo or workspace:
+
+| Form | Scope |
+|---|---|
+| `**Blocked by**: <task-id>` | same repo |
+| `**Blocked by**: <repo>#<task-id>` | another repo in the same workspace |
+| `**Blocked by**: <workspace>::<repo>#<task-id>` | another workspace (the `::` is the workspace separator) |
+
+**Selection.** `tasks next` (alias of `pick`) resolves scope from flags, else the config:
+
+- `--workspace <path|name>` — one workspace.
+- `--workspaces <p1,p2,…>` — an explicit comma-separated list.
+- `--workspace-name <name>` — a configured workspace by name.
+- no flag — aggregate across **all** configured workspaces if any exist; otherwise fall back to single `./TASKS.md` (backwards compatible).
+
+It prints `<workspace>::<repo>:<task-id>` for the global highest-priority unblocked task; claiming and editing happen inside that repo's checkout. `tasks workspaces list|add|detect` manage the config, and the MCP tool `find_next_task_across_workspaces` exposes the same aggregation.
+
+**Aggregation is backend-aware.** Each repo in a workspace resolves its own backend from `.tasksmd.json` — a markdown (`tasks-md`) repo contributes its parsed `TASKS.md`, while a `git-native` or `github-issues` repo contributes its `listOpen()` — and they merge into one priority-ranked list.
+
+**Claiming is single-repo, even from a global pick.** The picker ranks globally, but a claim is written to the **selected repo's own backend** with that backend's guarantees: best-effort on a `tasks-md` repo, collision-free (git ref-CAS) on a git-native repo, issue-assignee on github-issues. Two agents that pick the same git-native task therefore cannot both win — the target repo's CAS decides. On a lost claim the agent simply re-runs the pick: the just-claimed task is now non-open and drops out, so the next-ranked task is returned (re-rank-on-loss needs no global coordinator). Cross-repo blockers are resolved by reading the aggregated set; a `tasks-md` task may carry `**Blocked by**: <repo>#<id>` / `<workspace>::<repo>#<id>`, while git-native/issues repos manage their own blocking. **Not supported:** atomic multi-repo claim/complete, a global lease spanning repos, and cross-repo generated-snapshot writes — each repo's backend owns its own state.
 
 ## Agent Behavior
 

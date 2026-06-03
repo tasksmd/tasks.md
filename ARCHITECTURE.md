@@ -70,7 +70,35 @@ agent /next-task                                          ↓
                     in the same commit                      ↓
 ```
 
-The same flow runs whether the agent invokes `tasks-mcp` (MCP path), the `tasks` CLI (subprocess path), or just reads the file directly (parser-library path).
+The same flow runs whether the agent invokes `tasks-mcp` (MCP path), the `tasks` CLI (subprocess path), or just reads the file directly (parser-library path). The diagram above is the **file backend** — the default. Generated backends keep the identical parser/CLI/MCP surface but change where state lives (see Backends).
+
+## Backends
+
+The parser/CLI/MCP surface is identical across pluggable backends ([`spec.md` § Task backends](spec.md#task-backends)); only the source of truth and the claim mechanics differ:
+
+| Backend | Source of truth | Claim | Snapshot |
+|---|---|---|---|
+| **File** (`tasks-md`, default) | `TASKS.md` (human-editable) | best-effort `(@agent)` | the file *is* the surface |
+| **Git-native** | append-only `tasks-claims` event log | collision-free git ref compare-and-swap | `TASKS.md` is a generated, single-writer snapshot |
+| **GitHub Issues** | open issues with the marker label | issue assignee | the issue list is the surface |
+
+### Git-native data flow
+
+```
+agent /next-task  (backend = git-native)
+   ├── fetch tasks-claims ref → fold(log) → open tasks
+   ├── pick P0→P1→P2→P3, blocked-by satisfied, unclaimed
+   ├── claim: append claimed{claim_id} event → git push (atomic CAS)
+   │     ├── fast-forward accepted → won; claim_id is the fencing token
+   │     └── non-fast-forward rejected → yield, pick the next task
+   ├── implement on a feature branch (commits carry Task:/Task-Claim: trailers)
+   └── complete: append completed event → push
+                                          │
+   scheduled projection job (on tasks-claims push):
+       render fold(log) → TASKS.md → single-writer PR  (agents never hand-edit it)
+```
+
+The log is the sole source of truth; `TASKS.md` is a materialized view, so a stale snapshot is cosmetic. Robust leases/heartbeats, the projection job, and server-side claim enforcement are phased — see [`spec.md` § Fleet coordination](spec.md#fleet-coordination) and [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md).
 
 ## Verification
 

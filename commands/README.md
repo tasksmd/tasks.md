@@ -28,4 +28,21 @@ Validate all TASKS.md files in a repo against the spec. Discovers monorepo packa
 | [`gemini/`](gemini/lint-tasks.toml) | Gemini CLI | Command | `.gemini/commands/` |
 | [`windsurf/`](windsurf/lint-tasks.md) | Windsurf | Workflow | `.windsurf/workflows/` |
 
+## `/migrate`
+
+Convert a repo's queue from the file backend to the collision-free **git-native** backend (`tasks migrate --apply` → `tasks fleet init` → verify), without losing the existing tasks. Run it the moment a repo has more than one writer.
+
+| Directory | Agent | Format | Install to |
+|-----------|-------|--------|------------|
+| [`claude/`](claude/skills/migrate/SKILL.md) | Claude Code | Skill | `.claude/skills/migrate/` |
+| [`codex/`](codex/skills/migrate/SKILL.md) | OpenAI Codex | Skill | `.agents/skills/migrate/` |
+| [`cursor/`](cursor/migrate.md) | Cursor | Command | `.cursor/commands/` |
+| [`devin/`](devin/skills/migrate/SKILL.md) | Devin | Skill | `.devin/skills/migrate/` |
+| [`gemini/`](gemini/migrate.toml) | Gemini CLI | Command | `.gemini/commands/` |
+| [`windsurf/`](windsurf/migrate.md) | Windsurf | Workflow | `.windsurf/workflows/` |
+
 All commands in each set contain the same logic — only the wrapper format differs.
+
+## Task operations vs. commands
+
+Only `setup`, `next-task`, `lint-tasks`, and `migrate` are canonical **command files** (one per agent, generated). The actual task mutations — `create`, `update`, `review`, `claim`, `release`, `complete`, `cancel`, `render` — are **backend-neutral operations** the agent invokes through the `tasks` CLI or the `tasks-mcp` MCP tools from inside those commands, not separate per-verb command files. A human commands the agent ("add a task", "mark it done"); the agent runs the operation against whatever backend the repo declares. See [`spec.md` § "Agent-mediated task operations"](../spec.md#agent-mediated-task-operations) for the full operation → CLI → MCP → backend mapping.

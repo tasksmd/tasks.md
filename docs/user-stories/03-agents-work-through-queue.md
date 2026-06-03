@@ -12,7 +12,7 @@
 4. **Resume** — checks for a previously claimed task and picks up where it left off
 5. **Pick** — selects the highest-priority unblocked, unclaimed task
 6. **Plan** — for complex tasks, writes a `**Plan**:` checklist into the task block before touching code
-7. **Claim** — appends `(@agent-id)` so other agents skip it
+7. **Claim** — file backend: appends `(@agent-id)` so other agents skip it; generated backend: `tasks claim <id>` (collision-free)
 8. **Work** — reads metadata, checks AGENTS.md, makes changes, runs tests
 9. **Complete** — removes the task block, commits, pushes
 10. **Loop** — picks the next task, continues until the queue is empty
@@ -60,7 +60,7 @@ The agent picks the highest-priority unblocked task, claims it, does the work, r
 A successful `/next-task` run is behaviorally precise — anyone reading the source-of-truth code paths can verify it:
 
 1. The agent calls [`pickBestTask()`](../../packages/parser/src/index.ts), which selects the highest-priority task whose `**Blocked**` field is empty, whose `**Blocked by**` IDs are not present in any discovered `TASKS.md`, that has no `(@agent)` claim, and that is not a `standing-loop` task.
-2. The agent claims it by appending `(@<agent-id>)` to the task line and pushes (or commits, in single-agent setups).
+2. In the file backend, the agent claims it by appending `(@<agent-id>)` to the task line and pushes (or commits, in single-agent setups); in a generated backend it runs `tasks claim <id>` for a collision-free claim.
 3. The agent does the work — reads metadata, makes changes, runs tests, etc.
 4. On completion, the agent removes the entire task block (task line + metadata + sub-tasks) and commits.
 5. Loop repeats until `pickBestTask()` returns `undefined` (queue exhausted) or every remaining task is blocked or claimed by another agent.

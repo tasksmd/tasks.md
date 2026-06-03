@@ -411,3 +411,18 @@ export {
   loadAllTasks,
   loadAllTasksAsync,
 } from "./discovery.js";
+export {
+  WORKSPACE_SENTINEL,
+  isWorkspace,
+  parseWorkspace,
+  parseWorkspaces,
+  workspaceTasks,
+  parseBlockerRef,
+  isBlockerOpen,
+} from "./workspace.js";
+export type {
+  WorkspaceRepo,
+  WorkspaceResult,
+  WorkspaceTask,
+  BlockerRef,
+} from "./workspace.js";

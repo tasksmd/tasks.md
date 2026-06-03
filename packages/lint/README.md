@@ -4,6 +4,8 @@
 
 Validates [TASKS.md](https://github.com/tasksmd/tasks.md) files against the spec.
 
+> **Scope: file format, not backend state.** The linter checks that a `TASKS.md` is well-formed (header, priority sections, checkbox tasks, metadata shape). It is backend-agnostic — it validates the file the file backend hand-edits *and* the snapshot a git-native backend generates. Backend coordination (collision-free claims, leases) is verified by [`@tasks-md/conformance`](../conformance/) and `tasks doctor`, not by lint. After a file-backend mutation, `npx -y @tasks-md/lint TASKS.md` exiting 0 is the completeness check.
+
 ## Install
 
 ```bash

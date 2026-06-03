@@ -28,12 +28,23 @@ export function getBackend(directory: string, override?: string): TaskBackend {
 
 export { resolveBackendConfig } from "./config.js";
 export type { BackendConfig, BackendKind } from "./config.js";
-export { formatClaimResult } from "./types.js";
+export { renderGitNativeSnapshot } from "./git-native.js";
+export {
+  formatClaimResult,
+  formatOperationResult,
+  unsupportedResult,
+} from "./types.js";
 export type {
+  ActorOptions,
   BackendCapabilities,
   BackendTask,
   ClaimTaskOptions,
   ClaimTaskResult,
   CreateTaskInput,
+  OperationResult,
+  OperationStatus,
+  RenderResult,
   TaskBackend,
+  TaskOperation,
+  UpdateTaskInput,
 } from "./types.js";

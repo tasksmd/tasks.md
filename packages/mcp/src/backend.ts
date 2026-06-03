@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { findGitRoot } from "./parser.js";
 
-export type BackendKind = "tasks-md" | "github-issues";
+export type BackendKind = "tasks-md" | "github-issues" | "git-native";
 
 export interface BackendConfig {
   backend: BackendKind;
@@ -23,7 +23,9 @@ interface RawConfig {
 }
 
 function isBackendKind(value: string): value is BackendKind {
-  return value === "tasks-md" || value === "github-issues";
+  return (
+    value === "tasks-md" || value === "github-issues" || value === "git-native"
+  );
 }
 
 /**
@@ -54,7 +56,7 @@ export function resolveBackend(directory: string): BackendConfig {
   const chosen = raw.backend ?? "tasks-md";
   if (!isBackendKind(chosen)) {
     throw new Error(
-      `Unknown task backend "${chosen}". Use "tasks-md" or "github-issues".`,
+      `Unknown task backend "${chosen}". Use "tasks-md", "github-issues", or "git-native".`,
     );
   }
 

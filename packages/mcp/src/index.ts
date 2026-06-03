@@ -61,8 +61,8 @@ server.registerTool(
     const directory = getWorkingDirectory();
     const backend = resolveBackend(directory);
 
-    if (backend.backend === "github-issues") {
-      // Delegate to CLI for github-issues backend
+    if (backend.backend !== "tasks-md") {
+      // Delegate to the CLI for any non-file backend (github-issues, git-native)
       const args = buildListArgs({ priority, tag, unclaimed_only, unblocked_only });
 
       try {
@@ -111,8 +111,8 @@ server.registerTool(
     const directory = getWorkingDirectory();
     const backend = resolveBackend(directory);
 
-    if (backend.backend === "github-issues") {
-      // Delegate to CLI for github-issues backend
+    if (backend.backend !== "tasks-md") {
+      // Delegate to the CLI for any non-file backend (github-issues, git-native)
       const args = ["claim", query];
 
       try {
@@ -157,17 +157,20 @@ server.registerTool(
     const directory = getWorkingDirectory();
     const backend = resolveBackend(directory);
 
-    if (backend.backend === "github-issues") {
-      // github-issues backend does not support unclaim
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: "The github-issues backend does not support unclaiming tasks. To remove a claim, you must manually unassign the issue on GitHub.",
-          },
-        ],
-        isError: true,
-      };
+    if (backend.backend !== "tasks-md") {
+      // Non-file backends release through the CLI (github-issues removes the
+      // assignee; git-native appends a `released` event).
+      try {
+        const output = runTasksCli(["unclaim", query], directory);
+        return { content: [{ type: "text" as const, text: output }] };
+      } catch (error) {
+        return {
+          content: [
+            { type: "text" as const, text: error instanceof Error ? error.message : String(error) },
+          ],
+          isError: true,
+        };
+      }
     }
 
     // tasks-md backend: use existing behavior
@@ -198,8 +201,8 @@ server.registerTool(
     const directory = getWorkingDirectory();
     const backend = resolveBackend(directory);
 
-    if (backend.backend === "github-issues") {
-      // Delegate to CLI for github-issues backend
+    if (backend.backend !== "tasks-md") {
+      // Delegate to the CLI for any non-file backend (github-issues, git-native)
       const args = ["complete", query];
 
       try {
@@ -256,8 +259,8 @@ server.registerTool(
     const directory = getWorkingDirectory();
     const backend = resolveBackend(directory);
 
-    if (backend.backend === "github-issues") {
-      // Delegate to CLI for github-issues backend
+    if (backend.backend !== "tasks-md") {
+      // Delegate to the CLI for any non-file backend (github-issues, git-native)
       const args = buildPickArgs({ tags });
 
       try {
@@ -354,6 +357,29 @@ server.registerTool(
   },
   async ({ summary, priority, id, tags, details, files, acceptance, blocked_by, blocked, research, last_enriched, file }) => {
     const directory = getWorkingDirectory();
+
+    if (resolveBackend(directory).backend !== "tasks-md") {
+      // Non-file backends create through the CLI. The richer file-backend
+      // metadata (acceptance/files/blocked_by) is not modeled by generated
+      // backends' create yet; title/priority/details/tags carry over.
+      const args = ["create", summary, "--json"];
+      if (priority) args.push("--priority", priority);
+      if (details) args.push("--body", details);
+      for (const tag of (tags ?? "").split(",").map((t) => t.trim()).filter(Boolean)) {
+        args.push("--tag", tag);
+      }
+      try {
+        return { content: [{ type: "text" as const, text: runTasksCli(args, directory) }] };
+      } catch (error) {
+        return {
+          content: [
+            { type: "text" as const, text: error instanceof Error ? error.message : String(error) },
+          ],
+          isError: true,
+        };
+      }
+    }
+
     const targetFile = file || discoverTaskFiles(directory)[0];
 
     if (!targetFile) {
@@ -438,6 +464,61 @@ server.registerTool(
       ...(result.isError ? { isError: true } : {}),
     };
   }
+);
+
+// ── find_next_task_across_workspaces ──
+
+server.registerTool(
+  "find_next_task_across_workspaces",
+  {
+    title: "Find Next Task Across Workspaces",
+    description: TOOL_DESCRIPTIONS.find_next_task_across_workspaces,
+    inputSchema: z.object({
+      workspaces: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Workspace roots to aggregate across. Omit to use the per-user config " +
+          "(~/.config/tasks-md/workspaces.json). Returns {workspace, repo, task_id, file_path}.",
+        ),
+    }),
+  },
+  async ({ workspaces }) => {
+    const directory = getWorkingDirectory();
+    // Delegate to the CLI so workspace resolution + config reading live in one place.
+    const args = ["next", "--json"];
+    if (workspaces && workspaces.length > 0) {
+      args.push("--workspaces", workspaces.join(","));
+    }
+    try {
+      const output = runTasksCli(args, directory);
+      const parsed = JSON.parse(output) as {
+        picked: boolean;
+        workspace?: string;
+        repo?: string;
+        id?: string;
+        file?: string;
+        summary?: string;
+      };
+      const text = parsed.picked
+        ? JSON.stringify({
+            workspace: parsed.workspace,
+            repo: parsed.repo,
+            task_id: parsed.id,
+            file_path: parsed.file,
+            summary: parsed.summary,
+          })
+        : "No eligible task found across the selected workspaces.";
+      return { content: [{ type: "text" as const, text }] };
+    } catch (error) {
+      return {
+        content: [
+          { type: "text" as const, text: error instanceof Error ? error.message : String(error) },
+        ],
+        isError: true,
+      };
+    }
+  },
 );
 
 // ── Start server ──

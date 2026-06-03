@@ -15,6 +15,7 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 | 7 | [Monitor queue health at a glance](07-monitor-queue-health.md) | `tasks stats`, `tasks diff`, `tasks list` |
 | 8 | [Rich task metadata for blocked, multi-session, and decomposed work](08-rich-task-metadata.md) | `**Blocked**`, `**Research**`, `**Last-enriched**`, `**Parent**`, standing audit loops, file-level + section-level `<!-- policy: -->` comments |
 | 9 | [Standing audit loops in practice](09-standing-audit-loops.md) | One TASKS.md task block + `**Tags**: standing-loop` — `pickBestTask` skips it during normal walks; `/next-task standing-audit-gap-loop` targets it on demand |
+| 10 | [One-prompt setup](10-one-prompt-setup.md) | Paste one prompt; the agent runs [`commands/setup.md`](../../commands/setup.md) — creates TASKS.md, merges AGENTS.md, installs `/next-task` for itself, verifies |
 
 ## Automation Status
 
@@ -35,6 +36,18 @@ All originally-identified automation gaps have been implemented:
 | `tasks watch` (auto-lint) | [01](01-agents-know-what-to-work-on.md#watch-mode) | ✅ `tasks watch` |
 | Queue stats & diff | [07](07-monitor-queue-health.md) | ✅ `tasks stats` / `tasks diff` |
 | Reusable CI workflow | [01](01-agents-know-what-to-work-on.md#add-to-ci) | ✅ `.github/workflows/tasks-lint.yml` |
+
+## Backends and the human/agent contract
+
+Every story above works the same way for the human: **humans read the queue and tell their agents what to work on; agents and tools mutate task state.** What changes between [backends](../../spec.md#task-backends) is *where* that state lives and what guarantees it carries:
+
+| Backend | Capability | Task state | Claiming | When |
+|---|---|---|---|---|
+| **File** (`tasks-md`, default) | spec-compatible, offline-capable | `TASKS.md` is the source of truth — **human-editable** | best-effort `(@agent)` | solo, low-concurrency |
+| **Git-native** | spec-compatible, **collision-free**, recommended for shared repos | an append-only `tasks-claims` log; `TASKS.md` is a generated snapshot agents never hand-edit | collision-free via git ref compare-and-swap | any repo with more than one writer — a multi-contributor project up to a team of machines × per-host agent fleets (VISION.md G7, G8) |
+| **GitHub Issues** | spec-compatible, infra-required | open issues carrying the marker label | issue assignee | teams already living in a tracker |
+
+"Collision-free" means no two agents ever hold the same task at once — **not** a globally reproducible race winner; only the *fold of the log* is reproducible. In the file backend, editing `TASKS.md` by hand stays the zero-setup path; in generated backends (git-native, Issues) task mutation is agent/tool-mediated, so a human commands an agent rather than hand-editing generated state.
 
 ## Design Philosophy
 

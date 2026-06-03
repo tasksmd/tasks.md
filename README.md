@@ -14,7 +14,22 @@ AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
 ## Quick Start
 
-Create a `TASKS.md` at your repo root:
+### One prompt (recommended)
+
+Paste this into whatever agent you use (Claude Code, Cursor, Devin, Codex, Gemini CLI, Windsurf) and it does the rest — creates `TASKS.md`, merges the `## Task Management` section into `AGENTS.md`, installs its own `/next-task` command, verifies, and reports:
+
+```text
+Set up tasks.md in this repo. Create TASKS.md if missing, add the "## Task Management"
+section to AGENTS.md (don't duplicate it), install the /next-task command for yourself,
+then verify with `npx -y @tasks-md/lint TASKS.md` and tell me what you did. If npx/Node
+isn't available, write the files directly from https://github.com/tasksmd/tasks.md.
+```
+
+It's idempotent (safe to re-run — it merges, never clobbers) and works with or without Node (`tasks init` + `tasks install --agent <you>` when `npx` is present; a direct file-write fallback otherwise). The canonical steps live in [`commands/setup.md`](commands/setup.md), generated into a `/setup` command for all six agents. For a **fleet** (a team of machines × parallel agents on one queue), the agent can also run `tasks fleet init` to switch to the collision-free [git-native backend](spec.md#fleet-coordination).
+
+### Manual
+
+Or set it up by hand. Create a `TASKS.md` at your repo root:
 
 ```markdown
 # Tasks
@@ -51,7 +66,7 @@ Then add this to your `AGENTS.md` so agents know to use it:
 - Remove completed tasks from the file (history is in git log)
 ```
 
-That's it. Your agent will read TASKS.md on session start and work through the queue.
+That's it. Your agent will read TASKS.md on session start and work through the queue. That snippet is the zero-setup **file backend** (best-effort `(@you)` claims) — perfect for a solo repo. The moment you have **more than one writer**, switch to the collision-free [git-native backend](#backends) with `/migrate` so two agents can never grab the same task.
 
 ## Worked example: first 10 minutes
 
@@ -151,6 +166,36 @@ Nine commands take a fresh repo from zero to a queue an agent can pick from. Out
 4. **Repeat** — You keep adding tasks while agents keep working through them
 
 You're always adding to the queue; agents are always draining it. No ideas get lost, and agents never run out of work.
+
+The contract is the same on every backend: **humans read the queue and tell agents what to do; agents (or tools) mutate task state.** In the default file backend the file *is* the surface, so hand-editing `TASKS.md` is the zero-setup path. In a generated backend the queue is a projection and an agent runs the operation — but the human's experience ("add a task", "mark it done") is unchanged.
+
+## Backends
+
+`TASKS.md` (local markdown) is the default, zero-infra backend. The same spec / parser / CLI / MCP surface can target another **backend** — switching is configuration in `.tasksmd.json`, never a migration ([`spec.md` § Task backends](spec.md#task-backends)):
+
+| Backend | Capability | Use it when |
+|---|---|---|
+| **File** (`tasks-md`, default) | spec-compatible, offline, **human-editable** `TASKS.md`, best-effort claims | solo or offline — the zero-setup default |
+| **Git-native** (recommended for shared repos) | spec-compatible, **collision-free** claims via git ref compare-and-swap; `TASKS.md` becomes a generated snapshot | **more than one writer**: a multi-contributor project, or a fleet of machines each running parallel agents on one queue ([Fleet coordination](spec.md#fleet-coordination)). Run `tasks fleet init` |
+| **GitHub Issues** | spec-compatible, infra-required (a tracker) | a team already living in GitHub Issues |
+| **Atomic queue / MCP broker** | server-backed | only where that infra already exists |
+
+"Collision-free" means no two agents ever hold the same task at once — not a globally reproducible race winner; only the *fold of the log* is reproducible. Move an existing file queue to git-native with the **`/migrate` command** (or `tasks migrate --apply` then `tasks fleet init`) — it imports your current `TASKS.md` into the log first, so no task is lost. The portable layer is the spec; the coordination is borrowed. **This repo runs git-native to dogfood it** (G8) — its own `TASKS.md` is a generated snapshot, produced by the very `/migrate` path you'd run.
+
+**Writing your own backend?** Any backend works behind the same surface if it passes the capability-scoped [`@tasks-md/conformance`](packages/conformance/) suite — implement a `ConformanceTarget`, run it, and publish the JSON report. tasks.md is not a backend registry; you self-certify which compatibility classes (file / operation / collision-free) you support.
+
+## Workspaces (many repos, one queue)
+
+Have a parent folder of repos that each carry a `TASKS.md`? Workspace mode picks the highest-priority unblocked task across all of them:
+
+```bash
+tasks next --workspace ~/apps/tooling          # one workspace
+tasks next --workspaces ~/apps/tooling,~/apps/oncall-hub   # several
+tasks workspaces add ~/apps/tooling --name tooling          # save to config
+tasks next                                      # no flag → aggregate all configured
+```
+
+Declared workspaces live in `~/.config/tasks-md/workspaces.json`; once configured, plain `tasks next` aggregates across them and prints `<workspace>::<repo>:<task-id>`. Tasks can depend across repos (`**Blocked by**: api#fix`) or across workspaces (`**Blocked by**: oncall-hub::api#fix`). With no config and no flag, `tasks next` reads the local `./TASKS.md` as before. See [`spec.md` § Workspaces](spec.md#workspaces).
 
 ## Writing Good Tasks
 
@@ -282,10 +327,10 @@ When you type `/next-task` or `/next-task <task-id>`, the agent runs this flow:
 10. **Refuse forbidden work** — Before claiming, checks whether the task requires a blocked-by-default action (posting in Slack / Teams / Discord, creating or commenting on Jira or GitHub issues, publishing packages, sending emails, pushing to protected branches, etc.). If so, adds `**Blocked**: <reason>` to the task with a short code like `needs-user-approval` and moves on. In targeted mode, it stops after committing the block. Opening pull requests with `gh pr create`, reading dashboards, and local-only actions stay allowed by default.
 11. **Enrich blocked tasks** — When every remaining task is blocked and none has been enriched in the last 7 days, spends the turn on read-only research. Reads the task's `**Files**:`, greps the codebase for related terms, drafts the exact Slack/Jira/PR-review text when applicable, and appends findings to the task's `**Research**:` field (plus `**Files**:` / `**Acceptance**:` when warranted). Stamps `**Last-enriched**: YYYY-MM-DD` so future sessions can tell how fresh the notes are. Never touches `**Blocked**:` or `**Blocked by**:` — enrichment leaves context behind, it doesn't unblock.
 12. **Plan and validate** — For non-trivial tasks (everything except single-file <30-minute obvious fixes), writes a plan to `docs/plans/<task-id>.md` from `docs/templates/plan-template.md`, then launches a reviewer subagent (`reviewer` profile, fallback `qa-engineer` → `researcher`) to validate it. The subagent reads the plan + the files in `**Files**:` + project docs and appends a `## Reviewer verdict` block. Only when the verdict is `approved` does work proceed; `needs-revision` triggers up to 3 revision cycles; `reject` halts and reports to the operator. Trivial fixes skip planning
-13. **Claim** — Appends `(@agent-id)` to the task line so other agents skip it
+13. **Claim** — File backend: appends `(@agent-id)` to the task line so other agents skip it. Generated backend (git-native / issues): runs `tasks claim <id>` (collision-free)
 14. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
 15. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
-16. **Complete** — Removes the entire task block from TASKS.md, commits, pushes
+16. **Complete** — File backend: removes the entire task block from TASKS.md; generated backend: runs `tasks complete <id>`. Then commits and pushes
 17. **Loop** — In queue mode, returns to step 5 and picks the next task until the queue is empty
 18. **Roam** — When the current repo's queue is empty and every blocked task is freshly enriched, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
 19. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
@@ -396,7 +441,7 @@ Key differences:
 | **Agent can write** | Needs API client + auth | Append to a file |
 | **Git-native** | Separate system | Same repo, same PR |
 
-They complement each other — one Jira ticket or GitHub Issue often becomes multiple TASKS.md entries. Use the tracker for *what* to build; use TASKS.md for *how* the agent builds it.
+They complement each other — one Jira ticket or GitHub Issue often becomes multiple TASKS.md entries. Use the tracker for *what* to build; use TASKS.md for *how* the agent builds it. For a tool-by-tool breakdown (Backlog.md, Taskwarrior, agent-native to-do lists, AGENTS.md, and more), see [`docs/competitors/`](docs/competitors/).
 
 ### Can I use TASKS.md alongside Jira / GitHub Issues?
 
@@ -456,7 +501,7 @@ The agent should tell you it's stuck and move on to the next task. The stuck tas
 
 ### Can multiple agents work on the same TASKS.md?
 
-Yes — that's what the claiming mechanism is for. Each agent appends `(@agent-id)` to the task it picks up. Other agents see the claim and skip to the next unclaimed task. In multi-agent setups, agents should commit and push claims immediately to avoid races.
+Yes — that's what the claiming mechanism is for. In the **file backend** each agent appends `(@agent-id)` to the task it picks up and commits/pushes immediately; other agents see the claim and skip it. This is best-effort, so two agents reading simultaneously can still race. For a **fleet** that must never double-claim — a team of machines each running parallel agents — switch to the [git-native backend](spec.md#fleet-coordination) (`tasks fleet init`), where claims are collision-free via git's atomic ref compare-and-swap.
 
 ### Should I keep completed tasks in the file?
 
@@ -468,7 +513,9 @@ They're companions. AGENTS.md tells agents how your project works (build command
 
 ## See Also
 
+- [Vision](VISION.md) — the strategy: one job, a thin standard, borrowed coordination
 - [Why Your AI Agent Needs a Backlog](docs/blog/why-your-ai-agent-needs-a-backlog.md) — the motivation behind TASKS.md
+- [How it compares](docs/competitors/) — honest profiles vs. Backlog.md, Issues, Jira/Linear, agent-native to-do tools, and AGENTS.md
 - [AGENTS.md](https://agents.md/) — the companion spec for agent instructions
 - [Proposal: TASKS.md as a companion standard](https://github.com/agentsmd/agents.md/issues/166) — discussion on the agents.md repo
 
