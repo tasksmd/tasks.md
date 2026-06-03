@@ -76,3 +76,19 @@ Cycle 1 returned needs-revision (3 concerns: no regression guard, missing threat
 - **Concerns**: []
 - **Approval rationale**:
   - The revised plan fully addresses all three concerns with concrete, mechanical safeguards: a regression-guard test that enforces the build-local prohibition at CI time (criterion 7), explicit threat-model documentation of the deliberate projection vs. claim-check divergence, and clarified acceptance criteria that distinguish trigger safety from build-strategy safety. The plan is implementable with deterministic verification and durable security properties.
+
+## Implementation finding (2026-06-03) — approach insufficient, needs revision
+
+Shipped the registry pin (PR #112) and the claim-check on that PR **still** failed with `sh: 1: tasks: not found` → vacuous pass. Root-caused it:
+
+- Public npm has `@tasks-md/cli@0.10.0` (latest), the tarball is complete (bin + dist + shebang), and deps are `^0.10.0` (not `workspace:*`). So the published package is fine.
+- **This repo IS the `@tasks-md/cli` workspace.** When `npx @tasks-md/cli` runs from the repo root, npm resolves the package to the repo's **own local** `packages/cli` — which the claim-check never builds (`dist/cli.js` absent) → "tasks: not found". npm never queries the registry, so `npm_config_registry` is inert here. (Same root cause as the projection's original failure; build-local fixed the projection because building the workspace produces `dist/cli.js` — but build-local is unsafe for the claim-check.)
+
+The registry pin is still correct + harmless for **consumer** repos (which aren't the cli's workspace, so their `npx` fetches the published cli), and the guard test + threat-model note remain valid. But it does **not** fix the dogfood repo.
+
+**Corrected fix options (both keep the trusted-cli security property; pick one):**
+
+- **(A) Install the published cli to a temp dir OUTSIDE the workspace, run it from the repo:** `(cd "$RUNNER_TEMP/tcli" && npm init -y && npm install @tasks-md/cli@latest)` then `node "$RUNNER_TEMP/tcli/node_modules/@tasks-md/cli/dist/cli.js" check-push …` with cwd=repo (git context intact). Installing outside the workspace forces a registry fetch; the guard's `node packages/cli/dist/cli.js` string still correctly forbids the *local* build-local.
+- **(B) Build the cli from the TRUSTED base ref:** `git checkout "$base" -- packages package.json package-lock.json && npm ci && npm run build && node packages/cli/dist/cli.js check-push …`. Secure (base code, never PR head) but heavier; the guard test must be revised to allow base-built local cli.
+
+Recommend (A) — smaller, keeps the published-cli model, leaves the guard as-is. Re-validate the revised approach with a reviewer before re-implementing.

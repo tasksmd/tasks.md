@@ -100,10 +100,13 @@ describe("runFleetStats", () => {
 // guard fails if anyone reintroduces build-local. See the threat model.
 describe("claim-check never builds the untrusted PR's cli", () => {
   const assertTrustedCli = (yaml: string, label: string) => {
-    expect(yaml, `${label}: must run the published cli`).toContain(
-      "npx -y @tasks-md/cli check-push",
+    // Never run the LOCAL workspace build — on pull_request that is the PR's own
+    // untrusted code. Must invoke the published @tasks-md/cli (npx for consumer
+    // repos, or a temp-installed copy on the cli's own repo) + pin public npm.
+    expect(yaml, `${label}: must NOT run the local workspace cli`).not.toContain(
+      "packages/cli/dist/cli.js",
     );
-    expect(yaml, `${label}: must NOT build-local`).not.toContain("node packages/cli/dist/cli.js");
+    expect(yaml, `${label}: must invoke the published @tasks-md/cli`).toContain("@tasks-md/cli");
     expect(yaml, `${label}: must pin public npm`).toContain(
       "npm_config_registry: https://registry.npmjs.org",
     );
