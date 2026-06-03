@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-b601173c-2834-46b2-baa8-6d2feffec5d3",
+  "task_id": "expand-git-native-conformance-coverage-for-fleet-edge-cases",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T22:24:53.093Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
