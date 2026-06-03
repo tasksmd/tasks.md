@@ -6,7 +6,7 @@
 
 ## P0
 
-- [ ] Ship a one-shot consumer migration command (file backend → git-native)
+- [ ] Ship a one-shot consumer migration command (file backend → git-native) (@devin)
   - **ID**: consumer-migration-command
   - **Tags**: cli, commands, migration, git-native, dogfood, adoption, g8
   - **Details**: The git-native mechanics already exist (`tasks migrate`, `tasks fleet init`, `tasks doctor`), but a consumer flipping a populated file-backed repo must hand-wire them in the right order or lose their queue. Ship the agent-facing command that orchestrates the flip idempotently, so converting any repo (including this one — see `dogfood-git-native-self-host`) is one prompt. Follow G2: author the canonical `commands/migrate.md` and regenerate every per-agent variant via `npx tasks generate-commands` — the generator's source list (`packages/cli/src/commands/generate-commands.ts`) currently enumerates `next-task`, `lint-tasks`, `setup`; add `migrate`. The command flow: detect the current backend (read `.tasksmd.json`); run `tasks migrate` as a **dry-run** and show the imported events; on confirmation run `tasks migrate --apply` then `tasks fleet init` (writes `.tasksmd.json`, lefthook, projection + claim-check workflows) ; keep agent commands installed; run `tasks doctor`; print the rollback (`rm .tasksmd.json` + `git update-ref -d refs/heads/tasks-claims`). Idempotent + Node-optional fallback like `commands/setup.md`. Wire it into `README.md`, `commands/README.md`, and `commands/setup.md` step 5 (which today mentions `fleet init` but not `migrate`, so a populated queue would be lost).
