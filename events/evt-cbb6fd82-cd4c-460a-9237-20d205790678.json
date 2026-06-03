@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-cbb6fd82-cd4c-460a-9237-20d205790678",
+  "task_id": "exclude-dist-from-vitest-so-test-files-don-t-run-twice",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T22:22:23.463Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Exclude dist from vitest so test files don't run twice",
+    "priority": "P3",
+    "tags": [
+      "testing,build,dx"
+    ],
+    "body": "vitest is running compiled test copies under packages/*/dist/*.test.js in addition to the src *.test.ts (observed: packages/conformance/dist/conformance.test.js ran alongside the src one). This doubles conformance test time (~25s each) and risks a stale dist copy masking a src change. Add a vitest exclude for **/dist/** (or scope the test glob to src/) so each test runs once from source. Surfaced expanding conformance coverage."
+  }
+}
