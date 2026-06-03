@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-bf01fbac-0578-4929-b0fd-3104cac6312b",
+  "task_id": "dogfood-git-native-self-host",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T12:31:36.230Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
