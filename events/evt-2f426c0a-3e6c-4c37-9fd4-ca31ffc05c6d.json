@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-2f426c0a-3e6c-4c37-9fd4-ca31ffc05c6d",
+  "task_id": "protect-tasks-claims-and-main-from-force-push-delete-with-co",
+  "event_type": "released",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T23:46:13.960Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
