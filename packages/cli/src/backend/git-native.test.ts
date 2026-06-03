@@ -7,10 +7,13 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   autoRefreshEnabled,
+  catFileBatch,
   compactGitNativeLog,
   createGitNativeBackend,
   forcePushCompaction,
+  gitSpawnCount,
   parseGithubSlug,
+  readEvents,
   renderGitNativeSnapshot,
   shouldCompact,
 } from "./git-native.js";
@@ -346,4 +349,56 @@ describe("git-native backend", () => {
     // Missing config → disabled.
     expect(autoRefreshEnabled(makeDirectory("tasksmd-cfg-"))).toBe(false);
   });
+});
+
+describe("readEvents — bounded fold cost", () => {
+  it("catFileBatch frames blobs byte-exactly (ascii, multi-byte, embedded newline, missing)", () => {
+    const dir = makeRepo("tasksmd-batch-");
+    const contents = ['{"a":1}', '{"t":"café 🚀"}', '{"x":"line1\nline2"}'];
+    const shas = contents.map((c) => git(dir, ["hash-object", "-w", "--stdin"], c));
+    const out = catFileBatch(dir, [...shas, "nonexistent-object-ref"]);
+    expect(out.length).toBe(4);
+    expect(out[0]?.toString("utf-8")).toBe(contents[0]);
+    expect(out[1]?.toString("utf-8")).toBe(contents[1]); // multi-byte preserved
+    expect(out[2]?.toString("utf-8")).toBe(contents[2]); // embedded newline kept inside the frame
+    expect(out[3]).toBeNull(); // missing spec → null
+  });
+
+  it("folds a large log correctly — correctness at scale", async () => {
+    const dir = makeRepo("tasksmd-scale-");
+    const backend = createGitNativeBackend(dir);
+    const N = 30;
+    for (let i = 0; i < N; i++) {
+      await backend.create({ title: i === 0 ? "Café 🚀 task" : `Task ${i}`, priority: "P1" });
+    }
+    await backend.claim("task-7", { actorId: "@alice" });
+    await backend.complete("task-9", { actorId: "@bob" });
+
+    const open = await backend.listOpen();
+    expect(open.length).toBe(N - 1); // task-9 completed
+    expect(open.find((t) => t.id === "task-7")?.assignee).toBe("alice");
+    expect(open.some((t) => t.id === "task-9")).toBe(false);
+    // The multi-byte title round-trips through the batched reader.
+    expect(open.some((t) => t.title.includes("🚀"))).toBe(true);
+  }, 30_000);
+
+  it("spawns a constant number of git processes regardless of event count (O(1))", async () => {
+    const small = makeRepo("tasksmd-o1-");
+    const bs = createGitNativeBackend(small);
+    for (let i = 0; i < 5; i++) await bs.create({ title: `T${i}`, priority: "P1" });
+    const big = makeRepo("tasksmd-o1-");
+    const bb = createGitNativeBackend(big);
+    for (let i = 0; i < 40; i++) await bb.create({ title: `T${i}`, priority: "P1" });
+
+    const before1 = gitSpawnCount();
+    readEvents(small);
+    const smallSpawns = gitSpawnCount() - before1;
+    const before2 = gitSpawnCount();
+    readEvents(big);
+    const bigSpawns = gitSpawnCount() - before2;
+
+    expect(smallSpawns).toBeGreaterThanOrEqual(1); // guard: the counter is live
+    expect(bigSpawns).toBe(smallSpawns); // O(1): identical despite 8x more events
+    expect(smallSpawns).toBeLessThanOrEqual(3); // ~2: git log + cat-file --batch
+  }, 30_000);
 });
