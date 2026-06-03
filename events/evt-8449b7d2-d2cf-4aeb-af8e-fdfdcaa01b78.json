@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-8449b7d2-d2cf-4aeb-af8e-fdfdcaa01b78",
+  "task_id": "pin-the-claim-check-workflow-s-cli-version-instead-of-latest",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T23:42:13.017Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-bd3fdb14-1583-4f28-93b3-41de7527bf3e",
+    "lease_expires_at": 1780616533017
+  }
+}
