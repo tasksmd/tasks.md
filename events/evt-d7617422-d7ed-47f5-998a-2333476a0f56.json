@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d7617422-d7ed-47f5-998a-2333476a0f56",
+  "task_id": "expose-claimid-and-assignee-in-list-json-so-fencing-tokens-a",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:45:13.720Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-2270bbd4-f16f-4b06-8321-f9b9dd3eb3c4",
+    "lease_expires_at": 1780609513720
+  }
+}
