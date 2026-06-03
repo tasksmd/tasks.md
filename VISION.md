@@ -1,6 +1,6 @@
 ---
 schema: vision-v1
-version: 3
+version: 4
 last_reviewed: 2026-06-02
 goals:
   - id: G1
@@ -23,7 +23,10 @@ goals:
     description: tasks.md owns ONLY the portable semantic layer — the format, priority, tags, blocked-by, removable-not-toggleable completion, and the /next-task workflow. Everything the ecosystem already solves — atomic dequeue, locking, leases, scheduling, merge serialization — is delegated to a backend (G5), never reimplemented. The default is GET (adopt an existing tool) over BUILD; bespoke distributed-systems code must first prove no backend is adaptable. This principle is the reason G1 and G5 hold.
   - id: G7
     name: Fleet coordination is the primary use case
-    description: The flagship reason to adopt tasks.md is to run a TEAM of machines — each running a PARALLEL fleet of agents — against one queue with zero duplicate successful claims and deterministic selection for a known state snapshot. tasks.md supplies the agent-readable layer and delegates the collision-free, two-tier coordination to a backend (G5/G6) — git-native by default, because agents are file-native (see Core beliefs); a server-backed queue is offered only where that infra already exists. The solo case (one agent, one file) is the zero-setup default; the fleet case is what the design must never break.
+    description: The flagship reason to adopt tasks.md is to run a TEAM of machines — each running a PARALLEL fleet of agents — against one queue with zero duplicate successful claims and deterministic selection for a known state snapshot. tasks.md supplies the agent-readable layer and delegates the collision-free, two-tier coordination to a backend (G5/G6) — git-native by default, because agents are file-native (see Core beliefs); a server-backed queue is offered only where that infra already exists. The two-tier machine fleet is the extreme; the everyday case is any MULTI-CONTRIBUTOR repo where two writers (human or agent) would otherwise collide on TASKS.md — git-native serves both with the same mechanism. The solo case (one agent, one file) is the zero-setup default; the collaborative and fleet cases are what the design must never break.
+  - id: G8
+    name: Dogfood the collision-free path
+    description: The canonical tasks.md repo — and every sibling project its maintainers run — commits to running on the git-native backend it recommends for collaborative repos (the conversion is tracked in TASKS.md and uses the same `tasks migrate` + `fleet init` path consumers run). Once converted, TASKS.md in those repos is a generated snapshot and claims go through the tasks-claims ref. Eating our own dog food is how the migration, conformance, and conflict-free claiming are proven on the projects that define them; a backend the maintainers will not run on their own multi-contributor repo is not a backend we ship as the recommended default. The file backend remains the zero-setup solo default and the reference implementation — dogfooding raises the recommendation for shared repos, it does not retire the file path.
 non_goals:
   - id: NG1
     name: Not a project management tool
@@ -54,7 +57,7 @@ Today's options all fail at that one job:
 
 The most demanding — and most valuable — scenario is a **fleet**: a *team of machines* working one queue at the same time, each machine running a *parallel fleet of agents*. The hard requirement is that **no two agents anywhere successfully claim and hold the same task**, and that selection is deterministic for a known state snapshot. Race winners are timing-dependent; the folded queue state is reproducible. This two-tier shape — a team of hosts × per-host agents — is the use case the design is built around (G7).
 
-The simplest scenario — one developer, one agent, one file — is the **zero-setup default**. The fleet is what the design must never break; the solo case is what it must never burden.
+The simplest scenario — one developer, one agent, one file — is the **zero-setup default**. The fleet is what the design must never break; the solo case is what it must never burden. Between them sits the **everyday collaborative repo**: several contributors (and their agents) sharing one queue, where the only thing standing between them and a `TASKS.md` merge conflict is the same collision-free claim the fleet relies on. That is why git-native is the recommended default the moment a repo has more than one writer — and why this project runs on it (G8).
 
 ## The governing principle: thinnest layer that solves the goal
 
@@ -76,7 +79,7 @@ The coordination engine is pluggable, and every backend exposes the identical sp
 | Backend | What it is | When |
 |---|---|---|
 | **File** (default) | git-synced `TASKS.md`, best-effort `(@agent)` claim | solo, low-concurrency, offline |
-| **Git-native** (default for fleets) | **collision-free** claims via git's atomic ref-CAS on a `tasks-claims` log excluded from normal CI — the sole source of truth for task state; `TASKS.md` is a **single-writer generated snapshot** (agents never edit it → conflict-free). tasks.md ships the spec + conformance suite + a thin reference adapter; a reused CRDT engine (git-bug/grite/Automerge-on-git) is an optional measured phase, not required for v1. **Single repo, no sidecar, no server** | a team of always-on machines × per-host agent fleets — the primary use case (G7) |
+| **Git-native** (default for collaborative repos + fleets) | **collision-free** claims via git's atomic ref-CAS on a `tasks-claims` log excluded from normal CI — the sole source of truth for task state; `TASKS.md` is a **single-writer generated snapshot** (agents never edit it → conflict-free). tasks.md ships the spec + conformance suite + a thin reference adapter; a reused CRDT engine (git-bug/grite/Automerge-on-git) is an optional measured phase, not required for v1. **Single repo, no sidecar, no server** | any multi-contributor repo where two writers would collide on `TASKS.md` — from a 2-dev project up to a team of always-on machines × per-host agent fleets (G7, G8) |
 | **Atomic queue** | pgmq / River on Postgres `SKIP LOCKED` (visibility-timeout = lease) | only where that infra already exists |
 | **MCP broker** | one `tasks-mcp` (HTTP) serializing pick / claim | agents already speak MCP; a single coordination point |
 | **Issues** | GitHub Issues / Projects (assignee, labels, `Closes #N`) | teams already living in a tracker |
@@ -115,6 +118,7 @@ Each of these falls straight out of G6 — it is something the ecosystem already
 - **Removable, not toggleable.** Completed tasks are removed entirely (history lives in git log), never marked `[x]`. Removal forces decisions; toggles accumulate noise.
 - **No vendor lock-in** (G4). The same file for every agent, the same surface for every backend. Switching either needs no migration.
 - **One TASKS.md per repo, optionally federated** (G3). Per-repo files are the source of truth; workspace-mode aggregates them for picking.
+- **Dogfood the recommendation** (G8). The canonical repo and its sibling projects run on git-native — the backend recommended for collaborative repos. If the maintainers won't run it on their own contributed repo, it isn't ready to recommend; the migration that converts this repo is the migration consumers run.
 
 ## Adoption
 

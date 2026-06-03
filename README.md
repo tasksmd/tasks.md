@@ -175,12 +175,12 @@ The contract is the same on every backend: **humans read the queue and tell agen
 
 | Backend | Capability | Use it when |
 |---|---|---|
-| **File** (`tasks-md`, default) | spec-compatible, offline, **human-editable** `TASKS.md`, best-effort claims | solo or low-concurrency — the zero-setup default |
-| **Git-native** | spec-compatible, **collision-free** claims via git ref compare-and-swap, fleet-default; `TASKS.md` becomes a generated snapshot | a **fleet**: a team of machines each running parallel agents on one queue ([Fleet coordination](spec.md#fleet-coordination)). Run `tasks fleet init` |
+| **File** (`tasks-md`, default) | spec-compatible, offline, **human-editable** `TASKS.md`, best-effort claims | solo or offline — the zero-setup default |
+| **Git-native** (recommended for shared repos) | spec-compatible, **collision-free** claims via git ref compare-and-swap; `TASKS.md` becomes a generated snapshot | **more than one writer**: a multi-contributor project, or a fleet of machines each running parallel agents on one queue ([Fleet coordination](spec.md#fleet-coordination)). Run `tasks fleet init` |
 | **GitHub Issues** | spec-compatible, infra-required (a tracker) | a team already living in GitHub Issues |
 | **Atomic queue / MCP broker** | server-backed | only where that infra already exists |
 
-"Collision-free" means no two agents ever hold the same task at once — not a globally reproducible race winner; only the *fold of the log* is reproducible. Move an existing file queue to git-native with `tasks migrate` (dry-run by default). The portable layer is the spec; the coordination is borrowed.
+"Collision-free" means no two agents ever hold the same task at once — not a globally reproducible race winner; only the *fold of the log* is reproducible. Move an existing file queue to git-native with `tasks migrate` (dry-run by default). The portable layer is the spec; the coordination is borrowed. **This repo is being converted to git-native to dogfood it** (G8, tracked in [`TASKS.md`](TASKS.md)) — once flipped its `TASKS.md` is a generated snapshot, via the same `tasks migrate` + `tasks fleet init` path you'd run.
 
 **Writing your own backend?** Any backend works behind the same surface if it passes the capability-scoped [`@tasks-md/conformance`](packages/conformance/) suite — implement a `ConformanceTarget`, run it, and publish the JSON report. tasks.md is not a backend registry; you self-certify which compatibility classes (file / operation / collision-free) you support.
 

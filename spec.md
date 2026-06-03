@@ -550,6 +550,8 @@ A repo declares its backend in a `.tasksmd.json` file at the git root (or the wo
 
 `tasks-md` is assumed when no config file is present, so existing repos are unaffected. A `--backend <kind>` flag on the CLI overrides the config per-invocation.
 
+**Which to pick.** `tasks-md` is the zero-setup default for a solo or offline queue. Choose `git-native` the moment a repo has **more than one writer** — multiple contributors, or a fleet of machines each running parallel agents — so concurrent claims resolve by git ref-CAS instead of colliding on `TASKS.md` (see [Fleet coordination](#fleet-coordination)). Choose `github-issues` when the team already lives in a tracker. Converting an existing file-backed queue is `tasks migrate` (dry-run by default) followed by `tasks fleet init`; switching back is `rm .tasksmd.json` plus `git update-ref -d refs/heads/tasks-claims`.
+
 ### The `github-issues` backend
 
 Open issues carrying the marker **label** are the queue. The mapping to the task model is:
