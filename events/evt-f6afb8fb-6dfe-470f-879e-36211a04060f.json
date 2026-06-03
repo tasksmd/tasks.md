@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-f6afb8fb-6dfe-470f-879e-36211a04060f",
+  "task_id": "reconcile-the-plan-commit-convention-with-commitlint",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:58:55.835Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-66e8669e-7650-43b8-a3e7-a70587b8ea16",
+    "lease_expires_at": 1780610335835
+  }
+}
