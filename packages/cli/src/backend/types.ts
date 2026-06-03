@@ -24,6 +24,15 @@ export interface BackendTask {
   blockedBy?: string[];
   /** Backend-native URL, when one exists (issue URL). */
   url?: string;
+  /**
+   * git-native only: the live claim's fencing token, so the owner can retrieve
+   * it (for `heartbeat`/`complete --claim`/work-push trailers) without parsing
+   * `git log`. NOT a secret — it is already readable in the `tasks-claims` ref;
+   * the real gate is the server-side required check, not this field.
+   */
+  claimId?: string;
+  /** git-native only: epoch ms when the current claim's lease expires. */
+  leaseExpiresAt?: number;
 }
 
 export interface CreateTaskInput {
