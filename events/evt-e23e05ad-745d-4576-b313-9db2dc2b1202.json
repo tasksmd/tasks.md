@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-e23e05ad-745d-4576-b313-9db2dc2b1202",
+  "task_id": "arm-hard-claim-enforcement-on-the-dogfood-repo",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:03:09.142Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Arm hard claim enforcement on the dogfood repo",
+    "priority": "P1",
+    "tags": [
+      "git-native,enforcement,conflict-safety,security"
+    ],
+    "body": "The collision-free CLAIM mechanism is proven, but enforcement is advisory by default, so an agent that does not claim (or uses --no-verify, or clones without the hook) can still push code with no live claim -> two agents collide. This is THE gap for '99% cannot conflict'. Arm it: gh variable set TASKS_CLAIM_ENFORCE=1; make tasks-claim-check required on the main ruleset; protect tasks-claims and main from force-push/delete. Threat model B5/B6/B7 + fleet-phase3-server-side-enforcement. Depends on the claim-check workflow actually running first.",
+    "blocked": "needs-user-approval — requires repo-settings: set TASKS_CLAIM_ENFORCE=1, mark tasks-claim-check a REQUIRED status check on main, and add a ruleset blocking force-push/delete of tasks-claims + main"
+  }
+}
