@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-3d014379-ab72-4801-91a6-2b6c0b87e9d5",
+  "task_id": "memoize-foldlog-per-ref-tip-within-a-process",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:03:52.075Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Memoize foldLog per ref-tip within a process",
+    "priority": "P3",
+    "tags": [
+      "git-native,performance"
+    ],
+    "body": "readEvents is now O(1) git processes per fold (cat-file --batch), but several operations fold MORE THAN ONCE per process (e.g. claim does a check fold + appendWithRetry; render+stats+doctor each fold). Cache foldLog keyed on the current tasks-claims commit sha (currentClaimsCommit) so repeated folds in one process reuse the result; invalidate when the ref tip changes (after any append). Complements bound-git-native-fold-cost-at-scale (the read is cheap; this removes redundant reads). Surfaced implementing the batched readEvents."
+  }
+}
