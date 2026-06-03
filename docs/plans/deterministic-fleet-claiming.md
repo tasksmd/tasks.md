@@ -150,6 +150,14 @@ corporate-safe because it always runs and decides by path, never bypasses.
 - **Phase 4 (only if measured):** adopt a CRDT engine (git-bug/grite/Automerge-on-git) to
   drop the retry loop under high contention; HRW partitioning; per-host batching.
 
+> **Tripwire (concrete, shipped):** `tasks fleet stats` folds the `tasks-claims` log and
+> reports a **contention ratio** = reclaimed-tasks ÷ distinct-tasks-ever-claimed (the
+> CAS rejects lost claims without an event, so re-claims are the observable signal). The
+> tripwire is **contention ratio > 0.20** (`CONTENTION_TRIPWIRE` in
+> `packages/cli/src/commands/fleet.ts`). Below it, linear-CAS is sufficient and **no Phase-4
+> CRDT/HRW task may proceed**; above it (or with a written operator override), re-run the
+> engine bake-off. The command prints which side of the tripwire the repo is on.
+
 ## v1 constraints (explicit preconditions — what v1 does NOT yet cover)
 - **Always-on machines.** v1 assumes the fleet is always-on (servers / CI runners). A
   laptop that sleeps holds its claim until the long lease expires — mixed laptop fleets

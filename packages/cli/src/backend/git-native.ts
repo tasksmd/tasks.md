@@ -399,6 +399,69 @@ function foldLog(directory: string): Map<string, FoldedTask> {
   return foldEvents(readEvents(directory));
 }
 
+export interface FleetStats {
+  events: number;
+  eventsByType: Record<GitNativeEventType, number>;
+  tasksCreated: number;
+  open: number;
+  claimed: number;
+  done: number;
+  actors: number;
+  /** Tasks claimed more than once (released-and-reclaimed or lease-stolen). */
+  reclaimedTasks: number;
+  /**
+   * Churn proxy: reclaimed ÷ distinct-tasks-ever-claimed. The git-native CAS
+   * rejects lost claims WITHOUT appending an event, so the log cannot count
+   * lost races directly — re-claims are the observable contention signal.
+   */
+  contentionRatio: number;
+}
+
+/** Fold the tasks-claims log into contention/observability metrics (Phase 4). */
+export function gitNativeFleetStats(directory: string): FleetStats {
+  fetchClaimsRef(directory);
+  const events = readEvents(directory);
+  const eventsByType: Record<GitNativeEventType, number> = {
+    created: 0,
+    updated: 0,
+    claimed: 0,
+    released: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+  const actors = new Set<string>();
+  const claimsPerTask = new Map<string, number>();
+  for (const event of events) {
+    eventsByType[event.event_type] += 1;
+    actors.add(event.actor_id);
+    if (event.event_type === "claimed") {
+      claimsPerTask.set(event.task_id, (claimsPerTask.get(event.task_id) ?? 0) + 1);
+    }
+  }
+  const folded = foldEvents(events);
+  let open = 0;
+  let claimed = 0;
+  let done = 0;
+  for (const entry of folded.values()) {
+    if (entry.completed) done += 1;
+    else if (entry.task.assignee) claimed += 1;
+    else open += 1;
+  }
+  const reclaimedTasks = [...claimsPerTask.values()].filter((n) => n > 1).length;
+  const tasksEverClaimed = claimsPerTask.size;
+  return {
+    events: events.length,
+    eventsByType,
+    tasksCreated: eventsByType.created,
+    open,
+    claimed,
+    done,
+    actors: actors.size,
+    reclaimedTasks,
+    contentionRatio: tasksEverClaimed === 0 ? 0 : reclaimedTasks / tasksEverClaimed,
+  };
+}
+
 function sortedTasks(tasks: Map<string, FoldedTask>): BackendTask[] {
   return [...tasks.values()]
     .filter((entry) => !entry.completed)

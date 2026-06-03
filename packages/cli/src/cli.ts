@@ -16,7 +16,7 @@ import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
 import { runMigrate } from "./commands/migrate.js";
-import { formatDoctorReport, runDoctor, runFleetInit } from "./commands/fleet.js";
+import { formatDoctorReport, runDoctor, runFleetInit, runFleetStats } from "./commands/fleet.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
@@ -669,6 +669,13 @@ fleet
   .action((opts: { backend?: "git-native" | "tasks-md"; agent?: string; all?: boolean }) => {
     const result = runFleetInit(process.cwd(), opts);
     for (const line of result.lines) console.log(line);
+  });
+fleet
+  .command("stats")
+  .description("Report contention metrics for the git-native tasks-claims log")
+  .action(() => {
+    const report = runFleetStats(process.cwd());
+    for (const line of report.lines) console.log(line);
   });
 
 program

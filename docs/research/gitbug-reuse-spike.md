@@ -197,3 +197,18 @@ injection not exposed), `blocked-by` (not yet modelled in the fold). Each maps t
 follow-up. A CRDT engine is reconsidered ONLY when conformance fails or
 `fleet-phase4-contention-observability` reports contention past the tripwire — and even then
 it must be REUSED (git-bug via subprocess, or Automerge), never reimplemented.
+
+### Observability + the quarterly Replace?/Relocate? check (shipped)
+
+The reuse decision is now backed by a measurement, not a vibe: `tasks fleet stats`
+(`gitNativeFleetStats` in `packages/cli/src/backend/git-native.ts`) folds the log into a
+**contention ratio** and prints whether the repo is above or below the 20% Phase-4 tripwire
+(`CONTENTION_TRIPWIRE`). No Phase-4 CRDT/HRW work may start until that number crosses the
+line or an operator writes an override.
+
+**Replace? Relocate? (revisit quarterly):** re-run this matrix each quarter. Has an upstream
+engine become a drop-in that beats the zero-dependency linear-CAS adapter — e.g. git-bug
+exposing a stable claim/lease API, or Automerge-on-git shipping a git-ref transport? If yes,
+the adapter interface (`TaskBackend`) makes the swap a single-file change; if the contention
+ratio is still &lt; 20%, the answer stays "no engine — relocate nothing." Last reviewed:
+2026-06 (bake-off). Next review: 2026-09.

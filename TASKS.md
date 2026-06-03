@@ -417,20 +417,6 @@
   - **Files**: `.github/workflows/`, `scripts/`, `packages/cli/src/commands/doctor.ts`, `docs/security/git-native-claims-threat-model.md`, `README.md`, `spec.md`
   - **Acceptance**: A code change without a live claim and matching `Task-Claim` token fails the required check; markdown-only changes pass; generated `TASKS.md` snapshot PRs pass by the same path rule as human docs changes; `tasks-claims` cannot be force-pushed or deleted in the documented GitHub setup; server-hook recipe covers GHE/GitLab/Gitea; tests cover code-under-docs.
 
-- [ ] Add contention observability and Phase 4 scale tripwires before adopting CRDT or HRW work
-  - **ID**: fleet-phase4-contention-observability
-  - **Tags**: observability, git-native, scale, crdt, hrw, contention, reuse
-  - **Details**: The plan says CRDT adoption, HRW partitioning, and per-host batching only happen if measured contention proves the v1 CAS path insufficient. There is currently no task to collect those measurements or define the tripwire. Add that feedback loop before anyone starts building Phase 4 machinery by intuition.
-
-
-    Required changes:
-    1. Instrument claim attempts, non-fast-forward rejects, retry counts, backoff duration, claim latency, and pushes/minute against the remote.
-    2. Add `tasks doctor` or `tasks fleet stats` output that summarizes contention without leaking task contents.
-    3. Define numeric tripwires for when to revisit CRDT engine adoption, HRW partitioning, or per-host batching.
-    4. Add a quarterly "Replace? Relocate?" check per the reuse rule: can an upstream engine now replace the adapter?
-  - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `packages/cli/src/commands/fleet-stats.ts` (new), `docs/research/gitbug-reuse-spike.md`, `docs/plans/deterministic-fleet-claiming.md`
-  - **Acceptance**: Fleet stats report contention metrics; thresholds are documented; no Phase 4 CRDT/HRW implementation task can proceed without measured data crossing a threshold or a written operator override; reuse re-evaluation is scheduled/documented.
-
 ## P1
 
 - [ ] GitHub Issues backend: aggregate issue-backed repos alongside markdown repos in workspace mode

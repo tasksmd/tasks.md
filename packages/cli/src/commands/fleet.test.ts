@@ -3,7 +3,8 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runDoctor, runFleetInit } from "./fleet.js";
+import { createGitNativeBackend } from "../backend/git-native.js";
+import { runDoctor, runFleetInit, runFleetStats } from "./fleet.js";
 
 let dir: string;
 
@@ -54,5 +55,40 @@ describe("runDoctor", () => {
     const report = await runDoctor(dir);
     expect(report.ok).toBe(true); // warnings only, no hard failures
     expect(report.checks.some((c) => c.level === "warn")).toBe(true);
+  });
+});
+
+describe("runFleetStats", () => {
+  it("reports no contention when each task is claimed once", async () => {
+    writeFileSync(join(dir, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    const backend = createGitNativeBackend(dir);
+    await backend.create({ title: "Task A", priority: "P1" });
+    await backend.create({ title: "Task B", priority: "P1" });
+    await backend.claim("task-a", { actorId: "@alice" });
+    await backend.claim("task-b", { actorId: "@bob" });
+
+    const report = runFleetStats(dir);
+    expect(report.contentionRatio).toBe(0);
+    expect(report.tripwireCrossed).toBe(false);
+    expect(report.lines.join("\n")).toContain("0 open · 2 claimed");
+  });
+
+  it("counts a released-then-reclaimed task as contention", async () => {
+    writeFileSync(join(dir, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    const backend = createGitNativeBackend(dir);
+    await backend.create({ title: "Hot task", priority: "P0" });
+    await backend.claim("hot-task", { actorId: "@alice" });
+    await backend.release("hot-task", { actorId: "@alice" });
+    await backend.claim("hot-task", { actorId: "@bob" }); // 2nd claim → reclaim
+
+    const report = runFleetStats(dir);
+    expect(report.contentionRatio).toBe(1); // 1 reclaimed / 1 ever-claimed
+    expect(report.tripwireCrossed).toBe(true);
+    expect(report.lines.join("\n")).toMatch(/Phase 4 .* is now justified/);
+  });
+
+  it("requires the git-native backend", () => {
+    const report = runFleetStats(dir); // no .tasksmd.json → file backend
+    expect(report.lines.join("\n")).toMatch(/requires the git-native backend/);
   });
 });

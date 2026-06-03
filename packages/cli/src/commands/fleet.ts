@@ -2,7 +2,12 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { getBackend, resolveBackendConfig } from "../backend/index.js";
+import { gitNativeFleetStats } from "../backend/git-native.js";
 import { installCommands } from "./install.js";
+
+// Phase-4 contention tripwire (docs/plans/deterministic-fleet-claiming.md § Step 6).
+// Below this, linear-CAS is sufficient and NO CRDT/HRW work is justified.
+export const CONTENTION_TRIPWIRE = 0.2;
 
 const CLAIMS_REF = "refs/heads/tasks-claims";
 
@@ -219,4 +224,34 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
 export function formatDoctorReport(report: DoctorReport): string {
   const icon = { ok: "✓", warn: "⚠", fail: "✗" };
   return report.checks.map((c) => `${icon[c.level]} ${c.name}: ${c.detail}`).join("\n");
+}
+
+export interface FleetStatsReport {
+  lines: string[];
+  contentionRatio: number;
+  tripwireCrossed: boolean;
+}
+
+/** `tasks fleet stats` — contention/observability metrics for the git-native log. */
+export function runFleetStats(directory: string): FleetStatsReport {
+  const config = resolveBackendConfig(directory);
+  if (config.backend !== "git-native") {
+    return {
+      lines: [`fleet stats requires the git-native backend (current: ${config.backend}).`],
+      contentionRatio: 0,
+      tripwireCrossed: false,
+    };
+  }
+  const stats = gitNativeFleetStats(directory);
+  const pct = (stats.contentionRatio * 100).toFixed(1);
+  const crossed = stats.contentionRatio > CONTENTION_TRIPWIRE;
+  const lines = [
+    `Events: ${stats.events}  (created ${stats.eventsByType.created}, claimed ${stats.eventsByType.claimed}, released ${stats.eventsByType.released}, completed ${stats.eventsByType.completed}, cancelled ${stats.eventsByType.cancelled}, updated ${stats.eventsByType.updated})`,
+    `Tasks: ${stats.open} open · ${stats.claimed} claimed · ${stats.done} done   Actors: ${stats.actors}`,
+    `Reclaimed tasks: ${stats.reclaimedTasks}   Contention ratio: ${pct}% (tripwire ${(CONTENTION_TRIPWIRE * 100).toFixed(0)}%)`,
+    crossed
+      ? `⚠ contention ABOVE tripwire — Phase 4 (CRDT/HRW) is now justified; re-run the engine bake-off (docs/research/gitbug-reuse-spike.md).`
+      : `✓ contention below tripwire — linear-CAS remains sufficient; no Phase 4 work is justified.`,
+  ];
+  return { lines, contentionRatio: stats.contentionRatio, tripwireCrossed: crossed };
 }
