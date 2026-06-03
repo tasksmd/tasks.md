@@ -19,7 +19,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
-      - run: npx -y @tasks-md/cli render --backend git-native > TASKS.md
+      # Render to a temp file and only swap on success, so a transient failure
+      # (or a CLI version that predates the git-native backend) skips the cycle
+      # gracefully instead of failing the run or truncating TASKS.md.
+      - run: |
+          if npx -y @tasks-md/cli render --backend git-native > TASKS.md.next; then
+            mv TASKS.md.next TASKS.md
+          else
+            echo "projection skipped: tasks render unavailable"
+            rm -f TASKS.md.next
+            exit 0
+          fi
       - name: Open/update the snapshot PR
         run: |
           git config user.name "tasks-md-bot"
