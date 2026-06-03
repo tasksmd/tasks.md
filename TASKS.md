@@ -431,24 +431,9 @@
   - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `packages/cli/src/commands/fleet-stats.ts` (new), `docs/research/gitbug-reuse-spike.md`, `docs/plans/deterministic-fleet-claiming.md`
   - **Acceptance**: Fleet stats report contention metrics; thresholds are documented; no Phase 4 CRDT/HRW implementation task can proceed without measured data crossing a threshold or a written operator override; reuse re-evaluation is scheduled/documented.
 
-- [ ] Update canonical agent commands for backend-aware, agent-owned task workflows
-  - **ID**: commands-agent-owned-backend-workflow
-  - **Tags**: commands, generated, next-task, setup, agent-owned, backend, docs
-  - **Details**: `commands/next-task.md` and its generated variants still instruct agents to read and mutate `TASKS.md` directly. The canonical commands must become backend-aware: file backend may still mutate the file, but git-native mode must operate through backend operations and treat `TASKS.md` as a generated snapshot.
-
-    Required changes:
-    1. Update `commands/next-task.md` to resolve backend mode before claiming or completing.
-    2. Add or update canonical commands for setup, add/update/review tasks, and lint/doctor workflows.
-    3. Regenerate all six agent variants via `tasks generate-commands`.
-    4. Remove generic instructions that tell agents to hand-edit `TASKS.md` when the active backend is generated/log-first.
-    5. Keep file-backend behavior documented as a backend-specific fallback, not the global model.
-  - **Files**: `commands/next-task.md`, `commands/lint-tasks.md`, `commands/setup.md`, `commands/README.md`, `commands/claude/`, `commands/codex/`, `commands/cursor/`, `commands/devin/`, `commands/gemini/`, `commands/windsurf/`, `packages/cli/src/commands/generate-commands.ts`, `packages/cli/src/commands/generate-commands.test.ts`
-  - **Acceptance**: Generated command variants are regenerated from canonical sources; `commands-drift` passes; commands explain backend-aware task mutation; `/next-task` does not tell agents to edit generated `TASKS.md` in git-native mode; `npm test && npm run lint` pass.
-
 - [ ] Align README, architecture, roadmap, examples, and user stories with agent-owned backends
   - **ID**: docs-align-agent-owned-backends
   - **Tags**: docs, readme, architecture, roadmap, user-stories, examples, agent-owned, backend
-  - **Blocked by**: commands-agent-owned-backend-workflow
   - **Details**: The public docs currently teach humans to create and edit `TASKS.md` directly and describe the mutable-file claim/remove workflow as universal. After the spec and commands are updated, all docs must be split by backend and re-centered on the new rule: tasks are human-readable, but task state changes are performed by agents/tools from a single prompt or explicit task-management command.
 
     Required changes:
@@ -464,7 +449,7 @@
 - [ ] Align repo and downstream agent instructions with backend-aware task policy
   - **ID**: agent-instructions-backend-policy
   - **Tags**: docs, agents, contributing, instructions, agent-owned, backend, drift
-  - **Blocked by**: commands-agent-owned-backend-workflow, docs-align-agent-owned-backends
+  - **Blocked by**: docs-align-agent-owned-backends
   - **Details**: The public docs are not the only place teaching the old model. This repo's `AGENTS.md`, `CONTRIBUTING.md`, and the global agent-rule snippets operators copy into other repos still say to claim by appending `(@agent)` and hand-edit `TASKS.md`. After the backend-aware commands exist, publish one canonical Task Queue Policy snippet and update this repo's instructions so agents stop learning the wrong default.
 
     Required changes:

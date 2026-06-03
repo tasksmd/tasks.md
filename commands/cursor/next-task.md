@@ -35,6 +35,18 @@ git_root=$(git rev-parse --show-toplevel 2>/dev/null || echo ".") && cat "$git_r
 
 Use this output to decide where to start — do not re-run these unless state changes.
 
+## Backend mode
+
+This repo's task **backend** decides how you claim and complete. Check `.tasksmd.json` at the git root (default: the file backend):
+
+- **File backend** (`tasks-md` — no `.tasksmd.json`, or `"backend": "tasks-md"`): `TASKS.md` is the source of truth. You claim by appending `(@you)` to the task line and complete by removing the task block — the file-backend mechanics described throughout this command. Claiming is best-effort; two agents can race.
+- **Generated backend** (`"backend": "git-native"` or `"github-issues"`): `TASKS.md` is a **generated snapshot you must NOT hand-edit**. Mutate task state through the CLI so the change is collision-free (git-native) or reaches the tracker (issues):
+  - claim: `tasks claim <id>` — git-native returns a `claimId` fencing token; a lost race exits nonzero, so pick another task.
+  - complete: `tasks complete <id>` · release: `tasks unclaim <id>` · add: `tasks create "<title>"` · update: `tasks update <id>`.
+  - read the live queue with `tasks list` / `tasks pick`, never by trusting a possibly-stale `TASKS.md`.
+
+The `tasks-mcp` tools and these CLI commands resolve the backend for you — prefer them. The rest of this command describes the **file-backend** mechanics; in a generated backend, substitute the matching CLI op wherever it says "append `(@you)`" or "remove the block".
+
 ## Policies
 
 After reading TASKS.md, check for `<!-- policy: ... -->` HTML comments. These are project rules you must follow throughout the session:
@@ -386,9 +398,11 @@ The plan file lives as long as the task does. When the task ships, the plan file
 
 ## Claim and do the work
 
-> **MCP shortcut:** `claim_task` in `tasks-mcp` does this automatically.
+> **MCP shortcut:** `claim_task` in `tasks-mcp` does this automatically (and resolves the backend).
+>
+> **Generated backend** (git-native / github-issues — see [Backend mode](#backend-mode)): run `tasks claim <id>` instead of editing the line below. Do not hand-edit the generated `TASKS.md`.
 
-Add your identity to the task line:
+**File backend only** — add your identity to the task line:
 
 ```markdown
 - [ ] The task description (@cursor, @cursor-2)
@@ -443,9 +457,11 @@ Verify the implementation is complete:
 
 ## Ship it {#ship-it}
 
-> **MCP shortcut:** `complete_task` in `tasks-mcp` removes the task block automatically.
+> **MCP shortcut:** `complete_task` in `tasks-mcp` does this automatically (and resolves the backend).
+>
+> **Generated backend** (git-native / github-issues — see [Backend mode](#backend-mode)): run `tasks complete <id>` to record completion (git-native appends a `completed` event; issues closes the issue). The generated `TASKS.md` is refreshed by its projection job — do not hand-remove the block.
 
-**Every commit that completes a task MUST also remove that task from TASKS.md.** No exceptions. If you forget, go back and amend the commit before pushing.
+**File backend** — every commit that completes a task MUST also remove that task from TASKS.md. No exceptions. If you forget, go back and amend the commit before pushing.
 
 ```bash
 git add <changed-files>
