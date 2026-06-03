@@ -14,7 +14,22 @@ AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
 ## Quick Start
 
-Create a `TASKS.md` at your repo root:
+### One prompt (recommended)
+
+Paste this into whatever agent you use (Claude Code, Cursor, Devin, Codex, Gemini CLI, Windsurf) and it does the rest — creates `TASKS.md`, merges the `## Task Management` section into `AGENTS.md`, installs its own `/next-task` command, verifies, and reports:
+
+```text
+Set up tasks.md in this repo. Create TASKS.md if missing, add the "## Task Management"
+section to AGENTS.md (don't duplicate it), install the /next-task command for yourself,
+then verify with `npx -y @tasks-md/lint TASKS.md` and tell me what you did. If npx/Node
+isn't available, write the files directly from https://github.com/tasksmd/tasks.md.
+```
+
+It's idempotent (safe to re-run — it merges, never clobbers) and works with or without Node (`tasks init` + `tasks install --agent <you>` when `npx` is present; a direct file-write fallback otherwise). The canonical steps live in [`commands/setup.md`](commands/setup.md), generated into a `/setup` command for all six agents. For a **fleet** (a team of machines × parallel agents on one queue), the agent can also run `tasks fleet init` to switch to the collision-free [git-native backend](spec.md#fleet-coordination).
+
+### Manual
+
+Or set it up by hand. Create a `TASKS.md` at your repo root:
 
 ```markdown
 # Tasks

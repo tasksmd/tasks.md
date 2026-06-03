@@ -84,7 +84,7 @@ program
       console.log(message);
     }
     console.log("");
-    console.log(`✓ ${result.generated.length} command files generated from commands/next-task.md and commands/lint-tasks.md`);
+    console.log(`✓ ${result.generated.length} command files generated from commands/next-task.md, commands/lint-tasks.md, and commands/setup.md`);
   });
 
 // ── install (TypeScript-native) ──

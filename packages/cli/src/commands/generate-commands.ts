@@ -205,7 +205,89 @@ const LINT_TASKS_CONFIG: CommandConfig = {
   ],
 };
 
-const COMMANDS: CommandConfig[] = [NEXT_TASK_CONFIG, LINT_TASKS_CONFIG];
+// ── setup command ──
+
+export const SETUP_DESCRIPTION =
+  'Set up tasks.md in this repo. Use when the user says "set up tasks.md", "use tasks.md in this repo", "install the task queue", or pastes the one-prompt setup block from the README.';
+
+export const SETUP_GEMINI_DESCRIPTION = "Set up the TASKS.md task queue and /next-task workflow in this repo";
+
+const SETUP_CLAUDE_FRONTMATTER = `---
+name: setup
+description: ${SETUP_DESCRIPTION}
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob, LS
+---`;
+
+const SETUP_CODEX_FRONTMATTER = `---
+name: setup
+description: ${SETUP_DESCRIPTION}
+---`;
+
+const SETUP_DEVIN_FRONTMATTER = `---
+name: setup
+description: ${SETUP_DESCRIPTION}
+allowed-tools:
+  - read
+  - write
+  - edit
+  - grep
+  - glob
+  - exec
+permissions:
+  allow:
+    - Exec(git *)
+    - Exec(npx *)
+    - Exec(node *)
+---`;
+
+const SETUP_WINDSURF_FRONTMATTER = `---
+description: ${SETUP_DESCRIPTION}
+---`;
+
+const SETUP_CONFIG: CommandConfig = {
+  name: "setup",
+  canonicalPath: "commands/setup.md",
+  agents: [
+    {
+      name: "claude",
+      outputPath: "commands/claude/skills/setup/SKILL.md",
+      agentExample: "claude",
+      transform: (body) => withFrontmatter(SETUP_CLAUDE_FRONTMATTER, body),
+    },
+    {
+      name: "codex",
+      outputPath: "commands/codex/skills/setup/SKILL.md",
+      agentExample: "codex",
+      transform: (body) => withFrontmatter(SETUP_CODEX_FRONTMATTER, body),
+    },
+    {
+      name: "cursor",
+      outputPath: "commands/cursor/setup.md",
+      agentExample: "cursor",
+      transform: (body) => body,
+    },
+    {
+      name: "devin",
+      outputPath: "commands/devin/skills/setup/SKILL.md",
+      agentExample: "devin",
+      transform: (body) => withFrontmatter(SETUP_DEVIN_FRONTMATTER, body),
+    },
+    {
+      name: "windsurf",
+      outputPath: "commands/windsurf/setup.md",
+      agentExample: "windsurf",
+      transform: (body) => withFrontmatter(SETUP_WINDSURF_FRONTMATTER, body),
+    },
+    {
+      name: "gemini",
+      outputPath: "commands/gemini/setup.toml",
+      agentExample: "gemini",
+      transform: (body) => toGeminiToml(SETUP_GEMINI_DESCRIPTION, body),
+    },
+  ],
+};
+
+const COMMANDS: CommandConfig[] = [NEXT_TASK_CONFIG, LINT_TASKS_CONFIG, SETUP_CONFIG];
 
 export interface GenerateResult {
   generated: string[];

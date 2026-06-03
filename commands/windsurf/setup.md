@@ -1,0 +1,34 @@
+---
+description: Set up tasks.md in this repo. Use when the user says "set up tasks.md", "use tasks.md in this repo", "install the task queue", or pastes the one-prompt setup block from the README.
+---
+
+## Set up tasks.md in this repo
+
+Set up the [TASKS.md](https://github.com/tasksmd/tasks.md) task queue and the `/next-task` workflow for THIS repo and for the agent you are. Do it end to end, idempotently, then verify and report. Never overwrite existing user content.
+
+### Steps
+
+1. **Confirm the repo root.** Run `git rev-parse --show-toplevel`. All paths below are relative to it. If this is not a git repo, tell the user and stop.
+
+2. **Create `TASKS.md` if missing.** If there is no `TASKS.md` at the root, create one with a `# Tasks` header and `## P0`–`## P3` sections. Never overwrite an existing `TASKS.md` — leave it as is.
+
+3. **Merge the Task Management section into `AGENTS.md`.** Ensure `AGENTS.md` has exactly one `## Task Management` section telling agents to read `TASKS.md`, pick the highest-priority unblocked task, claim it with their id, and remove the block on completion. If the section already exists, leave it. With Node present, `npx -y @tasks-md/cli init` does steps 2–3 idempotently.
+
+4. **Install your own command.** Install `/next-task` (and `/lint-tasks`) for yourself:
+   - **Node present:** `npx -y @tasks-md/cli install --agent windsurf` — `--agent` force-installs even if your config dir does not exist yet.
+   - **No Node:** write your command file directly from the canonical command text (see [`commands/README.md`](README.md) for the per-agent install path) into your agent's command directory.
+
+5. **(Optional) GitHub repo extras — offer, do not force.**
+   - Add the reusable lint workflow `.github/workflows/tasks-lint.yml`.
+   - For a **fleet** (a team of machines, each running parallel agents, on one queue): run `npx -y @tasks-md/cli fleet init` to switch to the collision-free **git-native** backend, then `lefthook install`. See [`spec.md` § Fleet coordination](../spec.md#fleet-coordination).
+
+6. **Verify before reporting done.**
+   - `npx -y @tasks-md/lint TASKS.md` exits 0.
+   - `AGENTS.md` has exactly one `## Task Management` section.
+   - Your own command file exists at the right project-local path.
+
+7. **Report.** Tell the user what you created/installed and that they can now run `/next-task`.
+
+### Idempotency + Node-optional fallback
+
+Re-running is safe: it merges, never clobbering an existing `TASKS.md` or duplicating the `AGENTS.md` section. If `npx`/Node is available, prefer `tasks init` + `tasks install --agent windsurf`; otherwise write `TASKS.md`, the `AGENTS.md` `## Task Management` section, and your command file directly from the spec — the format is plain markdown, no tooling required.

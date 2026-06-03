@@ -94,6 +94,15 @@ describe("installCommands", () => {
     expect(result.installed).toEqual(["cursor"]);
   });
 
+  it("force-installs a named agent when its dir does not exist", () => {
+    const targetDir = join(tempDir, "project");
+    mkdirSync(targetDir);
+
+    const result = installCommands(targetDir, commandsDir, { agent: "codex" });
+    expect(result.installed).toEqual(["codex"]);
+    expect(existsSync(join(targetDir, ".agents", "skills", "next-task", "SKILL.md"))).toBe(true);
+  });
+
   it("returns empty when no agents detected and not --all", () => {
     const targetDir = join(tempDir, "project");
     mkdirSync(targetDir);

@@ -44,11 +44,17 @@ npx @tasks-md/lint --fix <file>
 \`\`\`
 `;
 
+const SETUP_CANONICAL = `## Set up tasks.md in this repo
+
+Install the workflow for the agent you are: \`tasks install --agent {{AGENT_EXAMPLE}}\`.
+`;
+
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), "gen-commands-test-"));
   mkdirSync(join(tempDir, "commands"), { recursive: true });
   writeFileSync(join(tempDir, "commands", "next-task.md"), NEXT_TASK_CANONICAL);
   writeFileSync(join(tempDir, "commands", "lint-tasks.md"), LINT_TASKS_CANONICAL);
+  writeFileSync(join(tempDir, "commands", "setup.md"), SETUP_CANONICAL);
 });
 
 afterEach(() => {
@@ -67,6 +73,24 @@ describe("generateCommands", () => {
       expect(existsSync(join(tempDir, "commands/devin/skills/next-task/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/windsurf/next-task.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/gemini/next-task.toml"))).toBe(true);
+    });
+
+    it("generates the setup command for all 6 agents with per-agent install names", () => {
+      const result = generateCommands(tempDir);
+      expect(result.errors).toHaveLength(0);
+      expect(existsSync(join(tempDir, "commands/claude/skills/setup/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/codex/skills/setup/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/cursor/setup.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/devin/skills/setup/SKILL.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/windsurf/setup.md"))).toBe(true);
+      expect(existsSync(join(tempDir, "commands/gemini/setup.toml"))).toBe(true);
+      // {{AGENT_EXAMPLE}} resolves to the agent's own install name.
+      expect(readFileSync(join(tempDir, "commands/devin/skills/setup/SKILL.md"), "utf-8")).toContain(
+        "tasks install --agent devin",
+      );
+      expect(readFileSync(join(tempDir, "commands/cursor/setup.md"), "utf-8")).toContain(
+        "tasks install --agent cursor",
+      );
     });
 
     it("substitutes agent examples in each file", () => {
@@ -256,10 +280,11 @@ describe("generateCommands", () => {
     });
   });
 
-  it("reports generated entries for both commands", () => {
+  it("reports generated entries for all commands", () => {
     const result = generateCommands(tempDir);
-    expect(result.generated.length).toBe(12); // 6 agents × 2 commands
+    expect(result.generated.length).toBe(18); // 6 agents × 3 commands
     expect(result.generated).toContain("next-task/claude");
     expect(result.generated).toContain("lint-tasks/claude");
+    expect(result.generated).toContain("setup/claude");
   });
 });

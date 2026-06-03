@@ -15,6 +15,7 @@ This file is the root-level milestone summary that the `load-project-context` ru
 | **CLI** — `tasks` binary (list / search / claim / complete) | ✅ Stable | [`@tasks-md/cli`](packages/cli/) |
 | **Cross-agent command generation** — single source of truth for `/next-task` + `/lint-tasks` | ✅ Stable | [`commands/`](commands/) + `tasks generate-commands` + `commands-drift` CI |
 | **Per-agent variants** — Claude Code, Codex, Cursor, Devin, Gemini CLI, Windsurf | ✅ Shipped | [`commands/{claude,codex,cursor,devin,gemini,windsurf}/`](commands/) |
+| **One-prompt setup** — paste one prompt; the agent runs `commands/setup.md` (init + AGENTS.md merge + self-install + verify) | ✅ Shipped | [`commands/setup.md`](commands/setup.md), [user story 10](docs/user-stories/10-one-prompt-setup.md) |
 | **Plan-first workflow** — agents write `docs/plans/<task-id>.md` before non-trivial work, validated by a reviewer subagent | ✅ Stable | [`docs/plans/next-task-plan-first-workflow.md`](docs/plans/next-task-plan-first-workflow.md), [`docs/templates/plan-template.md`](docs/templates/plan-template.md) |
 | **Git-native fleet coordination (G7)** — collision-free claims across a team of machines × per-host agent fleets | 🟡 Designed | [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md), [`VISION.md` G7](VISION.md) |
 | **Workspace mode** — `next-task` aggregates TASKS.md files across nested repos in one or more workspaces | 🟡 In progress | [`TASKS.md` § "Workspace mode"](TASKS.md) |

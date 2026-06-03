@@ -79,8 +79,12 @@ export function installCommands(
   for (const mapping of AGENT_MAPPINGS) {
     if (options.agent && options.agent !== mapping.name) continue;
 
+    // `--agent <name>` force-installs that agent even when its dir does not
+    // exist yet: a bootstrapping agent knows its own identity and must be able
+    // to install its own command on first run. Detection only gates the
+    // no-flag "install for whatever is already here" path.
     const detectPath = join(targetDir, mapping.detectDir);
-    if (!options.all && !existsSync(detectPath)) continue;
+    if (!options.all && !options.agent && !existsSync(detectPath)) continue;
 
     const src = join(sourceDir, mapping.sourcePath);
     const dst = join(targetDir, mapping.destPath);
