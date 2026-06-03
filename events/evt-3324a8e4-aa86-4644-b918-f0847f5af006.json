@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-3324a8e4-aa86-4644-b918-f0847f5af006",
+  "task_id": "make-the-claim-check-workflow-actually-run-on-the-dogfood-re",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:03:29.928Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Make the claim-check workflow actually run on the dogfood repo",
+    "priority": "P1",
+    "tags": [
+      "git-native,enforcement,ci,conflict-safety"
+    ],
+    "body": "Prerequisite for arming enforcement. tasks-claim-check.yml uses npx @tasks-md/cli check-push, which on THIS repo hits the same install issue as the projection did and exits in the advisory branch, so the check passes vacuously and would never block even when armed. Switch it to build + run the local cli like tasks-snapshot.yml does: npm ci, npm run build, node packages/cli/dist/cli.js check-push. Then the required check actually enforces."
+  }
+}
