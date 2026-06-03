@@ -16,6 +16,7 @@ import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
 import { runMigrate } from "./commands/migrate.js";
+import { formatDoctorReport, runDoctor, runFleetInit } from "./commands/fleet.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
@@ -656,6 +657,30 @@ program
   .action((opts: { apply?: boolean }) => {
     const result = runMigrate(process.cwd(), { apply: opts.apply });
     for (const line of result.lines) console.log(line);
+  });
+
+const fleet = program.command("fleet").description("Set up git-native fleet coordination");
+fleet
+  .command("init")
+  .description("Install the agent-mediated fleet workflow in this repo (idempotent)")
+  .option("--backend <kind>", "Backend to configure: git-native | tasks-md", "git-native")
+  .option("--agent <name>", "Install commands for one agent (else auto-detect)")
+  .option("--all", "Install commands for all six agents")
+  .action((opts: { backend?: "git-native" | "tasks-md"; agent?: string; all?: boolean }) => {
+    const result = runFleetInit(process.cwd(), opts);
+    for (const line of result.lines) console.log(line);
+  });
+
+program
+  .command("doctor")
+  .description("Verify the fleet install: config, commands, hooks, claims ref, projection")
+  .option("--quiet", "Print only on failure (exit nonzero if a check fails)")
+  .action(async (opts: { quiet?: boolean }) => {
+    const report = await runDoctor(process.cwd());
+    if (!opts.quiet || !report.ok) {
+      console.log(formatDoctorReport(report));
+    }
+    if (!report.ok) process.exitCode = 1;
   });
 
 program.parse();

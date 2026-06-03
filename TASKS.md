@@ -417,21 +417,6 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Ship `tasks fleet init` and `tasks doctor` as the one-prompt install path for any repo
-  - **ID**: one-prompt-agent-owned-fleet-init
-  - **Tags**: cli, setup, adoption, fleet, one-prompt, hooks, ci, dx
-  - **Details**: The existing `one-prompt-setup` task covers basic file-backend bootstrap. The new direction requires a one-prompt path that an agent can run in any Git repo to install the agent-mediated workflow and, when requested, the git-native fleet backend. Humans should not need to know which files to edit; they paste one prompt and the agent runs setup, verifies it, and reports the installed commands.
-
-    Required changes:
-    1. Add `tasks fleet init` to configure `.tasksmd.json`, the `tasks-claims` ref, local hook manager, projection workflow, and backend-aware agent commands.
-    2. Add `tasks doctor` to verify backend config, command installation, hooks, claims ref access, projection workflow, and conformance smoke tests.
-    3. Reuse `lefthook` for hook installation by default; do not hand-roll hook merging unless a documented blocker rules lefthook out.
-    4. Emit GitHub Rulesets setup as `gh api`, Terraform `github_repository_ruleset`, or Probot Settings snippets rather than building a bespoke ruleset sync engine.
-    5. Make setup idempotent and safe in repos that already have `TASKS.md`, `AGENTS.md`, agent command dirs, or `.tasksmd.json`.
-    6. Provide Node-present and Node-absent paths consistent with the existing one-prompt setup task.
-  - **Files**: `packages/cli/src/commands/`, `packages/cli/src/cli.ts`, `packages/cli/src/commands/*.test.ts`, `commands/setup.md`, `README.md`, `.github/workflows/`, `.tasksmd.json` examples
-  - **Acceptance**: In a fresh temp Git repo, one copied prompt installs the selected task backend, agent commands, lefthook/workflows, and verifies with `tasks doctor`; a second run is a no-op; setup never clobbers existing user content; GitHub ruleset setup is delegated to documented existing tools; docs show the one prompt as the primary install path.
-
 - [ ] Add Phase 2 robust leases, heartbeats, crash recovery, and log compaction
   - **ID**: fleet-phase2-leases-heartbeats-compaction
   - **Tags**: stability, git-native, leases, heartbeat, crash-recovery, compaction, offline
@@ -478,7 +463,6 @@
 - [ ] Update canonical agent commands for backend-aware, agent-owned task workflows
   - **ID**: commands-agent-owned-backend-workflow
   - **Tags**: commands, generated, next-task, setup, agent-owned, backend, docs
-  - **Blocked by**: one-prompt-agent-owned-fleet-init
   - **Details**: `commands/next-task.md` and its generated variants still instruct agents to read and mutate `TASKS.md` directly. The canonical commands must become backend-aware: file backend may still mutate the file, but git-native mode must operate through backend operations and treat `TASKS.md` as a generated snapshot.
 
     Required changes:
