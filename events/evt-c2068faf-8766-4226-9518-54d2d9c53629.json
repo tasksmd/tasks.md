@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-c2068faf-8766-4226-9518-54d2d9c53629",
+  "task_id": "bound-git-native-fold-cost-at-scale",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T20:43:57.657Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-b462f540-c012-4273-94de-836563ff8d8d",
+    "lease_expires_at": 1780605837657
+  }
+}
