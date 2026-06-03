@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-9bf8e167-f8db-4689-9cff-75316a92910c",
+  "task_id": "expose-claimid-and-assignee-in-list-json-so-fencing-tokens-a",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T20:40:03.661Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Expose claimId and assignee in list --json so fencing tokens are retrievable",
+    "priority": "P2",
+    "tags": [
+      "git-native,cli,dx,observability"
+    ],
+    "body": "tasks claim prints the claim_id fencing token once, but list --json only returns id/title/priority/tags/body/blocked — not claimId or assignee. So an agent that didn't save the token can't run heartbeat --claim or complete --claim (the fencing flows shipped in expose-and-fence-the-heartbeat-via-the-cli and the complete/release/update fencing P2). Add claimId + assignee + leaseExpiresAt to the git-native list --json projection (and consider a tasks show <id> --json) so a long-running agent can re-derive its own token mid-session. The tasks-claims log already holds these (not secret), so exposing them to the owner is safe. Surfaced implementing the heartbeat CLI command."
+  }
+}
