@@ -30,8 +30,11 @@ jobs:
           # Fetch the TRUSTED published cli from public npm at a PINNED version
           # (not @latest): a required (blocking) gate must be reproducible and
           # immune to a bad or not-yet-propagated publish. Bump CLI_VERSION when
-          # check-push changes — see AGENTS.md "Release And CI Gotchas".
-          CLI_VERSION: "0.7.0"
+          # check-push changes — read the target from PUBLIC npm, e.g.
+          #   curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '."dist-tags".latest'
+          # NOT a local `npm view` (the Artifactory mirror lags and served a stale
+          # 0.7.0 that predates check-push). See AGENTS.md "Release And CI Gotchas".
+          CLI_VERSION: "0.10.0"
           npm_config_registry: https://registry.npmjs.org
         run: |
           base="origin/${{ github.base_ref }}"
