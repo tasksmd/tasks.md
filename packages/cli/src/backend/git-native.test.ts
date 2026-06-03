@@ -211,6 +211,33 @@ describe("git-native backend", () => {
     expect(ok.status).toBe("ok");
   });
 
+  it("fences update with the claim token — a stale/foreign token cannot mutate", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    const backend = createGitNativeBackend(directory);
+    await backend.create({ title: "Editable", priority: "P1" });
+    const claim = await backend.claim("editable", { actorId: "@alice" });
+
+    // A foreign/guessed token is rejected.
+    const stale = await backend.update(
+      "editable",
+      { priority: "P0" },
+      { actorId: "@mallory", claimId: "claim-bogus" },
+    );
+    expect(stale.status).toBe("conflict");
+
+    // The live owner's token succeeds.
+    const ok = await backend.update(
+      "editable",
+      { priority: "P0" },
+      { actorId: "@alice", claimId: claim.claimId },
+    );
+    expect(ok.status).toBe("ok");
+
+    // No token → unfenced (backward-compatible), still succeeds.
+    const unfenced = await backend.update("editable", { body: "x" }, { actorId: "@alice" });
+    expect(unfenced.status).toBe("ok");
+  });
+
   it("models blocked + blocked-by: unpickable, unclaimable, and rendered", async () => {
     const directory = makeRepo("tasksmd-git-native-");
     const backend = createGitNativeBackend(directory);

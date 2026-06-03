@@ -956,6 +956,10 @@ export function createGitNativeBackend(
       if (!foldLog(directory).get(id)) {
         return { status: "missing", backend: "git-native", operation: "update", taskId: id };
       }
+      // A supplied fencing token must match the live claim (a stale/foreign token
+      // can't mutate the task). No token → unfenced, as before.
+      const fence = fenceCheck(directory, id, options, "update");
+      if (fence) return fence;
       const payload: Record<string, unknown> = {};
       if (patch.title !== undefined) payload.title = patch.title;
       if (patch.priority !== undefined) payload.priority = priorityValue(patch.priority);
