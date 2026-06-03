@@ -4,6 +4,8 @@
 
 Parser for [TASKS.md](https://github.com/tasksmd/tasks.md) files — extracts tasks, metadata, priorities, blockers, and policies.
 
+> **Scope: file format, not backend state.** This package parses the markdown *format* — a `claimed?` field here is just the parsed `(@agent)` suffix on a line, not a backend claim. Collision-free claiming, leases, and the git-native event log live in the [`@tasks-md/cli`](../cli/) backends and [`spec.md` § Task backends](../../spec.md#task-backends); the parser is backend-agnostic and reads whatever `TASKS.md` it is given (including a git-native generated snapshot).
+
 ## Install
 
 ```bash

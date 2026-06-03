@@ -431,24 +431,9 @@
   - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `packages/cli/src/commands/fleet-stats.ts` (new), `docs/research/gitbug-reuse-spike.md`, `docs/plans/deterministic-fleet-claiming.md`
   - **Acceptance**: Fleet stats report contention metrics; thresholds are documented; no Phase 4 CRDT/HRW implementation task can proceed without measured data crossing a threshold or a written operator override; reuse re-evaluation is scheduled/documented.
 
-- [ ] Align package READMEs and the generated site with backend-aware operations
-  - **ID**: package-docs-site-backend-alignment
-  - **Tags**: docs, package-readmes, site, cli, mcp, parser, lint, backend
-  - **Details**: The root README task covers public narrative docs, but package-level READMEs are independent entry points. `packages/mcp/README.md` currently describes direct file mutation tools, `packages/cli/README.md` describes a file-only command set, and parser/lint docs frame claims as inline file syntax. Align those docs and rebuild the generated site so npm users do not install stale semantics.
-
-    Required changes:
-    1. Update CLI docs for backend selection, operation commands, and JSON result shapes.
-    2. Update MCP docs so mutation tools are backend-mediated and unsupported operations return typed statuses.
-    3. Update parser/lint docs to distinguish file-format parsing from backend state semantics.
-    4. Rebuild `docs/index.html` and any generated docs that embed README/spec excerpts.
-    5. Keep all file-backend examples valid while labeling them as file-backend examples.
-  - **Files**: `packages/cli/README.md`, `packages/mcp/README.md`, `packages/parser/README.md`, `packages/lint/README.md`, `docs/index.html`, `scripts/build-site.js`, `README.md`
-  - **Acceptance**: Every package README describes backend-aware behavior consistently with the root docs; MCP docs do not promise file-only mutation semantics for every backend; parser/lint docs stay scoped to format validation; `npm run build:site` regenerates a clean site; package docs contain no universal stale "append `(@agent)`" instructions.
-
 - [ ] Add mechanical drift checks so docs cannot regress to the old human-edit workflow
   - **ID**: docs-drift-agent-owned-task-model
   - **Tags**: lint, docs, ci, drift, agent-owned, feedback-loop
-  - **Blocked by**: package-docs-site-backend-alignment
   - **Details**: The fresh review found many stale docs because the vision changed faster than the spec, README, commands, repo instructions, package docs, and user stories. Per the feedback-loop rule, recurring doc/model drift should become a deterministic check, not just a review comment. Add a lightweight CI/lint guard that catches universal claims like "edit TASKS.md directly" or "append `(@agent)`" outside file-backend-specific sections.
 
     Required changes:
