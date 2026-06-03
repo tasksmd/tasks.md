@@ -417,20 +417,6 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Ship migration and versioning for moving existing file queues to git-native mode
-  - **ID**: migrate-file-queue-to-git-native
-  - **Tags**: migration, backend, git-native, cli, spec-version, adoption, compatibility
-  - **Details**: Existing adopters have hand-maintained `TASKS.md` files and global instructions that assume the file backend. The fleet path changes the source of truth to a log, so adoption needs an explicit migration/versioning story rather than asking agents to reinterpret old files on the fly.
-
-    Required changes:
-    1. Add a spec/backcompat section that names the file backend as v1-compatible and git-native as an opt-in backend mode.
-    2. Add a migration command that imports the current `TASKS.md` snapshot into `created`/`claimed`/`blocked` log events, preserving IDs, priority, metadata, comments that are still meaningful, and existing best-effort claim trailers where possible.
-    3. Write `.tasksmd.json` (or the final config file) with backend selection and migration metadata.
-    4. Make migration dry-run by default or provide a `--dry-run` mode that prints the generated events and changed files before writing.
-    5. Document rollback: how to keep file backend, how to regenerate `TASKS.md`, and how to abandon a failed migration without losing tasks.
-  - **Files**: `spec.md`, `packages/cli/src/commands/migrate.ts` (new), `packages/cli/src/backend/git-native.ts`, `packages/cli/src/config/`, `README.md`, `docs/user-stories/`
-  - **Acceptance**: A temp repo with an existing `TASKS.md` can run the migration dry-run and see deterministic log events; applying migration configures git-native mode and renders the same open queue; duplicate IDs and unsupported metadata fail safely with actionable output; rollback instructions are documented; `npm run build && npm test` pass.
-
 - [ ] Ship `tasks fleet init` and `tasks doctor` as the one-prompt install path for any repo
   - **ID**: one-prompt-agent-owned-fleet-init
   - **Tags**: cli, setup, adoption, fleet, one-prompt, hooks, ci, dx

@@ -15,6 +15,7 @@ import { initTaskQueue } from "./commands/init.js";
 import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
+import { runMigrate } from "./commands/migrate.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
@@ -646,6 +647,15 @@ program
       console.error(`render unsupported: ${result.reason ?? result.backend}`);
     }
     if (result.status !== "ok") process.exitCode = 1;
+  });
+
+program
+  .command("migrate")
+  .description("Migrate the file-backend TASKS.md into a git-native event log")
+  .option("--apply", "Write the events + .tasksmd.json (default is a dry-run)")
+  .action((opts: { apply?: boolean }) => {
+    const result = runMigrate(process.cwd(), { apply: opts.apply });
+    for (const line of result.lines) console.log(line);
   });
 
 program.parse();

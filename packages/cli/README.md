@@ -44,6 +44,7 @@ tasks sync github --merge             # sync GitHub Issues into TASKS.md
 | `diff` | `[<ref>]`, `--json` | Show TASKS.md changes since the given git ref (default `HEAD`) |
 | `watch` | `[<dir>]`, `--fix` | Watch TASKS.md and auto-lint on save. `--fix` reuses `tasks-lint --fix` to remove `[x]` completed tasks |
 | `sync <provider>` | provider-specific (below) | Sync issues from `github`, `jira`, or `linear` into TASKS.md |
+| `migrate` | `--apply` | Import the file-backend `TASKS.md` into a git-native event log (dry-run unless `--apply`; preserves ids; rollback documented in the output) |
 
 ### Task operations (backend-neutral)
 

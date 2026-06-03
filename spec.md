@@ -681,6 +681,10 @@ Identity is `<actor-id>/<instance-id>`. `actor-id` defaults to a configured hand
 
 The file backend stays valid and zero-setup; git-native is the opt-in path for fleets. The two never contradict because each owns its own source of truth.
 
+### Migrating from the file backend
+
+The file backend is the v1-compatible default; git-native is an explicit opt-in. A repo moves to git-native with `tasks migrate`, which imports the current `TASKS.md` snapshot into `created` (and `claimed`, for tasks carrying an `(@agent)` suffix) log events, **preserving task ids, priority, tags, and details**. It is a **dry-run by default** — it prints the events it would append and the `.tasksmd.json` it would write — and applies only with `--apply`. Duplicate or missing ids abort before any write. Rollback is `rm .tasksmd.json` plus `git update-ref -d refs/heads/tasks-claims`; the original `TASKS.md` is never modified by the migration.
+
 ### Security model
 
 The `tasks-claims` ref, the generated snapshot PR, the claim-check CI, and the local hooks are security boundaries. v1 enforcement is a **bypassable** client `pre-push` hook; the unbypassable guarantee is the Phase 3 server-side required check. The full trust boundaries, threats, mitigations, CI guidance (use `pull_request`, never `pull_request_target`), and per-platform token scopes are in [`docs/security/git-native-claims-threat-model.md`](docs/security/git-native-claims-threat-model.md). v1 does not claim to be unbypassably secure.

@@ -619,3 +619,92 @@ export function createGitNativeBackend(directory: string): TaskBackend {
     },
   };
 }
+
+// ── Migration: import an existing file-backend TASKS.md into the log ──
+
+export interface MigrationTask {
+  id: string;
+  title: string;
+  priority: string;
+  tags: string[];
+  body?: string;
+  /** Claiming agent (without the leading `@`), if the task carried a claim. */
+  claimedBy?: string;
+}
+
+/** A deterministic preview event (no uuid/timestamp — content only). */
+export interface MigrationEventPreview {
+  task_id: string;
+  event_type: "created" | "claimed";
+  payload: Record<string, unknown>;
+}
+
+/**
+ * Build the deterministic event content a migration WOULD append. Pure — no
+ * git writes, no event ids or timestamps — so a dry-run is reproducible.
+ * Throws on a duplicate task id so migration fails safely before writing.
+ */
+export function previewMigration(tasks: MigrationTask[]): MigrationEventPreview[] {
+  const seen = new Set<string>();
+  const events: MigrationEventPreview[] = [];
+  for (const task of tasks) {
+    if (!task.id) {
+      throw new Error(`Cannot migrate a task with no id: "${task.title}".`);
+    }
+    if (seen.has(task.id)) {
+      throw new Error(`Duplicate task id "${task.id}" — migration aborted (ids must be unique).`);
+    }
+    seen.add(task.id);
+    events.push({
+      task_id: task.id,
+      event_type: "created",
+      payload: {
+        title: task.title,
+        priority: priorityValue(task.priority),
+        tags: task.tags,
+        body: task.body,
+      },
+    });
+    if (task.claimedBy) {
+      events.push({
+        task_id: task.id,
+        event_type: "claimed",
+        payload: { migrated_owner: task.claimedBy.replace(/^@/, "") },
+      });
+    }
+  }
+  return events;
+}
+
+/**
+ * Apply a migration: append `created` (+ `claimed`) events preserving the
+ * original ids, then push once. Validates via {@link previewMigration} first.
+ */
+export function applyMigration(directory: string, tasks: MigrationTask[]): void {
+  previewMigration(tasks); // throws on duplicate/missing ids before any write
+  fetchClaimsRef(directory);
+  for (const task of tasks) {
+    appendEvent(
+      directory,
+      makeEvent(task.id, "created", undefined, {
+        title: task.title,
+        priority: priorityValue(task.priority),
+        tags: task.tags,
+        body: task.body,
+      }),
+    );
+    if (task.claimedBy) {
+      const owner = task.claimedBy.replace(/^@/, "");
+      appendEvent(
+        directory,
+        makeEvent(task.id, "claimed", { actorId: owner }, {
+          claim_id: `claim-migrated-${task.id}`,
+        }),
+      );
+    }
+  }
+  if (!pushClaimsRef(directory)) {
+    fetchClaimsRef(directory);
+    throw new Error("Could not push migrated events to tasks-claims.");
+  }
+}
