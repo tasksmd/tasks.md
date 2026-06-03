@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-8eeb054b-938c-4617-b73e-760ed2b0a9bf",
+  "task_id": "expose-the-fencing-token-on-complete-release-update-in-the-c",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:04:11.620Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Expose the fencing token on complete/release/update in the CLI",
+    "priority": "P2",
+    "tags": [
+      "git-native,cli,conflict-safety"
+    ],
+    "body": "The backend supports claimId fencing but the CLI complete/release/update commands do not accept --claim, so a CLI user cannot pass the fencing token and complete runs unfenced. Add --claim to those commands so a resurrected stale owner cannot clobber a new owner via the CLI, matching what the conformance suite proves programmatically."
+  }
+}
