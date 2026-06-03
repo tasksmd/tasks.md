@@ -78,8 +78,12 @@ The path rule is one shared primitive — `tasks check-push <paths...> --task <i
 `claim-fencing` conformance properties). Every enforcement surface calls it so they cannot drift:
 
 - **github.com** — `tasks fleet init` generates `.github/workflows/tasks-claim-check.yml`
-  (`on: pull_request`). Make it a **required status check** on the `main` ruleset, and protect
-  `main` + `tasks-claims` against force-push/delete (see the ruleset guidance the command prints).
+  (`on: pull_request`). It is **advisory by default**: a code change without a live claim emits a
+  `::warning::` but exits 0, so it never red-X's a bootstrap PR, a docs PR, or an ordinary
+  contribution. To arm hard enforcement, do **both**: set the repo variable
+  `TASKS_CLAIM_ENFORCE=1` (`gh variable set TASKS_CLAIM_ENFORCE --body 1`) so the workflow exits
+  nonzero on a missing claim, **and** make it a **required status check** on the `main` ruleset.
+  Protect `main` + `tasks-claims` against force-push/delete (see the ruleset guidance the command prints).
 - **GHE / GitLab / Gitea `pre-receive`** — same rule, server-side and unbypassable:
 
   ```bash
