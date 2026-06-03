@@ -3,8 +3,8 @@
 - **Task**: bound-git-native-fold-cost-at-scale
 - **Repo**: /Users/fivanishche/apps/tooling/tasks.md
 - **Author**: devin session 2026-06-03
-- **Status**: draft
-- **Validated-by**: _(filled in after reviewer subagent run)_
+- **Status**: validated
+- **Validated-by**: reviewer on 2026-06-03
 
 ## Goal
 
@@ -75,12 +75,11 @@ If the read-path change is architecturally notable, add a one-line note to `AGEN
 
 ## Reviewer verdict
 
-<!-- Filled in by the reviewer subagent. -->
+Cycle 1 → needs-revision (5 concerns: parsing detail, O(1)-vs-2x justification, scale-test shape, missing-line parsing, AGENTS.md). Revised, then cycle 2:
 
-- **Verdict**: <approved | needs-revision | reject>
-- **Reviewer**: <subagent-profile>
-- **Date**: <YYYY-MM-DD>
-- **Concerns**:
-  - <Bulleted list — empty list if approved.>
-- **Approval rationale** (only if approved):
-  - <2-3 sentences.>
+- **Verdict**: approved
+- **Reviewer**: reviewer
+- **Date**: 2026-06-03
+- **Concerns**: (empty)
+- **Approval rationale**:
+  - The byte-offset cursor parsing is explicit and testable, the O(1)-vs-O(n) tradeoff is justified by the task's "bound at scale" goal, and the acceptance criteria are concrete (catFileBatch edge-case unit test, scale test asserting correctness against known seeded inputs, spy test proving constant process count). The existing 13-test git-native suite is the equivalence guardrail, with the 2x form as a documented fallback.
