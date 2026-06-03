@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-9d9fe5be-6c83-404e-888e-85bafbd6bc2a",
+  "task_id": "expand-git-native-conformance-coverage-for-fleet-edge-cases",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T22:06:48.872Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-98b0a090-bf7d-4765-b6dd-ca2845939b00",
+    "lease_expires_at": 1780610808872
+  }
+}
