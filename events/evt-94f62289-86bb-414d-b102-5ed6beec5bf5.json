@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-94f62289-86bb-414d-b102-5ed6beec5bf5",
+  "task_id": "auto-refresh-the-tasks-snapshot-projection-on-claim-push",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T18:44:33.941Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-392797bd-e563-46e7-8f56-342703133983",
+    "lease_expires_at": 1780598673941
+  }
+}
