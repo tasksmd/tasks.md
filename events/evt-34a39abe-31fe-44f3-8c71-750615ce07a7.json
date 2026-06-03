@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-34a39abe-31fe-44f3-8c71-750615ce07a7",
+  "task_id": "give-migrated-claims-a-lease-so-crashed-owners-are-reclaimab",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:04:08.079Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Give migrated claims a lease so crashed owners are reclaimable",
+    "priority": "P2",
+    "tags": [
+      "git-native,leases,migrate"
+    ],
+    "body": "migrate stamps claimed events with a claim_id but no lease_expires_at, and a claim with no lease is treated as live forever. So if the owner of a migrated claim crashes, that task is never stealable. migrate should set a lease (default TTL) on carried-over claims."
+  }
+}
