@@ -40,7 +40,11 @@ for pkg in "${PACKAGES[@]}"; do
     for (const depType of ['dependencies', 'devDependencies', 'peerDependencies']) {
       if (!pkg[depType]) continue;
       for (const [name, ver] of Object.entries(pkg[depType])) {
-        if (name.startsWith('@tasks-md/') || name === 'tasks-mcp') {
+        // Bump cross-refs only for PUBLISHED packages. @tasks-md/conformance is
+        // a private (unpublished) workspace package pinned at '*' so it always
+        // resolves to the local workspace; bumping it to a published-style
+        // '^VERSION' makes npm ci fetch it from the registry → 404.
+        if ((name.startsWith('@tasks-md/') || name === 'tasks-mcp') && name !== '@tasks-md/conformance') {
           pkg[depType][name] = '^$VERSION';
           changed = true;
         }
