@@ -103,9 +103,15 @@ edges that cost real debugging time — captured here so they don't recur:
 - **`tasks-claim-check` is advisory by default** (warns, never blocks, so it never
   red-X's a bootstrap or docs PR). Arm hard enforcement with the repo variable
   `TASKS_CLAIM_ENFORCE=1` plus a required ruleset check.
-- **The `tasks-snapshot` projection skips gracefully** when `tasks render` is
-  unavailable (e.g. before a CLI version carrying the git-native backend is
-  published), so it never fails the run or truncates `TASKS.md`.
+- **The `tasks-snapshot` projection builds + runs the *local* cli**, not
+  `npx @tasks-md/cli` (the generic `fleet init` form). Because this repo is the
+  cli's own source, the published package is redundant and `npx` is subject to
+  registry mirror lag right after a release (a fresh publish 404s / fails to
+  install on CI). The workflow does `npm ci` + `npm run build` +
+  `node packages/cli/dist/cli.js render`. `fleet init` skips existing files, so
+  this intentional divergence survives a re-run. The render still skips
+  gracefully on failure (temp-file swap), so it never truncates `TASKS.md`. The
+  `tasks-claim-check` workflow keeps the generic `npx` form (it's advisory).
 
 ## Code Style
 
