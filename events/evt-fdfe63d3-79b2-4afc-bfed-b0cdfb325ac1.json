@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-fdfe63d3-79b2-4afc-bfed-b0cdfb325ac1",
+  "task_id": "make-the-claim-check-workflow-actually-run-on-the-dogfood-re",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T20:02:50.647Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
