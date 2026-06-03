@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-c04b40cb-37d4-4fa1-9e15-5b06315b4041",
+  "task_id": "document-retrieving-your-claim-token-via-list-json",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:54:36.662Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Document retrieving your claim token via list --json",
+    "priority": "P3",
+    "tags": [
+      "git-native,docs,dx"
+    ],
+    "body": "list --json now surfaces claimId for the owner's claimed tasks (this PR), but nothing tells users that's how you re-obtain a lost token. The commands/next-task.md heartbeat note (added in the heartbeat PR) only says the token is printed by 'tasks claim'. Extend it (and/or README) to mention: retrieve it later with 'tasks list --json' (the claimId field on your claimed task). Regenerate the 6 command variants. Surfaced implementing expose-claimid-in-list-json. Note: this partially resolves migrated-owners-can-t-retrieve-their-random-fencing-token (retrieval now exists; that task's remaining half is documenting it in the arm-hard-claim-enforcement checklist)."
+  }
+}
