@@ -92,3 +92,12 @@ The registry pin is still correct + harmless for **consumer** repos (which aren'
 - **(B) Build the cli from the TRUSTED base ref:** `git checkout "$base" -- packages package.json package-lock.json && npm ci && npm run build && node packages/cli/dist/cli.js check-push …`. Secure (base code, never PR head) but heavier; the guard test must be revised to allow base-built local cli.
 
 Recommend (A) — smaller, keeps the published-cli model, leaves the guard as-is. Re-validate the revised approach with a reviewer before re-implementing.
+
+## Update 2 (2026-06-03) — fix (A) shipped; a THIRD layer surfaced
+
+Implemented (A) (install-to-temp, PR #112 @ 81839ba). The "tasks: not found" error is **gone** (the temp install sidesteps the workspace shadowing), but the claim-check **still advisory-passes** — `check-push` does not validate the live claim. Suspected third layer (high confidence, not yet confirmed — the temp-install output was silenced with `>/dev/null`):
+
+- On `pull_request`, `actions/checkout@v4` checks out the **auto-merge commit**, and the workflow's `git log -1 --format='%(trailers:...)'` reads **that** commit — which has **no** `Task`/`Task-Claim` trailers (GitHub generates it). So `task`/`claim` come back empty and check-push correctly rejects (code change, no claim). This is a pre-existing claim-check bug, previously masked because the npx step always failed first.
+- **Next fix:** read the trailers from the PR's real head commit (`git log -1 "${{ github.event.pull_request.head.sha }}"`), ideally searching the whole `base..head` range so the claim trailer can sit on any commit, not just HEAD. Then un-silence the temp install to rule out an install failure.
+
+This task is no longer a one-liner: it has layered through (1) workspace shadowing [fixed], (2) trusted-cli-vs-build-local [handled], (3) merge-commit trailer extraction [open], and possibly (4) multi-commit trailer handling. Recommend a fresh focused plan (or splitting the trailer-extraction fix into its own task) rather than continuing to layer fixes onto this PR.
