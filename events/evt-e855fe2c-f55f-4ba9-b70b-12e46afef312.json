@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-e855fe2c-f55f-4ba9-b70b-12e46afef312",
+  "task_id": "pin-the-claim-check-workflow-s-cli-version-instead-of-latest",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T23:06:31.722Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Pin the claim-check workflow's CLI version instead of @latest",
+    "priority": "P3",
+    "tags": [
+      "ci,enforcement,supply-chain"
+    ],
+    "body": "tasks-claim-check.yml installs @tasks-md/cli@latest into a temp dir each run (line ~50). Now that claim-check is a REQUIRED (blocking) gate, @latest is a liability: (a) a just-published version not yet propagated to the npm mirror makes the install fail -> check fails -> ALL PRs blocked (fail-closed brittleness); (b) supply-chain — @latest auto-pulls any new release. Pin to a known-good exact version (e.g. the current published 0.10.x) and bump it deliberately when check-push changes. Trade-off: a version-bump step when check-push evolves. Surfaced reviewing the armed enforcement workflow."
+  }
+}
