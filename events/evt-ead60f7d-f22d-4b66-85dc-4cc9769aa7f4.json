@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-ead60f7d-f22d-4b66-85dc-4cc9769aa7f4",
+  "task_id": "expose-and-fence-the-heartbeat-via-the-cli",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T20:42:30.293Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
