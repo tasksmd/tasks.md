@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-ff52a915-792e-433d-98e2-fbe60b7be13f",
+  "task_id": "expose-and-fence-the-heartbeat-via-the-cli",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:03:33.199Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Expose and fence the heartbeat via the CLI",
+    "priority": "P1",
+    "tags": [
+      "git-native,leases,conflict-safety"
+    ],
+    "body": "heartbeat() exists on the backend but no CLI command or agent loop calls it, so a task that outlives its lease cannot renew -> another machine steals it while the owner is still working -> two agents on one task. Add tasks heartbeat <id> --claim <token> and have /next-task renew during long work. Also add a fencing check inside heartbeat so a stale owner whose lease was stolen cannot renew over the new owner."
+  }
+}
