@@ -3,8 +3,8 @@
 - **Task**: auto-trigger-git-native-log-compaction
 - **Repo**: /Users/fivanishche/apps/tooling/tasks.md
 - **Author**: devin session 2026-06-03
-- **Status**: draft
-- **Validated-by**: _(filled in after reviewer subagent run)_
+- **Status**: validated
+- **Validated-by**: reviewer on 2026-06-03
 
 ## Goal
 
@@ -67,12 +67,11 @@ Threat-model note on the force-push-ruleset exemption for the compactor. Verify:
 
 ## Reviewer verdict
 
-<!-- Filled in by the reviewer subagent. -->
+Cycle 1 → needs-revision (8 yellow refinements: lease-window framing, B6 bypass_actors, racing-test specificity, threshold reuse, claim_id preservation, best-effort wiring, wired-grep, checkpoint alternative). Revised, then cycle 2:
 
-- **Verdict**: <approved | needs-revision | reject>
-- **Reviewer**: <subagent-profile>
-- **Date**: <YYYY-MM-DD>
-- **Concerns**:
-  - <Bulleted list — empty list if approved.>
-- **Approval rationale** (only if approved):
-  - <2-3 sentences.>
+- **Verdict**: approved
+- **Reviewer**: reviewer
+- **Date**: 2026-06-03
+- **Concerns**: (empty)
+- **Approval rationale**:
+  - The plan correctly frames the lease as guarding the fetch→push window against concurrent claims, explicitly preserves the fencing keys (`claim_id` + `lease_expires_at`) across compaction, and provides concrete, testable acceptance criteria. The B6 ruleset exemption is documented as a required sub-step of the operator task, and the checkpoint-vs-rewrite trade-off is justified.
