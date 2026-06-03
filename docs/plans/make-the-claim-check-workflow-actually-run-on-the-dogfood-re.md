@@ -1,0 +1,103 @@
+# Plan: Make the claim-check workflow actually run on the dogfood repo
+
+- **Task**: make-the-claim-check-workflow-actually-run-on-the-dogfood-re
+- **Repo**: /Users/fivanishche/apps/tooling/tasks.md
+- **Author**: devin session 2026-06-03
+- **Status**: validated
+- **Validated-by**: reviewer on 2026-06-03
+
+## Goal
+
+Make `tasks-claim-check.yml` actually execute `check-push` against a PR's diff, so that once hard enforcement is armed (`TASKS_CLAIM_ENFORCE=1` + a required ruleset check) it genuinely blocks a code change pushed without a live task claim. Today the check passes vacuously, so arming enforcement would enforce nothing.
+
+## Why
+
+The workflow runs `npx -y @tasks-md/cli check-push ...`. On this repo's CI runner the freshly-published cli fails to install (`sh: 1: tasks: not found` — the same registry-mirror-lag the projection hit, diagnosed in PRs #107–#108). When `npx` fails, the `if npx ...` is false, so control falls into the advisory branch and the step exits 0. The check therefore **always passes**, even for a code change with no claim, and even with `TASKS_CLAIM_ENFORCE=1` it would never exit nonzero. The advisory→hard guarantee (threat model B5) is currently hollow.
+
+The task proposed mirroring the projection's fix — build + run the local cli (`npm ci && npm run build && node packages/cli/dist/cli.js check-push`). **That is a security regression for the claim-check** and must not ship: the claim-check runs `on: pull_request` and `actions/checkout` checks out the PR head, so building the local cli builds the **untrusted PR's** code. A malicious PR could edit `checkWorkPush` to always return ok, build it, and have the claim-check pass its own code-without-claim push — a self-bypass. The projection is safe to build-local because it runs only on trusted triggers (`repository_dispatch`/`workflow_dispatch`/`schedule`), never on untrusted PR code.
+
+The correct fix keeps running the **trusted published cli** (which a PR cannot modify) and only makes its install **reliable** by pinning the public npm registry, bypassing the Intuit Artifactory mirror lag that caused the vacuous pass.
+
+## Scope (in)
+
+- Add `npm_config_registry: https://registry.npmjs.org` to the `env:` of the claim-check's `Path-scoped claim check` step in `.github/workflows/tasks-claim-check.yml`, so `npx -y @tasks-md/cli` resolves the published cli from public npm (where it is present and the `tasks` bin resolves).
+- Make the same change in the generated template `CLAIM_CHECK_WORKFLOW` in `packages/cli/src/commands/fleet.ts` (the fix is correct for every consumer repo — the claim-check should always run the trusted published cli, never the PR's build).
+- Add a one-line security comment at the npx step explaining why the claim-check must NOT build-local (runs untrusted PR code).
+- Keep the existing advisory/`TASKS_CLAIM_ENFORCE` result logic unchanged — only the install reliability changes.
+- **Regression guard (per reviewer concern 1, and the repo's feedback-loop rule — a security invariant must be a mechanical check, not a comment):** add a test that reads both the live `tasks-claim-check.yml` and the `CLAIM_CHECK_WORKFLOW` template and asserts each (a) does NOT contain `node packages/cli/dist/cli.js check-push` (never build-local), (b) DOES contain `npx -y @tasks-md/cli check-push` (trusted published cli), (c) carries the public-npm registry pin. The test fails if a future change reintroduces build-local. Home: `packages/cli/src/commands/fleet.test.ts` (the template's natural test) reading the live workflow via a repo-root-relative path.
+- **Threat-model documentation (per reviewer concern 2):** add a "Deliberate divergences" subsection to `docs/security/git-native-claims-threat-model.md` § CI workflow guidance, recording WHY the projection builds-local (trusted triggers only) while the claim-check runs the published cli (untrusted PR head) — so the divergence reads as an intentional security choice, not an inconsistency to "fix".
+
+## Scope (out)
+
+- Arming hard enforcement (`TASKS_CLAIM_ENFORCE=1` + required ruleset check + force-push/delete protection) — that is the separate, user-blocked task `arm-hard-claim-enforcement-on-the-dogfood-repo`.
+- The projection workflow — already build-local and safe (trusted triggers); not touched.
+- Alternative fix "build the cli from the trusted base ref (`origin/main`) instead of the published package" — considered (registry-independent, always in-sync) but rejected for v1 as more complex (dual checkout, careful base-only build) than pinning public npm; recorded here so the reviewer can weigh it.
+
+## Implementation steps
+
+### Step 1: Pin public npm in the live claim-check workflow
+
+Add `npm_config_registry: https://registry.npmjs.org` to the step's `env:` (alongside `ENFORCE`), and a security comment above the `npx` line. Verify: `grep -c "npm_config_registry" .github/workflows/tasks-claim-check.yml` returns ≥1 and `grep -c "node packages/cli" .github/workflows/tasks-claim-check.yml` returns 0.
+
+### Step 2: Mirror the change in the fleet.ts template
+
+Update `CLAIM_CHECK_WORKFLOW` in `packages/cli/src/commands/fleet.ts` identically. Verify: `npm run build -w packages/cli` succeeds and `node -e` rendering the template shows the registry pin.
+
+### Step 3: Verify nothing else broke
+
+`npm run build`, `npm test`, `npm run lint` all pass. The generated workflow remains `on: pull_request` (not `pull_request_target`).
+
+## Risks and mitigations
+
+- **Risk: public npm unreachable from the CI runner.** The pin would make `npx` fail and the check stay advisory-passing.
+  - Mitigation: `publish.yml` already reaches public npm (it publishes there), so the runner can reach it; and a failed npx degrades to the current advisory behavior — no regression.
+- **Risk: the published cli lags `main`'s `check-push` semantics.** A PR that depends on unreleased check-push behavior would be checked by older logic.
+  - Mitigation: `check-push` is a stable Phase-3 primitive; the claim-check only needs path + trailer logic, which has not changed. Acceptable; the build-from-base alternative (Scope out) is the escape hatch if it ever drifts.
+- **Risk: a future maintainer "simplifies" the claim-check to build-local to match the projection.** That reintroduces the self-bypass.
+  - Mitigation: the new regression-guard test (Scope in) fails CI if the claim-check workflow or template gains `node packages/cli/dist/cli.js check-push`; the inline comment + threat-model "Deliberate divergences" subsection explain why.
+
+## Acceptance criteria
+
+1. `grep -c "npm_config_registry: https://registry.npmjs.org" .github/workflows/tasks-claim-check.yml` returns ≥1.
+2. `grep -c "npx -y @tasks-md/cli check-push" .github/workflows/tasks-claim-check.yml` returns ≥1 (still the trusted published cli).
+3. **Security property — never build-local:** `grep -c "node packages/cli/dist/cli.js" .github/workflows/tasks-claim-check.yml` returns 0, AND the same holds for the `CLAIM_CHECK_WORKFLOW` template in `packages/cli/src/commands/fleet.ts`.
+4. The `fleet.ts` `CLAIM_CHECK_WORKFLOW` template carries the same registry pin (source grep returns the pin).
+5. `npm run build && npm test && npm run lint` all exit 0.
+6. The workflow still triggers `on: pull_request`, never the dangerous `pull_request_target`: `grep -c pull_request_target .github/workflows/tasks-claim-check.yml` returns 0. (Necessary for fork safety; the build-local property is covered separately by criterion 3.)
+7. **Regression guard exists:** a test in `packages/cli/src/commands/fleet.test.ts` asserts criteria 2+3+4 against both the live workflow and the template, and would fail if a future PR adds build-local to the claim-check. Prove by inverting the assertion locally (temporarily) and seeing the test go red, then revert.
+
+## Reviewer verdict
+
+Cycle 1 returned needs-revision (3 concerns: no regression guard, missing threat-model divergence note, indirect criterion 6). Revised, then cycle 2:
+
+- **Verdict**: approved
+- **Reviewer**: reviewer
+- **Date**: 2026-06-03
+- **Concerns**: []
+- **Approval rationale**:
+  - The revised plan fully addresses all three concerns with concrete, mechanical safeguards: a regression-guard test that enforces the build-local prohibition at CI time (criterion 7), explicit threat-model documentation of the deliberate projection vs. claim-check divergence, and clarified acceptance criteria that distinguish trigger safety from build-strategy safety. The plan is implementable with deterministic verification and durable security properties.
+
+## Implementation finding (2026-06-03) — approach insufficient, needs revision
+
+Shipped the registry pin (PR #112) and the claim-check on that PR **still** failed with `sh: 1: tasks: not found` → vacuous pass. Root-caused it:
+
+- Public npm has `@tasks-md/cli@0.10.0` (latest), the tarball is complete (bin + dist + shebang), and deps are `^0.10.0` (not `workspace:*`). So the published package is fine.
+- **This repo IS the `@tasks-md/cli` workspace.** When `npx @tasks-md/cli` runs from the repo root, npm resolves the package to the repo's **own local** `packages/cli` — which the claim-check never builds (`dist/cli.js` absent) → "tasks: not found". npm never queries the registry, so `npm_config_registry` is inert here. (Same root cause as the projection's original failure; build-local fixed the projection because building the workspace produces `dist/cli.js` — but build-local is unsafe for the claim-check.)
+
+The registry pin is still correct + harmless for **consumer** repos (which aren't the cli's workspace, so their `npx` fetches the published cli), and the guard test + threat-model note remain valid. But it does **not** fix the dogfood repo.
+
+**Corrected fix options (both keep the trusted-cli security property; pick one):**
+
+- **(A) Install the published cli to a temp dir OUTSIDE the workspace, run it from the repo:** `(cd "$RUNNER_TEMP/tcli" && npm init -y && npm install @tasks-md/cli@latest)` then `node "$RUNNER_TEMP/tcli/node_modules/@tasks-md/cli/dist/cli.js" check-push …` with cwd=repo (git context intact). Installing outside the workspace forces a registry fetch; the guard's `node packages/cli/dist/cli.js` string still correctly forbids the *local* build-local.
+- **(B) Build the cli from the TRUSTED base ref:** `git checkout "$base" -- packages package.json package-lock.json && npm ci && npm run build && node packages/cli/dist/cli.js check-push …`. Secure (base code, never PR head) but heavier; the guard test must be revised to allow base-built local cli.
+
+Recommend (A) — smaller, keeps the published-cli model, leaves the guard as-is. Re-validate the revised approach with a reviewer before re-implementing.
+
+## Update 2 (2026-06-03) — fix (A) shipped; a THIRD layer surfaced
+
+Implemented (A) (install-to-temp, PR #112 @ 81839ba). The "tasks: not found" error is **gone** (the temp install sidesteps the workspace shadowing), but the claim-check **still advisory-passes** — `check-push` does not validate the live claim. Suspected third layer (high confidence, not yet confirmed — the temp-install output was silenced with `>/dev/null`):
+
+- On `pull_request`, `actions/checkout@v4` checks out the **auto-merge commit**, and the workflow's `git log -1 --format='%(trailers:...)'` reads **that** commit — which has **no** `Task`/`Task-Claim` trailers (GitHub generates it). So `task`/`claim` come back empty and check-push correctly rejects (code change, no claim). This is a pre-existing claim-check bug, previously masked because the npx step always failed first.
+- **Next fix:** read the trailers from the PR's real head commit (`git log -1 "${{ github.event.pull_request.head.sha }}"`), ideally searching the whole `base..head` range so the claim trailer can sit on any commit, not just HEAD. Then un-silence the temp install to rule out an install failure.
+
+This task is no longer a one-liner: it has layered through (1) workspace shadowing [fixed], (2) trusted-cli-vs-build-local [handled], (3) merge-commit trailer extraction [open], and possibly (4) multi-commit trailer handling. Recommend a fresh focused plan (or splitting the trailer-extraction fix into its own task) rather than continuing to layer fixes onto this PR.

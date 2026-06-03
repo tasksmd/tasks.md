@@ -26,15 +26,31 @@ jobs:
       - name: Path-scoped claim check
         env:
           ENFORCE: ${{ vars.TASKS_CLAIM_ENFORCE }}
+          # Fetch the TRUSTED published cli from public npm (pin dodges any
+          # internal-mirror lag on a fresh release).
+          npm_config_registry: https://registry.npmjs.org
         run: |
           base="origin/${{ github.base_ref }}"
           paths=$(git diff --name-only "$base...HEAD")
           [ -z "$paths" ] && { echo "no changes"; exit 0; }
+          # The pull_request HEAD is the auto-merge commit (no trailers), so scan
+          # the PR's own commits (base..HEAD) for the newest Task / Task-Claim.
           # git's own trailer parser (same engine as git interpret-trailers).
-          task=$(git log -1 --format='%(trailers:key=Task,valueonly)' | head -1)
-          claim=$(git log -1 --format='%(trailers:key=Task-Claim,valueonly)' | head -1)
+          task=$(git log "$base..HEAD" --format='%(trailers:key=Task,valueonly)' | grep -m1 . || true)
+          claim=$(git log "$base..HEAD" --format='%(trailers:key=Task-Claim,valueonly)' | grep -m1 . || true)
           git fetch origin '+refs/heads/tasks-claims:refs/heads/tasks-claims' || true
-          if npx -y @tasks-md/cli check-push --task "$task" --claim "$claim" $paths; then
+          # This repo IS the @tasks-md/cli workspace, so `npx @tasks-md/cli` would
+          # resolve our OWN unbuilt local package (-> "tasks: not found"). Install
+          # the published cli into a temp dir OUTSIDE the workspace, then run it
+          # from the repo so check-push sees the repo's git + diff paths. We must
+          # NOT build-local here: this runs on pull_request (untrusted head), and
+          # building the PR's own cli would let it rewrite check-push to self-pass.
+          tdir="$RUNNER_TEMP/tcli"
+          mkdir -p "$tdir"
+          (cd "$tdir" && npm init -y >/dev/null 2>&1 && npm install @tasks-md/cli@latest) || echo "::warning::temp cli install failed"
+          tcli="$tdir/node_modules/@tasks-md/cli/dist/cli.js"
+          echo "resolved task='$task' claim='$claim'; cli=$([ -f "$tcli" ] && echo present || echo MISSING)"
+          if [ -f "$tcli" ] && node "$tcli" check-push --task "$task" --claim "$claim" $paths; then
             exit 0
           fi
           # check-push rejected (code change without a valid live claim).

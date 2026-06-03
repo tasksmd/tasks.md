@@ -62,6 +62,17 @@ contributor or fork). Therefore:
   bot token, and writes only `TASKS.md` — it does not execute PR-supplied code.
 - Pin third-party actions by full commit SHA.
 
+### Deliberate divergence: who builds the cli
+
+Two generated workflows run `@tasks-md/cli`, and they resolve it **differently on purpose** — do not "unify" them:
+
+| Workflow | Trigger | How it gets the cli | Why |
+|----------|---------|---------------------|-----|
+| `tasks-snapshot` (projection) | `repository_dispatch` / `workflow_dispatch` / `schedule` — all **trusted** | builds + runs the repo's **local** cli (`npm ci` + `npm run build` + `node packages/cli/dist/cli.js`) | the trigger code is always trusted base-repo code; build-local keeps it in sync with `main` and dodges registry mirror lag |
+| `tasks-claim-check` | `pull_request` — **untrusted PR head** | runs the **published** cli (pinned to public npm): the `fleet init` template uses `npx -y @tasks-md/cli`; **this repo**, being the cli's own workspace (where `npx @tasks-md/cli` would resolve our unbuilt local package), installs the published cli into a temp dir outside the workspace and runs that | the PR head is attacker-controlled; building the local workspace cli would run the PR's own code, letting a malicious PR rewrite `check-push` to always pass and **bypass its own claim check** |
+
+The claim-check must **never** run the local workspace build (`packages/cli/dist/cli.js`) on a `pull_request`. A regression-guard test (`packages/cli/src/commands/fleet.test.ts` → "claim-check never builds the untrusted PR's cli") fails CI if the live workflow or the `fleet init` template references `packages/cli/dist/cli.js`, and requires both to invoke the published `@tasks-md/cli`.
+
 ## Token scope and platform differences
 
 | Platform | Server-side enforcement | Notes |

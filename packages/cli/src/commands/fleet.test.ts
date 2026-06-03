@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createGitNativeBackend } from "../backend/git-native.js";
 import { runDoctor, runFleetInit, runFleetStats } from "./fleet.js";
@@ -90,5 +91,42 @@ describe("runFleetStats", () => {
   it("requires the git-native backend", () => {
     const report = runFleetStats(dir); // no .tasksmd.json → file backend
     expect(report.lines.join("\n")).toMatch(/requires the git-native backend/);
+  });
+});
+
+// The claim-check runs on `pull_request` (untrusted PR head), so it must run the
+// TRUSTED published cli, never build the PR's own cli — a build-local claim-check
+// lets a malicious PR rewrite check-push to always pass and bypass itself. This
+// guard fails if anyone reintroduces build-local. See the threat model.
+describe("claim-check never builds the untrusted PR's cli", () => {
+  const assertTrustedCli = (yaml: string, label: string) => {
+    // Never run the LOCAL workspace build — on pull_request that is the PR's own
+    // untrusted code. Must invoke the published @tasks-md/cli (npx for consumer
+    // repos, or a temp-installed copy on the cli's own repo) + pin public npm.
+    expect(yaml, `${label}: must NOT run the local workspace cli`).not.toContain(
+      "packages/cli/dist/cli.js",
+    );
+    expect(yaml, `${label}: must invoke the published @tasks-md/cli`).toContain("@tasks-md/cli");
+    expect(yaml, `${label}: must pin public npm`).toContain(
+      "npm_config_registry: https://registry.npmjs.org",
+    );
+  };
+
+  it("the generated template is trusted-cli + registry-pinned", () => {
+    runFleetInit(dir);
+    const generated = readFileSync(
+      join(dir, ".github", "workflows", "tasks-claim-check.yml"),
+      "utf-8",
+    );
+    assertTrustedCli(generated, "fleet-init template");
+  });
+
+  it("the live dogfood workflow is trusted-cli + registry-pinned", () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+    const live = readFileSync(
+      join(repoRoot, ".github", "workflows", "tasks-claim-check.yml"),
+      "utf-8",
+    );
+    assertTrustedCli(live, "live workflow");
   });
 });

@@ -111,13 +111,21 @@ jobs:
       - name: Path-scoped claim check
         env:
           ENFORCE: \${{ vars.TASKS_CLAIM_ENFORCE }}
+          # Resolve the TRUSTED published cli from public npm. This runs on
+          # pull_request (untrusted PR head), so we must NOT build the PR's own
+          # cli (a malicious PR could rewrite check-push to always pass and
+          # bypass its own claim check). The pin also dodges registry mirror lag
+          # that otherwise leaves a fresh release uninstallable -> vacuous pass.
+          npm_config_registry: https://registry.npmjs.org
         run: |
           base="origin/\${{ github.base_ref }}"
           paths=$(git diff --name-only "$base...HEAD")
           [ -z "$paths" ] && { echo "no changes"; exit 0; }
+          # The pull_request HEAD is the auto-merge commit (no trailers), so scan
+          # the PR's own commits (base..HEAD) for the newest Task / Task-Claim.
           # git's own trailer parser (same engine as git interpret-trailers).
-          task=$(git log -1 --format='%(trailers:key=Task,valueonly)' | head -1)
-          claim=$(git log -1 --format='%(trailers:key=Task-Claim,valueonly)' | head -1)
+          task=$(git log "$base..HEAD" --format='%(trailers:key=Task,valueonly)' | grep -m1 . || true)
+          claim=$(git log "$base..HEAD" --format='%(trailers:key=Task-Claim,valueonly)' | grep -m1 . || true)
           git fetch origin '+refs/heads/tasks-claims:refs/heads/tasks-claims' || true
           if npx -y @tasks-md/cli check-push --task "$task" --claim "$claim" $paths; then
             exit 0
