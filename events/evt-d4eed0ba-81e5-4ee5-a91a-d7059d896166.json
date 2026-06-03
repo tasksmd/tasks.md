@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d4eed0ba-81e5-4ee5-a91a-d7059d896166",
+  "task_id": "bound-git-native-fold-cost-at-scale",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:03:51.622Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Bound git-native fold cost at scale",
+    "priority": "P2",
+    "tags": [
+      "git-native,performance"
+    ],
+    "body": "readEvents runs a git subprocess per commit so fold is O(n) with heavy constant overhead, and tasks pick folds 2-3 times per call. Cache the fold per tasks-claims commit and/or batch the git reads, then add a perf conformance check asserting fold + render stay under budget at 10k+ events. Pairs with auto-compaction."
+  }
+}
