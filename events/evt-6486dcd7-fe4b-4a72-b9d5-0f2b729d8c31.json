@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-6486dcd7-fe4b-4a72-b9d5-0f2b729d8c31",
+  "task_id": "auto-trigger-git-native-log-compaction",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T20:07:00.619Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-a828284d-9943-49d3-83a8-ac58560e0ae6",
+    "lease_expires_at": 1780603620619
+  }
+}
