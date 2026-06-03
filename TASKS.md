@@ -16,20 +16,6 @@
 
 ## P1
 
-- [ ] Define fleet-safe workspace and cross-repo claiming semantics
-  - **ID**: fleet-claim-workspace-semantics
-  - **Tags**: workspace, git-native, fleet, backend, multi-repo, multi-workspace, claiming
-  - **Details**: The approved fleet plan is explicitly single-repo v1, while workspace mode aggregates many repos and backends. Before making workspace mode fleet-aware, define the semantics: a global workspace picker may rank across repos, but claims are written to the selected repo's backend. Cross-repo/cross-workspace blockers must be read consistently without pretending there is a global atomic transaction.
-
-    Required changes:
-    1. Specify how workspace aggregation discovers each repo's backend and capability flags.
-    2. Define claim flow for a ranked cross-workspace pick: pick globally, claim atomically in the target repo backend, then re-rank on claim loss.
-    3. Define cross-repo blocker resolution when some repos use file backend and others use git-native or issues.
-    4. State what is not supported: atomic multi-repo claim/complete, global leases spanning repos, and cross-repo generated snapshot writes unless a later backend provides them.
-    5. Add conformance or integration tests for two agents racing through workspace aggregation into the same target repo.
-  - **Files**: `spec.md`, `packages/parser/src/workspace.ts`, `packages/cli/src/commands/next.ts`, `packages/mcp/src/tools/findNextTaskAcrossWorkspaces.ts`, `packages/conformance/`, `README.md`
-  - **Acceptance**: Workspace docs explain per-repo backend capabilities; concurrent workspace picks cannot both claim the same target-repo task when that repo uses git-native; mixed-backend limitations are explicit; tests cover claim-loss re-rank and cross-repo blocker resolution.
-
 ## P2
 
 ## P3

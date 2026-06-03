@@ -737,7 +737,9 @@ discovery:
 
 It prints `<workspace>::<repo>:<task-id>` for the global highest-priority unblocked task; claiming and editing happen inside that repo's checkout. `tasks workspaces list|add|detect` manage the config, and the MCP tool `find_next_task_across_workspaces` exposes the same aggregation.
 
-**Aggregation is backend-aware.** Each repo in a workspace resolves its own backend from `.tasksmd.json` — a markdown (`tasks-md`) repo contributes its parsed `TASKS.md`, while a `git-native` or `github-issues` repo contributes its `listOpen()` — and they merge into one priority-ranked list. There is **no** atomic multi-repo claim/complete and no global lease spanning repos — a cross-workspace pick claims atomically in the one target repo's backend, and re-ranks on a lost claim.
+**Aggregation is backend-aware.** Each repo in a workspace resolves its own backend from `.tasksmd.json` — a markdown (`tasks-md`) repo contributes its parsed `TASKS.md`, while a `git-native` or `github-issues` repo contributes its `listOpen()` — and they merge into one priority-ranked list.
+
+**Claiming is single-repo, even from a global pick.** The picker ranks globally, but a claim is written to the **selected repo's own backend** with that backend's guarantees: best-effort on a `tasks-md` repo, collision-free (git ref-CAS) on a git-native repo, issue-assignee on github-issues. Two agents that pick the same git-native task therefore cannot both win — the target repo's CAS decides. On a lost claim the agent simply re-runs the pick: the just-claimed task is now non-open and drops out, so the next-ranked task is returned (re-rank-on-loss needs no global coordinator). Cross-repo blockers are resolved by reading the aggregated set; a `tasks-md` task may carry `**Blocked by**: <repo>#<id>` / `<workspace>::<repo>#<id>`, while git-native/issues repos manage their own blocking. **Not supported:** atomic multi-repo claim/complete, a global lease spanning repos, and cross-repo generated-snapshot writes — each repo's backend owns its own state.
 
 ## Agent Behavior
 
