@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-096d3613-fcac-468b-a613-261ff24328ce",
+  "task_id": "migrated-claims-use-a-guessable-fencing-token-claim-migrated",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:21:03.080Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
