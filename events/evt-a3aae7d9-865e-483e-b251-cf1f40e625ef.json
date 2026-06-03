@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-a3aae7d9-865e-483e-b251-cf1f40e625ef",
+  "task_id": "add-error-and-health-visibility-to-the-git-native-backend",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:43:45.746Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
