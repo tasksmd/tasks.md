@@ -431,19 +431,6 @@
   - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `packages/cli/src/commands/fleet-stats.ts` (new), `docs/research/gitbug-reuse-spike.md`, `docs/plans/deterministic-fleet-claiming.md`
   - **Acceptance**: Fleet stats report contention metrics; thresholds are documented; no Phase 4 CRDT/HRW implementation task can proceed without measured data crossing a threshold or a written operator override; reuse re-evaluation is scheduled/documented.
 
-- [ ] Add mechanical drift checks so docs cannot regress to the old human-edit workflow
-  - **ID**: docs-drift-agent-owned-task-model
-  - **Tags**: lint, docs, ci, drift, agent-owned, feedback-loop
-  - **Details**: The fresh review found many stale docs because the vision changed faster than the spec, README, commands, repo instructions, package docs, and user stories. Per the feedback-loop rule, recurring doc/model drift should become a deterministic check, not just a review comment. Add a lightweight CI/lint guard that catches universal claims like "edit TASKS.md directly" or "append `(@agent)`" outside file-backend-specific sections.
-
-    Required changes:
-    1. Add a repo-local script or lint rule that scans docs/commands for banned or backend-scoped phrases.
-    2. Allow the phrases in explicit file-backend sections and examples.
-    3. Wire the check into CI or `npm run lint`.
-    4. Document how to update the allowlist when wording changes intentionally.
-  - **Files**: `scripts/`, `package.json`, `.github/workflows/ci.yml`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `commands/`, `docs/user-stories/`, `packages/*/README.md`
-  - **Acceptance**: The check fails on a deliberately added universal "humans edit TASKS.md" or "append `(@agent)`" instruction outside file-backend context; legitimate file-backend docs pass; repo instructions and package READMEs are scanned; `npm run lint` includes the guard; CI stays green.
-
 ## P1
 
 - [ ] GitHub Issues backend: aggregate issue-backed repos alongside markdown repos in workspace mode

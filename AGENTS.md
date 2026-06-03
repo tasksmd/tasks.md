@@ -210,8 +210,8 @@ learn the backend-aware default rather than a file-only one:
 ### Downstream drift (outside this repo)
 
 Operators have copied the older **file-only** snippet into other repos. Replace it
-with the snippet above wherever it appears. Known locations to sweep (exact text to
-replace — "Claim tasks by appending `(@agent)`" / "edit `TASKS.md` directly"):
+with the snippet above wherever it appears. The exact file-backend-only phrasings to
+find-and-replace — "Claim tasks by appending `(@agent)`" / "edit `TASKS.md` directly" — appear at these locations: <!-- drift-allow: names the banned phrasings to replace -->
 
 - `~/.config/agentbrew/` shared rules and `global_rules.md` "TASKS.md Format" /
   "Task Backend Configuration" sections.

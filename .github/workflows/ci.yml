@@ -30,6 +30,11 @@ jobs:
             node packages/lint/dist/cli.js TASKS.md
           fi
 
+      - name: Check docs backend drift
+        run: |
+          node scripts/check-docs-backend-drift.mjs --self-test
+          node scripts/check-docs-backend-drift.mjs
+
   commands-drift:
     runs-on: ubuntu-latest
     steps:
