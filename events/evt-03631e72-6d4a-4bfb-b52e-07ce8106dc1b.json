@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-03631e72-6d4a-4bfb-b52e-07ce8106dc1b",
+  "task_id": "migrated-claims-use-a-guessable-fencing-token-claim-migrated",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:15:33.955Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-912b5ec6-a921-4f22-85a9-c6878048041d",
+    "lease_expires_at": 1780607733955
+  }
+}
