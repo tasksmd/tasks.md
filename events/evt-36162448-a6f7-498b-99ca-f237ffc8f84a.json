@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-36162448-a6f7-498b-99ca-f237ffc8f84a",
+  "task_id": "protect-tasks-claims-and-main-from-force-push-delete-with-co",
+  "event_type": "updated",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T23:46:11.332Z",
+  "parent_event_ids": [],
+  "payload": {
+    "blocked": "needs-user-decision — DONE: main force-push+delete (ruleset 17242285) + tasks-claims deletion (17242286), so the log can't be nuked and main can't be rewritten. REMAINING + BLOCKED: tasks-claims force-push (non-fast-forward) rewrite protection. GitHub 422-rejects the github-actions bot (app 15368) as a ruleset bypass actor even on this org repo ('must be part of the ruleset source or owner organization'), so the compactor can't be exempted; arming non_fast_forward without the exemption wedges compaction at the 5000-event threshold (currently ~150 events, so no live impact yet). Unblock options: (a) an org-level Actions ruleset-bypass setting; (b) push tasks-claims from tasks-snapshot.yml via an admin PAT + bypass the Repository-admin role in the ruleset (introduces a long-lived PAT — your call). The fold already dedups replayed/edited events by event_id; only a dropped-event rewrite is unprotected."
+  }
+}
