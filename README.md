@@ -66,7 +66,7 @@ Then add this to your `AGENTS.md` so agents know to use it:
 - Remove completed tasks from the file (history is in git log)
 ```
 
-That's it. Your agent will read TASKS.md on session start and work through the queue.
+That's it. Your agent will read TASKS.md on session start and work through the queue. That snippet is the zero-setup **file backend** (best-effort `(@you)` claims) — perfect for a solo repo. The moment you have **more than one writer**, switch to the collision-free [git-native backend](#backends) with `/migrate` so two agents can never grab the same task.
 
 ## Worked example: first 10 minutes
 
@@ -441,7 +441,7 @@ Key differences:
 | **Agent can write** | Needs API client + auth | Append to a file |
 | **Git-native** | Separate system | Same repo, same PR |
 
-They complement each other — one Jira ticket or GitHub Issue often becomes multiple TASKS.md entries. Use the tracker for *what* to build; use TASKS.md for *how* the agent builds it.
+They complement each other — one Jira ticket or GitHub Issue often becomes multiple TASKS.md entries. Use the tracker for *what* to build; use TASKS.md for *how* the agent builds it. For a tool-by-tool breakdown (Backlog.md, Taskwarrior, agent-native to-do lists, AGENTS.md, and more), see [`docs/competitors/`](docs/competitors/).
 
 ### Can I use TASKS.md alongside Jira / GitHub Issues?
 
@@ -513,7 +513,9 @@ They're companions. AGENTS.md tells agents how your project works (build command
 
 ## See Also
 
+- [Vision](VISION.md) — the strategy: one job, a thin standard, borrowed coordination
 - [Why Your AI Agent Needs a Backlog](docs/blog/why-your-ai-agent-needs-a-backlog.md) — the motivation behind TASKS.md
+- [How it compares](docs/competitors/) — honest profiles vs. Backlog.md, Issues, Jira/Linear, agent-native to-do tools, and AGENTS.md
 - [AGENTS.md](https://agents.md/) — the companion spec for agent instructions
 - [Proposal: TASKS.md as a companion standard](https://github.com/agentsmd/agents.md/issues/166) — discussion on the agents.md repo
 
