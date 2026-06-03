@@ -153,9 +153,21 @@ appropriate source repo.
 
 ## Task Queue Policy
 
+This repo runs the **file backend** (`tasks-md`) — there is no `.tasksmd.json`, so
+`TASKS.md` is the live source of truth and the claim/complete mechanics below are
+the file-backend ones. A repo on a **generated backend** (`git-native` or
+`github-issues`, declared in `.tasksmd.json`) treats `TASKS.md` as a generated
+snapshot and mutates state through the CLI/MCP instead — see the backend-aware
+snippet at the end of this section and [`spec.md` § Task backends](spec.md#task-backends).
+
 - Read `TASKS.md` before starting work and obey any `<!-- policy: ... -->`
   comments.
-- Claim tasks by appending your agent identity, for example `(@devin-session-17)`.
+- **Determine the backend first.** No `.tasksmd.json` (or `"backend": "tasks-md"`)
+  → file backend: hand-edit `TASKS.md` as below. Otherwise → run `tasks claim`/
+  `tasks complete`/`tasks create` and never hand-edit the generated `TASKS.md`.
+- **File backend:** claim tasks by appending your agent identity, for example
+  `(@devin-session-17)`. **Generated backend:** `tasks claim <id>` (git-native
+  returns a `claimId` fencing token; a lost race exits nonzero — pick another task).
 - For non-trivial tasks, write a plan to `docs/plans/<task-id>.md` by copying
   `docs/templates/plan-template.md`, then validate it with a reviewer subagent
   (`reviewer` profile, fallback chain `qa-engineer` → `researcher`). Commit
@@ -164,8 +176,11 @@ appropriate source repo.
   minutes with an obvious fix — skip the plan step. The legacy `**Plan**:`
   TASKS.md checklist is superseded; see `commands/next-task.md` § "Plan and
   validate" for the full rules.
-- Do not mark completed tasks `[x]`; remove the entire task block, including all
-  metadata and plan lines. History lives in git.
+- Do not mark completed tasks `[x]`. **File backend:** remove the entire task
+  block (line + all metadata + plan lines) in the completing commit. **Generated
+  backend:** run `tasks complete <id>` (git-native appends a `completed` event;
+  issues closes the issue) and let the projection job refresh the snapshot.
+  History lives in git either way.
 - If a task requires public writes, external purchases, publishing, or another
   blocked action, add a `**Blocked**:` reason instead of attempting it.
 - Commit only scoped files or hunks. Never use `git add -A`, `git add .`,
@@ -173,3 +188,35 @@ appropriate source repo.
   worktree.
 - Commit TASKS.md claim/plan/block updates separately from implementation when
   practical, then remove the completed task in the implementation commit.
+
+### Canonical backend-aware policy snippet
+
+Copy this into another repo's `AGENTS.md` / `CLAUDE.md` / Cursor rules so agents
+learn the backend-aware default rather than a file-only one:
+
+```markdown
+## Task Management
+- Read `TASKS.md` for available work; obey any `<!-- policy: ... -->` comments.
+- Determine the backend from `.tasksmd.json` (default: file backend `tasks-md`).
+  - **File backend:** claim by appending `(@you)` to the task line; complete by
+    removing the whole task block (history lives in git log). Best-effort.
+  - **Generated backend** (`git-native` / `github-issues`): `TASKS.md` is a
+    generated snapshot — never hand-edit it. Use `tasks claim <id>` /
+    `tasks complete <id>` / `tasks create "<title>"` (or the `tasks-mcp` tools);
+    git-native claims are collision-free with a `claimId` fencing token.
+- Pick highest-priority unblocked task (P0→P3); skip others' claims and blocked tasks.
+```
+
+### Downstream drift (outside this repo)
+
+Operators have copied the older **file-only** snippet into other repos. Replace it
+with the snippet above wherever it appears. Known locations to sweep (exact text to
+replace — "Claim tasks by appending `(@agent)`" / "edit `TASKS.md` directly"):
+
+- `~/.config/agentbrew/` shared rules and `global_rules.md` "TASKS.md Format" /
+  "Task Backend Configuration" sections.
+- Any downstream repo `AGENTS.md` / `CLAUDE.md` whose Task-Management section
+  predates the backend split.
+
+These live outside this repo, so they are recorded here rather than edited; a
+maintainer (or an `agentbrew sync`) propagates the backend-aware snippet.

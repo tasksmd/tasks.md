@@ -431,20 +431,6 @@
   - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `packages/cli/src/commands/fleet-stats.ts` (new), `docs/research/gitbug-reuse-spike.md`, `docs/plans/deterministic-fleet-claiming.md`
   - **Acceptance**: Fleet stats report contention metrics; thresholds are documented; no Phase 4 CRDT/HRW implementation task can proceed without measured data crossing a threshold or a written operator override; reuse re-evaluation is scheduled/documented.
 
-- [ ] Align repo and downstream agent instructions with backend-aware task policy
-  - **ID**: agent-instructions-backend-policy
-  - **Tags**: docs, agents, contributing, instructions, agent-owned, backend, drift
-  - **Details**: The public docs are not the only place teaching the old model. This repo's `AGENTS.md`, `CONTRIBUTING.md`, and the global agent-rule snippets operators copy into other repos still say to claim by appending `(@agent)` and hand-edit `TASKS.md`. After the backend-aware commands exist, publish one canonical Task Queue Policy snippet and update this repo's instructions so agents stop learning the wrong default.
-
-    Required changes:
-    1. Update `AGENTS.md` and `CONTRIBUTING.md` so direct file edits and inline claim trailers are explicitly file-backend behavior, not universal guidance.
-    2. Add a canonical backend-aware policy snippet that other `AGENTS.md` / `CLAUDE.md` / Cursor-rule files can copy.
-    3. Explain how an agent determines the active backend before claiming, completing, or adding tasks.
-    4. Preserve current repo workflow while this repo remains on the file backend: `TASKS.md` is still valid here until git-native mode is configured.
-    5. File or document downstream follow-ups for global instructions outside this repo rather than silently leaving known drift.
-  - **Files**: `AGENTS.md`, `CONTRIBUTING.md`, `README.md`, `docs/user-stories/`, `docs/templates/`
-  - **Acceptance**: `AGENTS.md` and `CONTRIBUTING.md` no longer present append-claim/direct-edit as backend-agnostic rules; a copyable backend-aware policy snippet exists; docs explain the transition for repos still using the file backend; known downstream global-rule drift is recorded with exact file paths and replacement text.
-
 - [ ] Align package READMEs and the generated site with backend-aware operations
   - **ID**: package-docs-site-backend-alignment
   - **Tags**: docs, package-readmes, site, cli, mcp, parser, lint, backend
@@ -462,7 +448,7 @@
 - [ ] Add mechanical drift checks so docs cannot regress to the old human-edit workflow
   - **ID**: docs-drift-agent-owned-task-model
   - **Tags**: lint, docs, ci, drift, agent-owned, feedback-loop
-  - **Blocked by**: agent-instructions-backend-policy, package-docs-site-backend-alignment
+  - **Blocked by**: package-docs-site-backend-alignment
   - **Details**: The fresh review found many stale docs because the vision changed faster than the spec, README, commands, repo instructions, package docs, and user stories. Per the feedback-loop rule, recurring doc/model drift should become a deterministic check, not just a review comment. Add a lightweight CI/lint guard that catches universal claims like "edit TASKS.md directly" or "append `(@agent)`" outside file-backend-specific sections.
 
     Required changes:

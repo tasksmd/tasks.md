@@ -59,8 +59,14 @@ npm run build:site
 
 Open tasks for this repo live in [`TASKS.md`](TASKS.md). Look for a `## P0`
 or `## P1` item without a `**Blocked**:` line and without another agent's
-claim trailer (`(@someone)`). Claim it by appending `(@your-handle)` to the
-task line in a small separate commit, then implement it.
+claim trailer (`(@someone)`).
+
+This repo uses the **file backend** (no `.tasksmd.json`), so claim by appending
+`(@your-handle)` to the task line in a small separate commit, then implement it,
+and remove the whole task block in the completing commit. In a repo on a
+**generated backend** (`git-native` / `github-issues`) you would instead run
+`tasks claim <id>` / `tasks complete <id>` and never hand-edit the generated
+`TASKS.md` — see [`spec.md` § Task backends](spec.md#task-backends).
 
 Tasks follow the format defined in [`spec.md`](spec.md). If you're unsure
 which priority a task should be, P2 is a safe default.
