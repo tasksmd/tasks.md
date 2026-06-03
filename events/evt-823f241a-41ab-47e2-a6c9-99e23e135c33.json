@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-823f241a-41ab-47e2-a6c9-99e23e135c33",
+  "task_id": "make-the-tasks-snapshot-projection-actually-render-on-ci",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T18:31:42.145Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-78c516db-0081-4b12-8652-33c3bec0fd36",
+    "lease_expires_at": 1780597902145
+  }
+}
