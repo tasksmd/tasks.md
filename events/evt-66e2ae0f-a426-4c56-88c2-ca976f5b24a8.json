@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-66e2ae0f-a426-4c56-88c2-ca976f5b24a8",
+  "task_id": "make-the-tasks-snapshot-projection-actually-render-on-ci",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T18:27:43.331Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Make the tasks-snapshot projection actually render on CI",
+    "priority": "P2",
+    "tags": [
+      "git-native,projection,ci"
+    ],
+    "body": "Verified 2026-06-03: the projection now runs (workflow_dispatch) but skips because npx -y @tasks-md/cli render fails on the runner with 'sh: 1: tasks: not found' for the freshly-published cli@0.10.0. Local tests prove the invocation form and the published 0.10.0 tarball (bin tasks + dist/cli.js + shebang) are correct, and npx @tasks-md/cli@0.7.0 works — so the runner cannot fully install the just-published version (most likely the Intuit Artifactory mirror lagging the new version; npm view @tasks-md/cli@0.10.0 against Artifactory returns ETARGET). Fix options: (a) for THIS repo (the cli's own source), build + use the local cli in the projection (npm ci + npm run build -w packages/cli + node packages/cli/dist/cli.js render) — most robust, repo-specific divergence from the generic template; (b) pin npm_config_registry=https://registry.npmjs.org on the render step so npx fetches the public cli directly, bypassing the Artifactory mirror. Recommend (a) for the dogfood repo. The resilient render means it skips gracefully meanwhile (no failed runs, no truncated TASKS.md)."
+  }
+}
