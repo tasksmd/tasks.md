@@ -538,13 +538,17 @@ interface BackendOpts {
   backend?: string;
   as?: string;
   json?: boolean;
+  claim?: string;
 }
 
-/** Actor identity for a mutating op: `--as`, else $TASKS_ACTOR / $TASKS_INSTANCE. */
+/** Actor identity for a mutating op: `--as`, else $TASKS_ACTOR / $TASKS_INSTANCE.
+ * Threads `--claim <token>` so fenced ops (update/release/complete/heartbeat on
+ * git-native) reject a stale/foreign token; undefined = unfenced, as before. */
 function actorOptions(opts: BackendOpts): ActorOptions {
   return {
     actorId: opts.as ?? process.env.TASKS_ACTOR,
     instanceId: process.env.TASKS_INSTANCE,
+    claimId: opts.claim,
   };
 }
 
@@ -647,6 +651,7 @@ program
   .option("--tag <tag...>", "Replace tags (repeatable)")
   .option("--blocked <reason>", "Set the blocked reason (empty string clears it)")
   .option("--blocked-by <id...>", "Replace blocked-by task ids (repeatable)")
+  .option("--claim <token>", "Fencing token from `tasks claim` — rejects a stale/foreign token")
   .option("--json", "Emit the operation result as JSON")
   .action(
     async (
@@ -699,6 +704,7 @@ program
   .argument("<id>", "Task id (issue number for github-issues)")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
   .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--claim <token>", "Fencing token from `tasks claim` — rejects a stale/foreign token")
   .option("--json", "Emit the operation result as JSON")
   .action(async (id: string, opts: BackendOpts) => {
     const result = await getBackend(process.cwd(), opts.backend).release(id, actorOptions(opts));
@@ -711,6 +717,7 @@ program
   .argument("<id>", "Task id (issue number for github-issues)")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
   .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--claim <token>", "Fencing token from `tasks claim` — rejects a stale/foreign token")
   .option("--json", "Emit the operation result as JSON")
   .action(async (id: string, opts: BackendOpts) => {
     const result = await getBackend(process.cwd(), opts.backend).complete(id, actorOptions(opts));
@@ -737,7 +744,7 @@ program
   .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
   .option("--claim <token>", "Fencing token from `tasks claim` — rejects a stolen lease")
   .option("--json", "Emit the operation result as JSON")
-  .action(async (id: string, opts: BackendOpts & { claim?: string }) => {
+  .action(async (id: string, opts: BackendOpts) => {
     const backend = getBackend(process.cwd(), opts.backend);
     if (!backend.heartbeat) {
       const result: OperationResult = {
@@ -750,7 +757,7 @@ program
       emitOperationResult(result, opts);
       return;
     }
-    const result = await backend.heartbeat(id, { ...actorOptions(opts), claimId: opts.claim });
+    const result = await backend.heartbeat(id, actorOptions(opts));
     emitOperationResult(result, opts);
   });
 

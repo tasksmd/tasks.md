@@ -1078,3 +1078,35 @@ describe("heartbeat command", () => {
     }
   });
 });
+
+describe("--claim fencing on complete/release/update", () => {
+  const run = (cwd: string, args: string[]) =>
+    spawnSync("node", [CLI, ...args], { encoding: "utf-8", cwd });
+
+  it("threads --claim through the CLI so a stale/foreign token is rejected", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-fence-"));
+    spawnSync("git", ["init", "-q"], { cwd: dir });
+    writeFileSync(join(dir, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    try {
+      run(dir, ["create", "Edit me", "--priority", "P1"]);
+      const claim = run(dir, ["claim", "edit-me", "--as", "@me"]);
+      const token = claim.stdout.match(/claim-[a-f0-9-]+/)?.[0];
+      expect(token, claim.stdout + claim.stderr).toBeTruthy();
+
+      // A wrong token is rejected (proves --claim reaches the backend fence).
+      const forged = run(dir, ["update", "edit-me", "--priority", "P0", "--claim", "claim-bogus"]);
+      expect(forged.status).not.toBe(0);
+      expect(forged.stdout + forged.stderr).toMatch(/stale|conflict|stolen|changed/i);
+
+      // The real token succeeds.
+      const ok = run(dir, ["update", "edit-me", "--priority", "P0", "--claim", token!]);
+      expect(ok.status, ok.stdout + ok.stderr).toBe(0);
+
+      // complete with a wrong token is also rejected.
+      const badComplete = run(dir, ["complete", "edit-me", "--claim", "claim-bogus"]);
+      expect(badComplete.status).not.toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
