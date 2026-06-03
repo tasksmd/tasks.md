@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-385501e5-1f47-4b5e-a3ca-9e30dddd6ded",
+  "task_id": "arm-hard-claim-enforcement-on-the-dogfood-repo",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T23:00:58.866Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-c4cf3bc4-29ff-4ecb-844c-11639ca571c9",
+    "lease_expires_at": 1780614058865
+  }
+}
