@@ -13,38 +13,46 @@ Let a git-native owner retrieve **their own** fencing token from `tasks list --j
 
 `claim` prints the `claim_id` once; nothing else returns it. A **migrated** owner never even ran `claim` (the migration created the claim), so they have no way to obtain their token — which blocks fencing their own pushes once enforcement is armed (the `migrated-owners-can-t-retrieve-their-random-fencing-token` follow-up, and a prerequisite for arming enforcement on a migrated repo). `assignee` is already serialized (it's on `BackendTask`); the gap is `claimId` + `leaseExpiresAt`, which live on `FoldedTask` and are dropped by `sortedTasks`.
 
+## Design decision: broadcast, don't owner-gate (reviewer-driven)
+
+Cycle 1 proposed gating `claimId` to the querying owner via `--as`. The reviewer **rejected** it as security theater: `actor-id` is *advisory/unsigned* in v1 (threat-model line 38), so `--as @victim` is forgeable — the gate provides **zero** real protection. The honest design (reviewer's recommendation) is to **expose `claimId` unconditionally** and be precise about what it is:
+
+- The `claim_id` is **already git-log-readable** — anyone with repo access can extract every token from `refs/heads/tasks-claims`. `list --json` adds **no new exposure**, only convenience over `git show`.
+- The fencing token is **not a secret capability**. Its job is *staleness detection* (a lapsed/replaced token no longer matches the live claim) and the **server-side required check** (B5/B7, Phase 3) is the real gate — not the read API.
+- #117 (random migrated token) raised the floor to "must have repo/state access to obtain a token"; unconditional `list --json` exposure respects that floor (you run it *in* the repo). Owner-gating on a forgeable flag adds nothing above it.
+
 ## Scope (in)
 
-- Add `claimId?: string` and `leaseExpiresAt?: number` to `BackendTask` (`backend/types.ts`).
-- Populate both in git-native `sortedTasks` from the fold entry (`entry.claimId` / `entry.leaseExpiresAt`).
-- `tasks list`: add a read-only `--as <actor>` option (defaults to `$TASKS_ACTOR`). In the `--json` output, include `claimId` **only** for tasks whose `assignee` matches the resolved actor; **redact** (`undefined`) it for every other task, and redact **all** `claimId`s when no actor resolves. `leaseExpiresAt` + `assignee` are shown for all (not capabilities).
+- Add `claimId?: string` and `leaseExpiresAt?: number` to `BackendTask` (`backend/types.ts`), documented as git-native-only and **not secret** (git-log-readable).
+- Populate both in git-native `sortedTasks` from the fold entry. The `list` command already `JSON.stringify`s the full `BackendTask`, so they flow through with **no `cli.ts` change**.
+- A one-line clarification in `docs/security/git-native-claims-threat-model.md`: `claim_id` is log-readable; `list --json` surfaces it as convenience; the gate is the server-side check + staleness, not token secrecy.
 
 ## Scope (out)
 
-- Broadcasting every task's `claimId` to all callers — explicitly rejected (see Risks): the token *gates work* (threat-model B2/B5), so the convenience API must not hand non-owners a ready-to-use forgery token, even though it is git-log-readable.
-- File / github-issues backends: they have no lease/`claimId`; `claimId`/`leaseExpiresAt` stay `undefined` there (no behavior change). `assignee` already works.
+- Owner-gating / `--as` on `list` / `claimId` redaction — rejected above (forgeable gate, false secrecy).
+- File / github-issues backends: no lease/`claimId`; both stay `undefined` there (no behavior change). `assignee` already works.
 - A dedicated `tasks whoami`/`claim-token` command — `list --json` is the requested surface.
 
 ## Implementation steps
 
-1. `backend/types.ts`: add `claimId?` + `leaseExpiresAt?` to `BackendTask` with doc comments (git-native only).
+1. `backend/types.ts`: add `claimId?` + `leaseExpiresAt?` to `BackendTask` with doc comments (git-native only; not secret — git-log-readable).
 2. `backend/git-native.ts` `sortedTasks`: map each entry to `{ ...entry.task, claimId: entry.claimId, leaseExpiresAt: entry.leaseExpiresAt }`.
-3. `cli.ts` `list`: add `--as <actor>`; in the `opts.json` branch of the non-`tasks-md` path, map tasks through an owner-gate that strips `claimId` unless `normalizeActor(opts.as ?? $TASKS_ACTOR) === normalizeActor(task.assignee)`. Reuse the same `@`-stripping normalization the backend's `actor()` uses (extract a tiny shared helper if needed, else inline a `replace(/^@/, "")`).
-4. Tests (cli.test.ts e2e on a git-native repo): (a) owner `list --as @me --json` shows their `claimId`; (b) a **different** `--as @other` (or no `--as`) redacts it; (c) `leaseExpiresAt` + `assignee` are present regardless; (d) file-backend `list --json` is unaffected.
+3. `docs/security/git-native-claims-threat-model.md`: add the log-readable / convenience / server-side-gate clarification.
+4. Tests (cli.test.ts e2e on a git-native repo): (a) `list --json` on a claimed task shows `claimId` + `leaseExpiresAt` + `assignee`; (b) an unclaimed task has no `claimId`; (c) file-backend `list --json` is unaffected (no `claimId`).
 
 ## Risks and mitigations
 
-- **Risk: leaking a work-gating capability.** Broadcasting `claimId` would let any caller forge a work-push for another agent's task. Mitigation: owner-gated redaction (the core design); document that the token is already git-log-readable so this is convenience, not new exposure, while still not trivializing forgery via the API. Keep `arm-hard-claim-enforcement`'s threat model consistent.
-- **Risk: actor-normalization mismatch** (`@me` vs `me`) hides the owner's own token. Mitigation: reuse the backend's exact normalization; test the `@`-prefixed and bare forms.
-- **Risk: type change ripples to other `BackendTask` producers.** Mitigation: the fields are optional (`?`), so file/github producers compile unchanged; `npm run build` verifies.
+- **Risk: implying the token is now "exposed" where it wasn't.** It was always git-log-readable; mitigate by documenting that explicitly (threat-model note + type comment) so nobody mistakes the read API for a security boundary.
+- **Risk: type change ripples to other `BackendTask` producers.** The fields are optional (`?`), so file/github producers compile unchanged; `npm run build` verifies.
+- **Risk: undercutting #117.** It doesn't — #117 stopped *deriving* a token from the public id with zero access; this still requires repo access, which already reveals the log.
 
 ## Acceptance criteria
 
-1. `BackendTask` has optional `claimId` + `leaseExpiresAt`; `git-native` `sortedTasks` populates them.
-2. `tasks list --as <owner> --json` includes `claimId` for the owner's claimed tasks; `--as <non-owner>` and no-`--as` omit it.
-3. `leaseExpiresAt` and `assignee` are present for claimed tasks regardless of `--as`.
-4. File-backend `list --json` is unchanged (no `claimId`/`leaseExpiresAt`).
-5. `npm run build && npm test && npm run lint` all green, with new cli e2e tests for the owner-gate.
+1. `BackendTask` has optional `claimId` + `leaseExpiresAt`; `git-native` `sortedTasks` populates them; no `cli.ts` redaction logic.
+2. `tasks list --json` on a git-native repo includes `claimId` + `leaseExpiresAt` for a claimed task (and `assignee`, as before).
+3. An unclaimed task has no `claimId`; file-backend `list --json` is unchanged (no `claimId`/`leaseExpiresAt`).
+4. The threat-model doc states `claim_id` is git-log-readable and the API is convenience, not a security boundary.
+5. `npm run build && npm test && npm run lint` all green, with a new cli e2e test.
 
 ## Reviewer verdict
 
