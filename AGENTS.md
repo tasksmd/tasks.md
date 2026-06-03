@@ -77,6 +77,36 @@ Do not claim work is complete until the verification commands you ran have
 finished successfully. Never bypass hooks with `--no-verify` unless the user has
 explicitly approved that exact action in the current session.
 
+## Release And CI Gotchas
+
+The tag-triggered release (`.github/workflows/publish.yml`) and CI have sharp
+edges that cost real debugging time — captured here so they don't recur:
+
+- **npm OIDC Trusted Publishing needs npm >= 11.5.1.** Node 22 ships npm 10.x,
+  which signs the provenance statement but **cannot authenticate the publish via
+  OIDC** — the publish `PUT` 404s (`'<pkg>@<version>' is not in this registry`)
+  even with a correct Trusted Publisher configured. The signature is: provenance
+  signs, then 404 on PUT. `publish.yml` runs `npm install -g npm@latest` after
+  `setup-node` for exactly this reason; do not remove it.
+- **Trusted Publishers are configured per-package on npmjs.com**, not in the repo.
+  `@tasks-md/parser`, `@tasks-md/lint`, `@tasks-md/cli`, and `tasks-mcp` each list
+  `tasksmd/tasks.md` -> `publish.yml` (no environment). All four are set.
+- **`scripts/sync-versions.sh` must skip the private `@tasks-md/conformance`.**
+  Bumping its cross-reference to `^<version>` makes `npm ci` try to fetch the
+  unpublished package from the registry -> 404. It stays pinned `*` so it always
+  resolves to the local workspace.
+- **CI's `npm ci` resolves through Intuit Artifactory**, which times out
+  (`ETIMEDOUT`) on brand-new dependency versions that aren't mirrored yet (a fresh
+  `yaml@2.9.0` broke CI this way — the workspaces config is now dependency-free
+  JSON). Prefer mature, already-mirrored dependency versions; trust the GitHub
+  Actions run over a local `npm view` (the Artifactory mirror lags the public registry).
+- **`tasks-claim-check` is advisory by default** (warns, never blocks, so it never
+  red-X's a bootstrap or docs PR). Arm hard enforcement with the repo variable
+  `TASKS_CLAIM_ENFORCE=1` plus a required ruleset check.
+- **The `tasks-snapshot` projection skips gracefully** when `tasks render` is
+  unavailable (e.g. before a CLI version carrying the git-native backend is
+  published), so it never fails the run or truncates `TASKS.md`.
+
 ## Code Style
 
 - TypeScript packages are strict ESM modules targeting Node.js 18+.
