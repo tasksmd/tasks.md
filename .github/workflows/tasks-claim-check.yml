@@ -3,10 +3,11 @@
 # ADVISORY BY DEFAULT: a code change without a live task claim WARNS but does
 # not block, so this never red-X's a bootstrap PR, a doc PR, or a human
 # contribution. To make it a HARD gate (the threat model's "advisory → hard"
-# step): set the repo variable `TASKS_CLAIM_ENFORCE=1`
-# (`gh variable set TASKS_CLAIM_ENFORCE --body 1`) AND mark this check
-# required on a branch ruleset that also blocks force-push/delete of
-# `tasks-claims`. See docs/security/git-native-claims-threat-model.md.
+# step): run `scripts/arm-enforcement.sh` — it sets `TASKS_CLAIM_ENFORCE=1` and
+# makes this check REQUIRED on the default-branch ruleset, in one action.
+# (Force-push/delete protection of `tasks-claims` is a SEPARATE hardening — it
+# must exempt the compaction bot — see the threat model, not part of arming.)
+# See docs/security/git-native-claims-threat-model.md.
 #
 # Uses pull_request (NOT pull_request_target) so untrusted forks can't read secrets.
 name: tasks-claim-check
