@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-b8cb47ae-8888-4081-9440-7df85b3444c2",
+  "task_id": "reconcile-the-plan-commit-convention-with-commitlint",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:31:54.574Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Reconcile the plan: commit convention with commitlint",
+    "priority": "P2",
+    "tags": [
+      "dx,ci,commands,consistency"
+    ],
+    "body": "commands/next-task.md prescribes plan: <task-id> and plan: validate <task-id> commits for the plan-and-validate workflow, but this repo's commit-msg hook (commitlint) only allows feat/fix/docs/style/refactor/perf/test/build/ci/chore/revert, so plan: is rejected and every agent planning a non-trivial task here must improvise (this session used docs:). Fix one of: add plan to the commitlint type allowlist, OR update the canonical commands/next-task.md to use docs(plan): <task-id> (plan files live in docs/plans/), then regenerate the agent variants. Recommend the docs(plan): route. Files: commands/next-task.md, the commitlint config."
+  }
+}
