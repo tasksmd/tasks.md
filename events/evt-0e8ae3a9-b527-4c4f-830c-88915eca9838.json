@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-0e8ae3a9-b527-4c4f-830c-88915eca9838",
+  "task_id": "give-migrated-claims-a-lease-so-crashed-owners-are-reclaimab",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:07:11.123Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-81bc1916-e48c-47b1-b5a6-3b10c219c025",
+    "lease_expires_at": 1780607231123
+  }
+}
