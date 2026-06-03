@@ -730,6 +730,31 @@ program
   });
 
 program
+  .command("heartbeat")
+  .description("Renew your lease on a claimed task so it is not reclaimed")
+  .argument("<id>", "Task id (issue number for github-issues)")
+  .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
+  .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--claim <token>", "Fencing token from `tasks claim` — rejects a stolen lease")
+  .option("--json", "Emit the operation result as JSON")
+  .action(async (id: string, opts: BackendOpts & { claim?: string }) => {
+    const backend = getBackend(process.cwd(), opts.backend);
+    if (!backend.heartbeat) {
+      const result: OperationResult = {
+        status: "unsupported",
+        backend: backend.name,
+        operation: "claim",
+        taskId: id,
+        reason: "the heartbeat/lease model is git-native only",
+      };
+      emitOperationResult(result, opts);
+      return;
+    }
+    const result = await backend.heartbeat(id, { ...actorOptions(opts), claimId: opts.claim });
+    emitOperationResult(result, opts);
+  });
+
+program
   .command("render")
   .description("Render the human-readable TASKS.md snapshot from the active backend")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
