@@ -71,14 +71,16 @@ export function runMigrate(directory: string, options: MigrateOptions = {}): Mig
     }
   }
 
+  const verb = options.apply ? "Migrated" : "Would migrate";
+  const wrote = options.apply ? "Wrote" : "Would write";
   lines.push(
-    `Would migrate ${tasks.length} task(s) → ${events.length} event(s) on the tasks-claims log.`,
+    `${verb} ${tasks.length} task(s) → ${events.length} event(s) on the tasks-claims log.`,
   );
   for (const task of tasks) {
     const owner = task.claimedBy ? ` (claimed by @${task.claimedBy})` : "";
     lines.push(`  [${task.priority}] ${task.id}: ${task.title}${owner}`);
   }
-  lines.push(`Would write ${configPath} → { "backend": "git-native" }.`);
+  lines.push(`${wrote} ${configPath} → { "backend": "git-native" }.`);
   lines.push(
     "Rollback: `rm .tasksmd.json` and `git update-ref -d refs/heads/tasks-claims` " +
       "to return to the file backend (TASKS.md is left untouched).",
@@ -88,6 +90,7 @@ export function runMigrate(directory: string, options: MigrateOptions = {}): Mig
     lines.unshift("DRY RUN — no changes written. Re-run with --apply to migrate.");
     return { tasks, events, applied: false, configPath, lines };
   }
+  lines.unshift("✓ Migration applied. Regenerate the snapshot with `tasks render > TASKS.md`.");
 
   applyMigration(directory, tasks);
   const config = {
