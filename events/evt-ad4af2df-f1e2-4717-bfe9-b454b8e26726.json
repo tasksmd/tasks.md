@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-ad4af2df-f1e2-4717-bfe9-b454b8e26726",
+  "task_id": "reconcile-the-plan-commit-convention-with-commitlint",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T22:05:27.852Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
