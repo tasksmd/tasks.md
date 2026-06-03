@@ -62,6 +62,13 @@ export interface BackendCapabilities {
 export interface ClaimTaskOptions {
   actorId?: string;
   instanceId?: string;
+  /**
+   * Fencing token from a prior `claim`. When passed to `complete`/`release`,
+   * a backend that supports leases rejects the op if the token no longer
+   * matches the live claim (the lease was stolen) — so a restarted/stale agent
+   * cannot close work it no longer owns.
+   */
+  claimId?: string;
 }
 
 /** Actor context threaded into every mutating operation. */
@@ -79,7 +86,8 @@ export type OperationStatus =
   | "unsupported"
   | "missing"
   | "blocked"
-  | "noop";
+  | "noop"
+  | "conflict";
 
 export interface OperationResult {
   status: OperationStatus;
@@ -127,6 +135,11 @@ export interface TaskBackend {
   complete(id: string, options?: ActorOptions): Promise<OperationResult>;
   cancel(id: string, options?: ActorOptions): Promise<OperationResult>;
   render(): Promise<RenderResult>;
+  /**
+   * Renew a live claim's lease (lease-backed backends only). Backends without
+   * leases omit it; callers should treat its absence as "no heartbeat needed".
+   */
+  heartbeat?(id: string, options?: ClaimTaskOptions): Promise<OperationResult>;
 }
 
 /** Priority bucket → sort rank (P0 most urgent). */

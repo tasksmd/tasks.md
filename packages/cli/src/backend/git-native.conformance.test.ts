@@ -27,8 +27,12 @@ function run(args: string[], cwd?: string): void {
   execFileSync("git", args, { cwd, stdio: "pipe" });
 }
 
+const LEASE_MS = 1000;
+
 class GitNativeWorld implements ConformanceWorld {
   private readonly clones = new Map<string, { dir: string; backend: TaskBackend }>();
+  // Shared, controllable clock so lease expiry is deterministic across clones.
+  private clock = 1_000_000;
 
   constructor(
     private readonly bare: string,
@@ -45,9 +49,17 @@ class GitNativeWorld implements ConformanceWorld {
     run(["clone", "--quiet", this.bare, dir]);
     run(["-C", dir, "config", "user.email", `${key}@test.invalid`]);
     run(["-C", dir, "config", "user.name", key]);
-    const entry = { dir, backend: createGitNativeBackend(dir) };
+    const entry = {
+      dir,
+      backend: createGitNativeBackend(dir, { now: () => this.clock, leaseMs: LEASE_MS }),
+    };
     this.clones.set(key, entry);
     return entry;
+  }
+
+  async expireLease(): Promise<void> {
+    // Advance the shared clock past any live lease so the next claim can steal.
+    this.clock += LEASE_MS + 1;
   }
 
   async createTask(actor: string, input: CreateInput): Promise<ConformanceTask> {
@@ -109,8 +121,8 @@ function makeTarget(roots: string[]): ConformanceTarget {
     capabilities: {
       collisionFree: true,
       generatedSnapshot: true,
+      leases: true, // Phase 2: lease expiry + steal + fresh fencing token
       // The following are honest gaps for v1 (later phases):
-      leases: false, // Phase 2 (fleet-phase2-leases-heartbeats-compaction)
       pathScopedEnforcement: false, // Phase 3 (fleet-phase3-server-side-enforcement)
       rawEventAppend: false, // raw-event injection not exposed by the backend
       blockedBy: false, // blocked-by not yet modeled in the git-native fold
@@ -147,6 +159,7 @@ describe("git-native backend conformance (linear-CAS bake-off)", () => {
           "human-command-path",
           "release-and-reclaim",
           "idempotent-projection",
+          "lease-expiry-and-steal",
         ]),
       );
     } finally {

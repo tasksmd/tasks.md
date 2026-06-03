@@ -16,7 +16,13 @@ import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
 import { runMigrate } from "./commands/migrate.js";
-import { formatDoctorReport, runDoctor, runFleetInit, runFleetStats } from "./commands/fleet.js";
+import {
+  formatDoctorReport,
+  runDoctor,
+  runFleetCompact,
+  runFleetInit,
+  runFleetStats,
+} from "./commands/fleet.js";
 import { runSync } from "./sync/engine.js";
 import { createGitHubSource } from "./sync/github.js";
 import { createJiraSource } from "./sync/jira.js";
@@ -676,6 +682,12 @@ fleet
   .action(() => {
     const report = runFleetStats(process.cwd());
     for (const line of report.lines) console.log(line);
+  });
+fleet
+  .command("compact")
+  .description("Rewrite the tasks-claims log to a fold-equivalent minimum")
+  .action(() => {
+    for (const line of runFleetCompact(process.cwd())) console.log(line);
   });
 
 program

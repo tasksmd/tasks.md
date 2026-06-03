@@ -46,7 +46,8 @@ tasks sync github --merge             # sync GitHub Issues into TASKS.md
 | `sync <provider>` | provider-specific (below) | Sync issues from `github`, `jira`, or `linear` into TASKS.md |
 | `migrate` | `--apply` | Import the file-backend `TASKS.md` into a git-native event log (dry-run unless `--apply`; preserves ids; rollback documented in the output) |
 | `fleet init` | `--backend`, `--agent`, `--all` | Idempotent one-prompt fleet install: writes `.tasksmd.json`, `lefthook.yml`, the projection workflow, installs agent commands, and prints ruleset guidance |
-| `fleet stats` | — | Contention metrics for the git-native `tasks-claims` log (events by type, open/claimed/done, reclaim count, contention ratio vs the 20% Phase-4 tripwire) |
+| `fleet stats` | — | Contention metrics for the git-native `tasks-claims` log (events by type, open/claimed/done, stale leases, reclaim count, contention ratio vs the 20% Phase-4 tripwire) |
+| `fleet compact` | — | Rewrite the `tasks-claims` log to a fold-equivalent minimum (drops terminal tasks; preserves open-task state). Single-writer maintenance |
 | `doctor` | `--quiet` | Verify the fleet install — backend config, agent commands, lefthook, claims ref, projection workflow, backend smoke. Exits nonzero on a hard failure |
 
 ### Task operations (backend-neutral)

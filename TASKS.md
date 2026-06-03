@@ -388,20 +388,6 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Add Phase 2 robust leases, heartbeats, crash recovery, and log compaction
-  - **ID**: fleet-phase2-leases-heartbeats-compaction
-  - **Tags**: stability, git-native, leases, heartbeat, crash-recovery, compaction, offline
-  - **Details**: The v1 plan intentionally assumes always-on machines and uses long leases as a cheap dead-owner backstop. That assumption is honest but incomplete: mixed fleets will include sleeping laptops, crashed agent processes, interrupted pushes, and long-lived logs. File the Phase 2 stability work explicitly so it is not lost after v1 ships.
-
-    Required changes:
-    1. Define heartbeat semantics, renewal cadence, and stale-owner fencing behavior.
-    2. Add crash-recovery flows for agents that restart with or without their prior instance ID.
-    3. Add log snapshot/compaction rules that keep fold performance bounded while preserving auditability.
-    4. Extend conformance with heartbeat expiry, restart, compaction, and snapshot-roundtrip cases.
-    5. Document when laptop/offline fleets become supported and what remains out of scope.
-  - **Files**: `spec.md`, `packages/conformance/`, `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `docs/plans/deterministic-fleet-claiming.md`, `README.md`
-  - **Acceptance**: Lease renewal and expiry are specified and tested; restarted agents cannot complete with stale fencing data; compacted logs fold to the same state as full logs; `tasks doctor` reports stale heartbeats and compaction health; docs remove the always-on limitation only where Phase 2 is actually implemented.
-
 - [ ] Add Phase 3 server-side path-scoped enforcement for protected repos
   - **ID**: fleet-phase3-server-side-enforcement
   - **Tags**: deployment-infra, ci, github-rulesets, pre-receive, enforcement, security, git-native

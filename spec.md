@@ -625,7 +625,7 @@ Each event is a JSON object stored as one file per event at `events/<event_id>.j
 | `schema_version` | integer | Current version is `1`. An unknown version is ignored by the fold (forward-compatible) and reported by `tasks doctor`. |
 | `event_id` | string | Globally unique, e.g. `evt-<uuid>`. Duplicate `event_id`s: the fold keeps the first and ignores the rest. |
 | `task_id` | string | The kebab-case task ID the event applies to. |
-| `event_type` | string | One of `created`, `updated`, `claimed`, `released`, `completed`, `cancelled`. |
+| `event_type` | string | One of `created`, `updated`, `claimed`, `heartbeat`, `released`, `completed`, `cancelled`. |
 | `actor_id` | string | The acting identity (see Actor identity), normalized by stripping a leading `@`. |
 | `instance_id` | string | Distinguishes concurrent agents of the same actor; `<actor-id>/<instance-id>` is globally unique. |
 | `created_at` | string | RFC 3339 / ISO 8601 UTC timestamp. Used for display and lease math only — never as the race tiebreaker (git ref-CAS decides the winner). |
@@ -638,22 +638,27 @@ Payloads by type:
 
 - `created` — `{ title, priority, tags, body }`.
 - `updated` — the changed fields only (`{ title?, priority?, tags?, body? }`).
-- `claimed` — `{ claim_id, lease_expires? }`; `claim_id` is a unique fencing token (e.g. `claim-<uuid>`) minted by the winner.
+- `claimed` — `{ claim_id, lease_expires_at }`; `claim_id` is a unique fencing token (e.g. `claim-<uuid>`) minted by the winner, and `lease_expires_at` is the epoch-ms expiry.
+- `heartbeat` — `{ lease_expires_at }`; renews the live owner's lease (only the current assignee's heartbeat counts).
 - `released` — `{ claim_id }`.
 - `completed` — `{ claim_id? }`.
 - `cancelled` — `{ reason? }`.
 
 ### Folding the log
 
-`fold(log)` replays events in ref order: `created` introduces a task; `updated` patches its fields; `claimed` sets the owner + `claim_id` when the task is open; `released` clears the owner when it matches; `completed`/`cancelled` close the task (drop it from the open queue). The fold is **deterministic and idempotent** — the same log always produces the same open-task set and the same rendered `TASKS.md` bytes.
+`fold(log)` replays events in ref order: `created` introduces a task; `updated` patches its fields; `claimed` sets the owner + `claim_id` + lease (latest `claimed` wins — a legitimate steal is just a later claim); `heartbeat` renews the owner's lease; `released` clears the owner when it matches; `completed`/`cancelled` close the task (drop it from the open queue). The fold is **deterministic and idempotent** — the same log always produces the same open-task set and the same rendered `TASKS.md` bytes.
 
 ### Claim lifecycle (collision-free)
 
-1. **Claim.** Append a `claimed{ claim_id, lease_expires }` event and push the `tasks-claims` ref. **Git's atomic non-fast-forward rejection is the collision-free primitive**: if two agents claim the same task, exactly one push fast-forwards (the winner); the loser is rejected, fetches the ref, sees the live claim, and **yields → picks the next task**. Retries are silent with bounded backoff + jitter.
-2. **Fencing token.** A successful claim returns its `claim_id`. Work commits carry `Task: <task-id>` and `Task-Claim: <claim_id>` trailers (written/parsed with `git interpret-trailers`). A resurrected stale owner cannot clobber a new owner — its `claim_id` no longer matches the live claim.
-3. **Release.** A `released` event returns the task to the open queue.
-4. **Lease expiry.** A claim carries `lease_expires`; once past, another agent may steal the task via the same CAS. v1 uses a long lease as a dead-owner backstop; heartbeats/short leases are a later phase.
+1. **Claim.** Append a `claimed{ claim_id, lease_expires_at }` event and push the `tasks-claims` ref. **Git's atomic non-fast-forward rejection is the collision-free primitive**: if two agents claim the same task, exactly one push fast-forwards (the winner); the loser is rejected, fetches the ref, sees the live claim, and **yields → picks the next task**. Retries are silent with bounded backoff + jitter.
+2. **Fencing token.** A successful claim returns its `claim_id`. Work commits carry `Task: <task-id>` and `Task-Claim: <claim_id>` trailers (written/parsed with `git interpret-trailers`). A resurrected stale owner cannot clobber a new owner — `complete`/`release` reject a `claim_id` that no longer matches the live claim, so an agent that restarts after its lease was stolen cannot close work it no longer owns.
+3. **Heartbeat / lease renewal.** While working, the owner appends `heartbeat{ lease_expires_at }` events to push its lease forward. Only the current assignee's heartbeat renews; a non-owner heartbeat is rejected.
+4. **Lease expiry & steal.** A claim is live while `now < lease_expires_at`. Once expired (a crashed or sleeping owner stopped heartbeating), another agent steals the task via the same CAS, minting a **fresh** `claim_id` that fences out the dead owner. A claim with no lease is treated as live (a long-lease backstop), so legacy v1 claims are never stolen.
 5. **Completion / cancellation.** `completed` and `cancelled` close the task and remove it from the snapshot.
+
+### Log compaction
+
+The log grows unbounded as tasks churn. **Compaction** rewrites `tasks-claims` to the minimal event set that folds to the **same open-task state** — one `created` per open task plus one `claimed` (carrying its `claim_id` + `lease_expires_at`) per live claim; terminal (completed/cancelled) tasks are dropped (their history stays in the old ref's objects until git GC). Because the fold of open tasks is byte-identical before and after, compaction is transparent to readers. It rewrites history, so it is a **single-writer maintenance step** (like the projection job), never a concurrent operation. `tasks fleet compact` performs it locally; `tasks doctor` flags when the log is large enough to warrant it.
 
 ### Generated `TASKS.md` projection
 
@@ -689,7 +694,7 @@ The file backend is the v1-compatible default; git-native is an explicit opt-in.
 
 The `tasks-claims` ref, the generated snapshot PR, the claim-check CI, and the local hooks are security boundaries. v1 enforcement is a **bypassable** client `pre-push` hook; the unbypassable guarantee is the Phase 3 server-side required check. The full trust boundaries, threats, mitigations, CI guidance (use `pull_request`, never `pull_request_target`), and per-platform token scopes are in [`docs/security/git-native-claims-threat-model.md`](docs/security/git-native-claims-threat-model.md). v1 does not claim to be unbypassably secure.
 
-> **Status.** The git-native event log, fold, claim-via-CAS, and snapshot rendering are implemented in the reference CLI (`@tasks-md/cli`). Robust leases/heartbeats, the projection job, and server-side enforcement are phased — see the active [`TASKS.md`](TASKS.md) queue and [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md).
+> **Status.** The git-native event log, fold, claim-via-CAS, snapshot rendering, **leases + heartbeats + steal + crash-recovery fencing** (Phase 2), and **log compaction** are implemented in the reference CLI (`@tasks-md/cli`) and proven by `@tasks-md/conformance` (including the lease-expiry-and-steal property). The single-writer projection job and **server-side enforcement** (Phase 3) are still phased — see the active [`TASKS.md`](TASKS.md) queue and [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md). Laptop/offline fleets are now supported via heartbeat-renewed leases; what remains out of scope until Phase 3 is *unbypassable* enforcement.
 
 ## Agent Behavior
 

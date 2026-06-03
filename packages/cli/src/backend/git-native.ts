@@ -13,6 +13,7 @@ import type {
   OperationResult,
   RenderResult,
   TaskBackend,
+  TaskOperation,
   UpdateTaskInput,
 } from "./types.js";
 
@@ -20,6 +21,7 @@ type GitNativeEventType =
   | "created"
   | "updated"
   | "claimed"
+  | "heartbeat"
   | "completed"
   | "released"
   | "cancelled";
@@ -39,12 +41,23 @@ interface GitNativeEvent {
 interface FoldedTask {
   task: BackendTask;
   claimId?: string;
+  /** Epoch ms when the current claim's lease expires (Phase 2 leases). */
+  leaseExpiresAt?: number;
   completed: boolean;
 }
 
 const CLAIMS_REF = "refs/heads/tasks-claims";
 const DEFAULT_ACTOR = "tasks-md";
 const DEFAULT_INSTANCE = "tasks-md-cli";
+// Long-lease backstop (24h) — a dead owner's claim is reclaimable after this
+// even without heartbeats. Heartbeats renew it; `--lease`/options override it.
+const DEFAULT_LEASE_MS = 24 * 60 * 60 * 1000;
+
+/** Injectable clock + lease window so leases are deterministically testable. */
+export interface GitNativeOptions {
+  now?: () => number;
+  leaseMs?: number;
+}
 
 const capabilities: BackendCapabilities = {
   claims: "collision-free",
@@ -242,6 +255,10 @@ function stringValue(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function numberValue(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
 function stringArrayValue(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -261,6 +278,7 @@ function eventTypeValue(value: unknown): GitNativeEventType | undefined {
     value === "created" ||
     value === "updated" ||
     value === "claimed" ||
+    value === "heartbeat" ||
     value === "completed" ||
     value === "released" ||
     value === "cancelled"
@@ -373,9 +391,20 @@ function foldEvents(events: GitNativeEvent[]): Map<string, FoldedTask> {
     }
     if (event.event_type === "claimed") {
       const folded = tasks.get(event.task_id);
-      if (folded && !folded.completed && !folded.task.assignee) {
+      // Latest claimed event wins: the backend only appends one when the task
+      // was free OR its lease had expired (a legitimate steal), so trusting the
+      // most recent claim is correct. claim_id is the fresh fencing token.
+      if (folded && !folded.completed) {
         folded.task.assignee = event.actor_id;
         folded.claimId = stringValue(event.payload.claim_id);
+        folded.leaseExpiresAt = numberValue(event.payload.lease_expires_at);
+      }
+    }
+    if (event.event_type === "heartbeat") {
+      const folded = tasks.get(event.task_id);
+      // Only the live owner can renew its own lease.
+      if (folded && !folded.completed && folded.task.assignee === event.actor_id) {
+        folded.leaseExpiresAt = numberValue(event.payload.lease_expires_at);
       }
     }
     if (event.event_type === "released") {
@@ -383,6 +412,7 @@ function foldEvents(events: GitNativeEvent[]): Map<string, FoldedTask> {
       if (folded && folded.task.assignee === event.actor_id) {
         folded.task.assignee = undefined;
         folded.claimId = undefined;
+        folded.leaseExpiresAt = undefined;
       }
     }
     if (event.event_type === "completed" || event.event_type === "cancelled") {
@@ -409,6 +439,8 @@ export interface FleetStats {
   actors: number;
   /** Tasks claimed more than once (released-and-reclaimed or lease-stolen). */
   reclaimedTasks: number;
+  /** Live claims whose lease has already expired (dead-owner / stale heartbeat). */
+  staleClaims: number;
   /**
    * Churn proxy: reclaimed ÷ distinct-tasks-ever-claimed. The git-native CAS
    * rejects lost claims WITHOUT appending an event, so the log cannot count
@@ -418,13 +450,14 @@ export interface FleetStats {
 }
 
 /** Fold the tasks-claims log into contention/observability metrics (Phase 4). */
-export function gitNativeFleetStats(directory: string): FleetStats {
+export function gitNativeFleetStats(directory: string, now: number = Date.now()): FleetStats {
   fetchClaimsRef(directory);
   const events = readEvents(directory);
   const eventsByType: Record<GitNativeEventType, number> = {
     created: 0,
     updated: 0,
     claimed: 0,
+    heartbeat: 0,
     released: 0,
     completed: 0,
     cancelled: 0,
@@ -442,10 +475,15 @@ export function gitNativeFleetStats(directory: string): FleetStats {
   let open = 0;
   let claimed = 0;
   let done = 0;
+  let staleClaims = 0;
   for (const entry of folded.values()) {
     if (entry.completed) done += 1;
-    else if (entry.task.assignee) claimed += 1;
-    else open += 1;
+    else if (entry.task.assignee) {
+      claimed += 1;
+      if (entry.leaseExpiresAt !== undefined && now >= entry.leaseExpiresAt) {
+        staleClaims += 1;
+      }
+    } else open += 1;
   }
   const reclaimedTasks = [...claimsPerTask.values()].filter((n) => n > 1).length;
   const tasksEverClaimed = claimsPerTask.size;
@@ -458,6 +496,7 @@ export function gitNativeFleetStats(directory: string): FleetStats {
     done,
     actors: actors.size,
     reclaimedTasks,
+    staleClaims,
     contentionRatio: tasksEverClaimed === 0 ? 0 : reclaimedTasks / tasksEverClaimed,
   };
 }
@@ -532,7 +571,38 @@ export async function renderGitNativeSnapshot(directory: string): Promise<string
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-export function createGitNativeBackend(directory: string): TaskBackend {
+// Reject a complete/release whose fencing token no longer matches the live
+// claim (the lease was stolen). No token supplied → no fencing (backcompat).
+function fenceCheck(
+  directory: string,
+  id: string,
+  options: ActorOptions | undefined,
+  operation: TaskOperation,
+): OperationResult | undefined {
+  if (!options?.claimId) {
+    return undefined;
+  }
+  fetchClaimsRef(directory);
+  const current = foldLog(directory).get(id);
+  if (current?.claimId && current.claimId !== options.claimId) {
+    return {
+      status: "conflict",
+      backend: "git-native",
+      operation,
+      taskId: id,
+      reason: "stale fencing token — the lease was stolen or the claim changed",
+    };
+  }
+  return undefined;
+}
+
+export function createGitNativeBackend(
+  directory: string,
+  options?: GitNativeOptions,
+): TaskBackend {
+  const now = options?.now ?? (() => Date.now());
+  const leaseMs = options?.leaseMs ?? DEFAULT_LEASE_MS;
+  const leaseExpiry = () => now() + leaseMs;
   return {
     name: "git-native",
     capabilities,
@@ -598,7 +668,12 @@ export function createGitNativeBackend(directory: string): TaskBackend {
           capabilities,
         };
       }
-      if (current.task.assignee) {
+      // A live (non-expired) lease blocks a new claimer; an expired lease — or a
+      // legacy claim with no lease — is stealable. A claim with no lease set is
+      // treated as live (the long-lease backstop), so v1 claims aren't stolen.
+      const leaseLive =
+        current.leaseExpiresAt === undefined || now() < current.leaseExpiresAt;
+      if (current.task.assignee && leaseLive) {
         return {
           status: "already_claimed",
           backend: "git-native",
@@ -613,6 +688,7 @@ export function createGitNativeBackend(directory: string): TaskBackend {
         directory,
         makeEvent(id, "claimed", options, {
           claim_id: claimId,
+          lease_expires_at: leaseExpiry(),
         }),
       );
       if (!pushClaimsRef(directory)) {
@@ -658,12 +734,50 @@ export function createGitNativeBackend(directory: string): TaskBackend {
       return { status: "ok", backend: "git-native", operation: "update", taskId: id };
     },
 
+    async heartbeat(id: string, options?: ClaimTaskOptions): Promise<OperationResult> {
+      fetchClaimsRef(directory);
+      const current = foldLog(directory).get(id);
+      if (!current || current.completed) {
+        return { status: "missing", backend: "git-native", operation: "claim", taskId: id };
+      }
+      // Only the live owner may renew. A stale fencing token (lease was stolen)
+      // is rejected so a restarted agent can detect it no longer owns the task.
+      if (current.task.assignee !== actor(options)) {
+        return {
+          status: "conflict",
+          backend: "git-native",
+          operation: "claim",
+          taskId: id,
+          reason: `not the owner (held by ${current.task.assignee ?? "nobody"})`,
+        };
+      }
+      if (options?.claimId && current.claimId && options.claimId !== current.claimId) {
+        return {
+          status: "conflict",
+          backend: "git-native",
+          operation: "claim",
+          taskId: id,
+          reason: "stale fencing token — lease was stolen",
+        };
+      }
+      await appendWithRetry(
+        directory,
+        () => makeEvent(id, "heartbeat", options, { lease_expires_at: leaseExpiry() }),
+        "heartbeat",
+      );
+      return { status: "ok", backend: "git-native", operation: "claim", taskId: id };
+    },
+
     async release(id: string, options?: ActorOptions): Promise<OperationResult> {
+      const fence = fenceCheck(directory, id, options, "release");
+      if (fence) return fence;
       await appendWithRetry(directory, () => makeEvent(id, "released", options, {}), "released");
       return { status: "ok", backend: "git-native", operation: "release", taskId: id };
     },
 
     async complete(id: string, options?: ActorOptions): Promise<OperationResult> {
+      const fence = fenceCheck(directory, id, options, "complete");
+      if (fence) return fence;
       await appendWithRetry(directory, () => makeEvent(id, "completed", options, {}), "completed");
       return { status: "ok", backend: "git-native", operation: "complete", taskId: id };
     },
@@ -770,4 +884,56 @@ export function applyMigration(directory: string, tasks: MigrationTask[]): void 
     fetchClaimsRef(directory);
     throw new Error("Could not push migrated events to tasks-claims.");
   }
+}
+
+// ── Compaction (Phase 2): bound fold cost while preserving open-task state ──
+
+export interface CompactionResult {
+  before: number;
+  after: number;
+}
+
+/**
+ * Rewrite the local `tasks-claims` log to the minimal event set that folds to
+ * the SAME open-task state: one `created` per open task, plus one `claimed`
+ * (carrying its `claim_id` + `lease_expires_at`) per live claim. Terminal
+ * (completed/cancelled) tasks are dropped — their history stays in the old
+ * ref's git objects until GC. This rewrites history, so it is a single-writer
+ * maintenance op (like the projection job); it does NOT push. The post-compaction
+ * fold of open tasks is byte-identical to the pre-compaction one.
+ */
+export function compactGitNativeLog(directory: string): CompactionResult {
+  fetchClaimsRef(directory);
+  const before = readEvents(directory).length;
+  const folded = foldLog(directory);
+
+  const minimal: GitNativeEvent[] = [];
+  for (const [id, entry] of folded) {
+    if (entry.completed) {
+      continue;
+    }
+    minimal.push(
+      makeEvent(id, "created", undefined, {
+        title: entry.task.title,
+        priority: entry.task.priority,
+        tags: entry.task.tags,
+        body: entry.task.body,
+      }),
+    );
+    if (entry.task.assignee) {
+      minimal.push(
+        makeEvent(id, "claimed", { actorId: entry.task.assignee }, {
+          claim_id: entry.claimId,
+          lease_expires_at: entry.leaseExpiresAt,
+        }),
+      );
+    }
+  }
+
+  // Drop the old history, then re-append the minimal chain onto a fresh root.
+  tryGit(directory, ["update-ref", "-d", CLAIMS_REF]);
+  for (const event of minimal) {
+    appendEvent(directory, event);
+  }
+  return { before, after: minimal.length };
 }

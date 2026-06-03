@@ -145,7 +145,12 @@ corporate-safe because it always runs and decides by path, never bypasses.
 - **Phase 1 (v1 — this plan):** log-first state + collision-free CAS claim + dispersion +
   client path-scoped `pre-push` check + the generated `TASKS.md` snapshot job. Long-lease
   field for dead-claim reclaim. **Solves the stated goal; thin; provable by the suite.**
-- **Phase 2:** robust leases + crash/offline handling + heartbeats + log snapshots/compaction.
+- **Phase 2 (done):** robust leases + heartbeats + steal + crash-recovery fencing + log
+  compaction. Shipped in `git-native.ts` (injectable clock, `heartbeat()`, fencing on
+  `complete`/`release`, `compactGitNativeLog`), surfaced via `tasks doctor` (stale-heartbeat
+  + compaction health) and `tasks fleet compact`, and proven by the conformance
+  `lease-expiry-and-steal` property + git-native unit tests. Laptop/offline fleets are now
+  supported; lease is renewed by heartbeats with a 24h dead-owner backstop.
 - **Phase 3:** server-side hard enforcement (Ruleset + required check + `pre-receive`).
 - **Phase 4 (only if measured):** adopt a CRDT engine (git-bug/grite/Automerge-on-git) to
   drop the retry loop under high contention; HRW partitioning; per-host batching.

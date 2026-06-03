@@ -2,12 +2,15 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { getBackend, resolveBackendConfig } from "../backend/index.js";
-import { gitNativeFleetStats } from "../backend/git-native.js";
+import { compactGitNativeLog, gitNativeFleetStats } from "../backend/git-native.js";
 import { installCommands } from "./install.js";
 
 // Phase-4 contention tripwire (docs/plans/deterministic-fleet-claiming.md § Step 6).
 // Below this, linear-CAS is sufficient and NO CRDT/HRW work is justified.
 export const CONTENTION_TRIPWIRE = 0.2;
+
+// `tasks doctor` suggests compaction once the log grows past this many events.
+export const COMPACTION_SUGGESTED_AT = 5000;
 
 const CLAIMS_REF = "refs/heads/tasks-claims";
 
@@ -209,6 +212,24 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
     try {
       await getBackend(directory).listOpen();
       checks.push({ name: "backend smoke", level: "ok", detail: "git-native log folds cleanly" });
+      // Phase-2 health: stale (dead-owner) leases + log size vs compaction.
+      const stats = gitNativeFleetStats(directory);
+      checks.push({
+        name: "stale heartbeats",
+        level: stats.staleClaims > 0 ? "warn" : "ok",
+        detail:
+          stats.staleClaims > 0
+            ? `${stats.staleClaims} claim(s) past lease expiry — reclaimable (dead owner?)`
+            : "no expired leases",
+      });
+      checks.push({
+        name: "compaction",
+        level: stats.events > COMPACTION_SUGGESTED_AT ? "warn" : "ok",
+        detail:
+          stats.events > COMPACTION_SUGGESTED_AT
+            ? `${stats.events} events — run \`tasks fleet compact\` to bound fold cost`
+            : `${stats.events} events (compaction not needed)`,
+      });
     } catch (error) {
       checks.push({
         name: "backend smoke",
@@ -254,4 +275,17 @@ export function runFleetStats(directory: string): FleetStatsReport {
       : `✓ contention below tripwire — linear-CAS remains sufficient; no Phase 4 work is justified.`,
   ];
   return { lines, contentionRatio: stats.contentionRatio, tripwireCrossed: crossed };
+}
+
+/** `tasks fleet compact` — rewrite the local log to a fold-equivalent minimum. */
+export function runFleetCompact(directory: string): string[] {
+  const config = resolveBackendConfig(directory);
+  if (config.backend !== "git-native") {
+    return [`fleet compact requires the git-native backend (current: ${config.backend}).`];
+  }
+  const result = compactGitNativeLog(directory);
+  return [
+    `Compacted the tasks-claims log: ${result.before} → ${result.after} events (open-task state preserved).`,
+    "This rewrote local history and did NOT push. Force-push it as a single-writer maintenance step, or let the projection job own the snapshot.",
+  ];
 }
