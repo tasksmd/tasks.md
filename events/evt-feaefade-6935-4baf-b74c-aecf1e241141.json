@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-feaefade-6935-4baf-b74c-aecf1e241141",
+  "task_id": "protect-tasks-claims-and-main-from-force-push-delete-with-co",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T23:42:11.205Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-6680d934-250e-41c5-bafa-a03f97c720df",
+    "lease_expires_at": 1780616531205
+  }
+}
