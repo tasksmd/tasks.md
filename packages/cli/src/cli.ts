@@ -98,7 +98,7 @@ program
       console.log(message);
     }
     console.log("");
-    console.log(`✓ ${result.generated.length} command files generated from commands/next-task.md, commands/lint-tasks.md, and commands/setup.md`);
+    console.log(`✓ ${result.generated.length} command files generated from commands/next-task.md, commands/lint-tasks.md, commands/setup.md, and commands/migrate.md`);
   });
 
 // ── install (TypeScript-native) ──

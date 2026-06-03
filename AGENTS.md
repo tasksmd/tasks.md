@@ -110,6 +110,8 @@ Generated variants regenerated from each canonical source:
 |-----------|--------------------|
 | `commands/next-task.md` | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/devin/skills/next-task/SKILL.md`, `commands/gemini/next-task.toml`, `commands/windsurf/next-task.md` |
 | `commands/lint-tasks.md` | `commands/claude/skills/lint-tasks/SKILL.md`, `commands/codex/skills/lint-tasks/SKILL.md`, `commands/cursor/lint-tasks.md`, `commands/devin/skills/lint-tasks/SKILL.md`, `commands/gemini/lint-tasks.toml`, `commands/windsurf/lint-tasks.md` |
+| `commands/setup.md` | `commands/claude/skills/setup/SKILL.md`, `commands/codex/skills/setup/SKILL.md`, `commands/cursor/setup.md`, `commands/devin/skills/setup/SKILL.md`, `commands/gemini/setup.toml`, `commands/windsurf/setup.md` |
+| `commands/migrate.md` | `commands/claude/skills/migrate/SKILL.md`, `commands/codex/skills/migrate/SKILL.md`, `commands/cursor/migrate.md`, `commands/devin/skills/migrate/SKILL.md`, `commands/gemini/migrate.toml`, `commands/windsurf/migrate.md` |
 
 Other files that may need to change in the same commit when behavior
 shifts:

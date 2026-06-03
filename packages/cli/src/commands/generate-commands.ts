@@ -287,7 +287,96 @@ const SETUP_CONFIG: CommandConfig = {
   ],
 };
 
-const COMMANDS: CommandConfig[] = [NEXT_TASK_CONFIG, LINT_TASKS_CONFIG, SETUP_CONFIG];
+// ── migrate command ──
+
+export const MIGRATE_DESCRIPTION =
+  'Migrate this repo\'s TASKS.md queue to the collision-free git-native backend. Use when the user says "migrate to git-native", "convert this repo to git-native", "switch backends", or wants collision-free claims for a multi-contributor repo.';
+
+export const MIGRATE_GEMINI_DESCRIPTION =
+  "Convert this repo's queue to the collision-free git-native backend";
+
+const MIGRATE_CLAUDE_FRONTMATTER = `---
+name: migrate
+description: ${MIGRATE_DESCRIPTION}
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob, LS
+---`;
+
+const MIGRATE_CODEX_FRONTMATTER = `---
+name: migrate
+description: ${MIGRATE_DESCRIPTION}
+---`;
+
+const MIGRATE_DEVIN_FRONTMATTER = `---
+name: migrate
+description: ${MIGRATE_DESCRIPTION}
+allowed-tools:
+  - read
+  - write
+  - edit
+  - grep
+  - glob
+  - exec
+permissions:
+  allow:
+    - Exec(git *)
+    - Exec(npx *)
+    - Exec(node *)
+    - Exec(lefthook *)
+---`;
+
+const MIGRATE_WINDSURF_FRONTMATTER = `---
+description: ${MIGRATE_DESCRIPTION}
+---`;
+
+const MIGRATE_CONFIG: CommandConfig = {
+  name: "migrate",
+  canonicalPath: "commands/migrate.md",
+  agents: [
+    {
+      name: "claude",
+      outputPath: "commands/claude/skills/migrate/SKILL.md",
+      agentExample: "",
+      transform: (body) => withFrontmatter(MIGRATE_CLAUDE_FRONTMATTER, body),
+    },
+    {
+      name: "codex",
+      outputPath: "commands/codex/skills/migrate/SKILL.md",
+      agentExample: "",
+      transform: (body) => withFrontmatter(MIGRATE_CODEX_FRONTMATTER, body),
+    },
+    {
+      name: "cursor",
+      outputPath: "commands/cursor/migrate.md",
+      agentExample: "",
+      transform: (body) => body,
+    },
+    {
+      name: "devin",
+      outputPath: "commands/devin/skills/migrate/SKILL.md",
+      agentExample: "",
+      transform: (body) => withFrontmatter(MIGRATE_DEVIN_FRONTMATTER, body),
+    },
+    {
+      name: "windsurf",
+      outputPath: "commands/windsurf/migrate.md",
+      agentExample: "",
+      transform: (body) => withFrontmatter(MIGRATE_WINDSURF_FRONTMATTER, body),
+    },
+    {
+      name: "gemini",
+      outputPath: "commands/gemini/migrate.toml",
+      agentExample: "",
+      transform: (body) => toGeminiToml(MIGRATE_GEMINI_DESCRIPTION, body),
+    },
+  ],
+};
+
+const COMMANDS: CommandConfig[] = [
+  NEXT_TASK_CONFIG,
+  LINT_TASKS_CONFIG,
+  SETUP_CONFIG,
+  MIGRATE_CONFIG,
+];
 
 export interface GenerateResult {
   generated: string[];
