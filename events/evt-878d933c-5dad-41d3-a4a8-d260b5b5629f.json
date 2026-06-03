@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-878d933c-5dad-41d3-a4a8-d260b5b5629f",
+  "task_id": "auto-trigger-git-native-log-compaction",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T20:28:21.780Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
