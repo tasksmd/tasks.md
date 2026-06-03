@@ -121,9 +121,11 @@ jobs:
           base="origin/\${{ github.base_ref }}"
           paths=$(git diff --name-only "$base...HEAD")
           [ -z "$paths" ] && { echo "no changes"; exit 0; }
+          # The pull_request HEAD is the auto-merge commit (no trailers), so scan
+          # the PR's own commits (base..HEAD) for the newest Task / Task-Claim.
           # git's own trailer parser (same engine as git interpret-trailers).
-          task=$(git log -1 --format='%(trailers:key=Task,valueonly)' | head -1)
-          claim=$(git log -1 --format='%(trailers:key=Task-Claim,valueonly)' | head -1)
+          task=$(git log "$base..HEAD" --format='%(trailers:key=Task,valueonly)' | grep -m1 . || true)
+          claim=$(git log "$base..HEAD" --format='%(trailers:key=Task-Claim,valueonly)' | grep -m1 . || true)
           git fetch origin '+refs/heads/tasks-claims:refs/heads/tasks-claims' || true
           if npx -y @tasks-md/cli check-push --task "$task" --claim "$claim" $paths; then
             exit 0

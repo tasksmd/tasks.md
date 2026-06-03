@@ -33,9 +33,11 @@ jobs:
           base="origin/${{ github.base_ref }}"
           paths=$(git diff --name-only "$base...HEAD")
           [ -z "$paths" ] && { echo "no changes"; exit 0; }
+          # The pull_request HEAD is the auto-merge commit (no trailers), so scan
+          # the PR's own commits (base..HEAD) for the newest Task / Task-Claim.
           # git's own trailer parser (same engine as git interpret-trailers).
-          task=$(git log -1 --format='%(trailers:key=Task,valueonly)' | head -1)
-          claim=$(git log -1 --format='%(trailers:key=Task-Claim,valueonly)' | head -1)
+          task=$(git log "$base..HEAD" --format='%(trailers:key=Task,valueonly)' | grep -m1 . || true)
+          claim=$(git log "$base..HEAD" --format='%(trailers:key=Task-Claim,valueonly)' | grep -m1 . || true)
           git fetch origin '+refs/heads/tasks-claims:refs/heads/tasks-claims' || true
           # This repo IS the @tasks-md/cli workspace, so `npx @tasks-md/cli` would
           # resolve our OWN unbuilt local package (-> "tasks: not found"). Install
@@ -45,8 +47,9 @@ jobs:
           # building the PR's own cli would let it rewrite check-push to self-pass.
           tdir="$RUNNER_TEMP/tcli"
           mkdir -p "$tdir"
-          (cd "$tdir" && npm init -y >/dev/null 2>&1 && npm install @tasks-md/cli@latest >/dev/null 2>&1) || true
+          (cd "$tdir" && npm init -y >/dev/null 2>&1 && npm install @tasks-md/cli@latest) || echo "::warning::temp cli install failed"
           tcli="$tdir/node_modules/@tasks-md/cli/dist/cli.js"
+          echo "resolved task='$task' claim='$claim'; cli=$([ -f "$tcli" ] && echo present || echo MISSING)"
           if [ -f "$tcli" ] && node "$tcli" check-push --task "$task" --claim "$claim" $paths; then
             exit 0
           fi
