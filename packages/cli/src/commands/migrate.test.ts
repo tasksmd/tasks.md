@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createGitNativeBackend } from "../backend/git-native.js";
+import { checkWorkPush, createGitNativeBackend } from "../backend/git-native.js";
 import { runMigrate } from "./migrate.js";
 
 let dir: string;
@@ -71,6 +71,19 @@ describe("runMigrate", () => {
       { actorId: "@bob" },
     );
     expect(reclaimed.status).toBe("claimed");
+  });
+
+  it("uses an unguessable fencing token for migrated claims", () => {
+    runMigrate(dir, { apply: true });
+    // The old predictable token `claim-migrated-<id>` must NOT validate — an
+    // attacker who knows only the public task id cannot forge ownership and
+    // push code past the claim gate.
+    const forged = checkWorkPush(dir, {
+      paths: ["src/code.ts"],
+      taskId: "urgent-fix",
+      claimId: "claim-migrated-urgent-fix",
+    });
+    expect(forged).toBe("rejected");
   });
 
   it("fails safely on duplicate ids", () => {
