@@ -668,7 +668,7 @@ The log grows unbounded as tasks churn. **Compaction** rewrites `tasks-claims` t
 
 A single scheduled job regenerates `TASKS.md` from the log:
 
-- **Trigger** — on push to the `tasks-claims` ref, plus a periodic fallback.
+- **Trigger** — a schedule plus on-demand (`workflow_dispatch`). A server-side push hook (GHE/GitLab `pre-receive`) *can* fire on a `tasks-claims` push, but a github.com Actions `push:` trigger cannot: the `tasks-claims` ref is an orphan log with no `.github/workflows`, and Actions resolves push-event workflows from the pushed branch. Near-real-time refresh there needs a `repository_dispatch` from the writer.
 - **Single writer** — only this job writes `TASKS.md`, so there are never competing edits. A concurrency group serializes runs; the latest fold wins.
 - **One branch, one PR** — it updates a stable projection branch and reuses one PR. Because the change touches only `TASKS.md` (markdown), it passes the path-scoped claim check by the same rule that passes any docs-only change — no per-actor CI bypass.
 - **No loop** — the regeneration commit lands on the default branch, not on `tasks-claims`, so it never re-triggers itself.

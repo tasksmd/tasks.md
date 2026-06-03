@@ -2,8 +2,10 @@
 # from the tasks-claims log. See spec.md § "Generated TASKS.md projection".
 name: tasks-snapshot
 on:
-  push:
-    branches: [tasks-claims]
+  # The tasks-claims branch is an orphan log with no `.github/workflows`, so a
+  # `push:` trigger there can never fire (GitHub looks for the workflow on the
+  # pushed branch). Refresh on a schedule and on demand instead.
+  workflow_dispatch:
   schedule:
     - cron: "*/15 * * * *"
 permissions:
