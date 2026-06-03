@@ -14,6 +14,7 @@ export const brokenExpectedFailures = [
   "claim-fencing", // noEnforcement → wrong/absent tokens are allowed
   "idempotent-projection", // nonIdempotentRender → bytes differ each render
   "path-scoped-enforcement", // noEnforcement → code-in-docs is allowed
+  "heartbeat-fencing", // noHeartbeatFencing → a stale owner is allowed to renew
 ];
 
 export const brokenTarget: ConformanceTarget = {
@@ -32,5 +33,6 @@ export const brokenTarget: ConformanceTarget = {
       noCas: true,
       nonIdempotentRender: true,
       noEnforcement: true,
+      noHeartbeatFencing: true,
     }),
 };

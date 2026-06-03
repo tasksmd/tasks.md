@@ -213,6 +213,22 @@ describe("git-native backend", () => {
     expect((await backend.claim("leased", { actorId: "@bob" })).status).toBe("claimed");
   });
 
+  it("a backward clock (skew / NTP correction) does not spuriously expire a live lease", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    let clock = 1_000_000;
+    const backend = createGitNativeBackend(directory, { now: () => clock, leaseMs: 1000 });
+    await backend.create({ title: "Skewed", priority: "P1" });
+    const claim = await backend.claim("skewed", { actorId: "@alice" }); // lease → 1_001_000
+    expect(claim.status).toBe("claimed");
+
+    // The wall clock jumps BACKWARD (clock skew between machines / an NTP step).
+    // The lease check is `now() < leaseExpiresAt`, so an earlier `now` keeps the
+    // lease live — a contender must NOT be able to steal it.
+    clock = 500_000;
+    const contender = await backend.claim("skewed", { actorId: "@bob" });
+    expect(contender.status).toBe("already_claimed");
+  });
+
   it("rejects a stale fencing token after the lease is stolen (crash recovery)", async () => {
     const directory = makeRepo("tasksmd-git-native-");
     let clock = 0;

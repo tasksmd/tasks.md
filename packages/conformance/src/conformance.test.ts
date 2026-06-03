@@ -24,6 +24,7 @@ describe("conformance suite", () => {
         "canonical-serialization",
         "claim-fencing",
         "different-task-race",
+        "heartbeat-fencing",
         "human-command-path",
         "idempotent-projection",
         "lease-expiry-and-steal",
