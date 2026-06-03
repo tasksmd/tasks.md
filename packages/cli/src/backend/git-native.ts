@@ -371,6 +371,8 @@ function foldEvents(events: GitNativeEvent[]): Map<string, FoldedTask> {
           priority: priorityValue(event.payload.priority),
           tags: stringArrayValue(event.payload.tags) ?? [],
           body: stringValue(event.payload.body),
+          blocked: stringValue(event.payload.blocked),
+          blockedBy: stringArrayValue(event.payload.blocked_by),
         },
         completed: false,
       });
@@ -387,6 +389,12 @@ function foldEvents(events: GitNativeEvent[]): Map<string, FoldedTask> {
         }
         if (body !== undefined) folded.task.body = body;
         if (tags) folded.task.tags = tags;
+        if (event.payload.blocked !== undefined) {
+          folded.task.blocked = stringValue(event.payload.blocked);
+        }
+        if (event.payload.blocked_by !== undefined) {
+          folded.task.blockedBy = stringArrayValue(event.payload.blocked_by);
+        }
       }
     }
     if (event.event_type === "claimed") {
@@ -508,6 +516,19 @@ function sortedTasks(tasks: Map<string, FoldedTask>): BackendTask[] {
     .sort((first, second) => first.priority.localeCompare(second.priority));
 }
 
+// A task is blocked (unpickable) if it carries a free-form `blocked` reason, or
+// any `blockedBy` id still refers to an OPEN (non-completed) task in the fold.
+// An absent or completed blocker does not block — matching the file backend.
+function taskIsBlocked(task: BackendTask, fold: Map<string, FoldedTask>): boolean {
+  if (task.blocked && task.blocked.trim()) {
+    return true;
+  }
+  return (task.blockedBy ?? []).some((id) => {
+    const blocker = fold.get(id);
+    return blocker !== undefined && !blocker.completed;
+  });
+}
+
 function renderTask(task: BackendTask): string[] {
   const claim = task.assignee ? ` (@${task.assignee})` : "";
   const lines = [`- [ ] ${task.title}${claim}`, `  - **ID**: ${task.id}`];
@@ -516,6 +537,12 @@ function renderTask(task: BackendTask): string[] {
   }
   if (task.body) {
     lines.push(`  - **Details**: ${task.body}`);
+  }
+  if (task.blockedBy && task.blockedBy.length > 0) {
+    lines.push(`  - **Blocked by**: ${task.blockedBy.join(", ")}`);
+  }
+  if (task.blocked && task.blocked.trim()) {
+    lines.push(`  - **Blocked**: ${task.blocked}`);
   }
   return lines;
 }
@@ -613,8 +640,15 @@ export function createGitNativeBackend(
     },
 
     async next(): Promise<BackendTask | null> {
-      const open = await this.listOpen();
-      return open.find((task) => !task.assignee) ?? null;
+      fetchClaimsRef(directory);
+      const fold = foldLog(directory);
+      // Skip claimed tasks AND blocked tasks (a `blocked` reason or an
+      // unmet `blockedBy` dependency makes a task unpickable).
+      return (
+        sortedTasks(fold).find(
+          (task) => !task.assignee && !taskIsBlocked(task, fold),
+        ) ?? null
+      );
     },
 
     async create(
@@ -635,10 +669,20 @@ export function createGitNativeBackend(
             priority,
             tags,
             body: input.body,
+            blocked: input.blocked,
+            blocked_by: input.blockedBy,
           }),
         );
         if (pushClaimsRef(directory)) {
-          return { id, title: input.title, priority, tags, body: input.body };
+          return {
+            id,
+            title: input.title,
+            priority,
+            tags,
+            body: input.body,
+            blocked: input.blocked,
+            blockedBy: input.blockedBy,
+          };
         }
         if (attempt < MAX_PUSH_ATTEMPTS - 1) {
           await sleep(backoffMs(attempt));
@@ -654,14 +698,45 @@ export function createGitNativeBackend(
       id: string,
       options?: ClaimTaskOptions,
     ): Promise<ClaimTaskResult> {
-      let current = foldLog(directory).get(id);
+      let fold = foldLog(directory);
+      let current = fold.get(id);
       if (!current) {
         fetchClaimsRef(directory);
-        current = foldLog(directory).get(id);
+        fold = foldLog(directory);
+        current = fold.get(id);
       }
       if (!current || current.completed) {
         return {
           status: "missing",
+          backend: "git-native",
+          taskId: id,
+          owner: actor(options),
+          capabilities,
+        };
+      }
+      // If the task declares blockers, refresh first so the blocked check reads
+      // fresh state (a blocker's completion may have been pushed by another
+      // clone). Tasks with no blockers skip the fetch, so the collision-free
+      // CAS-reject path still exercises a genuinely stale snapshot.
+      if (current.task.blocked || (current.task.blockedBy?.length ?? 0) > 0) {
+        fetchClaimsRef(directory);
+        fold = foldLog(directory);
+        current = fold.get(id);
+        if (!current || current.completed) {
+          return {
+            status: "missing",
+            backend: "git-native",
+            taskId: id,
+            owner: actor(options),
+            capabilities,
+          };
+        }
+      }
+      // An unmet blocker (a `blocked` reason or an open `blockedBy` dependency)
+      // makes a task unclaimable until the blocker closes.
+      if (taskIsBlocked(current.task, fold)) {
+        return {
+          status: "blocked",
           backend: "git-native",
           taskId: id,
           owner: actor(options),
@@ -730,6 +805,8 @@ export function createGitNativeBackend(
       if (patch.priority !== undefined) payload.priority = priorityValue(patch.priority);
       if (patch.body !== undefined) payload.body = patch.body;
       if (patch.tags !== undefined) payload.tags = patch.tags;
+      if (patch.blocked !== undefined) payload.blocked = patch.blocked;
+      if (patch.blockedBy !== undefined) payload.blocked_by = patch.blockedBy;
       await appendWithRetry(directory, () => makeEvent(id, "updated", options, payload), "updated");
       return { status: "ok", backend: "git-native", operation: "update", taskId: id };
     },
@@ -805,6 +882,10 @@ export interface MigrationTask {
   priority: string;
   tags: string[];
   body?: string;
+  /** Free-form `**Blocked**` reason, preserved so the task stays unpickable. */
+  blocked?: string;
+  /** `**Blocked by**` task-id dependencies, preserved across the migration. */
+  blockedBy?: string[];
   /** Claiming agent (without the leading `@`), if the task carried a claim. */
   claimedBy?: string;
 }
@@ -840,6 +921,8 @@ export function previewMigration(tasks: MigrationTask[]): MigrationEventPreview[
         priority: priorityValue(task.priority),
         tags: task.tags,
         body: task.body,
+        blocked: task.blocked,
+        blocked_by: task.blockedBy,
       },
     });
     if (task.claimedBy) {
@@ -868,6 +951,8 @@ export function applyMigration(directory: string, tasks: MigrationTask[]): void 
         priority: priorityValue(task.priority),
         tags: task.tags,
         body: task.body,
+        blocked: task.blocked,
+        blocked_by: task.blockedBy,
       }),
     );
     if (task.claimedBy) {
@@ -918,6 +1003,8 @@ export function compactGitNativeLog(directory: string): CompactionResult {
         priority: entry.task.priority,
         tags: entry.task.tags,
         body: entry.task.body,
+        blocked: entry.task.blocked,
+        blocked_by: entry.task.blockedBy,
       }),
     );
     if (entry.task.assignee) {

@@ -638,8 +638,8 @@ Serialization is canonical: `JSON.stringify(event, null, 2)` with a trailing new
 
 Payloads by type:
 
-- `created` — `{ title, priority, tags, body }`.
-- `updated` — the changed fields only (`{ title?, priority?, tags?, body? }`).
+- `created` — `{ title, priority, tags, body, blocked?, blocked_by? }`; `blocked` is a free-form external-blocker reason and `blocked_by` is a list of task ids this depends on.
+- `updated` — the changed fields only (`{ title?, priority?, tags?, body?, blocked?, blocked_by? }`).
 - `claimed` — `{ claim_id, lease_expires_at }`; `claim_id` is a unique fencing token (e.g. `claim-<uuid>`) minted by the winner, and `lease_expires_at` is the epoch-ms expiry.
 - `heartbeat` — `{ lease_expires_at }`; renews the live owner's lease (only the current assignee's heartbeat counts).
 - `released` — `{ claim_id }`.
@@ -648,7 +648,9 @@ Payloads by type:
 
 ### Folding the log
 
-`fold(log)` replays events in ref order: `created` introduces a task; `updated` patches its fields; `claimed` sets the owner + `claim_id` + lease (latest `claimed` wins — a legitimate steal is just a later claim); `heartbeat` renews the owner's lease; `released` clears the owner when it matches; `completed`/`cancelled` close the task (drop it from the open queue). The fold is **deterministic and idempotent** — the same log always produces the same open-task set and the same rendered `TASKS.md` bytes.
+`fold(log)` replays events in ref order: `created` introduces a task (with its `blocked`/`blocked_by`); `updated` patches its fields; `claimed` sets the owner + `claim_id` + lease (latest `claimed` wins — a legitimate steal is just a later claim); `heartbeat` renews the owner's lease; `released` clears the owner when it matches; `completed`/`cancelled` close the task (drop it from the open queue). The fold is **deterministic and idempotent** — the same log always produces the same open-task set and the same rendered `TASKS.md` bytes.
+
+A task is **blocked** (skipped by `next`/`pick` and rejected by `claim` with status `blocked`) when it carries a `blocked` reason, or any id in its `blocked_by` still refers to an open (non-completed) task in the fold. Completing/cancelling the blocker unblocks it on the next fold — no separate event needed.
 
 ### Claim lifecycle (collision-free)
 
@@ -696,7 +698,7 @@ The file backend is the v1-compatible default; git-native is an explicit opt-in.
 
 The `tasks-claims` ref, the generated snapshot PR, the claim-check CI, and the local hooks are security boundaries. The path-scoped gate is one shared primitive — `tasks check-push` (proven by the `path-scoped-enforcement` + `claim-fencing` conformance properties) — invoked by the client hook, the generated `tasks-claim-check.yml` GitHub required check, and the `pre-receive` recipe for GHE/GitLab/Gitea. The client hook alone is **bypassable** (`--no-verify`); the unbypassable guarantee is making the required check (or `pre-receive`) mandatory on a branch ruleset that also blocks force-push/delete of `tasks-claims`. The full trust boundaries, threats, mitigations, CI guidance (use `pull_request`, never `pull_request_target`), the `pre-receive` recipe, and per-platform token scopes are in [`docs/security/git-native-claims-threat-model.md`](docs/security/git-native-claims-threat-model.md).
 
-> **Status.** The git-native event log, fold, claim-via-CAS, snapshot rendering, **leases + heartbeats + steal + crash-recovery fencing** (Phase 2), **log compaction**, and the **path-scoped claim gate** (`tasks check-push` + generated `tasks-claim-check.yml` + `pre-receive` recipe — Phase 3) are implemented in the reference CLI (`@tasks-md/cli`) and proven by `@tasks-md/conformance` (all 11 properties, including lease-expiry-and-steal, claim-fencing, and path-scoped-enforcement). What remains operator-side is making the generated check a *required* ruleset gate; the single-writer projection job is still a documented workflow template. See the active [`TASKS.md`](TASKS.md) queue and [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md). Laptop/offline fleets are supported via heartbeat-renewed leases.
+> **Status.** The git-native event log, fold, claim-via-CAS, snapshot rendering, **leases + heartbeats + steal + crash-recovery fencing** (Phase 2), **log compaction**, and the **path-scoped claim gate** (`tasks check-push` + generated `tasks-claim-check.yml` + `pre-receive` recipe — Phase 3) are implemented in the reference CLI (`@tasks-md/cli`) and proven by `@tasks-md/conformance` (all 12 properties, including lease-expiry-and-steal, claim-fencing, path-scoped-enforcement, and blocked-by-unclaimable). What remains operator-side is making the generated check a *required* ruleset gate; the single-writer projection job is still a documented workflow template. See the active [`TASKS.md`](TASKS.md) queue and [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md). Laptop/offline fleets are supported via heartbeat-renewed leases.
 
 ## Workspaces
 

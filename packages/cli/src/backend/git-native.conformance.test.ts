@@ -72,10 +72,23 @@ class GitNativeWorld implements ConformanceWorld {
 
   async createTask(actor: string, input: CreateInput): Promise<ConformanceTask> {
     const task = await this.clone(actor).backend.create(
-      { title: input.title, priority: input.priority, tags: input.tags, body: input.body },
+      {
+        title: input.title,
+        priority: input.priority,
+        tags: input.tags,
+        body: input.body,
+        blockedBy: input.blockedBy,
+      },
       { actorId: actor },
     );
-    return { id: task.id, title: task.title, priority: task.priority, tags: task.tags, body: task.body };
+    return {
+      id: task.id,
+      title: task.title,
+      priority: task.priority,
+      tags: task.tags,
+      body: task.body,
+      blockedBy: task.blockedBy,
+    };
   }
 
   async claim(actor: string, taskId: string): Promise<ClaimOutcome> {
@@ -132,9 +145,9 @@ function makeTarget(roots: string[]): ConformanceTarget {
       leases: true, // Phase 2: lease expiry + steal + fresh fencing token
       mutableUpdate: true, // `update` patches a task in the log
       pathScopedEnforcement: true, // Phase 3: doc-only vs claim-fenced code pushes
+      blockedBy: true, // blocked + blocked-by modeled in the fold; claim returns "blocked"
       // The following are honest gaps for v1 (later phases):
       rawEventAppend: false, // raw-event injection not exposed by the backend
-      blockedBy: false, // blocked-by not yet modeled in the git-native fold
     },
     createWorld: () => {
       const root = mkdtempSync(join(tmpdir(), "gn-conf-"));
@@ -171,6 +184,7 @@ describe("git-native backend conformance (linear-CAS bake-off)", () => {
           "lease-expiry-and-steal",
           "claim-fencing",
           "path-scoped-enforcement",
+          "blocked-by-unclaimable",
         ]),
       );
     } finally {

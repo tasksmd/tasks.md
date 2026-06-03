@@ -38,6 +38,8 @@ function toMigrationTask(task: Task): MigrationTask {
     priority: task.priority,
     tags: task.metadata.tags ?? [],
     body: task.metadata.details,
+    blocked: task.metadata.blocked,
+    blockedBy: task.metadata.blockedBy,
     claimedBy: task.claimed?.replace(/^@/, ""),
   };
 }

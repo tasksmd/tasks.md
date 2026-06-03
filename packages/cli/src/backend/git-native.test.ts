@@ -188,6 +188,33 @@ describe("git-native backend", () => {
     expect(ok.status).toBe("ok");
   });
 
+  it("models blocked + blocked-by: unpickable, unclaimable, and rendered", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    const backend = createGitNativeBackend(directory);
+    await backend.create({ title: "Blocker", priority: "P0" });
+    await backend.create({ title: "Dependent", priority: "P0", blockedBy: ["blocker"] });
+    await backend.create({ title: "External", priority: "P0", blocked: "needs-user-approval" });
+    await backend.create({ title: "Free work", priority: "P1" });
+
+    // next() skips the blocked-by-dependent and the externally-blocked task,
+    // and the P0 blocker outranks the free P1 — so the blocker is picked first.
+    expect((await backend.next())?.id).toBe("blocker");
+    // The dependent cannot be claimed while its blocker is open.
+    expect((await backend.claim("dependent", { actorId: "@a" })).status).toBe("blocked");
+    // The externally-blocked task cannot be claimed at all.
+    expect((await backend.claim("external", { actorId: "@a" })).status).toBe("blocked");
+
+    // Complete the blocker → the dependent becomes pickable + claimable.
+    await backend.complete("blocker", { actorId: "@a" });
+    expect((await backend.next())?.id).toBe("dependent");
+    expect((await backend.claim("dependent", { actorId: "@b" })).status).toBe("claimed");
+
+    // The snapshot round-trips the blocked metadata so it lints clean.
+    const snapshot = await renderGitNativeSnapshot(directory);
+    expect(snapshot).toContain("**Blocked**: needs-user-approval");
+    expect(snapshot).toContain("**Blocked by**: blocker");
+  });
+
   it("compacts the log to a fold-equivalent open-task state", async () => {
     const directory = makeRepo("tasksmd-git-native-");
     const backend = createGitNativeBackend(directory);

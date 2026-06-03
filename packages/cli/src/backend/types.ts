@@ -18,6 +18,10 @@ export interface BackendTask {
   assignee?: string;
   /** Optional longer description / body. */
   body?: string;
+  /** Free-form external blocker reason (`**Blocked**`); any value makes it unpickable. */
+  blocked?: string;
+  /** Task ids this depends on (`**Blocked by**`); unpickable while any is still open. */
+  blockedBy?: string[];
   /** Backend-native URL, when one exists (issue URL). */
   url?: string;
 }
@@ -27,6 +31,8 @@ export interface CreateTaskInput {
   priority?: string;
   body?: string;
   tags?: string[];
+  blocked?: string;
+  blockedBy?: string[];
 }
 
 export type ClaimMode = "best-effort" | "collision-free" | "external";
@@ -79,6 +85,8 @@ export interface UpdateTaskInput {
   priority?: string;
   body?: string;
   tags?: string[];
+  blocked?: string;
+  blockedBy?: string[];
 }
 
 export type OperationStatus =
