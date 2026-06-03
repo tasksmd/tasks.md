@@ -33,6 +33,12 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
+      # OIDC Trusted Publishing needs npm >= 11.5.1; Node 22 ships npm 10.x,
+      # which can sign provenance but cannot authenticate the publish via OIDC
+      # (the publish PUT 404s). Upgrade npm so trusted publishing works.
+      - name: Upgrade npm for OIDC Trusted Publishing
+        run: npm install -g npm@latest && npm --version
+
       - name: Extract version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
