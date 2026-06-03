@@ -3,8 +3,8 @@
 - **Task**: make-the-claim-check-workflow-actually-run-on-the-dogfood-re
 - **Repo**: /Users/fivanishche/apps/tooling/tasks.md
 - **Author**: devin session 2026-06-03
-- **Status**: draft
-- **Validated-by**: _(filled in after reviewer subagent run)_
+- **Status**: validated
+- **Validated-by**: reviewer on 2026-06-03
 
 ## Goal
 
@@ -68,14 +68,11 @@ Update `CLAIM_CHECK_WORKFLOW` in `packages/cli/src/commands/fleet.ts` identicall
 
 ## Reviewer verdict
 
-<!-- Filled in by the reviewer subagent. -->
+Cycle 1 returned needs-revision (3 concerns: no regression guard, missing threat-model divergence note, indirect criterion 6). Revised, then cycle 2:
 
-- **Verdict**: <approved | needs-revision | reject>
-- **Reviewer**: <subagent-profile>
-- **Date**: <YYYY-MM-DD>
-- **Concerns**:
-  - <Bulleted list — empty list if approved.>
-- **Suggested edits** (only if needs-revision):
-  - <Specific changes to make.>
-- **Approval rationale** (only if approved):
-  - <2-3 sentences confirming why the plan is ready for implementation.>
+- **Verdict**: approved
+- **Reviewer**: reviewer
+- **Date**: 2026-06-03
+- **Concerns**: []
+- **Approval rationale**:
+  - The revised plan fully addresses all three concerns with concrete, mechanical safeguards: a regression-guard test that enforces the build-local prohibition at CI time (criterion 7), explicit threat-model documentation of the deliberate projection vs. claim-check divergence, and clarified acceptance criteria that distinguish trigger safety from build-strategy safety. The plan is implementable with deterministic verification and durable security properties.
