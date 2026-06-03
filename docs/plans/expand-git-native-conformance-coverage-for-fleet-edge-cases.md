@@ -3,7 +3,7 @@
 - **Task**: expand-git-native-conformance-coverage-for-fleet-edge-cases
 - **Repo**: /Users/fivanishche/apps/tooling/tasks.md
 - **Author**: devin session 2026-06-03
-- **Status**: draft
+- **Status**: validated (reviewer approved cycle 2; cycle 1 flagged a blocking broken-stub gap)
 
 ## Goal
 
@@ -67,4 +67,10 @@ The reference oracle (`InMemoryFleet`) models lease expiry as an explicit `expir
 
 ## Reviewer verdict
 
-<!-- Filled in by the reviewer subagent. -->
+Cycle 1 → needs-revision (blocking: broken stub would vacuously pass the new check; "under contention" ambiguous). Revised, then cycle 2:
+
+- **Verdict**: approved
+- **Reviewer**: reviewer
+- **Date**: 2026-06-03
+- **Concerns**: (empty)
+- **Approval rationale**: The `noHeartbeatFencing` bug makes the broken stub fail `heartbeat-fencing` with clean attribution (orthogonal to noCas/noEnforcement), preserving the self-test guarantee. The `InMemoryFleet.heartbeat` rule (owner-of-live-claim + matching token, else conflict) matches git-native's behavior across all traced cases incl. dead-owner-after-steal. The cross-backend vs implementation-specific split is the correct architectural boundary (the reference oracle has no clock, so clock-skew/renew-timer rightly live in git-native.test.ts).
