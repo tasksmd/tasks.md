@@ -44,7 +44,7 @@ Every story above works the same way for the human: **humans read the queue and 
 | Backend | Capability | Task state | Claiming | When |
 |---|---|---|---|---|
 | **File** (`tasks-md`, default) | spec-compatible, offline-capable | `TASKS.md` is the source of truth — **human-editable** | best-effort `(@agent)` | solo, low-concurrency |
-| **Git-native** | spec-compatible, **collision-free**, fleet-default | an append-only `tasks-claims` log; `TASKS.md` is a generated snapshot agents never hand-edit | collision-free via git ref compare-and-swap | a team of machines × per-host agent fleets (VISION.md G7) |
+| **Git-native** | spec-compatible, **collision-free**, recommended for shared repos | an append-only `tasks-claims` log; `TASKS.md` is a generated snapshot agents never hand-edit | collision-free via git ref compare-and-swap | any repo with more than one writer — a multi-contributor project up to a team of machines × per-host agent fleets (VISION.md G7, G8) |
 | **GitHub Issues** | spec-compatible, infra-required | open issues carrying the marker label | issue assignee | teams already living in a tracker |
 
 "Collision-free" means no two agents ever hold the same task at once — **not** a globally reproducible race winner; only the *fold of the log* is reproducible. In the file backend, editing `TASKS.md` by hand stays the zero-setup path; in generated backends (git-native, Issues) task mutation is agent/tool-mediated, so a human commands an agent rather than hand-editing generated state.

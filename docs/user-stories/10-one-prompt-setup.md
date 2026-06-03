@@ -36,7 +36,7 @@ The CLI path (`tasks init` + `tasks install --agent <self>`) is preferred when `
 
 ## GitHub-repo extras (optional)
 
-The agent can offer to add the reusable lint CI workflow (`.github/workflows/tasks-lint.yml`) and, for a **fleet** (a team of machines each running parallel agents on one queue), `tasks fleet init` to switch to the collision-free [git-native backend](../../spec.md#fleet-coordination).
+The agent can offer to add the reusable lint CI workflow (`.github/workflows/tasks-lint.yml`) and, for any repo with **more than one writer** (a multi-contributor project, or a fleet of machines each running parallel agents on one queue), run `/migrate` to switch to the collision-free [git-native backend](../../spec.md#fleet-coordination) without losing the existing queue.
 
 ## Related
 
