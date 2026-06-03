@@ -24,6 +24,10 @@ VISION G8 commits the canonical repo to running on the backend it recommends for
 - The self-host flip: run the command on this repo → `.tasksmd.json {backend: git-native}`, `lefthook.yml`, `.github/workflows/tasks-snapshot.yml`, `.github/workflows/tasks-claim-check.yml`, imported `tasks-claims` log, regenerated `TASKS.md`.
 - `AGENTS.md` + `CONTRIBUTING.md` — task-queue policy rewritten to the git-native claim/complete flow (no "hand-edit TASKS.md as source of truth").
 
+## Scope addendum (user-directed, 2026-06-02)
+
+During Phase 2 the dry-run revealed git-native does not model `blocked`/`blocked-by` (a deliberate v1 deferral), so the flip would make this repo's 2 blocked tasks pickable and drop their reason text. The operator chose the clean path: **model `blocked`/`blocked-by` in git-native first** (new prerequisite task `git-native-model-blocked-by`, which `dogfood-git-native-self-host` is now blocked by). That task's acceptance — fold + `next`/`claim` skip blocked, `render` round-trips `**Blocked**`/`**Blocked by**`, `migrate` preserves both, conformance `blockedBy: true` — is the gate before the flip runs.
+
 ## Scope (out)
 
 - Rewriting VISION/README/user-stories/competitors for cold readers — the follow-on doc-rewrite request, done after this plan's tasks land.
