@@ -167,6 +167,21 @@ Nine commands take a fresh repo from zero to a queue an agent can pick from. Out
 
 You're always adding to the queue; agents are always draining it. No ideas get lost, and agents never run out of work.
 
+The contract is the same on every backend: **humans read the queue and tell agents what to do; agents (or tools) mutate task state.** In the default file backend the file *is* the surface, so hand-editing `TASKS.md` is the zero-setup path. In a generated backend the queue is a projection and an agent runs the operation — but the human's experience ("add a task", "mark it done") is unchanged.
+
+## Backends
+
+`TASKS.md` (local markdown) is the default, zero-infra backend. The same spec / parser / CLI / MCP surface can target another **backend** — switching is configuration in `.tasksmd.json`, never a migration ([`spec.md` § Task backends](spec.md#task-backends)):
+
+| Backend | Capability | Use it when |
+|---|---|---|
+| **File** (`tasks-md`, default) | spec-compatible, offline, **human-editable** `TASKS.md`, best-effort claims | solo or low-concurrency — the zero-setup default |
+| **Git-native** | spec-compatible, **collision-free** claims via git ref compare-and-swap, fleet-default; `TASKS.md` becomes a generated snapshot | a **fleet**: a team of machines each running parallel agents on one queue ([Fleet coordination](spec.md#fleet-coordination)). Run `tasks fleet init` |
+| **GitHub Issues** | spec-compatible, infra-required (a tracker) | a team already living in GitHub Issues |
+| **Atomic queue / MCP broker** | server-backed | only where that infra already exists |
+
+"Collision-free" means no two agents ever hold the same task at once — not a globally reproducible race winner; only the *fold of the log* is reproducible. Move an existing file queue to git-native with `tasks migrate` (dry-run by default). The portable layer is the spec; the coordination is borrowed.
+
 ## Writing Good Tasks
 
 The quality of your task description directly affects the quality of the agent's output. A task is a small contract between you and the agent — the more specific you are, the better the result.

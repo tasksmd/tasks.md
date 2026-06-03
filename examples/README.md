@@ -4,6 +4,8 @@ Eight valid `TASKS.md` fixtures used as documentation. Each lints clean (`npx -y
 
 Each file opens with a `<!-- Demonstrates: ... -->` comment that names the format feature it showcases. Use this index to pick the closest match for your project before adapting.
 
+> These are **file-backend** examples: `TASKS.md` is the source of truth, hand-edited, and the `(@agent)` claim in [`multi-agent.md`](multi-agent.md) is best-effort. For a fleet that needs collision-free claiming, the same files become a generated snapshot of the git-native backend — see [`spec.md` § Fleet coordination](../spec.md#fleet-coordination).
+
 | Example | What it demonstrates | Spec section |
 |---------|----------------------|--------------|
 | [`cli-tool.md`](cli-tool.md) | Minimal task queue for a CLI tool — two file-level policies, P0→P2 priority spread, standard metadata (`**ID**`, `**Details**`, `**Files**`, `**Acceptance**`) with no blockers. | [Format](../spec.md#format), [Policies](../spec.md#policies) |

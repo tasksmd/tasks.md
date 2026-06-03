@@ -431,25 +431,9 @@
   - **Files**: `packages/cli/src/backend/git-native.ts`, `packages/cli/src/commands/doctor.ts`, `packages/cli/src/commands/fleet-stats.ts` (new), `docs/research/gitbug-reuse-spike.md`, `docs/plans/deterministic-fleet-claiming.md`
   - **Acceptance**: Fleet stats report contention metrics; thresholds are documented; no Phase 4 CRDT/HRW implementation task can proceed without measured data crossing a threshold or a written operator override; reuse re-evaluation is scheduled/documented.
 
-- [ ] Align README, architecture, roadmap, examples, and user stories with agent-owned backends
-  - **ID**: docs-align-agent-owned-backends
-  - **Tags**: docs, readme, architecture, roadmap, user-stories, examples, agent-owned, backend
-  - **Details**: The public docs currently teach humans to create and edit `TASKS.md` directly and describe the mutable-file claim/remove workflow as universal. After the spec and commands are updated, all docs must be split by backend and re-centered on the new rule: tasks are human-readable, but task state changes are performed by agents/tools from a single prompt or explicit task-management command.
-
-    Required changes:
-    1. Rewrite README Quick Start around the single prompt, not manual file editing.
-    2. Add a README backend section with capability levels and clear "when to use file vs git-native vs issues vs broker/queue" guidance.
-    3. Update `ARCHITECTURE.md` with separate file-backend and git-native-backend data-flow diagrams.
-    4. Update `ROADMAP.md` so git-native fleet coordination is visible as the G7 primary-use-case capability.
-    5. Add/update user stories for agent-mediated task creation/review, one-prompt install in any repo, and fleet-safe git-native coordination.
-    6. Update examples so manual `TASKS.md` editing appears only in file-backend examples, not as the universal path.
-  - **Files**: `README.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `docs/user-stories/`, `examples/`, `docs/index.html`, `docs/blog/why-your-ai-agent-needs-a-backlog.md`
-  - **Acceptance**: A reader can understand that humans read task queues and command agents/tools to mutate them; README no longer presents manual editing as the primary universal workflow; architecture and roadmap mention git-native fleet mode; user-story index includes the new workflows; docs/examples remain lint-valid and `npm run build:site` passes.
-
 - [ ] Align repo and downstream agent instructions with backend-aware task policy
   - **ID**: agent-instructions-backend-policy
   - **Tags**: docs, agents, contributing, instructions, agent-owned, backend, drift
-  - **Blocked by**: docs-align-agent-owned-backends
   - **Details**: The public docs are not the only place teaching the old model. This repo's `AGENTS.md`, `CONTRIBUTING.md`, and the global agent-rule snippets operators copy into other repos still say to claim by appending `(@agent)` and hand-edit `TASKS.md`. After the backend-aware commands exist, publish one canonical Task Queue Policy snippet and update this repo's instructions so agents stop learning the wrong default.
 
     Required changes:
@@ -464,7 +448,6 @@
 - [ ] Align package READMEs and the generated site with backend-aware operations
   - **ID**: package-docs-site-backend-alignment
   - **Tags**: docs, package-readmes, site, cli, mcp, parser, lint, backend
-  - **Blocked by**: docs-align-agent-owned-backends
   - **Details**: The root README task covers public narrative docs, but package-level READMEs are independent entry points. `packages/mcp/README.md` currently describes direct file mutation tools, `packages/cli/README.md` describes a file-only command set, and parser/lint docs frame claims as inline file syntax. Align those docs and rebuild the generated site so npm users do not install stale semantics.
 
     Required changes:
@@ -479,7 +462,7 @@
 - [ ] Add mechanical drift checks so docs cannot regress to the old human-edit workflow
   - **ID**: docs-drift-agent-owned-task-model
   - **Tags**: lint, docs, ci, drift, agent-owned, feedback-loop
-  - **Blocked by**: docs-align-agent-owned-backends, agent-instructions-backend-policy, package-docs-site-backend-alignment
+  - **Blocked by**: agent-instructions-backend-policy, package-docs-site-backend-alignment
   - **Details**: The fresh review found many stale docs because the vision changed faster than the spec, README, commands, repo instructions, package docs, and user stories. Per the feedback-loop rule, recurring doc/model drift should become a deterministic check, not just a review comment. Add a lightweight CI/lint guard that catches universal claims like "edit TASKS.md directly" or "append `(@agent)`" outside file-backend-specific sections.
 
     Required changes:
