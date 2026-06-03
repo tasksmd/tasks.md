@@ -1,9 +1,9 @@
-# Plan: Expose claimId (owner-gated) + leaseExpiresAt in list --json
+# Plan: Expose claimId + leaseExpiresAt in list --json (broadcast, no owner-gating)
 
 - **Task**: expose-claimid-and-assignee-in-list-json-so-fencing-tokens-a
 - **Repo**: /Users/fivanishche/apps/tooling/tasks.md
 - **Author**: devin session 2026-06-03
-- **Status**: draft
+- **Status**: validated (reviewer approved cycle 2; cycle 1 rejected owner-gating as theater)
 
 ## Goal
 
@@ -56,4 +56,10 @@ Cycle 1 proposed gating `claimId` to the querying owner via `--as`. The reviewer
 
 ## Reviewer verdict
 
-<!-- Filled in by the reviewer subagent. -->
+Cycle 1 → **reject** (owner-gating via the forgeable `--as` flag is security theater — `actor-id` is advisory, so `--as @victim` bypasses it). Redesigned to unconditional broadcast per the reviewer's recommendation. Cycle 2:
+
+- **Verdict**: approved
+- **Reviewer**: reviewer
+- **Date**: 2026-06-03
+- **Concerns**: (resolved — title updated; confirmed `claimId`/`leaseExpiresAt` live on `FoldedTask`, not `BackendTask`, so the spread adds them cleanly)
+- **Approval rationale**: Broadcasting `claimId` unconditionally respects the threat model (actor-id advisory; real gate is server-side B5/B7), adds no new exposure (token already git-log-readable), and solves the migrated-owner problem with a minimal change (two optional fields + a one-line `sortedTasks` spread, no `cli.ts` change) plus a necessary threat-model clarification.
