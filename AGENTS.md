@@ -101,8 +101,11 @@ edges that cost real debugging time — captured here so they don't recur:
   JSON). Prefer mature, already-mirrored dependency versions; trust the GitHub
   Actions run over a local `npm view` (the Artifactory mirror lags the public registry).
 - **`tasks-claim-check` is advisory by default** (warns, never blocks, so it never
-  red-X's a bootstrap or docs PR). Arm hard enforcement with the repo variable
-  `TASKS_CLAIM_ENFORCE=1` plus a required ruleset check.
+  red-X's a bootstrap or docs PR) — but **armed on this repo**: `TASKS_CLAIM_ENFORCE=1`
+  plus a required `claim-check` ruleset, so an unclaimed code PR is blocked. Re-arm
+  here or on any dogfood repo in one action with `scripts/arm-enforcement.sh`. The
+  workflow installs the published cli at a **pinned** `CLI_VERSION` (not `@latest`) so
+  the required gate stays reproducible; bump it when `check-push` changes.
 - **The `tasks-snapshot` projection builds + runs the *local* cli**, not
   `npx @tasks-md/cli` (the generic `fleet init` form). Because this repo is the
   cli's own source, the published package is redundant and `npx` is subject to
