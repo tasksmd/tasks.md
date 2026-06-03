@@ -111,6 +111,12 @@ jobs:
       - name: Path-scoped claim check
         env:
           ENFORCE: \${{ vars.TASKS_CLAIM_ENFORCE }}
+          # Resolve the TRUSTED published cli from public npm. This runs on
+          # pull_request (untrusted PR head), so we must NOT build the PR's own
+          # cli (a malicious PR could rewrite check-push to always pass and
+          # bypass its own claim check). The pin also dodges registry mirror lag
+          # that otherwise leaves a fresh release uninstallable -> vacuous pass.
+          npm_config_registry: https://registry.npmjs.org
         run: |
           base="origin/\${{ github.base_ref }}"
           paths=$(git diff --name-only "$base...HEAD")
