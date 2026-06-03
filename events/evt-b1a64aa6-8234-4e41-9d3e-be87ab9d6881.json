@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-b1a64aa6-8234-4e41-9d3e-be87ab9d6881",
+  "task_id": "expose-claimid-and-assignee-in-list-json-so-fencing-tokens-a",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:57:01.790Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
