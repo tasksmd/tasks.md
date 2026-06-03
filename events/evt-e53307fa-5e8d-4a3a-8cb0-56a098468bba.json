@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-e53307fa-5e8d-4a3a-8cb0-56a098468bba",
+  "task_id": "npm-release-publishing-blocker",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T12:28:20.228Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Restore npm release publishing for `v0.9.0` and future releases",
+    "priority": "P0",
+    "tags": [
+      "release",
+      "deployment-infra",
+      "npm",
+      "ci",
+      "trusted-publishing",
+      "p0"
+    ],
+    "body": "GitHub release `v0.9.0` exists, but publish workflow run `26844766304` failed at `npm publish --access=public --provenance` for `@tasks-md/parser@0.9.0` with `npm error code E404` / `404 Not Found - PUT https://registry.npmjs.org/@tasks-md%2fparser`. npm latest remains `0.7.0` for all four packages. The previous `v0.8.0` token-based workflow run `26240628732` failed with the same package PUT E404, so the unblock is package-level npm authorization, not tests/build. Preferred fix: as an npm maintainer, configure trusted publishing for each package using `npm trust github <pkg> --repo tasksmd/tasks.md --file publish.yml --allow-publish --registry=https://registry.npmjs.org/`, or replace `NPM_TOKEN` with a package-scoped granular token that has read-write publish permission and bypasses 2FA. See `docs/human-blocked-actions/npm-release-publishing-2026-06-02.md`.",
+    "blocked": "needs-npm-maintainer-auth — npm package trust/access settings require maintainer auth for `@tasks-md/parser`, `@tasks-md/lint`, `@tasks-md/cli`, and `tasks-mcp`; unauthenticated `npm trust list` returns E401 and the npm package access UI redirects to login."
+  }
+}
