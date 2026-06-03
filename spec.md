@@ -735,7 +735,9 @@ discovery:
 - `--workspace-name <name>` — a configured workspace by name.
 - no flag — aggregate across **all** configured workspaces if any exist; otherwise fall back to single `./TASKS.md` (backwards compatible).
 
-It prints `<workspace>::<repo>:<task-id>` for the global highest-priority unblocked task; claiming and editing happen inside that repo's checkout. `tasks workspaces list|add|detect` manage the config, and the MCP tool `find_next_task_across_workspaces` exposes the same aggregation. There is **no** atomic multi-repo claim/complete and no global lease spanning repos — a cross-workspace pick claims atomically in the one target repo's backend, and re-ranks on a lost claim.
+It prints `<workspace>::<repo>:<task-id>` for the global highest-priority unblocked task; claiming and editing happen inside that repo's checkout. `tasks workspaces list|add|detect` manage the config, and the MCP tool `find_next_task_across_workspaces` exposes the same aggregation.
+
+**Aggregation is backend-aware.** Each repo in a workspace resolves its own backend from `.tasksmd.json` — a markdown (`tasks-md`) repo contributes its parsed `TASKS.md`, while a `git-native` or `github-issues` repo contributes its `listOpen()` — and they merge into one priority-ranked list. There is **no** atomic multi-repo claim/complete and no global lease spanning repos — a cross-workspace pick claims atomically in the one target repo's backend, and re-ranks on a lost claim.
 
 ## Agent Behavior
 

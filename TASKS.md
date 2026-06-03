@@ -16,15 +16,6 @@
 
 ## P1
 
-- [ ] GitHub Issues backend: aggregate issue-backed repos alongside markdown repos in workspace mode
-  - **ID**: github-issues-backend
-  - **Tags**: parser, cli, mcp, next-task, github-issues, backend, workspace
-  - **Details**: The single-repo GitHub Issues backend has shipped: `spec.md` § "Task backends" defines `tasks-md` (default) + `github-issues` (issue number ↔ id, `priority/P0..P3` label ↔ priority, assignee ↔ claim, `Closes #N` ↔ completion); the parser/CLI expose a backend-agnostic `Task` and `tasks pick`/`list`/`create`/`claim`/`complete` rank open issues on an issue-backed repo; the MCP server's task tools delegate to the `tasks` CLI for `github-issues` (`packages/mcp/src/backend.ts`); existing markdown-repo behavior is unchanged.
-
-    The one remaining piece is **cross-backend aggregation**: when `workspace-mode-nested-repos` lands, its ranked aggregation must mix markdown repos and `github-issues` repos in a single list (a workspace repo may declare `task_backend: github-issues`). This is blocked until workspace mode exists — the backend-agnostic `Task` shape is already in place for it to build on.
-  - **Files**: packages/cli/src/backend/, packages/mcp/src/backend.ts, packages/parser/src/
-  - **Acceptance**: workspace-mode aggregation produces one priority-ranked list spanning both markdown and issue-backed repos; existing single-backend behavior unchanged.
-
 - [ ] Define fleet-safe workspace and cross-repo claiming semantics
   - **ID**: fleet-claim-workspace-semantics
   - **Tags**: workspace, git-native, fleet, backend, multi-repo, multi-workspace, claiming

@@ -293,7 +293,7 @@ program
       // workspaces when no flag is given. Falls through to single-repo otherwise.
       const selection = resolveWorkspaceSelection(opts);
       if (selection) {
-        const result = pickAcrossWorkspaces(selection);
+        const result = await pickAcrossWorkspaces(selection);
         if (opts.json) {
           console.log(
             JSON.stringify(
@@ -302,11 +302,12 @@ program
                     picked: true,
                     workspace: result.pick.entry.workspaceName,
                     repo: result.pick.entry.repoName,
-                    id: result.pick.entry.task.metadata.id,
-                    summary: result.pick.entry.task.summary,
-                    priority: result.pick.entry.task.priority,
-                    file: result.pick.entry.task.file,
-                    line: result.pick.entry.task.startLine,
+                    id: result.pick.entry.id,
+                    summary: result.pick.entry.title,
+                    priority: result.pick.entry.priority,
+                    backend: result.pick.entry.backend,
+                    file: result.pick.entry.file,
+                    line: result.pick.entry.line,
                     ref: result.pick.ref,
                   }
                 : { picked: false, summary: result.summary },
@@ -316,8 +317,8 @@ program
           console.error(result.summary);
           if (result.pick) {
             console.log(result.pick.ref);
-            console.log(`  "${result.pick.entry.task.summary}" (${result.pick.entry.task.priority})`);
-            console.log(`  File: ${result.pick.entry.task.file}:${result.pick.entry.task.startLine}`);
+            console.log(`  "${result.pick.entry.title}" (${result.pick.entry.priority})`);
+            console.log(`  File: ${result.pick.entry.file}:${result.pick.entry.line}`);
           } else {
             console.log("No eligible tasks found across the selected workspaces.");
           }

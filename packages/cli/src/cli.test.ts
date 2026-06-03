@@ -889,6 +889,37 @@ describe("CLI", () => {
     }
   });
 
+  it("aggregates markdown and non-markdown (git-native) repos in one ranked list", () => {
+    const ws = mkdtempSync(join(tmpdir(), "tasks-ws-mixed-"));
+    try {
+      // Markdown repo with a P1 task.
+      mkdirSync(join(ws, "md-repo"), { recursive: true });
+      writeFileSync(join(ws, "md-repo", "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Frontend\n  - **ID**: fe\n");
+      // git-native repo declaring the backend, with a higher-priority P0 task.
+      const gn = join(ws, "gn-repo");
+      mkdirSync(gn, { recursive: true });
+      spawnSync("git", ["init"], { cwd: gn });
+      writeFileSync(join(gn, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+      const created = spawnSync(
+        "node",
+        [CLI, "create", "Urgent backend fix", "--backend", "git-native", "--priority", "P0"],
+        { encoding: "utf-8", cwd: gn },
+      );
+      expect(created.status).toBe(0);
+
+      const result = spawnSync("node", [CLI, "next", "--workspace", ws, "--json"], {
+        encoding: "utf-8",
+        cwd: ws,
+      });
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      // The git-native P0 outranks the markdown P1 across backends.
+      expect(parsed).toMatchObject({ picked: true, repo: "gn-repo", priority: "P0", backend: "git-native" });
+    } finally {
+      rmSync(ws, { recursive: true });
+    }
+  });
+
   it("falls back to single-repo pick when no workspace config or flags exist", () => {
     const dir = mkdtempSync(join(tmpdir(), "tasks-ws-test-"));
     const xdg = mkdtempSync(join(tmpdir(), "tasks-xdg-")); // empty → no config

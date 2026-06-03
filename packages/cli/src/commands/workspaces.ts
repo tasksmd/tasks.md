@@ -1,12 +1,7 @@
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
-import {
-  isBlockerOpen,
-  isWorkspace,
-  parseWorkspaces,
-  workspaceTasks,
-  type WorkspaceTask,
-} from "@tasks-md/parser";
+import { isWorkspace, parseBlockerRef, parseTasksContent } from "@tasks-md/parser";
+import { getBackend, resolveBackendConfig } from "../backend/index.js";
 import {
   expandTilde,
   loadWorkspacesConfig,
@@ -20,24 +15,135 @@ export { resolveWorkspaceSelection };
 
 const PRIORITY_RANK: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 
-function isStandingLoop(entry: WorkspaceTask): boolean {
-  return (
-    entry.task.metadata.id === "standing-audit-gap-loop" ||
-    (entry.task.metadata.tags ?? []).includes("standing-loop")
+/** A task from any backend, annotated with its workspace + repo for ranking. */
+export interface UnifiedEntry {
+  id: string;
+  title: string;
+  priority: string;
+  assignee?: string;
+  blockedBy: string[];
+  blocked?: string;
+  standingLoop: boolean;
+  workspaceName: string;
+  repoName: string;
+  file: string;
+  line: number;
+  backend: string;
+}
+
+/** Immediate child dirs (and the root) that carry a TASKS.md OR a .tasksmd.json. */
+function discoverRepoRoots(root: string): string[] {
+  const roots: string[] = [];
+  const isRepo = (dir: string) =>
+    existsSync(join(dir, "TASKS.md")) || existsSync(join(dir, ".tasksmd.json"));
+  if (isRepo(root)) roots.push(root);
+  let entries: string[];
+  try {
+    entries = readdirSync(root);
+  } catch {
+    return roots;
+  }
+  for (const entry of entries.sort()) {
+    if (entry.startsWith(".") || entry === "node_modules") continue;
+    const child = join(root, entry);
+    try {
+      if (statSync(child).isDirectory() && isRepo(child)) roots.push(child);
+    } catch {
+      // ignore
+    }
+  }
+  return roots;
+}
+
+/**
+ * Gather open tasks across the selected workspaces, resolving EACH repo's
+ * backend: markdown repos parse TASKS.md (full metadata); non-markdown repos
+ * (git-native / github-issues) come through the backend's `listOpen`, so one
+ * ranked list spans every backend kind.
+ */
+async function gatherEntries(
+  selection: WorkspaceSelection,
+): Promise<{ entries: UnifiedEntry[]; repoCount: number }> {
+  const entries: UnifiedEntry[] = [];
+  let repoCount = 0;
+  for (let i = 0; i < selection.roots.length; i += 1) {
+    const root = selection.roots[i];
+    const workspaceName = selection.names[i] ?? basename(root);
+    for (const repoRoot of discoverRepoRoots(root)) {
+      repoCount += 1;
+      const repoName = repoRoot === root ? "." : basename(repoRoot);
+      const backend = resolveBackendConfig(repoRoot).backend;
+      if (backend === "tasks-md") {
+        const taskFile = join(repoRoot, "TASKS.md");
+        if (!existsSync(taskFile)) continue;
+        for (const task of parseTasksContent(readFileSync(taskFile, "utf-8"), taskFile)) {
+          entries.push({
+            id: task.metadata.id ?? task.summary,
+            title: task.summary,
+            priority: task.priority,
+            assignee: task.claimed,
+            blockedBy: task.metadata.blockedBy ?? [],
+            blocked: task.metadata.blocked,
+            standingLoop:
+              task.metadata.id === "standing-audit-gap-loop" ||
+              (task.metadata.tags ?? []).includes("standing-loop"),
+            workspaceName,
+            repoName,
+            file: taskFile,
+            line: task.startLine,
+            backend,
+          });
+        }
+      } else {
+        // A non-markdown backend (git-native / github-issues) may be offline or
+        // unauthenticated; skip that repo rather than failing the whole pick.
+        let backendTasks: Awaited<ReturnType<ReturnType<typeof getBackend>["listOpen"]>> = [];
+        try {
+          backendTasks = await getBackend(repoRoot).listOpen();
+        } catch {
+          continue;
+        }
+        for (const task of backendTasks) {
+          entries.push({
+            id: task.id ?? task.title,
+            title: task.title,
+            priority: task.priority,
+            assignee: task.assignee,
+            blockedBy: [],
+            standingLoop: (task.tags ?? []).includes("standing-loop"),
+            workspaceName,
+            repoName,
+            file: join(repoRoot, "TASKS.md"),
+            line: 0,
+            backend,
+          });
+        }
+      }
+    }
+  }
+  return { entries, repoCount };
+}
+
+function blockerOpen(ref: string, all: UnifiedEntry[]): boolean {
+  const parsed = parseBlockerRef(ref);
+  return all.some(
+    (e) =>
+      e.id === parsed.taskId &&
+      (!parsed.repo || e.repoName === parsed.repo) &&
+      (!parsed.workspace || e.workspaceName === parsed.workspace),
   );
 }
 
-function isPickable(entry: WorkspaceTask, all: WorkspaceTask[]): boolean {
-  if (entry.task.claimed) return false;
-  if (entry.task.metadata.blocked && entry.task.metadata.blocked.trim()) return false;
-  if (isStandingLoop(entry)) return false;
-  const blockedBy = entry.task.metadata.blockedBy ?? [];
-  return !blockedBy.some((ref) => isBlockerOpen(ref, all));
+function isPickable(entry: UnifiedEntry, all: UnifiedEntry[]): boolean {
+  if (entry.assignee) return false;
+  if (entry.blocked && entry.blocked.trim()) return false;
+  if (entry.standingLoop) return false;
+  return !entry.blockedBy.some((ref) => blockerOpen(ref, all));
 }
 
 export interface WorkspacePick {
-  entry: WorkspaceTask;
-  /** `<workspace>::<repo>:<task-id>` (or `<workspace>::<repo>:<summary>` w/o id). */
+  entry: UnifiedEntry;
+  /** `<workspace>::<repo>:<task-id>`. */
   ref: string;
 }
 
@@ -46,25 +152,24 @@ export interface WorkspacePickResult {
   pick?: WorkspacePick;
 }
 
-/** Aggregate across the selected workspaces and pick the global top task. */
-export function pickAcrossWorkspaces(selection: WorkspaceSelection): WorkspacePickResult {
-  const workspaces = parseWorkspaces(selection.roots, selection.names);
-  const all = workspaceTasks(workspaces);
-  const repoCount = workspaces.reduce((n, ws) => n + ws.repos.length, 0);
-  const pickable = all.filter((entry) => isPickable(entry, all));
-  const summary = `scanned ${workspaces.length} workspace(s), ${repoCount} repo(s), ${pickable.length} unblocked`;
+/** Aggregate across the selected workspaces (any backend) and pick the top task. */
+export async function pickAcrossWorkspaces(
+  selection: WorkspaceSelection,
+): Promise<WorkspacePickResult> {
+  const { entries, repoCount } = await gatherEntries(selection);
+  const pickable = entries.filter((entry) => isPickable(entry, entries));
+  const summary = `scanned ${selection.roots.length} workspace(s), ${repoCount} repo(s), ${pickable.length} unblocked`;
 
   pickable.sort((a, b) => {
-    const pr = (PRIORITY_RANK[a.task.priority] ?? 99) - (PRIORITY_RANK[b.task.priority] ?? 99);
+    const pr = (PRIORITY_RANK[a.priority] ?? 99) - (PRIORITY_RANK[b.priority] ?? 99);
     if (pr !== 0) return pr;
-    return a.taskFile.localeCompare(b.taskFile);
+    return `${a.workspaceName}/${a.repoName}`.localeCompare(`${b.workspaceName}/${b.repoName}`);
   });
   const top = pickable[0];
   if (!top) {
     return { summary };
   }
-  const id = top.task.metadata.id ?? top.task.summary;
-  return { summary, pick: { entry: top, ref: `${top.workspaceName}::${top.repoName}:${id}` } };
+  return { summary, pick: { entry: top, ref: `${top.workspaceName}::${top.repoName}:${top.id}` } };
 }
 
 // ── `tasks workspaces <list|add|detect>` ──
