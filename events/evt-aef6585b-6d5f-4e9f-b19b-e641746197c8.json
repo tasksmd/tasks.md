@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-aef6585b-6d5f-4e9f-b19b-e641746197c8",
+  "task_id": "indent-multi-line-field-values-in-the-git-native-tasks-md-pr",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T12:32:52.747Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Indent multi-line field values in the git-native TASKS.md projection",
+    "priority": "P3",
+    "tags": [
+      "git-native",
+      "render",
+      "polish"
+    ],
+    "body": "renderGitNativeSnapshot emits multi-line body/blocked values flush-left after the label (continuation lines are not indented). It lints clean but is non-idiomatic. Re-indent continuation lines under the field. Surfaced by the dogfood flip 2026-06-02."
+  }
+}
