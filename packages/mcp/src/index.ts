@@ -466,6 +466,61 @@ server.registerTool(
   }
 );
 
+// ── find_next_task_across_workspaces ──
+
+server.registerTool(
+  "find_next_task_across_workspaces",
+  {
+    title: "Find Next Task Across Workspaces",
+    description: TOOL_DESCRIPTIONS.find_next_task_across_workspaces,
+    inputSchema: z.object({
+      workspaces: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Workspace roots to aggregate across. Omit to use the per-user config " +
+          "(~/.config/tasks-md/workspaces.yaml). Returns {workspace, repo, task_id, file_path}.",
+        ),
+    }),
+  },
+  async ({ workspaces }) => {
+    const directory = getWorkingDirectory();
+    // Delegate to the CLI so workspace resolution + config reading live in one place.
+    const args = ["next", "--json"];
+    if (workspaces && workspaces.length > 0) {
+      args.push("--workspaces", workspaces.join(","));
+    }
+    try {
+      const output = runTasksCli(args, directory);
+      const parsed = JSON.parse(output) as {
+        picked: boolean;
+        workspace?: string;
+        repo?: string;
+        id?: string;
+        file?: string;
+        summary?: string;
+      };
+      const text = parsed.picked
+        ? JSON.stringify({
+            workspace: parsed.workspace,
+            repo: parsed.repo,
+            task_id: parsed.id,
+            file_path: parsed.file,
+            summary: parsed.summary,
+          })
+        : "No eligible task found across the selected workspaces.";
+      return { content: [{ type: "text" as const, text }] };
+    } catch (error) {
+      return {
+        content: [
+          { type: "text" as const, text: error instanceof Error ? error.message : String(error) },
+        ],
+        isError: true,
+      };
+    }
+  },
+);
+
 // ── Start server ──
 
 async function main() {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { existsSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { parseTasksContent, type TaskFile } from "@tasks-md/parser";
@@ -842,6 +842,73 @@ describe("CLI", () => {
       expect(code.stderr).toMatch(/rejected/);
     } finally {
       rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("aggregates next across an explicit --workspaces list", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-ws-test-"));
+    try {
+      mkdirSync(join(dir, "tooling", "alpha"), { recursive: true });
+      mkdirSync(join(dir, "oncall", "api"), { recursive: true });
+      writeFileSync(join(dir, "tooling", "alpha", "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] FE\n  - **ID**: fe\n");
+      writeFileSync(join(dir, "oncall", "api", "TASKS.md"), "# Tasks\n\n## P0\n\n- [ ] API\n  - **ID**: api-fix\n");
+      const result = spawnSync(
+        "node",
+        [CLI, "next", "--workspaces", `${join(dir, "tooling")},${join(dir, "oncall")}`, "--json"],
+        { encoding: "utf-8", cwd: dir },
+      );
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed).toMatchObject({ picked: true, workspace: "oncall", repo: "api", id: "api-fix", priority: "P0" });
+      expect(parsed.ref).toBe("oncall::api:api-fix");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("workspaces add then list round-trips through the per-user config", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-ws-test-"));
+    const xdg = mkdtempSync(join(tmpdir(), "tasks-xdg-"));
+    const env = { ...process.env, XDG_CONFIG_HOME: xdg };
+    try {
+      mkdirSync(join(dir, "alpha"), { recursive: true });
+      writeFileSync(join(dir, "alpha", "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] A\n  - **ID**: a\n");
+      const add = spawnSync("node", [CLI, "workspaces", "add", dir, "--name", "demo"], { encoding: "utf-8", env });
+      expect(add.status).toBe(0);
+      expect(add.stdout).toMatch(/Added workspace "demo"/);
+
+      const list = spawnSync("node", [CLI, "workspaces", "list"], { encoding: "utf-8", env });
+      expect(list.stdout).toMatch(/demo/);
+
+      // No flag + a configured workspace → aggregates automatically.
+      const next = spawnSync("node", [CLI, "next", "--json"], { encoding: "utf-8", cwd: dir, env });
+      expect(JSON.parse(next.stdout.trim())).toMatchObject({ picked: true, workspace: "demo", id: "a" });
+    } finally {
+      rmSync(dir, { recursive: true });
+      rmSync(xdg, { recursive: true });
+    }
+  });
+
+  it("falls back to single-repo pick when no workspace config or flags exist", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-ws-test-"));
+    const xdg = mkdtempSync(join(tmpdir(), "tasks-xdg-")); // empty → no config
+    try {
+      writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Solo\n  - **ID**: solo\n");
+      spawnSync("git", ["init"], { cwd: dir });
+      const result = spawnSync("node", [CLI, "pick", "--json"], {
+        encoding: "utf-8",
+        cwd: dir,
+        env: { ...process.env, XDG_CONFIG_HOME: xdg },
+      });
+      expect(result.status).toBe(0);
+      // Single-repo shape (no `workspace`/`ref` keys).
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(parsed.picked).toBe(true);
+      expect(parsed.workspace).toBeUndefined();
+      expect(parsed.metadata.id).toBe("solo");
+    } finally {
+      rmSync(dir, { recursive: true });
+      rmSync(xdg, { recursive: true });
     }
   });
 

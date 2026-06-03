@@ -1753,6 +1753,7 @@ describe("MCP tool description parallel structure", () => {
     "pick_task",
     "add_task",
     "enrich_task",
+    "find_next_task_across_workspaces",
   ];
 
   it("registers exactly one description per tool — no extras, no missing", () => {

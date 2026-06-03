@@ -253,9 +253,13 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     }
   }
 
-  // Second pass: validate blocker references
+  // Second pass: validate blocker references. A reference scoped to another
+  // repo (`<repo>#<id>`) or another workspace (`<workspace>::<repo>#<id>`) is an
+  // external reference (spec.md § Workspaces) — it cannot resolve within a
+  // single file, so the same-file unknown-ID check only applies to bare ids.
   for (const ref of allBlockedBy) {
-    if (!allIds.has(ref.id)) {
+    const isScopedRef = ref.id.includes("#") || ref.id.includes("::");
+    if (!isScopedRef && !allIds.has(ref.id)) {
       reportError(ref.file, ref.line, `blocked-by references unknown ID '${ref.id}'; remove the **Blocked by** entry or add a task with that ID`);
     }
   }

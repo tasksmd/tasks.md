@@ -696,6 +696,47 @@ The `tasks-claims` ref, the generated snapshot PR, the claim-check CI, and the l
 
 > **Status.** The git-native event log, fold, claim-via-CAS, snapshot rendering, **leases + heartbeats + steal + crash-recovery fencing** (Phase 2), **log compaction**, and the **path-scoped claim gate** (`tasks check-push` + generated `tasks-claim-check.yml` + `pre-receive` recipe — Phase 3) are implemented in the reference CLI (`@tasks-md/cli`) and proven by `@tasks-md/conformance` (all 11 properties, including lease-expiry-and-steal, claim-fencing, and path-scoped-enforcement). What remains operator-side is making the generated check a *required* ruleset gate; the single-writer projection job is still a documented workflow template. See the active [`TASKS.md`](TASKS.md) queue and [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md). Laptop/offline fleets are supported via heartbeat-renewed leases.
 
+## Workspaces
+
+A **workspace** is a directory whose immediate children are repos, each carrying its own `TASKS.md` — the common "one parent folder, many checkouts" layout. Workspace mode lets `/next-task` (and `tasks next`/`list`) aggregate and rank across every repo in a workspace, or across several workspaces on one host, instead of reading a single `./TASKS.md`.
+
+- **What is a workspace.** Any directory marked by a `.tasks-md-workspace` sentinel file, OR a directory with ≥ 2 immediate child directories that each contain a `TASKS.md`. The sentinel takes precedence.
+- **Repos within a workspace.** Each immediate child directory containing a `TASKS.md` is a repo (plus the workspace root itself if it has one). The repo's directory name is its identifier.
+
+### Multiple workspaces on one host
+
+Several workspaces are declared in a per-user config at `$XDG_CONFIG_HOME/tasks-md/workspaces.yaml` (default `~/.config/tasks-md/workspaces.yaml`). One workspace is just `N = 1` of the same model — there is no separate single-workspace code path.
+
+```yaml
+workspaces:
+  - name: tooling
+    root: ~/apps/tooling
+    exclude: ["archived-repo"]   # optional
+    priorityWeight: 1.0          # optional per-workspace modifier
+  - name: oncall-hub
+    root: ~/apps/oncall-hub
+discovery:
+  scanRoots: [~/apps]   # where `tasks workspaces detect` looks
+  autoDetect: true
+```
+
+**Blocker references** carry an optional scope so a task can depend on one in another repo or workspace:
+
+| Form | Scope |
+|---|---|
+| `**Blocked by**: <task-id>` | same repo |
+| `**Blocked by**: <repo>#<task-id>` | another repo in the same workspace |
+| `**Blocked by**: <workspace>::<repo>#<task-id>` | another workspace (the `::` is the workspace separator) |
+
+**Selection.** `tasks next` (alias of `pick`) resolves scope from flags, else the config:
+
+- `--workspace <path|name>` — one workspace.
+- `--workspaces <p1,p2,…>` — an explicit comma-separated list.
+- `--workspace-name <name>` — a configured workspace by name.
+- no flag — aggregate across **all** configured workspaces if any exist; otherwise fall back to single `./TASKS.md` (backwards compatible).
+
+It prints `<workspace>::<repo>:<task-id>` for the global highest-priority unblocked task; claiming and editing happen inside that repo's checkout. `tasks workspaces list|add|detect` manage the config, and the MCP tool `find_next_task_across_workspaces` exposes the same aggregation. There is **no** atomic multi-repo claim/complete and no global lease spanning repos — a cross-workspace pick claims atomically in the one target repo's backend, and re-ranks on a lost claim.
+
 ## Agent Behavior
 
 ### Reading Tasks

@@ -18,6 +18,13 @@ import { startWatching } from "./commands/watch.js";
 import { runMigrate } from "./commands/migrate.js";
 import { checkWorkPush } from "./backend/git-native.js";
 import {
+  pickAcrossWorkspaces,
+  resolveWorkspaceSelection,
+  runWorkspacesAdd,
+  runWorkspacesDetect,
+  runWorkspacesList,
+} from "./commands/workspaces.js";
+import {
   formatDoctorReport,
   runDoctor,
   runFleetCompact,
@@ -265,12 +272,61 @@ program
 
 program
   .command("pick")
+  .alias("next")
   .description("Pick the best task to work on next")
   .option("--tags <tags>", "Filter by tags (comma-separated)")
   .option("--json", "Output as JSON for scripting")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
-  .action(async (opts: { tags?: string; json?: boolean; backend?: string }) => {
-    if (resolveBackendConfig(process.cwd(), opts.backend).backend !== "tasks-md") {
+  .option("--workspace <path|name>", "Pick within one workspace (path or config name)")
+  .option("--workspaces <p1,p2,...>", "Pick across a comma-separated list of workspaces")
+  .option("--workspace-name <name>", "Pick within a configured workspace by name")
+  .action(
+    async (opts: {
+      tags?: string;
+      json?: boolean;
+      backend?: string;
+      workspace?: string;
+      workspaces?: string;
+      workspaceName?: string;
+    }) => {
+      // Workspace mode: explicit --workspace* flags, or a configured set of
+      // workspaces when no flag is given. Falls through to single-repo otherwise.
+      const selection = resolveWorkspaceSelection(opts);
+      if (selection) {
+        const result = pickAcrossWorkspaces(selection);
+        if (opts.json) {
+          console.log(
+            JSON.stringify(
+              result.pick
+                ? {
+                    picked: true,
+                    workspace: result.pick.entry.workspaceName,
+                    repo: result.pick.entry.repoName,
+                    id: result.pick.entry.task.metadata.id,
+                    summary: result.pick.entry.task.summary,
+                    priority: result.pick.entry.task.priority,
+                    file: result.pick.entry.task.file,
+                    line: result.pick.entry.task.startLine,
+                    ref: result.pick.ref,
+                  }
+                : { picked: false, summary: result.summary },
+            ),
+          );
+        } else {
+          console.error(result.summary);
+          if (result.pick) {
+            console.log(result.pick.ref);
+            console.log(`  "${result.pick.entry.task.summary}" (${result.pick.entry.task.priority})`);
+            console.log(`  File: ${result.pick.entry.task.file}:${result.pick.entry.task.startLine}`);
+          } else {
+            console.log("No eligible tasks found across the selected workspaces.");
+          }
+        }
+        if (!result.pick) process.exitCode = 1;
+        return;
+      }
+
+      if (resolveBackendConfig(process.cwd(), opts.backend).backend !== "tasks-md") {
       const backend = getBackend(process.cwd(), opts.backend);
       const task = await pickFromBackend(backend, opts.tags);
       if (opts.json) {
@@ -689,6 +745,31 @@ fleet
   .description("Rewrite the tasks-claims log to a fold-equivalent minimum")
   .action(() => {
     for (const line of runFleetCompact(process.cwd())) console.log(line);
+  });
+
+const workspaces = program
+  .command("workspaces")
+  .description("Manage multi-repo workspaces for cross-repo task aggregation");
+workspaces
+  .command("list")
+  .description("List configured and auto-detected workspaces")
+  .action(() => {
+    for (const line of runWorkspacesList()) console.log(line);
+  });
+workspaces
+  .command("add")
+  .description("Add a workspace to the per-user config")
+  .argument("<path>", "Workspace root directory")
+  .option("--name <name>", "Workspace name (defaults to the directory name)")
+  .action((path: string, opts: { name?: string }) => {
+    for (const line of runWorkspacesAdd(path, opts.name)) console.log(line);
+  });
+workspaces
+  .command("detect")
+  .description("Scan for workspaces and print the ones found")
+  .option("--scan-root <path>", "Directory to scan (defaults to config scanRoots / ~/apps)")
+  .action((opts: { scanRoot?: string }) => {
+    for (const line of runWorkspacesDetect(opts.scanRoot)) console.log(line);
   });
 
 program

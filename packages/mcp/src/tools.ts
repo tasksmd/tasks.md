@@ -29,6 +29,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   complete_task: "Remove a completed task block from TASKS.md",
   add_task: "Add a new task under a priority heading",
   enrich_task: "Append research notes to a blocked task",
+  find_next_task_across_workspaces: "Pick the next task across configured or listed workspaces",
 };
 
 export interface ToolResult {

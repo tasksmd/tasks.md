@@ -184,6 +184,19 @@ The contract is the same on every backend: **humans read the queue and tell agen
 
 **Writing your own backend?** Any backend works behind the same surface if it passes the capability-scoped [`@tasks-md/conformance`](packages/conformance/) suite — implement a `ConformanceTarget`, run it, and publish the JSON report. tasks.md is not a backend registry; you self-certify which compatibility classes (file / operation / collision-free) you support.
 
+## Workspaces (many repos, one queue)
+
+Have a parent folder of repos that each carry a `TASKS.md`? Workspace mode picks the highest-priority unblocked task across all of them:
+
+```bash
+tasks next --workspace ~/apps/tooling          # one workspace
+tasks next --workspaces ~/apps/tooling,~/apps/oncall-hub   # several
+tasks workspaces add ~/apps/tooling --name tooling          # save to config
+tasks next                                      # no flag → aggregate all configured
+```
+
+Declared workspaces live in `~/.config/tasks-md/workspaces.yaml`; once configured, plain `tasks next` aggregates across them and prints `<workspace>::<repo>:<task-id>`. Tasks can depend across repos (`**Blocked by**: api#fix`) or across workspaces (`**Blocked by**: oncall-hub::api#fix`). With no config and no flag, `tasks next` reads the local `./TASKS.md` as before. See [`spec.md` § Workspaces](spec.md#workspaces).
+
 ## Writing Good Tasks
 
 The quality of your task description directly affects the quality of the agent's output. A task is a small contract between you and the agent — the more specific you are, the better the result.

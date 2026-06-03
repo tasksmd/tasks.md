@@ -1,6 +1,6 @@
 # Examples
 
-Eight valid `TASKS.md` fixtures used as documentation. Each lints clean (`npx -y @tasks-md/lint examples/`) and demonstrates a different slice of the [spec](../spec.md). The `## P0` line in any example is the proof that the file is a working queue, not pseudo-code — copy any one of these into the root of your repo and `tasks pick` will work against it on the first run.
+Ten valid `TASKS.md` fixtures used as documentation. Each lints clean (`npx -y @tasks-md/lint examples/`) and demonstrates a different slice of the [spec](../spec.md). The `## P0` line in any example is the proof that the file is a working queue, not pseudo-code — copy any one of these into the root of your repo and `tasks pick` will work against it on the first run.
 
 Each file opens with a `<!-- Demonstrates: ... -->` comment that names the format feature it showcases. Use this index to pick the closest match for your project before adapting.
 
@@ -16,6 +16,8 @@ Each file opens with a `<!-- Demonstrates: ... -->` comment that names the forma
 | [`python-api.md`](python-api.md) | Python REST API task queue with file-level policies (pytest + mypy + reversible migrations) and `**Tags**`-routed P1 work that funnels through a P0 session-leak fix via `**Blocked by**`. | [Format](../spec.md#format), [Policies](../spec.md#policies) |
 | [`rust-cli.md`](rust-cli.md) | Rust CLI task queue with file-level policies (clippy + cargo test, no panics) and a `**Blocked by**` chain that gates feature work and integration tests on a P0 panic fix. | [Format](../spec.md#format), [Blockers](../spec.md#blockers) |
 | [`web-app.md`](web-app.md) | Web app (Express/Node) task queue with file-level policies (CORS + secrets) and a `**Blocked by**` chain on rate-limiting work that depends on a P0 CORS fix. | [Format](../spec.md#format), [Blockers](../spec.md#blockers) |
+| [`workspace.md`](workspace.md) | One repo's TASKS.md inside a workspace, using a cross-repo `**Blocked by**: <repo>#<id>` reference resolved by workspace aggregation. | [Workspaces](../spec.md#workspaces) |
+| [`multi-workspace-host.md`](multi-workspace-host.md) | A cross-**workspace** `**Blocked by**: <workspace>::<repo>#<id>` reference, resolved across multiple workspaces declared in `~/.config/tasks-md/workspaces.yaml`. | [Multiple workspaces on one host](../spec.md#multiple-workspaces-on-one-host) |
 
 ## Validate locally
 

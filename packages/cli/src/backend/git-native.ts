@@ -930,7 +930,10 @@ export function compactGitNativeLog(directory: string): CompactionResult {
     }
   }
 
-  // Drop the old history, then re-append the minimal chain onto a fresh root.
+  // Rebuild the ref as a fresh per-event chain (one commit per event) so
+  // readEvents — which folds in rev-list/commit order — replays created before
+  // claimed deterministically. The ref is force-reset first so the new root
+  // chains cleanly even if a prior compaction left a ref behind.
   tryGit(directory, ["update-ref", "-d", CLAIMS_REF]);
   for (const event of minimal) {
     appendEvent(directory, event);

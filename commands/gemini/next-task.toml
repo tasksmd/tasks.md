@@ -30,6 +30,12 @@ This repo's task **backend** decides how you claim and complete. Check `.tasksmd
   - complete: `tasks complete <id>` · release: `tasks unclaim <id>` · add: `tasks create "<title>"` · update: `tasks update <id>`.
   - read the live queue with `tasks list` / `tasks pick`, never by trusting a possibly-stale `TASKS.md`.
 The `tasks-mcp` tools and these CLI commands resolve the backend for you — prefer them. The rest of this command describes the **file-backend** mechanics; in a generated backend, substitute the matching CLI op wherever it says "append `(@you)`" or "remove the block".
+Workspace detection
+If `~/.config/tasks-md/workspaces.yaml` declares ≥ 1 workspace, you can pick across **multiple repos** instead of just `./TASKS.md` (spec.md § Workspaces). Before falling through to single-repo mode:
+1. Run `tasks workspaces list` (or check the config). If workspaces are configured, surface them: *"Configured workspaces (N): tooling (10 repos), oncall-hub (3 repos). Pick across all, scope to one, or single-repo? [all/<name>/single]"* and honor the answer.
+2. Pick across workspaces with `tasks next --json` (no flag aggregates all configured), `tasks next --workspace <name>`, or `tasks next --workspaces <p1,p2>`. The result names `<workspace>::<repo>:<task-id>` — `cd` into that repo's checkout before claiming and doing the work.
+3. Cross-workspace `**Blocked by**: <workspace>::<repo>#<task-id>` (and cross-repo `<repo>#<task-id>`) references are resolved by the picker; single-repo `<task-id>` keeps working.
+4. If no config exists but `tasks workspaces detect` finds workspaces, offer the one-time `tasks workspaces add <path>`. Otherwise, proceed in single-repo mode below.
 Policies
 After reading TASKS.md, check for `<!-- policy: ... -->` HTML comments. These are project rules you must follow throughout the session:
 - **File-level policies** (between `# Tasks` and first `## P*`) apply to every task
