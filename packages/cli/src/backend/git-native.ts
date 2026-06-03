@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { rmSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type {
@@ -120,12 +120,65 @@ function fetchClaimsRef(directory: string): void {
   ]);
 }
 
+const REFRESH_EVENT_TYPE = "tasks-claims-updated";
+
+// Parse "owner/repo" from a github.com remote URL (ssh or https), else undefined.
+export function parseGithubSlug(remoteUrl: string): string | undefined {
+  return remoteUrl.match(/github\.com[:/]+([^/]+\/[^/]+?)(?:\.git)?\/?$/i)?.[1];
+}
+
+// Near-real-time projection refresh is opt-in via `.tasksmd.json` `{ "autoRefresh": true }`.
+export function autoRefreshEnabled(directory: string): boolean {
+  try {
+    const config = JSON.parse(
+      readFileSync(join(directory, ".tasksmd.json"), "utf-8"),
+    ) as { autoRefresh?: unknown };
+    return config.autoRefresh === true;
+  } catch {
+    return false;
+  }
+}
+
+// After a successful claims push, fire a GitHub repository_dispatch so a
+// subscribed tasks-snapshot workflow regenerates TASKS.md without waiting for
+// the next cron tick. Opt-in, github.com only (other platforms use server-side
+// push hooks), reuses gh's auth, best-effort — the scheduled projection is the
+// guaranteed fallback, so any failure (no gh, no auth, non-github) is silent.
+function fireRefreshDispatch(directory: string): void {
+  if (!autoRefreshEnabled(directory)) {
+    return;
+  }
+  const remoteUrl = tryGit(directory, ["remote", "get-url", "origin"]);
+  const slug = remoteUrl ? parseGithubSlug(remoteUrl) : undefined;
+  if (!slug) {
+    return;
+  }
+  try {
+    execFileSync(
+      "gh",
+      [
+        "api",
+        "--silent",
+        "--method",
+        "POST",
+        `repos/${slug}/dispatches`,
+        "-f",
+        `event_type=${REFRESH_EVENT_TYPE}`,
+      ],
+      { cwd: directory, stdio: "ignore", timeout: 15_000 },
+    );
+  } catch {
+    // best-effort; the scheduled projection is the fallback
+  }
+}
+
 function pushClaimsRef(directory: string): boolean {
   if (!hasOrigin(directory)) {
     return true;
   }
   try {
     git(directory, ["push", "origin", `${CLAIMS_REF}:${CLAIMS_REF}`]);
+    fireRefreshDispatch(directory);
     return true;
   } catch {
     return false;

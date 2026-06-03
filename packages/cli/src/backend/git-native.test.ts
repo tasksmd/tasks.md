@@ -1,13 +1,15 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  autoRefreshEnabled,
   compactGitNativeLog,
   createGitNativeBackend,
+  parseGithubSlug,
   renderGitNativeSnapshot,
 } from "./git-native.js";
 
@@ -253,5 +255,29 @@ describe("git-native backend", () => {
     expect(after).toEqual(before); // open-task fold is identical
     expect(after.find((t) => t.id === "keep-claimed")?.assignee).toBe("alice");
     expect(await renderGitNativeSnapshot(directory)).toBe(beforeSnapshot);
+  });
+
+  it("parses owner/repo from github remote URLs and rejects non-github", () => {
+    expect(parseGithubSlug("git@github.com:tasksmd/tasks.md.git")).toBe("tasksmd/tasks.md");
+    expect(parseGithubSlug("https://github.com/tasksmd/tasks.md.git")).toBe("tasksmd/tasks.md");
+    expect(parseGithubSlug("https://github.com/tasksmd/tasks.md")).toBe("tasksmd/tasks.md");
+    expect(parseGithubSlug("ssh://git@github.com/owner/repo.git")).toBe("owner/repo");
+    expect(parseGithubSlug("git@gitlab.com:owner/repo.git")).toBeUndefined();
+  });
+
+  it("reads the opt-in autoRefresh flag from .tasksmd.json", () => {
+    const enabled = makeDirectory("tasksmd-cfg-");
+    writeFileSync(
+      join(enabled, ".tasksmd.json"),
+      JSON.stringify({ backend: "git-native", autoRefresh: true }),
+    );
+    expect(autoRefreshEnabled(enabled)).toBe(true);
+
+    const disabled = makeDirectory("tasksmd-cfg-");
+    writeFileSync(join(disabled, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    expect(autoRefreshEnabled(disabled)).toBe(false);
+
+    // Missing config → disabled.
+    expect(autoRefreshEnabled(makeDirectory("tasksmd-cfg-"))).toBe(false);
   });
 });
