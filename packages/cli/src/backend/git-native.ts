@@ -81,12 +81,22 @@ const capabilities: BackendCapabilities = {
   },
 };
 
+let gitSpawns = 0;
+
+// Count of git child processes spawned this process. Exported so a test can
+// prove `readEvents` is O(1) in event count (ESM forbids spying the
+// `execFileSync` import directly).
+export function gitSpawnCount(): number {
+  return gitSpawns;
+}
+
 function git(
   directory: string,
   args: string[],
   input?: string,
   extraEnv: NodeJS.ProcessEnv = {},
 ): string {
+  gitSpawns += 1;
   return execFileSync("git", args, {
     cwd: directory,
     encoding: "utf-8",
@@ -103,6 +113,55 @@ function tryGit(directory: string, args: string[]): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+// Buffer-returning git (no encoding, no trim) for byte-exact framing of
+// `cat-file --batch` output, where sizes are bytes and blobs may hold multi-byte
+// UTF-8 or embedded newlines.
+function gitBuffer(directory: string, args: string[], input?: string): Buffer {
+  gitSpawns += 1;
+  return execFileSync("git", args, {
+    cwd: directory,
+    env: { ...process.env },
+    input,
+    stdio: ["pipe", "pipe", "pipe"],
+    timeout: 30_000,
+    maxBuffer: 256 * 1024 * 1024,
+  });
+}
+
+// Read many blobs in ONE `git cat-file --batch` process. Each spec is a
+// `<commit>:<path>` rev; the output frames each object as `<oid> <type> <size>\n`
+// + `<size>` content bytes + `\n`, or `<spec> missing\n` for an absent path.
+// Returns content Buffers in the input order (null for missing). Parsing walks a
+// byte cursor — never decode-then-slice — so multi-byte content frames correctly.
+// Exported for the framing conformance test.
+export function catFileBatch(directory: string, specs: string[]): (Buffer | null)[] {
+  if (specs.length === 0) {
+    return [];
+  }
+  const buf = gitBuffer(directory, ["cat-file", "--batch"], specs.join("\n") + "\n");
+  const out: (Buffer | null)[] = [];
+  let cursor = 0;
+  while (cursor < buf.length) {
+    const nl = buf.indexOf(0x0a, cursor);
+    if (nl === -1) {
+      break;
+    }
+    const header = buf.toString("utf-8", cursor, nl);
+    cursor = nl + 1;
+    if (header.endsWith(" missing")) {
+      out.push(null);
+      continue;
+    }
+    const size = Number(header.slice(header.lastIndexOf(" ") + 1));
+    if (!Number.isInteger(size) || size < 0) {
+      break;
+    }
+    out.push(buf.subarray(cursor, cursor + size));
+    cursor += size + 1; // skip the content and its trailing newline
+  }
+  return out;
 }
 
 function hasOrigin(directory: string): boolean {
@@ -308,23 +367,6 @@ function appendEvent(directory: string, event: GitNativeEvent): void {
   }
 }
 
-function readEvent(directory: string, commit: string, path: string): GitNativeEvent | undefined {
-  const text = tryGit(directory, ["show", `${commit}:${path}`]);
-  return text ? parseEvent(text) : undefined;
-}
-
-function eventPathsForCommit(directory: string, commit: string): string[] {
-  const output = tryGit(directory, [
-    "diff-tree",
-    "--root",
-    "--no-commit-id",
-    "--name-only",
-    "-r",
-    commit,
-  ]);
-  return output ? output.split("\n").filter((path) => path.startsWith("events/")) : [];
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -410,18 +452,43 @@ function parseEvent(text: string): GitNativeEvent | undefined {
   };
 }
 
-function readEvents(directory: string): GitNativeEvent[] {
-  const output = tryGit(directory, ["rev-list", "--reverse", CLAIMS_REF]);
+// Read the whole event log in TWO git processes regardless of size: one
+// `git log --reverse --name-only` for the ordered (commit, eventPaths) listing
+// (a 0x1e record-separator delimits commits), then one `cat-file --batch` for
+// every blob. This replaces the old ~1+2n per-event spawns; order and parse
+// filtering are identical (linear chain ⇒ `git log --reverse` == `rev-list
+// --reverse`; bad/missing blobs are skipped). Exported for the O(1) spawn test.
+export function readEvents(directory: string): GitNativeEvent[] {
+  const output = tryGit(directory, [
+    "log",
+    "--reverse",
+    "--format=%x1e%H",
+    "--name-only",
+    CLAIMS_REF,
+    "--",
+    "events/",
+  ]);
   if (!output) {
     return [];
   }
-  const events: GitNativeEvent[] = [];
-  for (const commit of output.split("\n").filter(Boolean)) {
-    for (const path of eventPathsForCommit(directory, commit)) {
-      const event = readEvent(directory, commit, path);
-      if (event) {
-        events.push(event);
+  const specs: string[] = [];
+  for (const record of output.split("\x1e")) {
+    const lines = record.split("\n").map((line) => line.trim()).filter(Boolean);
+    if (lines.length === 0) {
+      continue;
+    }
+    const commit = lines[0];
+    for (const path of lines.slice(1)) {
+      if (path.startsWith("events/")) {
+        specs.push(`${commit}:${path}`);
       }
+    }
+  }
+  const events: GitNativeEvent[] = [];
+  for (const blob of catFileBatch(directory, specs)) {
+    const event = blob ? parseEvent(blob.toString("utf-8")) : undefined;
+    if (event) {
+      events.push(event);
     }
   }
   return events;
