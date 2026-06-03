@@ -1,5 +1,6 @@
 {
   "backend": "git-native",
+  "autoRefresh": true,
   "migratedFrom": "tasks-md",
   "migratedAt": "2026-06-03T12:28:21.767Z"
 }
