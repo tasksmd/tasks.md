@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-470803b7-4506-4c62-83ea-809cea8fb6fc",
+  "task_id": "fence-cancel-on-the-claim-token-for-consistency",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:27:22.437Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Fence cancel on the claim token for consistency",
+    "priority": "P3",
+    "tags": [
+      "git-native,fencing,consistency"
+    ],
+    "body": "complete, release, update, and heartbeat all accept --claim and fence on it (reject a stale/foreign token); cancel is the only mutating git-native op without it. A foreign actor can cancel someone's claimed task. Add fenceCheck to the backend cancel() (no token → unfenced, as before) and a --claim option to the cancel CLI command, mirroring the complete/release/update pattern. Low-risk, non-breaking. Surfaced exposing the fencing token on complete/release/update."
+  }
+}
