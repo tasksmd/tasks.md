@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-bd32a314-b987-45d9-9b33-57ac1ab61987",
+  "task_id": "migrated-owners-can-t-retrieve-their-random-fencing-token-to",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:18:42.612Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Migrated owners can't retrieve their random fencing token to fence pushes",
+    "priority": "P2",
+    "tags": [
+      "git-native,migration,fencing,dx"
+    ],
+    "body": "Now that migrated claims use a random claim_id (claim-migrated-<uuid>), the migrated owner never sees it — the migration created the claim, not 'tasks claim' (which is what prints the token). So once TASKS_CLAIM_ENFORCE is armed, a migrated owner cannot put the right Task-Claim trailer on their commit and check-push blocks their own legit push. This makes expose-claimid-and-assignee-in-list-json a PREREQUISITE for arming enforcement on a migrated repo (the owner must be able to look up their own token). Options: (a) implement token retrieval (expose-claimid...) and document it in the arm-hard-claim-enforcement checklist, and/or (b) let 'tasks claim <id>' by the current owner re-print the existing token without stealing. Surfaced fixing the guessable-token security bug."
+  }
+}
