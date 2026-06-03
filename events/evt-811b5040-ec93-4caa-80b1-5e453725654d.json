@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-811b5040-ec93-4caa-80b1-5e453725654d",
+  "task_id": "migrated-claims-use-a-guessable-fencing-token-claim-migrated",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T21:12:13.393Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Migrated claims use a guessable fencing token (claim-migrated-<id>)",
+    "priority": "P1",
+    "tags": [
+      "git-native,security,migration,fencing"
+    ],
+    "body": "applyMigration sets claim_id = 'claim-migrated-' + task.id (git-native.ts ~1118), fully derivable from the PUBLIC task id. The fencing token is meant to be an unguessable capability proving ownership (normal claims use claim-<randomUUID>). With a guessable token, an attacker can forge ownership of a migrated task: put 'Task-Claim: claim-migrated-<id>' in a commit and check-push's fencing passes (bypassing the claim gate once enforcement is armed), and heartbeat/complete --claim accept the guessed token. Fix: use a random suffix, e.g. claim-migrated-<randomUUID>, keeping the traceable prefix but restoring unguessability. Likely warrants a short plan (security-sensitive; verify check-push + the migrated-claim tests still pass). Surfaced while giving migrated claims a lease."
+  }
+}
