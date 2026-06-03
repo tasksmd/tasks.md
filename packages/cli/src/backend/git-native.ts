@@ -185,6 +185,31 @@ function pushClaimsRef(directory: string): boolean {
   }
 }
 
+// Force-push a rewritten (compacted) log with a lease against `oldTip` — the
+// remote tip we compacted from. The lease is the CAS: the push lands only if the
+// remote is still at `oldTip`, so a claim that arrived in the fetch→push window
+// (advancing the remote) rejects the push and compaction aborts without
+// clobbering it. On conflict/no-remote, resync local to the remote so the
+// discarded rewrite doesn't linger; the next cycle retries. Exported for the
+// no-clobber conformance test.
+export function forcePushCompaction(directory: string, oldTip: string | undefined): boolean {
+  if (!hasOrigin(directory) || !oldTip) {
+    return false;
+  }
+  try {
+    git(directory, [
+      "push",
+      `--force-with-lease=${CLAIMS_REF}:${oldTip}`,
+      "origin",
+      `${CLAIMS_REF}:${CLAIMS_REF}`,
+    ]);
+    return true;
+  } catch {
+    fetchClaimsRef(directory);
+    return false;
+  }
+}
+
 function currentClaimsCommit(directory: string): string | undefined {
   return tryGit(directory, ["rev-parse", "--verify", `${CLAIMS_REF}^{commit}`]);
 }
@@ -1039,6 +1064,16 @@ export function applyMigration(directory: string, tasks: MigrationTask[]): void 
 export interface CompactionResult {
   before: number;
   after: number;
+  /** Whether the rewritten log was pushed to origin (false = no remote, or a
+   * lease conflict aborted the push so a concurrent claim is not clobbered). */
+  pushed: boolean;
+}
+
+/** True when the log is large enough to be worth compacting (event count ≥ threshold).
+ * Counts commits (one event per commit) cheaply, without folding. */
+export function shouldCompact(directory: string, threshold: number): boolean {
+  const count = tryGit(directory, ["rev-list", "--count", CLAIMS_REF]);
+  return count !== undefined && Number(count) >= threshold;
 }
 
 /**
@@ -1047,11 +1082,19 @@ export interface CompactionResult {
  * (carrying its `claim_id` + `lease_expires_at`) per live claim. Terminal
  * (completed/cancelled) tasks are dropped — their history stays in the old
  * ref's git objects until GC. This rewrites history, so it is a single-writer
- * maintenance op (like the projection job); it does NOT push. The post-compaction
- * fold of open tasks is byte-identical to the pre-compaction one.
+ * maintenance op (the projection job). The post-compaction fold of open tasks is
+ * byte-identical to the pre-compaction one.
+ *
+ * The rewrite is pushed with `--force-with-lease` against the tip we compacted
+ * from: claims arrive from agents at any time, so if one landed in the
+ * fetch→push window the remote has advanced past the lease and the push is
+ * rejected — compaction aborts without clobbering that claim, and the next
+ * cycle retries. `claim_id` + `lease_expires_at` are carried into the minimal
+ * `claimed` event, so fencing (which keys on `claim_id`) survives a compaction.
  */
 export function compactGitNativeLog(directory: string): CompactionResult {
   fetchClaimsRef(directory);
+  const oldTip = currentClaimsCommit(directory);
   const before = readEvents(directory).length;
   const folded = foldLog(directory);
 
@@ -1088,7 +1131,8 @@ export function compactGitNativeLog(directory: string): CompactionResult {
   for (const event of minimal) {
     appendEvent(directory, event);
   }
-  return { before, after: minimal.length };
+  const pushed = forcePushCompaction(directory, oldTip);
+  return { before, after: minimal.length, pushed };
 }
 
 // ── Phase 3: path-scoped enforcement (the claim-check primitive) ──

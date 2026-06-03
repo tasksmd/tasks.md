@@ -42,6 +42,10 @@ jobs:
             rm -f TASKS.md.next
             exit 0
           fi
+      # Single-writer maintenance: bound the log past the threshold. Lease-guarded
+      # (never clobbers a concurrent claim); best-effort (|| true) so a lease
+      # conflict or no-op never fails the projection.
+      - run: node packages/cli/dist/cli.js fleet compact || true
       - name: Open/update the snapshot PR
         run: |
           git config user.name "tasks-md-bot"

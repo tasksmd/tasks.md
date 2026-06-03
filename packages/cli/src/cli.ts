@@ -25,6 +25,7 @@ import {
   runWorkspacesList,
 } from "./commands/workspaces.js";
 import {
+  COMPACTION_SUGGESTED_AT,
   formatDoctorReport,
   runDoctor,
   runFleetCompact,
@@ -774,9 +775,14 @@ fleet
   });
 fleet
   .command("compact")
-  .description("Rewrite the tasks-claims log to a fold-equivalent minimum")
-  .action(() => {
-    for (const line of runFleetCompact(process.cwd())) console.log(line);
+  .description("Rewrite the tasks-claims log to a fold-equivalent minimum and push it (lease-guarded)")
+  .option("--threshold <n>", "Only compact when the log has at least N events", String(COMPACTION_SUGGESTED_AT))
+  .option("--force", "Compact regardless of the threshold")
+  .action((opts: { threshold?: string; force?: boolean }) => {
+    const threshold = opts.threshold ? Number(opts.threshold) : undefined;
+    for (const line of runFleetCompact(process.cwd(), { threshold, force: opts.force })) {
+      console.log(line);
+    }
   });
 
 const workspaces = program
