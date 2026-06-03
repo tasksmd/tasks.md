@@ -58,6 +58,21 @@ describe("runMigrate", () => {
     expect(open.find((t) => t.id === "urgent-fix")?.assignee).toBe("alice");
   });
 
+  it("gives migrated claims a lease so a crashed owner is reclaimable", async () => {
+    runMigrate(dir, { apply: true });
+    // While the migrated lease is live, the claim still blocks a new claimer.
+    const live = await createGitNativeBackend(dir).claim("urgent-fix", { actorId: "@bob" });
+    expect(live.status).toBe("already_claimed");
+    // After the lease expires (owner crashed, never heartbeat), it is reclaimable —
+    // before this fix the lease-less migrated claim was treated as permanently live.
+    const past = Date.now() + 25 * 60 * 60 * 1000; // > the 24h DEFAULT_LEASE_MS
+    const reclaimed = await createGitNativeBackend(dir, { now: () => past }).claim(
+      "urgent-fix",
+      { actorId: "@bob" },
+    );
+    expect(reclaimed.status).toBe("claimed");
+  });
+
   it("fails safely on duplicate ids", () => {
     writeFileSync(
       join(dir, "TASKS.md"),

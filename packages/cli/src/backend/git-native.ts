@@ -898,9 +898,10 @@ export function createGitNativeBackend(
           capabilities,
         };
       }
-      // A live (non-expired) lease blocks a new claimer; an expired lease — or a
-      // legacy claim with no lease — is stealable. A claim with no lease set is
-      // treated as live (the long-lease backstop), so v1 claims aren't stolen.
+      // A live (non-expired) lease blocks a new claimer; an expired lease is
+      // stealable. A claim with NO lease is treated as live (the long-lease
+      // backstop) so pre-lease v1 claims aren't stolen; migrated claims always
+      // carry a lease (see applyMigration), so only truly ancient claims hit it.
       const leaseLive =
         current.leaseExpiresAt === undefined || now() < current.leaseExpiresAt;
       if (current.task.assignee && leaseLive) {
@@ -1116,6 +1117,11 @@ export function applyMigration(directory: string, tasks: MigrationTask[]): void 
         directory,
         makeEvent(task.id, "claimed", { actorId: owner }, {
           claim_id: `claim-migrated-${task.id}`,
+          // Give the migrated claim a normal lease so a crashed/abandoned owner
+          // is reclaimable after it expires (a lease-less claim is treated as
+          // permanently live — see the reclaim check — which would pin a
+          // migrated task to a dead owner forever).
+          lease_expires_at: Date.now() + DEFAULT_LEASE_MS,
         }),
       );
     }
