@@ -142,6 +142,29 @@ export const checks: Check[] = [
     },
   },
   {
+    name: "heartbeat-fencing",
+    requires: ["leases"],
+    run: async (world) => {
+      const task = await world.createTask("seed", { id: "hb", title: "Heartbeat task" });
+      const claim = await world.claim("@alice", task.id);
+      assert(claim.status === "claimed" && !!claim.claimId, "first claim must yield a token");
+      // The live owner renews successfully.
+      const live = await world.heartbeat?.("@alice", task.id, claim.claimId);
+      assert(live?.status === "claimed", `the live owner must renew, got "${live?.status}"`);
+      // The lease lapses and a contender steals it with a fresh token.
+      await world.expireLease?.(task.id);
+      const stolen = await world.claim("@bob", task.id);
+      assert(stolen.status === "claimed", `an expired lease must be reclaimable, got "${stolen.status}"`);
+      // The resurrected original owner must NOT renew the stolen claim — its old
+      // token / ownership is stale, so the heartbeat is rejected (not "claimed").
+      const stale = await world.heartbeat?.("@alice", task.id, claim.claimId);
+      assert(
+        stale?.status !== "claimed",
+        `a resurrected owner whose lease was stolen must not renew, got "${stale?.status}"`,
+      );
+    },
+  },
+  {
     name: "canonical-serialization",
     requires: ["rawEventAppend"],
     run: async (world) => {

@@ -56,6 +56,8 @@ export interface ModelBugs {
   nonIdempotentRender?: boolean;
   /** Allow every work push regardless of path or fencing token. */
   noEnforcement?: boolean;
+  /** Let a stale/non-owner renew a lease via heartbeat (breaks resurrected-owner fencing). */
+  noHeartbeatFencing?: boolean;
 }
 
 const PRIORITIES = ["P0", "P1", "P2", "P3"];
@@ -292,6 +294,25 @@ export class InMemoryFleet implements ConformanceWorld {
       }),
     );
     return { status: "claimed", claimId, owner: actorId };
+  }
+
+  async heartbeat(actor: string, taskId: string, claimId?: string): Promise<ClaimOutcome> {
+    const actorId = actor.replace(/^@/, "");
+    const folded = this.fold().get(taskId);
+    if (!folded || folded.closed) {
+      return { status: "missing" };
+    }
+    // The fence: only the live owner (lease not expired) holding the current
+    // token may renew. A resurrected owner whose claim was stolen/replaced — or
+    // any non-owner — must be rejected, so it cannot keep a dead claim alive.
+    if (this.bugs.noHeartbeatFencing) {
+      return { status: "claimed", claimId: folded.claimId, owner: folded.owner };
+    }
+    const liveOwner = folded.owner && !folded.leaseExpired ? folded.owner : undefined;
+    if (liveOwner !== actorId || (claimId !== undefined && folded.claimId !== claimId)) {
+      return { status: "already_claimed", owner: liveOwner };
+    }
+    return { status: "claimed", claimId: folded.claimId, owner: actorId };
   }
 
   async release(actor: string, taskId: string): Promise<void> {

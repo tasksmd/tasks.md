@@ -99,6 +99,18 @@ class GitNativeWorld implements ConformanceWorld {
     return { status: result.status, claimId: result.claimId, owner: result.owner };
   }
 
+  async heartbeat(actor: string, taskId: string, claimId?: string): Promise<ClaimOutcome> {
+    const result = await this.clone(actor).backend.heartbeat!(taskId, {
+      actorId: actor,
+      instanceId: `${actor.replace(/^@/, "")}/i1`,
+      claimId,
+    });
+    // Map the backend OperationResult to a ClaimOutcome: "ok" renews ("claimed");
+    // "conflict" (non-owner / stale token) → "already_claimed"; "missing" stays.
+    const status = result.status === "ok" ? "claimed" : result.status === "missing" ? "missing" : "already_claimed";
+    return { status };
+  }
+
   async release(actor: string, taskId: string): Promise<void> {
     await this.clone(actor).backend.release(taskId, { actorId: actor });
   }
@@ -182,6 +194,7 @@ describe("git-native backend conformance (linear-CAS bake-off)", () => {
           "release-and-reclaim",
           "idempotent-projection",
           "lease-expiry-and-steal",
+          "heartbeat-fencing",
           "claim-fencing",
           "path-scoped-enforcement",
           "blocked-by-unclaimable",

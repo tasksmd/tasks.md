@@ -97,6 +97,12 @@ export interface ConformanceWorld {
   appendRawEvent?(raw: string): Promise<void>;
   /** Force the current claim's lease on `taskId` to be expired (requires `leases`). */
   expireLease?(taskId: string): Promise<void>;
+  /**
+   * Renew the lease on `taskId` (requires `leases`). Returns `claimed` when the
+   * live owner (optionally proving the current `claimId`) renews; a non-owner or
+   * a stale token must NOT return `claimed` (the resurrected-owner fence).
+   */
+  heartbeat?(actor: string, taskId: string, claimId?: string): Promise<ClaimOutcome>;
   /** Decide a work push (requires `pathScopedEnforcement`). */
   checkWorkPush?(change: WorkChange): Promise<EnforcementOutcome> | EnforcementOutcome;
   dispose?(): Promise<void> | void;
