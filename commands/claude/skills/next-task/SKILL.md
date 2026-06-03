@@ -55,7 +55,7 @@ The `tasks-mcp` tools and these CLI commands resolve the backend for you — pre
 
 ## Workspace detection
 
-If `~/.config/tasks-md/workspaces.yaml` declares ≥ 1 workspace, you can pick across **multiple repos** instead of just `./TASKS.md` (spec.md § Workspaces). Before falling through to single-repo mode:
+If `~/.config/tasks-md/workspaces.json` declares ≥ 1 workspace, you can pick across **multiple repos** instead of just `./TASKS.md` (spec.md § Workspaces). Before falling through to single-repo mode:
 
 1. Run `tasks workspaces list` (or check the config). If workspaces are configured, surface them: *"Configured workspaces (N): tooling (10 repos), oncall-hub (3 repos). Pick across all, scope to one, or single-repo? [all/<name>/single]"* and honor the answer.
 2. Pick across workspaces with `tasks next --json` (no flag aggregates all configured), `tasks next --workspace <name>`, or `tasks next --workspaces <p1,p2>`. The result names `<workspace>::<repo>:<task-id>` — `cd` into that repo's checkout before claiming and doing the work.

@@ -479,7 +479,7 @@ server.registerTool(
         .optional()
         .describe(
           "Workspace roots to aggregate across. Omit to use the per-user config " +
-          "(~/.config/tasks-md/workspaces.yaml). Returns {workspace, repo, task_id, file_path}.",
+          "(~/.config/tasks-md/workspaces.json). Returns {workspace, repo, task_id, file_path}.",
         ),
     }),
   },

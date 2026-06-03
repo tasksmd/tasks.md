@@ -17,7 +17,7 @@ Each file opens with a `<!-- Demonstrates: ... -->` comment that names the forma
 | [`rust-cli.md`](rust-cli.md) | Rust CLI task queue with file-level policies (clippy + cargo test, no panics) and a `**Blocked by**` chain that gates feature work and integration tests on a P0 panic fix. | [Format](../spec.md#format), [Blockers](../spec.md#blockers) |
 | [`web-app.md`](web-app.md) | Web app (Express/Node) task queue with file-level policies (CORS + secrets) and a `**Blocked by**` chain on rate-limiting work that depends on a P0 CORS fix. | [Format](../spec.md#format), [Blockers](../spec.md#blockers) |
 | [`workspace.md`](workspace.md) | One repo's TASKS.md inside a workspace, using a cross-repo `**Blocked by**: <repo>#<id>` reference resolved by workspace aggregation. | [Workspaces](../spec.md#workspaces) |
-| [`multi-workspace-host.md`](multi-workspace-host.md) | A cross-**workspace** `**Blocked by**: <workspace>::<repo>#<id>` reference, resolved across multiple workspaces declared in `~/.config/tasks-md/workspaces.yaml`. | [Multiple workspaces on one host](../spec.md#multiple-workspaces-on-one-host) |
+| [`multi-workspace-host.md`](multi-workspace-host.md) | A cross-**workspace** `**Blocked by**: <workspace>::<repo>#<id>` reference, resolved across multiple workspaces declared in `~/.config/tasks-md/workspaces.json`. | [Multiple workspaces on one host](../spec.md#multiple-workspaces-on-one-host) |
 
 ## Validate locally
 

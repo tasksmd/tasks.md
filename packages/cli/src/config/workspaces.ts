@@ -1,12 +1,12 @@
 // Reads/writes the per-user workspace config at
-// `$XDG_CONFIG_HOME/tasks-md/workspaces.yaml` (default `~/.config/...`), and
+// `$XDG_CONFIG_HOME/tasks-md/workspaces.json` (default `~/.config/...`), and
 // resolves `--workspace*` flags into concrete workspace roots. See spec.md
-// § "Multiple workspaces on one host".
+// § "Multiple workspaces on one host". The config is tool-managed (written by
+// `tasks workspaces add`), so it's plain JSON — no YAML dependency.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 export interface WorkspaceEntry {
   name: string;
@@ -33,7 +33,7 @@ export function expandTilde(path: string): string {
 
 export function configPath(): string {
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
-  return join(base, "tasks-md", "workspaces.yaml");
+  return join(base, "tasks-md", "workspaces.json");
 }
 
 export function loadWorkspacesConfig(path = configPath()): WorkspacesConfig | undefined {
@@ -41,7 +41,7 @@ export function loadWorkspacesConfig(path = configPath()): WorkspacesConfig | un
     return undefined;
   }
   try {
-    const raw = parseYaml(readFileSync(path, "utf-8")) as Partial<WorkspacesConfig> | null;
+    const raw = JSON.parse(readFileSync(path, "utf-8")) as Partial<WorkspacesConfig> | null;
     if (!raw || !Array.isArray(raw.workspaces)) {
       return undefined;
     }
@@ -68,7 +68,7 @@ export function saveWorkspacesConfig(config: WorkspacesConfig, path = configPath
     })),
     ...(config.discovery ? { discovery: config.discovery } : {}),
   };
-  writeFileSync(path, stringifyYaml(serializable));
+  writeFileSync(path, `${JSON.stringify(serializable, null, 2)}\n`);
 }
 
 export interface WorkspaceSelection {

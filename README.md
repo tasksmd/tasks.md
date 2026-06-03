@@ -195,7 +195,7 @@ tasks workspaces add ~/apps/tooling --name tooling          # save to config
 tasks next                                      # no flag → aggregate all configured
 ```
 
-Declared workspaces live in `~/.config/tasks-md/workspaces.yaml`; once configured, plain `tasks next` aggregates across them and prints `<workspace>::<repo>:<task-id>`. Tasks can depend across repos (`**Blocked by**: api#fix`) or across workspaces (`**Blocked by**: oncall-hub::api#fix`). With no config and no flag, `tasks next` reads the local `./TASKS.md` as before. See [`spec.md` § Workspaces](spec.md#workspaces).
+Declared workspaces live in `~/.config/tasks-md/workspaces.json`; once configured, plain `tasks next` aggregates across them and prints `<workspace>::<repo>:<task-id>`. Tasks can depend across repos (`**Blocked by**: api#fix`) or across workspaces (`**Blocked by**: oncall-hub::api#fix`). With no config and no flag, `tasks next` reads the local `./TASKS.md` as before. See [`spec.md` § Workspaces](spec.md#workspaces).
 
 ## Writing Good Tasks
 

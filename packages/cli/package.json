@@ -45,8 +45,7 @@
   "dependencies": {
     "@tasks-md/lint": "^0.7.0",
     "@tasks-md/parser": "^0.7.0",
-    "commander": "^13.0.0",
-    "yaml": "2.4.2"
+    "commander": "^13.0.0"
   },
   "devDependencies": {
     "@tasks-md/conformance": "*",

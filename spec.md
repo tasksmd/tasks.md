@@ -709,19 +709,16 @@ A **workspace** is a directory whose immediate children are repos, each carrying
 
 ### Multiple workspaces on one host
 
-Several workspaces are declared in a per-user config at `$XDG_CONFIG_HOME/tasks-md/workspaces.yaml` (default `~/.config/tasks-md/workspaces.yaml`). One workspace is just `N = 1` of the same model — there is no separate single-workspace code path.
+Several workspaces are declared in a per-user config at `$XDG_CONFIG_HOME/tasks-md/workspaces.json` (default `~/.config/tasks-md/workspaces.json`). One workspace is just `N = 1` of the same model — there is no separate single-workspace code path. The file is tool-managed (`tasks workspaces add` writes it), so it's plain JSON — no extra dependency. Each entry's `exclude` and `priorityWeight` are optional; `discovery.scanRoots` is where `tasks workspaces detect` looks.
 
-```yaml
-workspaces:
-  - name: tooling
-    root: ~/apps/tooling
-    exclude: ["archived-repo"]   # optional
-    priorityWeight: 1.0          # optional per-workspace modifier
-  - name: oncall-hub
-    root: ~/apps/oncall-hub
-discovery:
-  scanRoots: [~/apps]   # where `tasks workspaces detect` looks
-  autoDetect: true
+```json
+{
+  "workspaces": [
+    { "name": "tooling", "root": "~/apps/tooling", "exclude": ["archived-repo"], "priorityWeight": 1.0 },
+    { "name": "oncall-hub", "root": "~/apps/oncall-hub" }
+  ],
+  "discovery": { "scanRoots": ["~/apps"], "autoDetect": true }
+}
 ```
 
 **Blocker references** carry an optional scope so a task can depend on one in another repo or workspace:
