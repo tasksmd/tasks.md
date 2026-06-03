@@ -1,6 +1,6 @@
 {
   "name": "@tasks-md/parser",
-  "version": "0.7.0",
+  "version": "0.10.0",
   "description": "Parser for TASKS.md files — extracts tasks, metadata, priorities, and blockers",
   "author": "Fyodor Ivanischev",
   "type": "module",
