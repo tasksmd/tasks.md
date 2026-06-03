@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-99c5fafe-3f52-4fef-bfae-96a88386b08d",
+  "task_id": "claim-check-conflates-a-tooling-failure-with-a-missing-claim",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T23:56:58.827Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "claim-check conflates a tooling failure with a missing claim",
+    "priority": "P2",
+    "tags": [
+      "ci,enforcement,observability"
+    ],
+    "body": "In tasks-claim-check.yml the guard is 'if [ -f tcli ] && node tcli check-push ...; then exit 0; fi' — so BOTH a tooling failure (install failed, or the pinned cli lacks the check-push command) AND a genuine no-claim rejection fall into the same enforce branch. With TASKS_CLAIM_ENFORCE=1 a tooling failure then prints '::error::code change without a live task claim' and exit 1 — a MISLEADING message that blocks the PR for the wrong reason (observed live: pinning CLI_VERSION to a stale 0.7.0 that predates check-push produced 'unknown command check-push' followed by the bogus no-claim error, PR #125). Fix: distinguish check-push's clean reject (a known nonzero exit code / sentinel) from any other failure (missing cli, unknown command, crash). On a tooling failure, emit a distinct '::error::claim-check could not run (cli/tooling problem)' and decide fail-open vs fail-closed deliberately rather than mislabeling it a claim violation. Bonus: a tiny pre-step asserting the pinned cli exposes check-push would catch a bad pin with a clear message. Surfaced fixing the pin."
+  }
+}
