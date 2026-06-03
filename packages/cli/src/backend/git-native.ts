@@ -529,6 +529,16 @@ function taskIsBlocked(task: BackendTask, fold: Map<string, FoldedTask>): boolea
   });
 }
 
+// Indent continuation lines of a multi-line value under the list item (4 spaces)
+// so the snapshot reads idiomatically; strip-then-indent keeps render idempotent.
+function metadataField(label: string, value: string): string[] {
+  const [first, ...rest] = value.split("\n");
+  return [
+    `  - **${label}**: ${first}`,
+    ...rest.map((line) => (line.trim() ? `    ${line.replace(/^\s+/, "")}` : "")),
+  ];
+}
+
 function renderTask(task: BackendTask): string[] {
   const claim = task.assignee ? ` (@${task.assignee})` : "";
   const lines = [`- [ ] ${task.title}${claim}`, `  - **ID**: ${task.id}`];
@@ -536,13 +546,13 @@ function renderTask(task: BackendTask): string[] {
     lines.push(`  - **Tags**: ${task.tags.join(", ")}`);
   }
   if (task.body) {
-    lines.push(`  - **Details**: ${task.body}`);
+    lines.push(...metadataField("Details", task.body));
   }
   if (task.blockedBy && task.blockedBy.length > 0) {
     lines.push(`  - **Blocked by**: ${task.blockedBy.join(", ")}`);
   }
   if (task.blocked && task.blocked.trim()) {
-    lines.push(`  - **Blocked**: ${task.blocked}`);
+    lines.push(...metadataField("Blocked", task.blocked));
   }
   return lines;
 }

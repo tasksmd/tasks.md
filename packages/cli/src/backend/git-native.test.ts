@@ -215,6 +215,25 @@ describe("git-native backend", () => {
     expect(snapshot).toContain("**Blocked by**: blocker");
   });
 
+  it("indents continuation lines of multi-line field values under the list item", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    const backend = createGitNativeBackend(directory);
+    await backend.create({
+      title: "Multi-line details",
+      priority: "P2",
+      body: "First line of context.\nSecond line that must be indented.",
+    });
+
+    const snapshot = await renderGitNativeSnapshot(directory);
+    expect(snapshot).toContain(
+      "  - **Details**: First line of context.\n    Second line that must be indented.",
+    );
+    // The continuation line is not left flush-left.
+    expect(snapshot).not.toContain("\nSecond line that must be indented.");
+    // Render stays idempotent.
+    expect(await renderGitNativeSnapshot(directory)).toBe(snapshot);
+  });
+
   it("compacts the log to a fold-equivalent open-task state", async () => {
     const directory = makeRepo("tasksmd-git-native-");
     const backend = createGitNativeBackend(directory);
