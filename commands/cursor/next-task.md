@@ -381,8 +381,13 @@ Trivial tasks skip planning — implement directly under [Claim and do the work]
 
    ```bash
    git add docs/plans/<task-id>.md
-   git commit -m "plan: <task-id>"
+   git commit -m "docs: plan for <task-id>"
    ```
+
+   Use a **standard Conventional Commits type** for these process commits —
+   `@commitlint/config-conventional` (and equivalent commit-msg hooks) reject a
+   non-standard `plan:` type. `docs:` fits the plan file; the rule-#9
+   pre-registration that edits `TASKS.md` uses `chore:` (matching `chore: enrich`).
 
 3. **Validate with a reviewer subagent.** Launch a subagent with the **`reviewer`** profile (canonical for this workflow). If the agent's agentbrew config doesn't expose `reviewer`, fall back in order: `qa-engineer` (for test-heavy tasks) → `researcher` (for ambiguity-resolution tasks). If none of the three is available, halt and escalate to the operator with the one-line message `reviewer-subagent unavailable: tried reviewer, qa-engineer, researcher — please configure one of these in agentbrew`. The subagent MUST read: the plan file, the task block in TASKS.md, the files listed in the task's `**Files**:` field, and the relevant project docs (`AGENTS.md`, `vision.md` if present). It writes a verdict + reasons into the plan file under a `## Reviewer verdict` heading:
 
@@ -395,11 +400,11 @@ Trivial tasks skip planning — implement directly under [Claim and do the work]
      <bulleted list — empty when approved>
    ```
 
-   - `approved` → commit (`plan: validate <task-id>`), continue to step 4.
+   - `approved` → commit (`docs: validate plan for <task-id>`), continue to step 4.
    - `needs-revision` → revise the plan to address each concern, then re-run validation. Max 3 cycles before escalating to the operator. If the subagent returns text that does not parse as a `## Reviewer verdict` block, treat that as one of the 3 cycles with concern "reviewer output unparseable".
    - `reject` → the task as specified is not implementable; report to the operator and stop.
 
-4. **Pre-register the metric (rule-#9).** For non-trivial tasks whose recurrence rate is observable, extend the task block in TASKS.md with `**Hypothesis**`, `**Success**`, `**Pivot**`, `**Measurement**` (an exact runnable shell command — no English instructions), and `**Anchor**` (literature citation). The plan's **Acceptance criteria** section is the source of truth; the rule-#9 fields are its falsifiable shape. Commit the pre-registration in the same `plan: <task-id>` commit as the plan if practical, otherwise as `plan: pre-register <task-id>`. If the **Measurement** isn't yet runnable (no counter, no log line, no test harness), open a preparation PR that lands the instrumentation first, then return with real before/after numbers. Trivial fixes where CI already enforces the metric are exempt.
+4. **Pre-register the metric (rule-#9).** For non-trivial tasks whose recurrence rate is observable, extend the task block in TASKS.md with `**Hypothesis**`, `**Success**`, `**Pivot**`, `**Measurement**` (an exact runnable shell command — no English instructions), and `**Anchor**` (literature citation). The plan's **Acceptance criteria** section is the source of truth; the rule-#9 fields are its falsifiable shape. Commit the pre-registration in the same `docs: plan for <task-id>` commit as the plan if practical, otherwise as `chore: pre-register <task-id>`. If the **Measurement** isn't yet runnable (no counter, no log line, no test harness), open a preparation PR that lands the instrumentation first, then return with real before/after numbers. Trivial fixes where CI already enforces the metric are exempt.
 
 5. **Implement.** Continue to [Claim and do the work](#claim-and-do-the-work).
 
