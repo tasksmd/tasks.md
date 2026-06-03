@@ -937,3 +937,45 @@ export function compactGitNativeLog(directory: string): CompactionResult {
   }
   return { before, after: minimal.length };
 }
+
+// ── Phase 3: path-scoped enforcement (the claim-check primitive) ──
+
+// A path is a "doc" (pushable without a claim) iff it is markdown, plain text,
+// or the generated TASKS.md snapshot. Everything else — including executable
+// code UNDER docs/ (e.g. docs/migrate.py) — requires a live claim. This is the
+// single rule shared by the client hook, the CI required check, and the
+// server-side pre-receive recipe, so they cannot drift apart.
+export function isDocPath(path: string): boolean {
+  const base = path.split("/").pop() ?? path;
+  return base === "TASKS.md" || /\.(md|markdown|txt)$/i.test(base);
+}
+
+export interface WorkPushInput {
+  paths: string[];
+  taskId?: string;
+  claimId?: string;
+}
+
+/**
+ * Decide whether a set of changed paths may be pushed. Doc-only pushes are
+ * always allowed; a push that touches any non-doc path is allowed only with a
+ * live claim whose `claim_id` fencing token matches the supplied one (so a
+ * stolen/stale claim is rejected). Pure given the folded log.
+ */
+export function checkWorkPush(
+  directory: string,
+  input: WorkPushInput,
+): "allowed" | "rejected" {
+  if (!input.paths.some((path) => !isDocPath(path))) {
+    return "allowed";
+  }
+  if (!input.taskId || !input.claimId) {
+    return "rejected";
+  }
+  fetchClaimsRef(directory);
+  const current = foldLog(directory).get(input.taskId);
+  if (!current || current.completed || current.claimId !== input.claimId) {
+    return "rejected";
+  }
+  return "allowed";
+}

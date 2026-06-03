@@ -388,21 +388,6 @@
     Terraform, or Probot Settings rather than bespoke hook/ruleset managers. Remaining work
     is split into follow-up tasks each with its own acceptance.
 
-- [ ] Add Phase 3 server-side path-scoped enforcement for protected repos
-  - **ID**: fleet-phase3-server-side-enforcement
-  - **Tags**: deployment-infra, ci, github-rulesets, pre-receive, enforcement, security, git-native
-  - **Details**: v1 client hooks are ergonomic and bypassable. Repos that need an unbypassable claim gate need the Phase 3 server-side layer promised by the plan: a path-scoped required check on hosted platforms and server hooks where available. This is deployment infrastructure and must be a first-class task, not a vague future phase.
-
-    Required changes:
-    1. Add a reusable required-check workflow that rejects non-markdown changes without a live claim and matching `Task-Claim` fencing token, and passes markdown-only changes, including generated `TASKS.md` snapshots.
-    2. Use `git interpret-trailers` for `Task:` / `Task-Claim:` parsing and writing instead of custom commit-message regex.
-    3. Add GitHub Repository Rulesets setup guidance via `gh api`, Terraform, or Probot Settings for protecting `main` and the `tasks-claims` ref without force-push/delete loopholes; do not build a bespoke repo-settings manager unless these are blocked.
-    4. Add a GHE/GitLab/Gitea `pre-receive` reference implementation or documented recipe using the same path logic.
-    5. Cover executable files under `docs/` so docs-directory code cannot bypass the claim gate.
-    6. Make `tasks doctor` report whether server-side enforcement is absent, advisory, or hard-enforced.
-  - **Files**: `.github/workflows/`, `scripts/`, `packages/cli/src/commands/doctor.ts`, `docs/security/git-native-claims-threat-model.md`, `README.md`, `spec.md`
-  - **Acceptance**: A code change without a live claim and matching `Task-Claim` token fails the required check; markdown-only changes pass; generated `TASKS.md` snapshot PRs pass by the same path rule as human docs changes; `tasks-claims` cannot be force-pushed or deleted in the documented GitHub setup; server-hook recipe covers GHE/GitLab/Gitea; tests cover code-under-docs.
-
 ## P1
 
 - [ ] GitHub Issues backend: aggregate issue-backed repos alongside markdown repos in workspace mode

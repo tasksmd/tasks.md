@@ -821,6 +821,30 @@ describe("CLI", () => {
     }
   });
 
+  it("check-push allows doc-only pushes and fences code under docs/", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const docs = spawnSync(
+        "node",
+        [CLI, "check-push", "docs/readme.md", "TASKS.md"],
+        { encoding: "utf-8", cwd: dir },
+      );
+      expect(docs.status).toBe(0);
+      expect(docs.stdout).toMatch(/allowed/);
+
+      // Executable code under docs/ without a claim must be rejected.
+      const code = spawnSync("node", [CLI, "check-push", "docs/migrate.py"], {
+        encoding: "utf-8",
+        cwd: dir,
+      });
+      expect(code.status).toBe(1);
+      expect(code.stderr).toMatch(/rejected/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
   it("watch --help advertises the --fix flag", () => {
     const result = spawnSync("node", [CLI, "watch", "--help"], { encoding: "utf-8" });
     expect(result.status).toBe(0);

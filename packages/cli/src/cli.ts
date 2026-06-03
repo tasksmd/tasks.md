@@ -16,6 +16,7 @@ import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
 import { runMigrate } from "./commands/migrate.js";
+import { checkWorkPush } from "./backend/git-native.js";
 import {
   formatDoctorReport,
   runDoctor,
@@ -688,6 +689,28 @@ fleet
   .description("Rewrite the tasks-claims log to a fold-equivalent minimum")
   .action(() => {
     for (const line of runFleetCompact(process.cwd())) console.log(line);
+  });
+
+program
+  .command("check-push")
+  .description("Path-scoped claim gate: allow doc-only pushes, fence code by claim")
+  .argument("<paths...>", "Changed file paths")
+  .option("--task <id>", "Task id from the commit's Task: trailer")
+  .option("--claim <claimId>", "Fencing token from the commit's Task-Claim: trailer")
+  .action((paths: string[], opts: { task?: string; claim?: string }) => {
+    const verdict = checkWorkPush(process.cwd(), {
+      paths,
+      taskId: opts.task,
+      claimId: opts.claim,
+    });
+    if (verdict === "allowed") {
+      console.log("allowed: doc-only change, or code change with a live matching claim.");
+    } else {
+      console.error(
+        "rejected: this push changes non-markdown files without a live claim + matching Task-Claim token. Claim a task (`tasks claim <id>`) and add `Task:`/`Task-Claim:` commit trailers.",
+      );
+      process.exitCode = 1;
+    }
   });
 
 program

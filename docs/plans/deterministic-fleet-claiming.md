@@ -151,7 +151,12 @@ corporate-safe because it always runs and decides by path, never bypasses.
   + compaction health) and `tasks fleet compact`, and proven by the conformance
   `lease-expiry-and-steal` property + git-native unit tests. Laptop/offline fleets are now
   supported; lease is renewed by heartbeats with a 24h dead-owner backstop.
-- **Phase 3:** server-side hard enforcement (Ruleset + required check + `pre-receive`).
+- **Phase 3 (shipped, operator-gated):** the path-scoped claim gate is one primitive —
+  `tasks check-push` / `checkWorkPush` (proven by the `path-scoped-enforcement` + `claim-fencing`
+  conformance properties) — wired into the generated `tasks-claim-check.yml` required check, the
+  client hook, and a `pre-receive` recipe (GHE/GitLab/Gitea). `tasks doctor` reports the
+  enforcement level (absent → advisory → hard). What's left to the operator: mark the check
+  *required* on a ruleset that also blocks force-push/delete of `tasks-claims`.
 - **Phase 4 (only if measured):** adopt a CRDT engine (git-bug/grite/Automerge-on-git) to
   drop the retry loop under high contention; HRW partitioning; per-host batching.
 

@@ -71,6 +71,33 @@ contributor or fork). Therefore:
 | **GitLab** | `pre-receive` (server hook) or push rules + protected branches | Protect `tasks-claims`; custom refs are not CI-visible, so use a branch |
 | **Gitea** | `pre-receive` (server hook) + branch protection | Same path logic as the reference recipe |
 
+## Server-side enforcement recipe (Phase 3)
+
+The path rule is one shared primitive — `tasks check-push <paths...> --task <id> --claim <token>`
+(backed by `checkWorkPush` in `git-native.ts`, proven by the `path-scoped-enforcement` +
+`claim-fencing` conformance properties). Every enforcement surface calls it so they cannot drift:
+
+- **github.com** — `tasks fleet init` generates `.github/workflows/tasks-claim-check.yml`
+  (`on: pull_request`). Make it a **required status check** on the `main` ruleset, and protect
+  `main` + `tasks-claims` against force-push/delete (see the ruleset guidance the command prints).
+- **GHE / GitLab / Gitea `pre-receive`** — same rule, server-side and unbypassable:
+
+  ```bash
+  #!/usr/bin/env bash
+  # pre-receive: reject non-doc changes pushed without a live claim trailer.
+  set -euo pipefail
+  while read -r _old new ref; do
+    [ "$ref" = "refs/heads/tasks-claims" ] && continue   # the log itself
+    paths=$(git diff --name-only "$_old" "$new")
+    task=$(git log -1 --format='%(trailers:key=Task,valueonly)' "$new" | head -1)
+    claim=$(git log -1 --format='%(trailers:key=Task-Claim,valueonly)' "$new" | head -1)
+    npx -y @tasks-md/cli check-push --task "$task" --claim "$claim" $paths || exit 1
+  done
+  ```
+
+  `git log --format='%(trailers:...)'` uses git's own trailer parser (the `git interpret-trailers`
+  engine), so authoring (`git commit --trailer`) and enforcement agree on the format.
+
 ## v1 mitigations vs. deferred
 
 - **What client hooks catch (v1):** an honest agent that forgot to claim; a stale

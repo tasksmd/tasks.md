@@ -20,7 +20,7 @@ import {
   runConformance,
 } from "@tasks-md/conformance";
 import { describe, expect, it } from "vitest";
-import { createGitNativeBackend } from "./git-native.js";
+import { checkWorkPush, createGitNativeBackend } from "./git-native.js";
 import type { TaskBackend } from "./types.js";
 
 function run(args: string[], cwd?: string): void {
@@ -60,6 +60,14 @@ class GitNativeWorld implements ConformanceWorld {
   async expireLease(): Promise<void> {
     // Advance the shared clock past any live lease so the next claim can steal.
     this.clock += LEASE_MS + 1;
+  }
+
+  async checkWorkPush(input: {
+    paths: string[];
+    taskId?: string;
+    claimId?: string;
+  }): Promise<"allowed" | "rejected"> {
+    return checkWorkPush(this.clone("__render__").dir, input);
   }
 
   async createTask(actor: string, input: CreateInput): Promise<ConformanceTask> {
@@ -122,8 +130,8 @@ function makeTarget(roots: string[]): ConformanceTarget {
       collisionFree: true,
       generatedSnapshot: true,
       leases: true, // Phase 2: lease expiry + steal + fresh fencing token
+      pathScopedEnforcement: true, // Phase 3: doc-only vs claim-fenced code pushes
       // The following are honest gaps for v1 (later phases):
-      pathScopedEnforcement: false, // Phase 3 (fleet-phase3-server-side-enforcement)
       rawEventAppend: false, // raw-event injection not exposed by the backend
       blockedBy: false, // blocked-by not yet modeled in the git-native fold
     },
@@ -160,6 +168,8 @@ describe("git-native backend conformance (linear-CAS bake-off)", () => {
           "release-and-reclaim",
           "idempotent-projection",
           "lease-expiry-and-steal",
+          "claim-fencing",
+          "path-scoped-enforcement",
         ]),
       );
     } finally {
