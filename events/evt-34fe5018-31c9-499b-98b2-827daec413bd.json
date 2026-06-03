@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-34fe5018-31c9-499b-98b2-827daec413bd",
+  "task_id": "indent-multi-line-field-values-in-the-git-native-tasks-md-pr",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T18:04:38.200Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-57f215d6-cbc2-448a-b3ce-8198e7e42615",
+    "lease_expires_at": 1780596278200
+  }
+}
