@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-dd197904-ddee-4fe8-b504-e4ce5076a54f",
+  "task_id": "add-error-and-health-visibility-to-the-git-native-backend",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T19:04:31.106Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Add error and health visibility to the git-native backend",
+    "priority": "P2",
+    "tags": [
+      "git-native,observability,stability"
+    ],
+    "body": "Failure modes are silent today: malformed log events are skipped with no warning, and a claim that appends locally but fails to push is dropped on the next force-fetch with no clear error to the user. Surface skipped/corrupt events and a failed claims-push as explicit errors, and have tasks doctor report staleClaims, log size, and last-projection status."
+  }
+}
