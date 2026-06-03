@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-190ea8db-b087-4fed-83ec-1b9d30cc0d77",
+  "task_id": "guard-against-non-standard-commit-types-prescribed-in-comman",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T22:03:03.515Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Guard against non-standard commit types prescribed in command docs",
+    "priority": "P3",
+    "tags": [
+      "commands,ci,guardrail"
+    ],
+    "body": "The plan: commit type prescribed by next-task.md was rejected by conventional-commit hooks (@commitlint/config-conventional) — a class of bug where the shared command docs prescribe a git commit -m subject whose type isn't in the conventional set (feat/fix/docs/style/refactor/perf/test/build/ci/chore/revert). Add a check (script or CI step, like commands-drift) that greps commands/ for prescribed 'git commit -m \"<type>: ...\"' / backtick-quoted '<type>: <id>' subjects and fails if <type> isn't a standard conventional type. Turns this one-off fix into a mechanical guard (feedback-loop-guardrails: every bug becomes a rule). Surfaced reconciling the plan: commit convention."
+  }
+}
