@@ -9,8 +9,10 @@ import {
   autoRefreshEnabled,
   compactGitNativeLog,
   createGitNativeBackend,
+  forcePushCompaction,
   parseGithubSlug,
   renderGitNativeSnapshot,
+  shouldCompact,
 } from "./git-native.js";
 
 const directories: string[] = [];
@@ -47,6 +49,22 @@ function makeRepo(prefix: string): string {
   const directory = makeDirectory(prefix);
   git(directory, ["init", "-q"]);
   return directory;
+}
+
+function makeBareRemote(): string {
+  const directory = makeDirectory("tasksmd-remote-");
+  git(directory, ["init", "--bare", "-q"]);
+  return directory;
+}
+
+function makeClone(remote: string): string {
+  const directory = makeDirectory("tasksmd-clone-");
+  git(directory, ["clone", "-q", remote, "."]);
+  return directory;
+}
+
+function claimsTip(directory: string): string {
+  return git(directory, ["rev-parse", "refs/heads/tasks-claims"]);
 }
 
 describe("git-native backend", () => {
@@ -255,6 +273,54 @@ describe("git-native backend", () => {
     expect(after).toEqual(before); // open-task fold is identical
     expect(after.find((t) => t.id === "keep-claimed")?.assignee).toBe("alice");
     expect(await renderGitNativeSnapshot(directory)).toBe(beforeSnapshot);
+  });
+
+  it("shouldCompact gates on the event-count threshold", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    const backend = createGitNativeBackend(directory);
+    await backend.create({ title: "One", priority: "P1" });
+    await backend.create({ title: "Two", priority: "P1" });
+    expect(shouldCompact(directory, 2)).toBe(true);
+    expect(shouldCompact(directory, 3)).toBe(false);
+  });
+
+  it("compaction pushes the rewrite and shrinks the remote log", async () => {
+    const remote = makeBareRemote();
+    const directory = makeClone(remote);
+    const backend = createGitNativeBackend(directory);
+    await backend.create({ title: "Keep", priority: "P1" });
+    await backend.create({ title: "Drop me", priority: "P2" });
+    await backend.complete("drop-me", { actorId: "@x" });
+    const beforeSnapshot = await renderGitNativeSnapshot(directory);
+    const beforeRemote = Number(git(remote, ["rev-list", "--count", "refs/heads/tasks-claims"]));
+
+    const result = compactGitNativeLog(directory);
+    expect(result.pushed).toBe(true);
+    expect(result.after).toBeLessThan(result.before);
+    // The remote log actually shrank, and the open-task fold is preserved.
+    expect(Number(git(remote, ["rev-list", "--count", "refs/heads/tasks-claims"]))).toBeLessThan(
+      beforeRemote,
+    );
+    expect(await renderGitNativeSnapshot(directory)).toBe(beforeSnapshot);
+  });
+
+  it("compaction's lease-guarded push aborts when the remote advanced (no clobber)", async () => {
+    const remote = makeBareRemote();
+    const a = makeClone(remote);
+    await createGitNativeBackend(a).create({ title: "Task one", priority: "P1" });
+    const t0 = claimsTip(a); // the tip A would compact from
+
+    // A second writer advances the remote past T0.
+    const b = makeClone(remote);
+    await createGitNativeBackend(b).create({ title: "Task two", priority: "P1" });
+
+    // A (still at T0) attempts the compaction push with lease=T0 — the remote
+    // moved, so the lease rejects it: no clobber.
+    expect(forcePushCompaction(a, t0)).toBe(false);
+
+    // Both claims survive on the remote.
+    const open = await createGitNativeBackend(makeClone(remote)).listOpen();
+    expect(open.map((t) => t.id).sort()).toEqual(["task-one", "task-two"]);
   });
 
   it("parses owner/repo from github remote URLs and rejects non-github", () => {

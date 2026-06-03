@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { getBackend, resolveBackendConfig } from "../backend/index.js";
-import { compactGitNativeLog, gitNativeFleetStats } from "../backend/git-native.js";
+import { compactGitNativeLog, gitNativeFleetStats, shouldCompact } from "../backend/git-native.js";
 import { installCommands } from "./install.js";
 
 // Phase-4 contention tripwire (docs/plans/deterministic-fleet-claiming.md § Step 6).
@@ -71,6 +71,10 @@ jobs:
             rm -f TASKS.md.next
             exit 0
           fi
+      # Single-writer maintenance: bound the log past the threshold. Lease-guarded
+      # (never clobbers a concurrent claim); best-effort (|| true) so a lease
+      # conflict or no-op never fails the projection.
+      - run: npx -y @tasks-md/cli fleet compact || true
       - name: Open/update the snapshot PR
         run: |
           git config user.name "tasks-md-bot"
@@ -306,7 +310,7 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
         level: stats.events > COMPACTION_SUGGESTED_AT ? "warn" : "ok",
         detail:
           stats.events > COMPACTION_SUGGESTED_AT
-            ? `${stats.events} events — run \`tasks fleet compact\` to bound fold cost`
+            ? `${stats.events} events ≥ ${COMPACTION_SUGGESTED_AT} — the projection auto-compacts (lease-guarded); \`tasks fleet compact --force\` runs it now`
             : `${stats.events} events (compaction not needed)`,
       });
       // Phase-3 enforcement level: absent → advisory (client hook) → hard
@@ -375,14 +379,23 @@ export function runFleetStats(directory: string): FleetStatsReport {
 }
 
 /** `tasks fleet compact` — rewrite the local log to a fold-equivalent minimum. */
-export function runFleetCompact(directory: string): string[] {
+export function runFleetCompact(
+  directory: string,
+  options: { threshold?: number; force?: boolean } = {},
+): string[] {
   const config = resolveBackendConfig(directory);
   if (config.backend !== "git-native") {
     return [`fleet compact requires the git-native backend (current: ${config.backend}).`];
   }
+  const threshold = options.threshold ?? COMPACTION_SUGGESTED_AT;
+  if (!options.force && !shouldCompact(directory, threshold)) {
+    return [`Log under the compaction threshold (${threshold} events) — nothing to compact.`];
+  }
   const result = compactGitNativeLog(directory);
   return [
     `Compacted the tasks-claims log: ${result.before} → ${result.after} events (open-task state preserved).`,
-    "This rewrote local history and did NOT push. Force-push it as a single-writer maintenance step, or let the projection job own the snapshot.",
+    result.pushed
+      ? "Pushed the rewrite with --force-with-lease (a concurrent claim would have safely aborted it)."
+      : "Did NOT push: no remote, or a concurrent claim held the lease — the rewrite was discarded and the next cycle retries.",
   ];
 }

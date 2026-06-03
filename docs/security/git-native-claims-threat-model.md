@@ -73,6 +73,10 @@ Two generated workflows run `@tasks-md/cli`, and they resolve it **differently o
 
 The claim-check must **never** run the local workspace build (`packages/cli/dist/cli.js`) on a `pull_request`. A regression-guard test (`packages/cli/src/commands/fleet.test.ts` → "claim-check never builds the untrusted PR's cli") fails CI if the live workflow or the `fleet init` template references `packages/cli/dist/cli.js`, and requires both to invoke the published `@tasks-md/cli`.
 
+### Compaction force-pushes the log — the B6 ruleset must exempt the bot
+
+Log compaction (`tasks fleet compact`, run by the projection past `COMPACTION_SUGGESTED_AT` events) rewrites `tasks-claims` to a fold-equivalent minimum and **force-pushes** it. This is safe against concurrent claims because it uses `git push --force-with-lease=refs/heads/tasks-claims:<oldTip>`: a claim landing in the fetch→push window advances the remote past the lease, the push is rejected, and compaction aborts (no clobber, retried next cycle) — so collision-freedom holds. But it **does** force-push. Therefore, when an operator arms a B6 ruleset that forbids force-push/delete of `tasks-claims` (as recommended for hard enforcement), that ruleset **must exempt the projection/compaction bot** — on github.com via the ruleset's `bypass_actors`, on GHE/GitLab via a `pre-receive` exception for that ref+actor. Without the exemption, every compaction lease-fails and the log never shrinks. This exemption is a required sub-step of arming enforcement (`arm-hard-claim-enforcement`).
+
 ## Token scope and platform differences
 
 | Platform | Server-side enforcement | Notes |
