@@ -1033,3 +1033,48 @@ describe("CLI", () => {
     }
   });
 });
+
+describe("heartbeat command", () => {
+  const run = (cwd: string, args: string[]) =>
+    spawnSync("node", [CLI, ...args], { encoding: "utf-8", cwd });
+
+  it("renews the live owner's lease and rejects a stale or foreign claim (git-native)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-hb-"));
+    spawnSync("git", ["init", "-q"], { cwd: dir });
+    writeFileSync(join(dir, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    try {
+      run(dir, ["create", "Long task", "--priority", "P1"]);
+      const claim = run(dir, ["claim", "long-task", "--as", "@me"]);
+      const token = claim.stdout.match(/claim-[a-f0-9-]+/)?.[0];
+      expect(token, claim.stdout + claim.stderr).toBeTruthy();
+
+      // Live owner with the matching fencing token renews successfully.
+      const ok = run(dir, ["heartbeat", "long-task", "--as", "@me", "--claim", token!]);
+      expect(ok.status, ok.stdout + ok.stderr).toBe(0);
+
+      // A stale fencing token (lease was stolen) is rejected.
+      const stale = run(dir, ["heartbeat", "long-task", "--as", "@me", "--claim", "claim-stale"]);
+      expect(stale.status).not.toBe(0);
+      expect(stale.stdout + stale.stderr).toMatch(/stale|stolen|conflict/i);
+
+      // A different actor (not the owner) is rejected.
+      const foreign = run(dir, ["heartbeat", "long-task", "--as", "@intruder"]);
+      expect(foreign.status).not.toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports unsupported on a non-lease (file) backend", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-hb-"));
+    spawnSync("git", ["init", "-q"], { cwd: dir });
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] X\n  - **ID**: x\n");
+    try {
+      const res = run(dir, ["heartbeat", "x", "--as", "@me"]);
+      expect(res.status).not.toBe(0);
+      expect(res.stdout + res.stderr).toMatch(/unsupported|git-native only/i);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

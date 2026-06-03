@@ -432,6 +432,19 @@ git checkout -b <branch-name>
 - Make minimal, focused edits — fix the root cause, not the symptom
 - Run verification (test/lint/typecheck) before moving on
 
+**Renew your lease on long tasks (git-native).** Leases expire, and an expired
+claim is reclaimable by another agent — so on work that runs longer than the
+lease window, periodically renew it so you are not stolen from mid-task:
+
+```bash
+tasks heartbeat <id> --claim <token>   # <token> is the claim_id printed by `tasks claim`
+```
+
+A renew is rejected (non-zero exit) if you are no longer the owner or your
+fencing token is stale — that is your signal that the task was reclaimed and you
+should stop. Backends without leases (the file backend) report `unsupported` and
+need no heartbeat.
+
 ## Scout while you work
 
 While implementing, you have deep context about the code you're touching. **Actively look for gaps and record them as new tasks.** This happens naturally as you read and modify code — don't treat it as a separate pass.
