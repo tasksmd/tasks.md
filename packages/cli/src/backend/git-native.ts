@@ -676,7 +676,14 @@ export function gitNativeFleetStats(directory: string, now: number = Date.now())
 function sortedTasks(tasks: Map<string, FoldedTask>): BackendTask[] {
   return [...tasks.values()]
     .filter((entry) => !entry.completed)
-    .map((entry) => entry.task)
+    // Surface the fencing token + lease so an owner can retrieve their own
+    // token from `list --json` (e.g. a migrated owner who never ran `claim`).
+    // Undefined for unclaimed tasks; JSON.stringify drops the empty fields.
+    .map((entry) => ({
+      ...entry.task,
+      claimId: entry.claimId,
+      leaseExpiresAt: entry.leaseExpiresAt,
+    }))
     .sort((first, second) => first.priority.localeCompare(second.priority));
 }
 

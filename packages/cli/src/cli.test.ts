@@ -1110,3 +1110,45 @@ describe("--claim fencing on complete/release/update", () => {
     }
   });
 });
+
+describe("list --json exposes the fencing token (owner retrieval)", () => {
+  const run = (cwd: string, args: string[]) =>
+    spawnSync("node", [CLI, ...args], { encoding: "utf-8", cwd });
+
+  it("includes claimId + leaseExpiresAt for a claimed git-native task, omits it when unclaimed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-claimid-"));
+    spawnSync("git", ["init", "-q"], { cwd: dir });
+    writeFileSync(join(dir, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    try {
+      run(dir, ["create", "Claimed task", "--priority", "P1"]);
+      run(dir, ["create", "Open task", "--priority", "P2"]);
+      const claim = run(dir, ["claim", "claimed-task", "--as", "@me"]);
+      const token = claim.stdout.match(/claim-[a-f0-9-]+/)?.[0];
+      expect(token, claim.stdout + claim.stderr).toBeTruthy();
+
+      const list = run(dir, ["list", "--json"]);
+      const tasks = JSON.parse(list.stdout) as Array<Record<string, unknown>>;
+      const claimed = tasks.find((t) => t.id === "claimed-task")!;
+      const open = tasks.find((t) => t.id === "open-task")!;
+
+      expect(claimed.claimId).toBe(token); // the owner can retrieve their own token
+      expect(typeof claimed.leaseExpiresAt).toBe("number");
+      expect(claimed.assignee).toBeTruthy();
+      expect(open.claimId).toBeUndefined(); // unclaimed → no token
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not add claimId on the file backend", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-claimid-"));
+    spawnSync("git", ["init", "-q"], { cwd: dir });
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] X\n  - **ID**: x\n");
+    try {
+      const tasks = JSON.parse(run(dir, ["list", "--json"]).stdout) as Array<Record<string, unknown>>;
+      expect(tasks.every((t) => t.claimId === undefined)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
