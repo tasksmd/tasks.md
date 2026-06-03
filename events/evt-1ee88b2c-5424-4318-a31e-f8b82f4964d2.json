@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-1ee88b2c-5424-4318-a31e-f8b82f4964d2",
+  "task_id": "auto-refresh-the-tasks-snapshot-projection-on-claim-push",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-03T18:52:35.686Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
