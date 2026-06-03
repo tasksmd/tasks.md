@@ -601,14 +601,29 @@ program
   .option("--priority <p>", "Priority: P0 | P1 | P2 | P3", "P2")
   .option("--body <text>", "Task body / details")
   .option("--tag <tag...>", "Label/tag (repeatable)")
+  .option("--blocked <reason>", "Mark the task blocked with a reason")
+  .option("--blocked-by <id...>", "Task ids this depends on (repeatable)")
   .option("--json", "Emit the created task as JSON")
   .action(
     async (
       title: string,
-      opts: BackendOpts & { priority?: string; body?: string; tag?: string[] },
+      opts: BackendOpts & {
+        priority?: string;
+        body?: string;
+        tag?: string[];
+        blocked?: string;
+        blockedBy?: string[];
+      },
     ) => {
       const task = await getBackend(process.cwd(), opts.backend).create(
-        { title, priority: opts.priority, body: opts.body, tags: opts.tag },
+        {
+          title,
+          priority: opts.priority,
+          body: opts.body,
+          tags: opts.tag,
+          blocked: opts.blocked,
+          blockedBy: opts.blockedBy,
+        },
         actorOptions(opts),
       );
       if (opts.json) {
@@ -629,15 +644,31 @@ program
   .option("--priority <p>", "New priority: P0 | P1 | P2 | P3")
   .option("--body <text>", "New body / details")
   .option("--tag <tag...>", "Replace tags (repeatable)")
+  .option("--blocked <reason>", "Set the blocked reason (empty string clears it)")
+  .option("--blocked-by <id...>", "Replace blocked-by task ids (repeatable)")
   .option("--json", "Emit the operation result as JSON")
   .action(
     async (
       id: string,
-      opts: BackendOpts & { title?: string; priority?: string; body?: string; tag?: string[] },
+      opts: BackendOpts & {
+        title?: string;
+        priority?: string;
+        body?: string;
+        tag?: string[];
+        blocked?: string;
+        blockedBy?: string[];
+      },
     ) => {
       const result = await getBackend(process.cwd(), opts.backend).update(
         id,
-        { title: opts.title, priority: opts.priority, body: opts.body, tags: opts.tag },
+        {
+          title: opts.title,
+          priority: opts.priority,
+          body: opts.body,
+          tags: opts.tag,
+          blocked: opts.blocked,
+          blockedBy: opts.blockedBy,
+        },
         actorOptions(opts),
       );
       emitOperationResult(result, opts);

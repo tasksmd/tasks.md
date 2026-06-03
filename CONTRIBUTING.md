@@ -57,16 +57,20 @@ npm run build:site
 
 ## Finding something to work on
 
-Open tasks for this repo live in [`TASKS.md`](TASKS.md). Look for a `## P0`
-or `## P1` item without a `**Blocked**:` line and without another agent's
-claim trailer (`(@someone)`).
+Open tasks for this repo live in [`TASKS.md`](TASKS.md) — or run `tasks list` /
+`tasks pick`, which read the live queue directly. Look for a `## P0` or `## P1`
+item that isn't blocked or already claimed.
 
-This repo uses the **file backend** (no `.tasksmd.json`), so claim by appending
-`(@your-handle)` to the task line in a small separate commit, then implement it,
-and remove the whole task block in the completing commit. In a repo on a
-**generated backend** (`git-native` / `github-issues`) you would instead run
-`tasks claim <id>` / `tasks complete <id>` and never hand-edit the generated
-`TASKS.md` — see [`spec.md` § Task backends](spec.md#task-backends).
+This repo runs the **git-native backend** (`.tasksmd.json` → `"backend":
+"git-native"`); it dogfoods the collision-free backend it recommends for
+collaborative repos. So **`TASKS.md` is a generated snapshot — never hand-edit
+it.** Claim with `tasks claim <id>` (collision-free; returns a `claimId` fencing
+token), implement, then close with `tasks complete <id>`; add work with
+`tasks create "<title>"`. The projection job regenerates `TASKS.md`. Code commits
+that touch non-markdown files carry `Task: <id>` / `Task-Claim: <claimId>`
+trailers for the claim-check gate. See [`spec.md` § Task backends](spec.md#task-backends)
+and [§ Fleet coordination](spec.md#fleet-coordination). (A repo on the default
+**file backend** instead hand-edits `TASKS.md` and claims by appending `(@you)`.)
 
 Tasks follow the format defined in [`spec.md`](spec.md). If you're unsure
 which priority a task should be, P2 is a safe default.

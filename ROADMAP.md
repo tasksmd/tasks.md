@@ -17,9 +17,9 @@ This file is the root-level milestone summary that the `load-project-context` ru
 | **Per-agent variants** — Claude Code, Codex, Cursor, Devin, Gemini CLI, Windsurf | ✅ Shipped | [`commands/{claude,codex,cursor,devin,gemini,windsurf}/`](commands/) |
 | **One-prompt setup** — paste one prompt; the agent runs `commands/setup.md` (init + AGENTS.md merge + self-install + verify) | ✅ Shipped | [`commands/setup.md`](commands/setup.md), [user story 10](docs/user-stories/10-one-prompt-setup.md) |
 | **Plan-first workflow** — agents write `docs/plans/<task-id>.md` before non-trivial work, validated by a reviewer subagent | ✅ Stable | [`docs/plans/next-task-plan-first-workflow.md`](docs/plans/next-task-plan-first-workflow.md), [`docs/templates/plan-template.md`](docs/templates/plan-template.md) |
-| **Git-native fleet coordination (G7)** — collision-free claims + leases/heartbeats + path-scoped enforcement, proven by the 11-property conformance suite | ✅ Shipped | [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md), [`packages/conformance/`](packages/conformance/), [`VISION.md` G7](VISION.md) |
+| **Git-native fleet coordination (G7)** — collision-free claims + leases/heartbeats + path-scoped enforcement + blocked-by, proven by the 12-property conformance suite | ✅ Shipped | [`docs/plans/deterministic-fleet-claiming.md`](docs/plans/deterministic-fleet-claiming.md), [`packages/conformance/`](packages/conformance/), [`VISION.md` G7](VISION.md) |
 | **Workspace mode** — `next-task` aggregates TASKS.md across nested repos in one or more workspaces, backend-aware | ✅ Shipped | [`spec.md` § Workspaces](spec.md#workspaces), [`packages/parser/src/workspace.ts`](packages/parser/src/workspace.ts) |
-| **Dogfood git-native (G8)** — convert the canonical repo + ship a one-shot consumer migration command | 🟡 In progress | [`TASKS.md`](TASKS.md), [`VISION.md` G8](VISION.md) |
+| **Dogfood git-native (G8)** — canonical repo converted to git-native (`TASKS.md` is now a generated snapshot) + one-shot `/migrate` command shipped | ✅ Shipped | [`.tasksmd.json`](.tasksmd.json), [`commands/migrate.md`](commands/migrate.md), [`VISION.md` G8](VISION.md) |
 | **Site / docs hub** — public website at tasksmd.github.io | ✅ Live | [tasksmd.github.io/tasks.md](https://tasksmd.github.io/tasks.md/) |
 
 ## Active focus
