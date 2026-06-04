@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-0c269d4d-8a4b-4080-baa5-e5930efc9e47",
+  "task_id": "finish-readme-reorder-fundamentals-before-scaling-deep-walkt",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-04T00:18:49.255Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Finish README reorder: fundamentals before scaling; deep walkthrough after How It Works",
+    "priority": "P3",
+    "tags": [
+      "docs,onboarding"
+    ],
+    "body": "PR #126 reordered the top of the README (Highlights -> Installation -> format teaser) but left the mid-document order as-is (defensible but improvable). Two remaining order smells: (1) the 70-line 'Worked example: first 10 minutes' deep walkthrough sits before 'Why TASKS.md?' and 'How It Works' — move it AFTER 'How It Works' so the conceptual frame precedes the hands-on dive; (2) 'Writing Good Tasks' + 'The Format' (fundamentals) come after 'Backends' + 'Workspaces' (scaling/advanced) — consider moving the fundamentals up, or Workspaces down. Deferred from #126 to avoid risky large-block moves in the same PR as the install-gap fix. Files: README.md. Low risk, low urgency — the top (above-the-fold) order is already best-practice."
+  }
+}
