@@ -6,13 +6,14 @@ Adoption should cost one prompt, not a nine-command walkthrough. The developer p
 
 ## What the developer does
 
-Paste the prompt from the [README Quick Start](../../README.md#one-prompt-recommended) into their agent:
+Paste the prompt from the [README Installation](../../README.md#1-copy-this-prompt-into-your-agent) into their agent:
 
 ```text
-Set up tasks.md in this repo. Create TASKS.md if missing, add the "## Task Management"
-section to AGENTS.md (don't duplicate it), install the /next-task command for yourself,
-then verify with `npx -y @tasks-md/lint TASKS.md` and tell me what you did. If npx/Node
-isn't available, write the files directly from https://github.com/tasksmd/tasks.md.
+Set up tasks.md in this repo: run `npx -y @tasks-md/cli init --install` to create
+TASKS.md and a "## Task Management" section in AGENTS.md, then install your own
+/next-task command with `npx -y @tasks-md/cli install --agent <your-name>`, verify
+with `npx -y @tasks-md/lint TASKS.md`, and tell me what you did. If Node isn't
+available, write the files directly from https://github.com/tasksmd/tasks.md.
 ```
 
 ## What the agent does

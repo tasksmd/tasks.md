@@ -50,7 +50,11 @@ export function initTaskQueue(targetDir: string): InitResult {
       messages.push("✓ Added Task Management section to AGENTS.md");
     }
   } else {
-    messages.push("⊘ No AGENTS.md found — skipping");
+    // Create a starter AGENTS.md so a single `init` is turnkey on a fresh repo —
+    // otherwise agents have no instruction to read TASKS.md.
+    writeFileSync(agentsFile, `# Agent Guide\n${TASK_MANAGEMENT_SECTION}`);
+    updatedAgents = true;
+    messages.push("✓ Created AGENTS.md with Task Management section");
   }
 
   return { createdTasks, updatedAgents, messages };
