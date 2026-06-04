@@ -52,10 +52,14 @@ describe("initTaskQueue", () => {
     expect(result.updatedAgents).toBe(false);
   });
 
-  it("skips AGENTS.md update when file does not exist", () => {
+  it("creates AGENTS.md with Task Management section when file does not exist", () => {
     const result = initTaskQueue(tempDir);
-    expect(result.updatedAgents).toBe(false);
-    expect(existsSync(join(tempDir, "AGENTS.md"))).toBe(false);
+    expect(result.updatedAgents).toBe(true);
+    expect(existsSync(join(tempDir, "AGENTS.md"))).toBe(true);
+    const content = readFileSync(join(tempDir, "AGENTS.md"), "utf-8");
+    expect(content).toContain("# Agent Guide");
+    expect(content).toContain("## Task Management");
+    expect(content).toContain("Claim tasks by appending");
   });
 
   it("returns messages for each action taken", () => {

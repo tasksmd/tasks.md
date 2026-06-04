@@ -12,24 +12,43 @@ A lightweight spec for AI agent task queues — the companion to [AGENTS.md](htt
 
 AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
-## Quick Start
+## Highlights
 
-### One prompt (recommended)
+- **One Markdown file** any agent or human reads and writes — no accounts, no API, no server, works offline.
+- **In your editor, in git** — add a task without leaving your IDE; every change is version-controlled next to the code.
+- **Agent-native** — LLMs parse Markdown directly, and the [`/next-task`](#the-next-task-command) command turns the queue into an autonomous work loop.
+- **Vendor-neutral** — one spec, six agents (Claude Code, Cursor, Devin, Codex, Gemini CLI, Windsurf), any CI.
+- **Scales with you** — start solo on the file backend; switch to the collision-free [git-native backend](#backends) the instant a second writer or a fleet of agents shares the queue — configuration, never a migration.
 
-Paste this into whatever agent you use (Claude Code, Cursor, Devin, Codex, Gemini CLI, Windsurf) and it does the rest — creates `TASKS.md`, merges the `## Task Management` section into `AGENTS.md`, installs its own `/next-task` command, verifies, and reports:
+## Installation
+
+Two ways to add TASKS.md to a repo. Both are idempotent — safe to re-run, they merge and never clobber.
+
+### 1. Copy this prompt into your agent
+
+Paste this into whatever agent you use (Claude Code, Cursor, Devin, Codex, Gemini CLI, Windsurf) and it does the rest — scaffolds the queue, wires up `AGENTS.md`, installs its own `/next-task` command, verifies, and reports back:
 
 ```text
-Set up tasks.md in this repo. Create TASKS.md if missing, add the "## Task Management"
-section to AGENTS.md (don't duplicate it), install the /next-task command for yourself,
-then verify with `npx -y @tasks-md/lint TASKS.md` and tell me what you did. If npx/Node
-isn't available, write the files directly from https://github.com/tasksmd/tasks.md.
+Set up tasks.md in this repo: run `npx -y @tasks-md/cli init --install` to create
+TASKS.md and a "## Task Management" section in AGENTS.md, then install your own
+/next-task command with `npx -y @tasks-md/cli install --agent <your-name>`, verify
+with `npx -y @tasks-md/lint TASKS.md`, and tell me what you did. If Node isn't
+available, write the files directly from https://github.com/tasksmd/tasks.md.
 ```
 
-It's idempotent (safe to re-run — it merges, never clobbers) and works with or without Node (`tasks init` + `tasks install --agent <you>` when `npx` is present; a direct file-write fallback otherwise). The canonical steps live in [`commands/setup.md`](commands/setup.md), generated into a `/setup` command for all six agents. For a **fleet** (a team of machines × parallel agents on one queue), the agent can also run `tasks fleet init` to switch to the collision-free [git-native backend](spec.md#fleet-coordination).
+The same steps ship as a `/setup` command for all six agents — see [`commands/setup.md`](commands/setup.md).
 
-### Manual
+### 2. Or run this single command
 
-Or set it up by hand. Create a `TASKS.md` at your repo root:
+```bash
+npx @tasks-md/cli init --install
+```
+
+Creates `TASKS.md`, adds (or creates) a `## Task Management` section in `AGENTS.md`, and installs the `/next-task` command for every agent it detects in the repo. Drop the `npx` prefix after a global `npm install -g @tasks-md/cli`. Running a **fleet** — a team of machines each driving parallel agents on one queue? Also run `tasks fleet init` to switch to the collision-free [git-native backend](spec.md#fleet-coordination).
+
+## What a TASKS.md looks like
+
+No Node required — this is the whole format, and you can write it by hand. Most tasks are just checkboxes under priority headings; metadata is optional and added only when a task needs context:
 
 ```markdown
 # Tasks
@@ -55,18 +74,7 @@ Or set it up by hand. Create a `TASKS.md` at your repo root:
 - [ ] Update README with new API endpoints
 ```
 
-Most tasks are just checkboxes under priority headings. Tasks with dependencies get an **ID** so blockers can reference them stably. All metadata is optional.
-
-Then add this to your `AGENTS.md` so agents know to use it:
-
-```markdown
-## Task Management
-- Read TASKS.md for available work before asking the user
-- Claim tasks by appending (@your-name) before starting work
-- Remove completed tasks from the file (history is in git log)
-```
-
-That's it. Your agent will read TASKS.md on session start and work through the queue. That snippet is the zero-setup **file backend** (best-effort `(@you)` claims) — perfect for a solo repo. The moment you have **more than one writer**, switch to the collision-free [git-native backend](#backends) with `/migrate` so two agents can never grab the same task.
+Tasks with dependencies get an **ID** so blockers can reference them stably. That's the zero-setup **file backend** (best-effort `(@you)` claims) — perfect for a solo repo. The moment you have **more than one writer**, switch to the collision-free [git-native backend](#backends) with `/migrate` so two agents can never grab the same task.
 
 ## Worked example: first 10 minutes
 
@@ -78,11 +86,11 @@ Nine commands take a fresh repo from zero to a queue an agent can pick from. Out
    echo "# README" > README.md && git add README.md && git commit -m "feat: init"
    ```
 
-2. **Scaffold the queue** — `tasks init` writes `TASKS.md` and merges a `## Task Management` section into `AGENTS.md` if present.
+2. **Scaffold the queue** — `tasks init` writes `TASKS.md` and creates (or updates) a `## Task Management` section in `AGENTS.md`.
    ```bash
-   touch AGENTS.md && npx -y @tasks-md/cli init
+   npx -y @tasks-md/cli init
    ```
-   Prints `✓ Created TASKS.md` and `✓ Added Task Management section to AGENTS.md`.
+   Prints `✓ Created TASKS.md` and `✓ Created AGENTS.md with Task Management section`.
 
 3. **Install the `/next-task` command for your agent** — auto-detects from agent dirs (`.claude/`, `.cursor/`, `.devin/`, etc.). See [story 3 → Auto-detect algorithm](docs/user-stories/03-agents-work-through-queue.md#auto-detect-algorithm) for the full table.
    ```bash
@@ -148,15 +156,6 @@ Nine commands take a fresh repo from zero to a queue an agent can pick from. Out
 **Planning first leads to better results.** When you write a task down — even a one-liner — you're forced to think about what you actually want before the agent starts coding. That small act of planning is the difference between an agent that builds the right thing and one that guesses. TASKS.md makes planning the natural first step, not an afterthought.
 
 **Zero friction beats any tool.** Opening Jira to write a task takes you out of flow — you switch context, fill in fields, pick a project, assign a sprint. With TASKS.md, you add a line to a file that's already open in your editor. The lower the friction, the more likely you are to actually write tasks down — and written tasks are the whole point.
-
-**One Markdown file that any tool can read and write:**
-
-- **Zero setup** — No accounts, no APIs, no tokens. Create a file and start writing.
-- **In your editor** — Add tasks without leaving your IDE. No browser tab, no context switch.
-- **Version-controlled** — In git, next to the code. Every change is tracked.
-- **Agent-native** — LLMs parse Markdown natively. No API client needed to read a file.
-- **Vendor-neutral** — Works with any agent, any IDE, any CI system, today.
-- **Offline** — Works on a plane. No server required.
 
 ## How It Works
 
