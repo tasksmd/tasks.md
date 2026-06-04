@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-7dc98e33-6d6a-4402-b607-bc369fcc5590",
+  "task_id": "lead-readme-with-highlights-two-option-install-make-init-ins",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-04T00:15:35.063Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-2e11a796-b1f7-4a88-a7a7-1f0d33c42a2e",
+    "lease_expires_at": 1780618535063
+  }
+}
