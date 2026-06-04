@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-7047c6ea-dded-4926-8c17-870e8a2cfda3",
+  "task_id": "lead-readme-with-highlights-two-option-install-make-init-ins",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-04T00:15:25.895Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Lead README with Highlights + two-option Install; make init --install turnkey",
+    "priority": "P2",
+    "tags": [
+      "docs,cli,dx,onboarding"
+    ],
+    "body": "Reorder the README to best-practice (uv/bun) order — Highlights, then Installation with exactly two paths (copy-this-prompt / single command), then a format teaser — and close the install gap so the single command is genuinely turnkey: tasks init now CREATES AGENTS.md (with the Task Management section) when missing, so npx @tasks-md/cli init --install works on a bare repo with no 'touch AGENTS.md' prereq. Files: packages/cli/src/commands/init.ts, init.test.ts, README.md, docs/user-stories/10-one-prompt-setup.md (anchor + prompt sync)."
+  }
+}
