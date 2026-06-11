@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-3927197f-c053-47a4-a53b-c7753aad4793",
+  "task_id": "teach-next-task-to-honor-active-ship-it-mode",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-11T13:06:07.310Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-fad9a702-db04-470f-8d1d-ff06cc85ddb5",
+    "lease_expires_at": 1781269567309
+  }
+}
