@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-2dfadc3a-d031-4971-be2d-7e4656c4f262",
+  "task_id": "teach-next-task-to-honor-active-ship-it-mode",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-11T13:06:00.665Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Teach /next-task to honor active ship-it mode",
+    "priority": "P2",
+    "tags": [
+      "commands",
+      "ship-it"
+    ],
+    "body": "Update the canonical /next-task command so session-standing ship-it mode continues through PR delivery, CI watch/fix, merge, cleanup, and repo sync instead of stopping at commit or PR-open. Regenerate all agent variants and update docs/spec surfaces."
+  }
+}
