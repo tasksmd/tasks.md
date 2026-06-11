@@ -19,10 +19,10 @@ interface CommandConfig {
 // string syntax can't carry the backticks and inline quotes from the long
 // markdown form without escaping.
 export const AGENT_DESCRIPTION =
-  'Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like `/next-task my-task-id`, or runs the standard `standing-audit-gap-loop` audit task.';
+  'Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like `/next-task my-task-id`, runs the standard `standing-audit-gap-loop` audit task, or wants task draining to honor active `/ship-it` mode.';
 
 export const GEMINI_DESCRIPTION =
-  "Pick a queued TASKS.md item, target an exact task ID, or run the standing audit loop";
+  "Pick a queued TASKS.md item, target an exact task ID, honor ship-it mode, or run the standing audit loop";
 
 export const LINT_TASKS_DESCRIPTION =
   'Validate TASKS.md files against the tasks.md spec. Use when the user says "lint tasks", "check tasks", "validate tasks", or before committing changes to TASKS.md. Discovers all TASKS.md files in the repo (including monorepo packages) and runs the linter on each.';

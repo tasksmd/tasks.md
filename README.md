@@ -330,16 +330,17 @@ When you type `/next-task` or `/next-task <task-id>`, the agent runs this flow:
 14. **Work** — Reads the task's metadata, checks AGENTS.md for project conventions, makes changes, runs tests
 15. **Scout** — While working, actively looks for bugs, missing tests, stale docs, and other gaps in code it touches — records them as new tasks in TASKS.md so the queue grows smarter with every completed task
 16. **Complete** — File backend: removes the entire task block from TASKS.md; generated backend: runs `tasks complete <id>`. Then commits and pushes
-17. **Loop** — In queue mode, returns to step 5 and picks the next task until the queue is empty
-18. **Roam** — When the current repo's queue is empty and every blocked task is freshly enriched, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
-19. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
+17. **Honor ship-it mode** — If the conversation already has active `/ship-it` mode, continues through that delivery path: PR create/update, CI watch/fix, merge when repo rules allow, branch reconciliation, mirror/release steps, redundant-worktree cleanup, and any tooling-repo post-delivery sync. Without ship-it mode, it keeps the baseline `/next-task` completion path.
+18. **Loop** — In queue mode, returns to step 5 and picks the next task until the queue is empty
+19. **Roam** — When the current repo's queue is empty and every blocked task is freshly enriched, scans `~/apps/*/TASKS.md` for work in other repos and switches automatically
+20. **Audit** — When ALL repos are empty, runs a 5-tier cascade on the current repo:
     - Tier 1: Verify (typecheck, lint, test, build)
     - Tier 2: Security & dead code
     - Tier 3: Doc drift & stale references
     - Tier 4: Dependency modernization (universal — works for any repo type)
     - Tier 5: DX polish (help text, error messages, onboarding friction)
     - Writes findings as tasks and implements the first one — re-runs on each invocation
-20. **Terminal** — When all repos are clean across all 5 tiers, prints a summary and stops the loop cleanly
+21. **Terminal** — When all repos are clean across all 5 tiers, prints a summary and stops the loop cleanly
 
 ### The workflow
 

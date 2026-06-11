@@ -15,7 +15,8 @@
 7. **Claim** — file backend: appends `(@agent-id)` so other agents skip it; generated backend: `tasks claim <id>` (collision-free)
 8. **Work** — reads metadata, checks AGENTS.md, makes changes, runs tests
 9. **Complete** — removes the task block, commits, pushes
-10. **Loop** — picks the next task, continues until the queue is empty
+10. **Ship when approved** — if session-standing `/ship-it` mode is active, follows that delivery path through PR updates, CI watch/fix, merge, branch reconciliation, mirror/release steps, cleanup, and post-delivery sync instead of stopping at an opened PR
+11. **Loop** — picks the next task, continues until the queue is empty
 
 ## Install ✓
 
@@ -63,7 +64,8 @@ A successful `/next-task` run is behaviorally precise — anyone reading the sou
 2. In the file backend, the agent claims it by appending `(@<agent-id>)` to the task line and pushes (or commits, in single-agent setups); in a generated backend it runs `tasks claim <id>` for a collision-free claim.
 3. The agent does the work — reads metadata, makes changes, runs tests, etc.
 4. On completion, the agent removes the entire task block (task line + metadata + sub-tasks) and commits.
-5. Loop repeats until `pickBestTask()` returns `undefined` (queue exhausted) or every remaining task is blocked or claimed by another agent.
+5. If `/ship-it` mode is active for the session, the agent keeps going through the approved delivery steps instead of stopping at commit, push, or PR-open.
+6. Loop repeats until `pickBestTask()` returns `undefined` (queue exhausted) or every remaining task is blocked or claimed by another agent.
 
 `tasks pick` is the read-only inspection of step 1 — same algorithm, no claim, no commit. `/next-task` is `tasks pick` plus claim → plan → implement → commit → loop.
 
@@ -90,7 +92,7 @@ Walks P0 → P1 → P2 → P3. Within each priority:
 
 ### Completing a task
 
-Removes the entire block (task line + metadata + sub-tasks), commits with a conventional commit message, and pushes. TASKS.md conflicts from other agents are trivial to resolve.
+Removes the entire block (task line + metadata + sub-tasks), commits with a conventional commit message, and pushes. TASKS.md conflicts from other agents are trivial to resolve. When `/ship-it` mode is active, delivery continues through that mode's CI, PR merge, cleanup, and release/mirror steps before the next queue iteration.
 
 ## Command Formats
 
