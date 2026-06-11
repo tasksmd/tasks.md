@@ -4,7 +4,7 @@ Ready-made commands for popular AI coding agents. Copy the files into your proje
 
 ## `/next-task`
 
-The full TASKS.md workflow: find → pick (or target an exact task ID) → claim → work → remove → loop. It also recognizes the standard `standing-audit-gap-loop` task for audit-only queue filling.
+The full TASKS.md workflow: find → pick (or target an exact task ID) → claim → work → remove → loop. It also recognizes the standard `standing-audit-gap-loop` task for audit-only queue filling and honors active `/ship-it` mode for post-task delivery.
 
 | Directory | Agent | Format | Install to |
 |-----------|-------|--------|------------|

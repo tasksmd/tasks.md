@@ -1,10 +1,24 @@
 ---
-description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like `/next-task my-task-id`, or runs the standard `standing-audit-gap-loop` audit task.
+description: Pick and work on a task from TASKS.md. Use when the user says "next task", "work on the next thing", "what should I work on", wants to start an autonomous coding loop, passes an exact task ID like `/next-task my-task-id`, runs the standard `standing-audit-gap-loop` audit task, or wants task draining to honor active `/ship-it` mode.
 ---
 
 # Next Task
 
 If a task ID is supplied, target that exact task; otherwise pick the highest-priority unblocked task from TASKS.md and work on it autonomously. Queue mode loops until the queue is empty or the user stops you; targeted mode stops after that task is shipped or explained.
+
+## Ship-it mode
+
+At the start of every invocation, check the current conversation for active `/ship-it` mode. If the user invoked `/ship-it` earlier in this session and has not explicitly disabled it, `/next-task` inherits that standing approval for the current repository or approved repo family.
+
+When ship-it mode is active:
+
+- keep all `/next-task` picking, claiming, planning, blocker, and forbidden-work rules intact;
+- after task implementation, run the delivery path defined by `/ship-it` for the current repo: verification, explicit-file staging, commit, feature-branch push, PR create/update, CI watch/fix, merge when checks and repo rules allow, canonical branch reconciliation, documented mirror/release steps, safe worktree cleanup, and tooling-repo latest-recommended-updates refresh;
+- do not stop at "committed", "pushed", or "PR opened" unless a hard blocker remains;
+- in queue mode, continue to the next task after each shipped task until the queue is empty or the user stops you; in targeted mode, stop after the requested task is shipped or blocked;
+- do not treat ship-it mode as approval for actions `/ship-it` still forbids: public comments/reviews/messages, protected-branch direct pushes, unsafe force pushes, package publishes outside an allowed own-tool release path, or work owned by another human/agent.
+
+If ship-it mode is inactive, keep the default `/next-task` behavior: commit the task, push the feature branch, open or update the PR, then stop only where this command says to stop.
 
 ## Pre-flight stop check
 
@@ -120,12 +134,12 @@ Read the context snapshot and follow the first matching branch:
 Quickly land or close dangling PRs before picking new work:
 
 ```bash
-gh pr list --state open --json number,title,mergeable,statusCheckRollup
+gh pr list --state open --json number,title,author,headRefName,headRepositoryOwner,baseRefName,mergeable,reviewDecision,statusCheckRollup
 ```
 
-- Checks pass + no conflicts → `gh pr merge <number> --squash --delete-branch`
+- Checks pass + no conflicts → merge by the repo's normal merge path; if ship-it mode is active, use `/ship-it` ownership, CI, and admin/bypass-merge rules before merging
 - Checks failing or conflicts → skip
-- Stale (>7 days, no linked task) → `gh pr close <number>` + delete the branch
+- Stale (>7 days, no linked task) → only close under the repo/global PR-close rules (reasoned closing comment + branch deletion when safe); otherwise skip
 
 Then sync:
 
@@ -493,6 +507,10 @@ Verify the implementation is complete:
 > **Generated backend** (git-native / github-issues — see [Backend mode](#backend-mode)): run `tasks complete <id>` to record completion (git-native appends a `completed` event; issues closes the issue). The generated `TASKS.md` is refreshed by its projection job — do not hand-remove the block.
 
 **File backend** — every commit that completes a task MUST also remove that task from TASKS.md. No exceptions. If you forget, go back and amend the commit before pushing.
+
+**Ship-it mode active** — after verification and task completion, follow the active `/ship-it` delivery path for the current repo or approved repo family. That means continue beyond the commit/PR-open point through CI watch/fix, merge when checks and repo rules allow, local branch reconciliation, documented mirror/release steps, safe redundant-worktree cleanup, and tooling-repo latest-recommended-updates refresh. Stop only for a hard blocker that `/ship-it` itself would stop on, and report the exact blocker.
+
+**Ship-it mode inactive** — use the baseline task-completion path:
 
 ```bash
 git add <changed-files>
