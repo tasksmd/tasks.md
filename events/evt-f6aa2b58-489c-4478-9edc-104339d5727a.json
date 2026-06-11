@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-f6aa2b58-489c-4478-9edc-104339d5727a",
+  "task_id": "teach-next-task-to-honor-active-ship-it-mode",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-11T13:11:06.550Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
