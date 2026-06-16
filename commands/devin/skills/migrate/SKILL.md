@@ -10,10 +10,10 @@ allowed-tools:
   - exec
 permissions:
   allow:
-    - Exec(git *)
-    - Exec(npx *)
-    - Exec(node *)
-    - Exec(lefthook *)
+    - Bash(git *)
+    - Bash(npx *)
+    - Bash(node *)
+    - Bash(lefthook *)
 ---
 
 ## Migrate this repo to the git-native backend

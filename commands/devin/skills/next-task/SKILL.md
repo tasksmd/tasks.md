@@ -9,11 +9,11 @@ allowed-tools:
   - exec
 permissions:
   allow:
-    - Exec(git *)
-    - Exec(gh *)
-    - Exec(find *)
-    - Exec(cat *)
-    - Exec(node *)
+    - Bash(git *)
+    - Bash(gh *)
+    - Bash(find *)
+    - Bash(cat *)
+    - Bash(node *)
 ---
 
 # Next Task
