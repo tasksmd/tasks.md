@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-8b8cf31f-ee5c-42bf-b710-2b7609691052",
+  "task_id": "fix-devin-skill-templates-to-use-bash-permission-patterns",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-16T14:13:19.225Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Fix Devin skill templates to use Bash permission patterns",
+    "priority": "P2",
+    "tags": [
+      "devin",
+      "cli"
+    ],
+    "body": "Update migrate/next-task/setup skill templates and generate-commands.ts to match Devin Bash tool permission syntax."
+  }
+}
