@@ -10,9 +10,9 @@ allowed-tools:
   - exec
 permissions:
   allow:
-    - Exec(git *)
-    - Exec(npx *)
-    - Exec(node *)
+    - Bash(git *)
+    - Bash(npx *)
+    - Bash(node *)
 ---
 
 ## Set up tasks.md in this repo

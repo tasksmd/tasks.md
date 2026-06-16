@@ -84,11 +84,11 @@ allowed-tools:
   - exec
 permissions:
   allow:
-    - Exec(git *)
-    - Exec(gh *)
-    - Exec(find *)
-    - Exec(cat *)
-    - Exec(node *)
+    - Bash(git *)
+    - Bash(gh *)
+    - Bash(find *)
+    - Bash(cat *)
+    - Bash(node *)
 ---`;
 
 const NEXT_TASK_CONFIG: CommandConfig = {
@@ -235,9 +235,9 @@ allowed-tools:
   - exec
 permissions:
   allow:
-    - Exec(git *)
-    - Exec(npx *)
-    - Exec(node *)
+    - Bash(git *)
+    - Bash(npx *)
+    - Bash(node *)
 ---`;
 
 const SETUP_WINDSURF_FRONTMATTER = `---
@@ -318,10 +318,10 @@ allowed-tools:
   - exec
 permissions:
   allow:
-    - Exec(git *)
-    - Exec(npx *)
-    - Exec(node *)
-    - Exec(lefthook *)
+    - Bash(git *)
+    - Bash(npx *)
+    - Bash(node *)
+    - Bash(lefthook *)
 ---`;
 
 const MIGRATE_WINDSURF_FRONTMATTER = `---
