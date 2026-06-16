@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-820f87ee-0ccf-4939-86b8-0241239a4c76",
+  "task_id": "fix-devin-skill-templates-to-use-bash-permission-patterns",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-06-16T14:13:31.374Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-9d5c4d99-39f9-4194-96b2-39f43db11efe",
+    "lease_expires_at": 1781705611374
+  }
+}
