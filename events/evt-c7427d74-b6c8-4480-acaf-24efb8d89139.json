@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-c7427d74-b6c8-4480-acaf-24efb8d89139",
+  "task_id": "bump-package-versions-on-main-to-0-10-2-after-npm-publish",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-07-14T15:36:14.680Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
