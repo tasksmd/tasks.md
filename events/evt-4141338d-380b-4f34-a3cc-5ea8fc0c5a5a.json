@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-4141338d-380b-4f34-a3cc-5ea8fc0c5a5a",
+  "task_id": "refuse-full-disk-tasks-md-discovery-outside-git",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-07-14T14:46:29.647Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Refuse full-disk TASKS.md discovery outside git",
+    "priority": "P0",
+    "tags": [
+      "bug",
+      "parser"
+    ],
+    "body": "LaunchAgent/MCP probes with cwd=/ made discoverTaskFiles run fd over the entire filesystem. Refuse recursive discovery outside a real git root (AIFN-1351)."
+  }
+}
