@@ -407,6 +407,8 @@ export function pickBestTask(
 
 export {
   findGitRoot,
+  isFilesystemRoot,
+  resolveDiscoveryScope,
   discoverTaskFiles,
   loadAllTasks,
   loadAllTasksAsync,

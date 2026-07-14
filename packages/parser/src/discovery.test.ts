@@ -3,7 +3,14 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, realpathSync } from "nod
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
-import { findGitRoot, discoverTaskFiles, loadAllTasks, loadAllTasksAsync } from "./discovery.js";
+import {
+  findGitRoot,
+  isFilesystemRoot,
+  resolveDiscoveryScope,
+  discoverTaskFiles,
+  loadAllTasks,
+  loadAllTasksAsync,
+} from "./discovery.js";
 
 let tempDir: string;
 
@@ -41,7 +48,53 @@ describe("findGitRoot", () => {
   });
 });
 
+describe("isFilesystemRoot", () => {
+  it("detects POSIX root", () => {
+    expect(isFilesystemRoot("/")).toBe(true);
+    expect(isFilesystemRoot("/Users")).toBe(false);
+  });
+});
+
+describe("resolveDiscoveryScope", () => {
+  it("marks git repos recursive", () => {
+    initGitRepo(tempDir);
+    const scope = resolveDiscoveryScope(tempDir);
+    expect(scope.root).toBe(tempDir);
+    expect(scope.recursive).toBe(true);
+  });
+
+  it("marks non-git directories non-recursive", () => {
+    const isolated = mkdtempSync(join(tmpdir(), "no-git-scope-"));
+    try {
+      const scope = resolveDiscoveryScope(isolated);
+      expect(scope.root).toBe(isolated);
+      expect(scope.recursive).toBe(false);
+    } finally {
+      rmSync(isolated, { recursive: true });
+    }
+  });
+});
+
 describe("discoverTaskFiles", () => {
+  it("does not recurse when cwd is filesystem root (LaunchAgent / probe)", () => {
+    const files = discoverTaskFiles("/");
+    expect(files).toEqual([]);
+  });
+
+  it("only checks the direct TASKS.md outside a git repo", () => {
+    const isolated = realpathSync(mkdtempSync(join(tmpdir(), "no-git-tasks-")));
+    try {
+      const nested = join(isolated, "nested");
+      mkdirSync(nested, { recursive: true });
+      writeFileSync(join(nested, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Nested\n");
+      expect(discoverTaskFiles(isolated)).toEqual([]);
+      writeFileSync(join(isolated, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Root\n");
+      expect(discoverTaskFiles(isolated)).toEqual([join(isolated, "TASKS.md")]);
+    } finally {
+      rmSync(isolated, { recursive: true });
+    }
+  });
+
   it("finds TASKS.md at git root", () => {
     initGitRepo(tempDir);
     writeFileSync(join(tempDir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Test\n");
