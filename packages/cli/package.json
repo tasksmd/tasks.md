@@ -1,6 +1,6 @@
 {
   "name": "@tasks-md/cli",
-  "version": "0.10.0",
+  "version": "0.10.2",
   "description": "Unified CLI for TASKS.md task queue management",
   "author": "Fyodor Ivanischev",
   "type": "module",
@@ -43,8 +43,8 @@
   },
   "homepage": "https://tasks.md",
   "dependencies": {
-    "@tasks-md/lint": "^0.10.0",
-    "@tasks-md/parser": "^0.10.0",
+    "@tasks-md/lint": "^0.10.2",
+    "@tasks-md/parser": "^0.10.2",
     "commander": "^13.0.0"
   },
   "devDependencies": {
