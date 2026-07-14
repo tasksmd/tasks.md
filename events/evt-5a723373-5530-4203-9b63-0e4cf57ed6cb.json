@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-5a723373-5530-4203-9b63-0e4cf57ed6cb",
+  "task_id": "bump-package-versions-on-main-to-0-10-2-after-npm-publish",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-07-14T15:35:05.683Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Bump package versions on main to 0.10.2 after npm publish",
+    "priority": "P3",
+    "tags": [
+      "release"
+    ]
+  }
+}
