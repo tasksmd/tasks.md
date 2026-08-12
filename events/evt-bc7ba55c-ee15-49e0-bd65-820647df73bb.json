@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-bc7ba55c-ee15-49e0-bd65-820647df73bb",
+  "task_id": "adopt-source-backed-planning-workflow",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-08-12T20:05:38.574Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-e73f4dc3-591a-4117-bdc2-8f0c6a2e04b3",
+    "lease_expires_at": 1786651538574
+  }
+}
