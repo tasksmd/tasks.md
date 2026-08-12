@@ -215,11 +215,15 @@ at the end of this section is what consumers copy; see also
   token and is collision-free; a lost race exits nonzero, so pick another task.
 - For non-trivial tasks, write a plan to `docs/plans/<task-id>.md` by copying
   `docs/templates/plan-template.md`, then validate it with a reviewer subagent
-  (`reviewer` profile, fallback chain `qa-engineer` → `researcher`). Commit
-  the plan + the appended `## Reviewer verdict` block (`**Verdict**: approved`)
-  before any implementation commit lands. Trivial tasks — single file under 30
-  minutes with an obvious fix — skip the plan step. See `commands/next-task.md`
-  § "Plan and validate" for the full rules.
+  (`reviewer` profile, fallback chain `qa-engineer` → `researcher`). Read
+  `writing-plans` when it is installed. Plans lead with overall goal/vision and
+  alternatives, distinguish facts from proposals, and use numbered tasks with
+  why, dependencies/parallelism, evidence, and verification. Cross-system
+  plans also define the source, transport, versioned bootstrap contract, and
+  state provenance. Commit the plan + the appended `## Reviewer verdict` block
+  (`**Verdict**: approved`) before any implementation commit lands. Trivial
+  tasks — single file under 30 minutes with an obvious fix — skip the plan
+  step. See `commands/next-task.md` § "Plan and validate" for the full rules.
 - **Complete via the CLI**, never by editing `TASKS.md`: `tasks complete <id>`
   appends a `completed` event and the projection refreshes the snapshot. Add a
   task with `tasks create "<title>"`, release one with `tasks unclaim <id>`.
