@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-7499a40d-908a-4f83-9a91-cdc38d3f669b",
+  "task_id": "adopt-source-backed-planning-workflow",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-08-12T20:05:14.354Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Adopt source-backed planning workflow",
+    "priority": "P2",
+    "tags": [],
+    "body": "Update the canonical task planning workflow and templates to require source-backed evidence, explicit boundary contracts, and verifiable numbered work."
+  }
+}
