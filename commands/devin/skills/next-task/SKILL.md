@@ -409,7 +409,26 @@ Trivial tasks skip planning — implement directly under [Claim and do the work]
 
 1. **Check for an existing plan.** If `docs/plans/<task-id>.md` exists AND its last `**Verdict**:` line in the `## Reviewer verdict` section is `approved`, skip to step 4. The plan is reusable across sessions; only re-validate if the code has drifted significantly since the plan was written.
 
-2. **Write the plan.** Create `docs/plans/<task-id>.md` by copying `docs/templates/plan-template.md` and filling each required section: **Goal**, **Why**, **Scope (in)**, **Scope (out)**, **Implementation steps**, **Risks and mitigations**, **Acceptance criteria**. Every section is required; the reviewer subagent will flag any that are missing. Stage and commit only the plan file:
+2. **Write the plan.** Read `writing-plans` before authoring when it is
+   installed. Create `docs/plans/<task-id>.md` by copying
+   `docs/templates/plan-template.md`. Every plan must begin with **Overall goal
+   and vision**, then state material alternatives, source-backed current facts,
+   scope, reuse candidates, numbered work, risks, acceptance criteria, and
+   rollout/regression coverage. Every numbered task must state **Why**,
+   dependency or parallelism, owner/boundary, acceptance evidence, and an exact
+   verification.
+
+   For a cross-repo, host, embedded-surface, or state integration, define the
+   boundary before implementation: authoritative source of each datum,
+   transport, versioning, validation, updates/resets, and error/retry behavior.
+   If an embedded surface receives host context, use a versioned
+   `HostBootstrapPayload` rather than assuming the host's private state is
+   portable. Separate Redux store ownership from domain-state provenance. If
+   `task-command-center` is installed, use its
+   `references/implementation-plan-template.md` for this class of plan.
+
+   Every required section is mandatory; the reviewer subagent will flag a
+   missing section. Stage and commit only the plan file:
 
    ```bash
    git add docs/plans/<task-id>.md

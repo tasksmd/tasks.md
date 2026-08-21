@@ -75,6 +75,22 @@ afterEach(() => {
 });
 
 describe("generateCommands", () => {
+  it("keeps the canonical plan workflow source-backed and dependency-aware", () => {
+    const repoRoot = join(import.meta.dirname, "..", "..", "..", "..");
+    const canonical = readFileSync(join(repoRoot, "commands", "next-task.md"), "utf-8");
+    const template = readFileSync(join(repoRoot, "docs", "templates", "plan-template.md"), "utf-8");
+
+    expect(canonical).toContain("writing-plans");
+    expect(canonical).toContain("HostBootstrapPayload");
+    expect(canonical).toContain("state provenance");
+    expect(template).toContain("## Overall goal and vision");
+    expect(template).toContain("## Decision and alternatives");
+    expect(template).toContain("## Evidence and current state");
+    expect(template).toContain("## Numbered work breakdown");
+    expect(template).toContain("**Parallelism:**");
+    expect(template).toContain("## Rollout and regression coverage");
+  });
+
   describe("next-task variants", () => {
     it("generates all 6 agent command files", () => {
       const result = generateCommands(tempDir);

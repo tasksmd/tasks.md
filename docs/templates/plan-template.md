@@ -12,13 +12,25 @@
 - **Status**: draft | validated | implemented
 - **Validated-by**: _(filled in after reviewer subagent run; format: `<reviewer-agent-id> on <YYYY-MM-DD>`)_
 
-## Goal
+## Overall goal and vision
 
-<One-paragraph statement of what the change accomplishes — the operator-facing outcome, not the implementation. Match the task's title and **Details**.>
+<Start with the operator-facing outcome, why the work is needed now, the
+observed constraint or failure mode, and the durable capability it creates. Do
+not begin with files, frameworks, or a proposed implementation.>
 
-## Why
+## Decision and alternatives
 
-<One-to-two paragraphs of motivation. Cite observed failure modes, measurements, or constraints. Avoid hand-wavy "this would be nice" — if you can't name a specific failure mode or measurement the change improves, the task may not be ready for a plan.>
+<State the selected direction, material alternatives, and why this choice is
+safer, more reusable, or less coupled. Label unresolved choices explicitly.>
+
+## Evidence and current state
+
+| Claim | Current source of truth | How it is provided | Status |
+| --- | --- | --- | --- |
+| <claim> | <file, API, configuration, or product source> | <runtime path> | fact \| proposed \| verify |
+
+<Keep sourced facts distinct from proposals. Do not infer context from a
+similarly named host field or store.>
 
 ## Scope (in)
 
@@ -28,17 +40,34 @@
 
 - <Bulleted list of explicitly deferred work, with target follow-up task IDs if known. Anything obviously adjacent to the task that this plan does NOT touch belongs here so reviewers don't suggest adding it.>
 
-## Implementation steps
+## Boundary contracts (when applicable)
 
-### Step 1: <step title>
+<For a host, embedded surface, API, or state boundary, name the owner,
+transport, authoritative source, schema/version, validation, update/reset
+behavior, and error/retry UX. Separate Redux store ownership from domain-state
+provenance.>
 
-<Description. End each step with the verification command that proves the step succeeded.>
+### HostBootstrapPayload (host integration only)
 
-### Step 2: <step title>
+<Define the versioned payload: stable identifiers, host/record context,
+capability snapshot, correlation or sequence fields, origin allowlist, schema
+validation, and stale/update handling. Explain why it is safer than consuming
+the host's private store or passing unbounded URL state.>
 
-<...>
+## Numbered work breakdown
 
-<Add as many steps as the work needs. Each step should be one commit or one focused edit. Steps that don't naturally fit one commit are probably too large — split.>
+### 1. <deliverable>
+
+- **Why:** <risk removed or capability enabled>
+- **Parallelism:** <parallel with N/M | depends on N>
+- **Owner / boundary:** <team or repository>
+- **Change:** <smallest concrete deliverable>
+- **Evidence / acceptance:** <falsifiable result>
+- **Verification:** `<exact command or observable check>`
+
+<Add as many numbered tasks as the work needs. Each task should be one commit
+or focused delivery. Name parallel lanes explicitly; do not hide dependencies
+inside prose.>
 
 ## Risks and mitigations
 
@@ -54,6 +83,13 @@
 3. <...>
 
 <Every criterion must have a deterministic verification command. "It works" is not a criterion. "`npm test` exits 0 and `grep -c 'Foo' src/foo.ts` returns ≥1" is.>
+
+## Rollout and regression coverage
+
+- **Merge / deployment order:** <ordered repositories, owners, and feature gates>
+- **Security:** <auth, authorization, origin, CSP, sensitive-data handling>
+- **Regression coverage:** <unit, contract, integration, and end-to-end checks>
+- **Open decisions:** <owner + evidence required to close each one>
 
 ## Reviewer verdict
 
