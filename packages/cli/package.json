@@ -1,0 +1,62 @@
+{
+  "name": "@tasks-md/cli",
+  "version": "0.10.2",
+  "description": "Unified CLI for TASKS.md task queue management",
+  "author": "Fyodor Ivanischev",
+  "type": "module",
+  "main": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "bin": {
+    "tasks": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/lib.js",
+      "types": "./dist/lib.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!dist/**/*.test.*",
+    "commands/**"
+  ],
+  "scripts": {
+    "copy-commands": "rm -rf commands && cp -r ../../commands commands",
+    "build": "tsc && npm run copy-commands",
+    "test": "vitest run --exclude dist",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "tasks",
+    "cli",
+    "ai-agents",
+    "task-queue",
+    "markdown"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tasksmd/tasks.md.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://tasks.md",
+  "dependencies": {
+    "@tasks-md/lint": "^0.10.2",
+    "@tasks-md/parser": "^0.10.2",
+    "commander": "^13.0.0"
+  },
+  "devDependencies": {
+    "@tasks-md/conformance": "*",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "4.0.18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

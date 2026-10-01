@@ -1,0 +1,23 @@
+{
+  "name": "tasks-md",
+  "private": true,
+  "type": "module",
+  "description": "A spec and tooling for TASKS.md \u2014 the AI-native task queue format",
+  "author": "Fyodor Ivanischev",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w packages/parser && npm run build -w packages/conformance && npm run build -w packages/lint -w packages/mcp -w packages/cli",
+    "build:site": "node scripts/build-site.js",
+    "lint": "node packages/lint/dist/cli.js TASKS.md && node scripts/check-docs-backend-drift.mjs",
+    "lint:docs-drift": "node scripts/check-docs-backend-drift.mjs",
+    "test": "npm test --workspaces --if-present",
+    "test:cached": "cached-run npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tasksmd/tasks.md"
+  },
+  "license": "MIT"
+}

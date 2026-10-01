@@ -1,0 +1,57 @@
+{
+  "name": "@tasks-md/lint",
+  "version": "0.10.2",
+  "description": "Validate TASKS.md files against the spec",
+  "author": "Fyodor Ivanischev",
+  "type": "module",
+  "main": "./dist/lint.js",
+  "types": "./dist/lint.d.ts",
+  "bin": {
+    "tasks-lint": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/lint.js",
+      "types": "./dist/lint.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!dist/**/*.test.*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --exclude dist",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "tasks",
+    "lint",
+    "ai-agents",
+    "markdown",
+    "task-queue"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tasksmd/tasks.md.git",
+    "directory": "packages/lint"
+  },
+  "homepage": "https://tasks.md",
+  "dependencies": {
+    "@tasks-md/parser": "^0.10.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "4.0.18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

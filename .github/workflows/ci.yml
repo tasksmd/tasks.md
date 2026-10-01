@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build linter
+        run: npm run build --workspace packages/parser --workspace packages/lint
+
+      - name: Lint examples
+        run: node packages/lint/dist/cli.js examples/
+
+      - name: Lint TASKS.md
+        run: |
+          if [ -f TASKS.md ]; then
+            node packages/lint/dist/cli.js TASKS.md
+          fi
+
+      - name: Check docs backend drift
+        run: |
+          node scripts/check-docs-backend-drift.mjs --self-test
+          node scripts/check-docs-backend-drift.mjs
+
+  commands-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CLI
+        run: npm run build
+
+      - name: Regenerate command files
+        run: node packages/cli/dist/cli.js generate-commands
+
+      - name: Check for drift
+        run: |
+          if ! git diff --exit-code commands/; then
+            echo ""
+            echo "ERROR: Generated command files are out of date."
+            echo "Run: npx tasks-cli generate-commands"
+            echo "Then commit the updated files."
+            exit 1
+          fi
+          echo "✓ Generated commands match canonical source"
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Run all tests
+        run: npm test
+
+  action-dogfood:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Drop `examples/` from the dogfood path until @tasks-md/lint publishes
+      # a release containing the doc-filename skip in packages/lint/src/lint.ts.
+      # The local `Lint examples` step in the `test` job still covers it via
+      # the in-repo build, so we don't lose coverage on this PR.
+      - uses: ./.github/actions/lint
+        with:
+          paths: "TASKS.md"

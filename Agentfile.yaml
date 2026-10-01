@@ -1,0 +1,7 @@
+# Agentfile — tasks.md project agent configuration
+# Run `agentbrew sync` to deploy to all agents.
+
+mcp:
+  - context7
+  - tasks-mcp
+  - github

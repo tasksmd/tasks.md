@@ -1,0 +1,51 @@
+{
+  "name": "@tasks-md/parser",
+  "version": "0.10.2",
+  "description": "Parser for TASKS.md files — extracts tasks, metadata, priorities, and blockers",
+  "author": "Fyodor Ivanischev",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!dist/**/*.test.*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --exclude dist",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "tasks",
+    "parser",
+    "markdown",
+    "ai-agents",
+    "task-queue"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tasksmd/tasks.md.git",
+    "directory": "packages/parser"
+  },
+  "homepage": "https://tasks.md",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "4.0.18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

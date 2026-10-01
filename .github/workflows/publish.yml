@@ -1,0 +1,84 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+# Trusted Publishing (npm OIDC, August 2025+):
+# - No NPM_TOKEN secret required — npm verifies the GitHub Actions OIDC
+#   token against the Trusted Publisher rule configured per-package on
+#   npmjs.com.
+# - `id-token: write` is required so GitHub mints the OIDC token.
+# - `npm publish --provenance` records the build provenance attestation
+#   alongside the package — viewable on the npm page (`Provenance` tab)
+#   and verifiable via `npm audit signatures`.
+# - Prerequisite (one-time, per package, on npmjs.com): the package's
+#   "Publishing access" → "Trusted Publishers" section must list this
+#   repo (`tasksmd/tasks.md`), the workflow file (`.github/workflows/
+#   publish.yml`), and the environment (none — runs on release event).
+#   See: https://docs.npmjs.com/trusted-publishers
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # OIDC Trusted Publishing needs npm >= 11.5.1; Node 22 ships npm 10.x,
+      # which can sign provenance but cannot authenticate the publish via OIDC
+      # (the publish PUT 404s). Upgrade npm so trusted publishing works.
+      - name: Upgrade npm for OIDC Trusted Publishing
+        run: npm install -g npm@latest && npm --version
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Sync package versions
+        run: bash scripts/sync-versions.sh "${{ steps.version.outputs.VERSION }}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Run all tests
+        run: npm test
+
+      - name: Publish packages to npm (Trusted Publishing + provenance)
+        run: |
+          PACKAGES=(parser lint mcp cli)
+          for pkg in "${PACKAGES[@]}"; do
+            dir="packages/$pkg"
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+
+            if npm view "$name@$version" >/dev/null 2>&1; then
+              echo "⏭  $name@$version already published, skipping"
+            else
+              (cd "$dir" && npm publish --access=public --provenance)
+              echo "✓  Published $name@$version (with provenance attestation)"
+            fi
+          done
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/*/package.json
+          if git diff --cached --quiet; then
+            echo "No version changes to commit"
+          else
+            git commit -m "chore: bump version to ${{ steps.version.outputs.VERSION }}"
+            git push origin HEAD:main
+          fi
