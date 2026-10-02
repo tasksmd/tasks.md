@@ -137,4 +137,4 @@ AGENTS.md sets the rules of the repo; TASKS.md lists the work; per-agent files (
 
 ## How we measure success
 
-Adoption — the number of repos with a `TASKS.md` at their root — is the only metric that counts, not any package's feature list. Ready-made `/next-task` commands ship today for Claude Code, Codex, Cursor, Devin, Gemini CLI, and Windsurf (`npx tasks generate-commands`). Every new agent that reads `TASKS.md` or ships first-class `/next-task` support is a milestone.
+Adoption — the number of repos with a `TASKS.md` at their root — is the only metric that counts, not any package's feature list. Ready-made `/next-task` commands ship today for Claude Code, Codex, Cursor, Devin, Gemini CLI, and Windsurf (`npx tasks generate-commands`). The Devin and Windsurf variants are frozen: the generator keeps them current, but they get no agent-specific fixes or features. Every new agent that reads `TASKS.md` or ships first-class `/next-task` support is a milestone.
