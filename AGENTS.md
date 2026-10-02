@@ -135,6 +135,14 @@ edges that cost real debugging time — captured here so they don't recur:
 The root docs and command files are the source of truth. Installed copies under
 agent config directories are generated mirrors; do not edit those mirrors.
 
+### Frozen agent variants
+
+The Devin and Windsurf variants are frozen (owner decision 2026-10-02). Keep
+generating them with `npx tasks generate-commands`, and keep their entries in
+`packages/cli/src/commands/install.ts`. Never add a Devin- or Windsurf-specific
+fix, feature, format, or task. If a change for another agent breaks a frozen
+variant's existing test, skip that test with a note naming this section.
+
 ### Command Propagation
 
 Edit only the canonical sources (`commands/next-task.md` and

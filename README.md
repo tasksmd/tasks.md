@@ -295,6 +295,8 @@ Or copy manually into your project (commit it so your team gets it too):
 
 All paths are **project-local** (inside your repo). See [commands/](commands/) for source files and format details.
 
+The Devin and Windsurf variants are frozen. They are still generated, but they get no agent-specific fixes or features.
+
 ### Queue entry modes
 
 | Mode | Use when | Example |
