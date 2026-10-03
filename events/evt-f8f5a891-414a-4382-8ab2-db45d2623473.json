@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-f8f5a891-414a-4382-8ab2-db45d2623473",
+  "task_id": "bootstrap-public-tasks-claims-log-and-release-flow",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-03T20:46:57.241Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Bootstrap the public tasks-claims log and release flow",
+    "priority": "P1",
+    "tags": [
+      "git-native",
+      "enforcement",
+      "release"
+    ],
+    "body": "The public repo was recreated without its tasks-claims ref, so the armed claim-check rejects every code PR and the open backlog was lost. Push a clean log that restores the generic backlog, render TASKS.md from it, and stop publish.yml from pushing to main (the main rulesets reject that push)."
+  }
+}
