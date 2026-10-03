@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-0cd01983-aafd-46a5-a292-1ba92498b19a",
+  "task_id": "reclaim-unreachable-objects-after-compaction-on-self-hosted",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-03T20:48:20.979Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Reclaim unreachable objects after compaction on self-hosted remotes",
+    "priority": "P3",
+    "tags": [
+      "git-native",
+      "compaction",
+      "ops"
+    ],
+    "body": "Compaction force-pushes a rewritten tasks-claims ref; the dropped (completed-task) commits become unreachable but linger in the remote's object store until git gc. github.com auto-GCs periodically so clone/fetch cost still drops (clone only fetches reachable objects), but a self-hosted bare remote (GHE/GitLab/Gitea) needs periodic gc to actually reclaim disk. Document the recommended server gc cadence (or a post-compaction maintenance hint), and consider whether the projection should hint it. Surfaced implementing auto-trigger-git-native-log-compaction."
+  }
+}
