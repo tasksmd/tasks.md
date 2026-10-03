@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-47dcb43d-d7fb-4b44-9074-e91a539c711e",
+  "task_id": "land-0-10-3-version-bump-and-claim-check-cli-pin",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-03T20:47:07.887Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Land the 0.10.3 version bump and the claim-check CLI pin",
+    "priority": "P1",
+    "tags": [
+      "release",
+      "ci"
+    ],
+    "body": "Land the 0.10.3 version bump (`bash scripts/sync-versions.sh 0.10.3`) on main in a PR with Task/Task-Claim trailers. After @tasks-md/cli 0.10.3 is on public npm (`curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '.\"dist-tags\".latest'`), change `CLI_VERSION: \"0.10.0\"` to `CLI_VERSION: \"0.10.3\"` in .github/workflows/tasks-claim-check.yml."
+  }
+}
