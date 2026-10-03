@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-e15e4c91-f66b-413c-8200-8c24b41e43f6",
+  "task_id": "bootstrap-public-tasks-claims-log-and-release-flow",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-03T20:51:14.735Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-59b8fe6c-99ba-4417-82d9-bc0f9eab4151",
+    "lease_expires_at": 1791147074733
+  }
+}
