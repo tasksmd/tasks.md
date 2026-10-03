@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-e8c2b8f7-50ff-416f-8a73-cdafbd8e811c",
+  "task_id": "decide-projection-to-main-snapshot-freshness",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-03T20:48:11.351Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Decide projection-to-main snapshot freshness",
+    "priority": "P3",
+    "tags": [
+      "git-native",
+      "projection"
+    ],
+    "body": "The projection force-pushes TASKS.md to the tasksmd/generated-snapshot branch, so main lags the live log until a human opens and merges a PR from it (the step named 'Open/update the snapshot PR' opens no PR). Decide whether to auto-merge the snapshot PR, commit directly to main, or keep the manual gate, and document the chosen freshness contract in spec.md."
+  }
+}
