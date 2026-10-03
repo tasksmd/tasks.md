@@ -21,7 +21,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -43,8 +43,18 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Sync package versions
-        run: bash scripts/sync-versions.sh "${{ steps.version.outputs.VERSION }}"
+      # The main rulesets reject pushes from this job, so bump versions in a PR
+      # before tagging (`bash scripts/sync-versions.sh <version>`). This step
+      # only checks the tag against package.json and fails before publishing.
+      - name: Check package versions match the tag
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          bash scripts/sync-versions.sh "$VERSION"
+          if ! git diff --exit-code -- packages/*/package.json; then
+            echo "::error::package.json versions do not match tag v$VERSION. Bump them in a PR before tagging: bash scripts/sync-versions.sh $VERSION"
+            exit 1
+          fi
 
       - name: Install dependencies
         run: npm ci
@@ -70,15 +80,3 @@ jobs:
               echo "✓  Published $name@$version (with provenance attestation)"
             fi
           done
-
-      - name: Commit version bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add packages/*/package.json
-          if git diff --cached --quiet; then
-            echo "No version changes to commit"
-          else
-            git commit -m "chore: bump version to ${{ steps.version.outputs.VERSION }}"
-            git push origin HEAD:main
-          fi

@@ -534,10 +534,11 @@ All four npm packages share a single version and are published together:
 
 ### How to release
 
-1. Go to [GitHub Releases → New](https://github.com/tasksmd/tasks.md/releases/new)
-2. Create a new tag with a `v` prefix (e.g. `v0.3.1`) targeting `main`
-3. Add release notes (GitHub can auto-generate them)
-4. Click **Publish release**
+1. Bump all package versions in a PR (`bash scripts/sync-versions.sh 0.3.1`) and merge it
+2. Go to [GitHub Releases → New](https://github.com/tasksmd/tasks.md/releases/new)
+3. Create a new tag with a `v` prefix (e.g. `v0.3.1`) targeting `main`
+4. Add release notes (GitHub can auto-generate them)
+5. Click **Publish release**
 
 Or from the CLI:
 
@@ -546,10 +547,11 @@ gh release create v0.3.1 --generate-notes
 ```
 
 The [publish workflow](.github/workflows/publish.yml) runs automatically and:
-1. Syncs all `package.json` versions to match the tag
+1. Checks that all `package.json` versions match the tag (it stops before publishing if they don't)
 2. Builds and runs the full test suite
 3. Publishes all 4 packages to npm in dependency order
-4. Commits the version bump back to `main`
+
+The workflow never pushes to `main`, because the `main` rulesets reject direct pushes.
 
 ### Setup (one-time)
 
