@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d9773a3e-6c0b-49e1-a7cf-6ed911cf7c0d",
+  "task_id": "report-which-events-are-corrupt-not-just-the-count",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-03T20:49:00.658Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Report which events are corrupt, not just the count",
+    "priority": "P3",
+    "tags": [
+      "git-native",
+      "observability",
+      "dx"
+    ],
+    "body": "tasks doctor + fleet stats now report a corrupt-event COUNT (corruptEventCount), but not WHICH events/commits are malformed, so debugging a corrupt tasks-claims log still means manual git archaeology. Add a way to list the offending commit + path (e.g. tasks fleet doctor --verbose or a dedicated diagnostic) — readEvents already knows the spec (<commit>:<path>) of each blob it fails to parse; thread that out. Surfaced adding error+health visibility to the git-native backend."
+  }
+}
