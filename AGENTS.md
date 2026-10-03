@@ -91,6 +91,11 @@ edges that cost real debugging time — captured here so they don't recur:
 - **Trusted Publishers are configured per-package on npmjs.com**, not in the repo.
   `@tasks-md/parser`, `@tasks-md/lint`, `@tasks-md/cli`, and `tasks-mcp` each list
   `tasksmd/tasks.md` -> `publish.yml` (no environment). All four are set.
+- **`publish.yml` never pushes to `main`.** The `main` rulesets (no
+  non-fast-forward, required `claim-check`) reject a push from the release job.
+  Bump versions in a PR with `bash scripts/sync-versions.sh <version>` before you
+  tag. The workflow only checks the tag against `package.json` and stops before
+  publishing on a mismatch.
 - **`scripts/sync-versions.sh` must skip the private `@tasks-md/conformance`.**
   Bumping its cross-reference to `^<version>` makes `npm ci` try to fetch the
   unpublished package from the registry -> 404. It stays pinned `*` so it always
