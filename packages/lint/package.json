@@ -1,6 +1,6 @@
 {
   "name": "@tasks-md/lint",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "Validate TASKS.md files against the spec",
   "author": "Fyodor Ivanischev",
   "type": "module",
@@ -41,7 +41,7 @@
   },
   "homepage": "https://tasks.md",
   "dependencies": {
-    "@tasks-md/parser": "^0.10.2"
+    "@tasks-md/parser": "^0.10.3"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
