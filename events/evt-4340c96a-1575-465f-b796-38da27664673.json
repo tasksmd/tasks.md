@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-4340c96a-1575-465f-b796-38da27664673",
+  "task_id": "set-up-github-pages-custom-domain",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-03T20:47:59.489Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Set up custom domain for GitHub Pages",
+    "priority": "P3",
+    "tags": [
+      "docs",
+      "github-pages",
+      "domain",
+      "public-write"
+    ],
+    "body": "Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md\ndomain for a cleaner URL.",
+    "blocked": "needs-user-approval — buying or configuring a public\ndomain/DNS and GitHub Pages custom domain is an external public action that\nrequires explicit current-session operator approval."
+  }
+}
