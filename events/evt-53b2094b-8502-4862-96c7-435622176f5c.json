@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-53b2094b-8502-4862-96c7-435622176f5c",
+  "task_id": "drop-volatile-inventory-counts-from-canonical-docs",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-07T23:01:12.116Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-8bf3cc69-3a9e-4b27-8302-f737afb89c97",
+    "lease_expires_at": 1791500472116
+  }
+}
