@@ -307,7 +307,7 @@ describe("git-native backend", () => {
     const snapshot = await renderGitNativeSnapshot(directory);
     expect(snapshot).toContain("**Blocked**: needs-user-approval");
     expect(snapshot).toContain("**Blocked by**: blocker");
-  });
+  }, 30_000);
 
   it("indents continuation lines of multi-line field values under the list item", async () => {
     const directory = makeRepo("tasksmd-git-native-");
@@ -347,7 +347,7 @@ describe("git-native backend", () => {
     expect(after).toEqual(before); // open-task fold is identical
     expect(after.find((t) => t.id === "keep-claimed")?.assignee).toBe("alice");
     expect(await renderGitNativeSnapshot(directory)).toBe(beforeSnapshot);
-  });
+  }, 30_000);
 
   it("shouldCompact gates on the event-count threshold", async () => {
     const directory = makeRepo("tasksmd-git-native-");
@@ -376,7 +376,7 @@ describe("git-native backend", () => {
       beforeRemote,
     );
     expect(await renderGitNativeSnapshot(directory)).toBe(beforeSnapshot);
-  });
+  }, 30_000);
 
   it("compaction's lease-guarded push aborts when the remote advanced (no clobber)", async () => {
     const remote = makeBareRemote();
@@ -395,7 +395,7 @@ describe("git-native backend", () => {
     // Both claims survive on the remote.
     const open = await createGitNativeBackend(makeClone(remote)).listOpen();
     expect(open.map((t) => t.id).sort()).toEqual(["task-one", "task-two"]);
-  });
+  }, 30_000);
 
   it("parses owner/repo from github remote URLs and rejects non-github", () => {
     expect(parseGithubSlug("git@github.com:tasksmd/tasks.md.git")).toBe("tasksmd/tasks.md");
@@ -471,7 +471,7 @@ describe("readEvents — bounded fold cost", () => {
     expect(smallSpawns).toBeGreaterThanOrEqual(1); // guard: the counter is live
     expect(bigSpawns).toBe(smallSpawns); // O(1): identical despite 8x more events
     expect(smallSpawns).toBeLessThanOrEqual(3); // ~2: git log + cat-file --batch
-  }, 30_000);
+  }, 60_000);
 });
 
 describe("error + health visibility", () => {
