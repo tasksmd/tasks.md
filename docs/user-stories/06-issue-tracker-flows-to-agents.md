@@ -148,7 +148,7 @@ Linear priority mapping: Urgent → P0, High → P1, Medium → P2, Low/No prior
 
 **Label normalization** — Linear labels are normalized to TASKS.md tag conventions: lowercased and with whitespace replaced by `-` (so `Bug Fix` becomes `bug-fix`, `In Progress` becomes `in-progress`). This keeps tags consistent across providers since GitHub and Jira tags are already lowercased.
 
-All three providers share one command — `tasks sync <provider>` — and the same bridge pattern: import the "what" from your tracker so agents can execute the "how".
+Every provider shares one command — `tasks sync <provider>` — and the same bridge pattern: import the "what" from your tracker so agents can execute the "how".
 
 ## Walkthrough: GitHub issue to closed task
 

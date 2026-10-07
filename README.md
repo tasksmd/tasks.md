@@ -17,7 +17,7 @@ AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 - **One Markdown file** any agent or human reads and writes — no accounts, no API, no server, works offline.
 - **In your editor, in git** — add a task without leaving your IDE; every change is version-controlled next to the code.
 - **Agent-native** — LLMs parse Markdown directly, and the [`/next-task`](#the-next-task-command) command turns the queue into an autonomous work loop.
-- **Vendor-neutral** — one spec, six agents (Claude Code, Cursor, Devin, Codex, Gemini CLI, Windsurf), any CI.
+- **Vendor-neutral** — one spec for Claude Code, Cursor, Devin, Codex, Gemini CLI, and Windsurf, any CI.
 - **Scales with you** — start solo on the file backend; switch to the collision-free [git-native backend](#backends) the instant a second writer or a fleet of agents shares the queue — configuration, never a migration.
 
 ## Installation
@@ -36,7 +36,7 @@ with `npx -y @tasks-md/lint TASKS.md`, and tell me what you did. If Node isn't
 available, write the files directly from https://github.com/tasksmd/tasks.md.
 ```
 
-The same steps ship as a `/setup` command for all six agents — see [`commands/setup.md`](commands/setup.md).
+The same steps ship as a `/setup` command for every supported agent — see [`commands/setup.md`](commands/setup.md).
 
 ### 2. Or run this single command
 
@@ -523,7 +523,7 @@ They're companions. AGENTS.md tells agents how your project works (build command
 
 ## Releasing
 
-All four npm packages share a single version and are published together:
+All npm packages in [`packages/`](packages/) share a single version and are published together:
 
 | Package | npm |
 |---------|-----|
@@ -549,7 +549,7 @@ gh release create v0.3.1 --generate-notes
 The [publish workflow](.github/workflows/publish.yml) runs automatically and:
 1. Checks that all `package.json` versions match the tag (it stops before publishing if they don't)
 2. Builds and runs the full test suite
-3. Publishes all 4 packages to npm in dependency order
+3. Publishes every package to npm in dependency order
 
 The workflow never pushes to `main`, because the `main` rulesets reject direct pushes.
 
