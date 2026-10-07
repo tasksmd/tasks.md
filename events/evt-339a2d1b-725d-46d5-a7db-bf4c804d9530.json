@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-339a2d1b-725d-46d5-a7db-bf4c804d9530",
+  "task_id": "give-slow-git-native-tests-longer-timeouts",
+  "event_type": "claimed",
+  "actor_id": "fyodoriv",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-07T23:01:57.005Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-deb3d13a-6f7e-48ec-89bf-b34da12b426d",
+    "lease_expires_at": 1791500517004
+  }
+}
