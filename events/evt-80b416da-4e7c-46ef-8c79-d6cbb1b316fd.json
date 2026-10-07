@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-80b416da-4e7c-46ef-8c79-d6cbb1b316fd",
+  "task_id": "drop-volatile-inventory-counts-from-canonical-docs",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-07T22:59:44.809Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Drop volatile inventory counts from canonical docs",
+    "priority": "P2",
+    "tags": [
+      "docs"
+    ],
+    "body": "Counts of repos, agents, packages, and variants go stale. Remove them from canonical docs and gate them with scripts/check-volatile-counts.mjs. PR #4."
+  }
+}
