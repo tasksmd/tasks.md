@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-9b89c64c-281a-4f2f-92cc-2ebb86d60da2",
+  "task_id": "drop-volatile-inventory-counts-from-canonical-docs",
+  "event_type": "completed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-07T23:07:00.304Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
