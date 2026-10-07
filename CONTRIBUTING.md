@@ -22,7 +22,7 @@ npm run build
 npm test
 ```
 
-This is an npm workspace with four packages under `packages/`:
+This is an npm workspace. Each package lives under `packages/`:
 
 | Package             | Purpose                                             |
 |---------------------|-----------------------------------------------------|
@@ -106,7 +106,7 @@ reference the relevant section.
 
 ## Releasing (maintainers only)
 
-Releases ship the four npm packages — `@tasks-md/parser`, `@tasks-md/lint`,
+Releases ship the npm packages under `packages/` — `@tasks-md/parser`, `@tasks-md/lint`,
 `@tasks-md/cli`, and `tasks-mcp` — from a single GitHub release tag.
 
 The flow:
@@ -118,7 +118,7 @@ The flow:
 
 ### One-time Trusted Publisher setup (per package)
 
-For each of the four packages, on npmjs.com:
+For each package under `packages/`, on npmjs.com:
 
 1. Open the package page → **Settings** → **Publishing access**.
 2. Under **Trusted Publishers**, click **Add a trusted publisher**.

@@ -35,6 +35,9 @@ jobs:
           node scripts/check-docs-backend-drift.mjs --self-test
           node scripts/check-docs-backend-drift.mjs
 
+      - name: Check volatile inventory counts
+        run: npm run lint:volatile-counts
+
   commands-drift:
     runs-on: ubuntu-latest
     steps:
