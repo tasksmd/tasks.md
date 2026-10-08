@@ -241,12 +241,19 @@ function fireRefreshDispatch(directory: string): void {
   }
 }
 
-function pushClaimsRef(directory: string): boolean {
+// Push the exact commit we appended, not whatever the ref names at push time:
+// worktrees share refs/heads/tasks-claims, so a sibling's forced fetch can
+// rewind it between append and push, and pushing the ref name would then
+// "succeed" without our event ever reaching origin.
+function pushClaimsRef(directory: string, commit: string | undefined): boolean {
   if (!hasOrigin(directory)) {
     return true;
   }
+  if (!commit) {
+    return false;
+  }
   try {
-    git(directory, ["push", "origin", `${CLAIMS_REF}:${CLAIMS_REF}`]);
+    git(directory, ["push", "origin", `${commit}:${CLAIMS_REF}`]);
     fireRefreshDispatch(directory);
     return true;
   } catch {
@@ -338,8 +345,11 @@ function serializeEvent(event: GitNativeEvent): string {
   return `${JSON.stringify(event, null, 2)}\n`;
 }
 
-function appendEvent(directory: string, event: GitNativeEvent): void {
-  const parent = currentClaimsCommit(directory);
+function appendEvent(
+  directory: string,
+  event: GitNativeEvent,
+  parent: string | undefined = currentClaimsCommit(directory),
+): string {
   const indexPath = join(tmpdir(), `tasksmd-index-${randomUUID()}`);
   const env: NodeJS.ProcessEnv = {
     GIT_INDEX_FILE: indexPath,
@@ -372,6 +382,7 @@ function appendEvent(directory: string, event: GitNativeEvent): void {
       ? ["update-ref", CLAIMS_REF, commit, parent]
       : ["update-ref", CLAIMS_REF, commit, ""];
     git(directory, updateArgs);
+    return commit;
   } finally {
     rmSync(indexPath, { force: true });
   }
@@ -752,8 +763,8 @@ async function appendWithRetry(
 ): Promise<void> {
   for (let attempt = 0; attempt < MAX_PUSH_ATTEMPTS; attempt += 1) {
     fetchClaimsRef(directory);
-    appendEvent(directory, build());
-    if (pushClaimsRef(directory)) {
+    const commit = appendEvent(directory, build());
+    if (pushClaimsRef(directory, commit)) {
       return;
     }
     if (attempt < MAX_PUSH_ATTEMPTS - 1) {
@@ -843,7 +854,7 @@ export function createGitNativeBackend(
         // Recompute the id against the latest fold so a concurrent create with
         // the same title slug still gets a unique id.
         const id = uniqueTaskId(input.title, foldLog(directory));
-        appendEvent(
+        const commit = appendEvent(
           directory,
           makeEvent(id, "created", options, {
             title: input.title,
@@ -854,7 +865,7 @@ export function createGitNativeBackend(
             blocked_by: input.blockedBy,
           }),
         );
-        if (pushClaimsRef(directory)) {
+        if (pushClaimsRef(directory, commit)) {
           return {
             id,
             title: input.title,
@@ -941,14 +952,14 @@ export function createGitNativeBackend(
         };
       }
       const claimId = `claim-${randomUUID()}`;
-      appendEvent(
+      const commit = appendEvent(
         directory,
         makeEvent(id, "claimed", options, {
           claim_id: claimId,
           lease_expires_at: leaseExpiry(),
         }),
       );
-      if (!pushClaimsRef(directory)) {
+      if (!pushClaimsRef(directory, commit)) {
         fetchClaimsRef(directory);
         const winner = foldLog(directory).get(id);
         return {
@@ -1129,8 +1140,9 @@ export function previewMigration(tasks: MigrationTask[]): MigrationEventPreview[
 export function applyMigration(directory: string, tasks: MigrationTask[]): void {
   previewMigration(tasks); // throws on duplicate/missing ids before any write
   fetchClaimsRef(directory);
+  let tip = currentClaimsCommit(directory);
   for (const task of tasks) {
-    appendEvent(
+    tip = appendEvent(
       directory,
       makeEvent(task.id, "created", undefined, {
         title: task.title,
@@ -1140,10 +1152,11 @@ export function applyMigration(directory: string, tasks: MigrationTask[]): void 
         blocked: task.blocked,
         blocked_by: task.blockedBy,
       }),
+      tip,
     );
     if (task.claimedBy) {
       const owner = task.claimedBy.replace(/^@/, "");
-      appendEvent(
+      tip = appendEvent(
         directory,
         makeEvent(task.id, "claimed", { actorId: owner }, {
           // Random suffix — NOT the public task id. The claim_id is a fencing
@@ -1156,10 +1169,11 @@ export function applyMigration(directory: string, tasks: MigrationTask[]): void 
           // migrated task to a dead owner forever).
           lease_expires_at: Date.now() + DEFAULT_LEASE_MS,
         }),
+        tip,
       );
     }
   }
-  if (!pushClaimsRef(directory)) {
+  if (!pushClaimsRef(directory, tip)) {
     fetchClaimsRef(directory);
     throw new Error("Could not push migrated events to tasks-claims.");
   }
