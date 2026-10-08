@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-3c13d351-8967-4cb7-b870-524d50cecbb5",
+  "task_id": "confirm-claims-reached-origin-before-reporting-success",
+  "event_type": "completed",
+  "actor_id": "fyodoriv",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-08T03:20:45.950Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
