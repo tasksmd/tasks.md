@@ -164,6 +164,8 @@ describe("git-native backend", () => {
   function rewindClaimsRefOnNextAppend(clone: string): void {
     const marker = join(clone, ".git", "rewind-once");
     writeFileSync(marker, claimsTip(clone));
+    // A global core.hooksPath would otherwise skip the clone's own hooks.
+    git(clone, ["config", "core.hooksPath", join(clone, ".git", "hooks")]);
     writeFileSync(
       join(clone, ".git", "hooks", "reference-transaction"),
       [
@@ -193,7 +195,9 @@ describe("git-native backend", () => {
     rewindClaimsRefOnNextAppend(clone);
     const result = await backend.claim("race-me", { actorId: "agent-a" });
 
-    const onOrigin = readEvents(makeClone(remote)).some(
+    const fresh = makeClone(remote);
+    await createGitNativeBackend(fresh).listOpen(); // fetches tasks-claims
+    const onOrigin = readEvents(fresh).some(
       (event) => event.event_type === "claimed" && event.payload.claim_id === result.claimId,
     );
     expect(result.status).toBe("claimed");
