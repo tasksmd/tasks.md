@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-1c8af795-0d77-4eb9-aaed-ee464e36eaa5",
+  "task_id": "fix-critical-dependabot-alerts-vitest-proxy-addr",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-08T21:21:10.805Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Fix critical dependabot alerts (vitest, proxy-addr)",
+    "priority": "P2",
+    "tags": []
+  }
+}
