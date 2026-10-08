@@ -157,6 +157,62 @@ describe("git-native backend", () => {
     expect(await secondBackend.next()).toBeNull();
   });
 
+  // A sibling worktree shares refs/heads/tasks-claims, and its forced fetch
+  // can rewind the ref between our append and our push. Simulate that window
+  // with a one-shot reference-transaction hook that resets the ref to the
+  // pre-append tip right after the append commits it.
+  function rewindClaimsRefOnNextAppend(clone: string): void {
+    const marker = join(clone, ".git", "rewind-once");
+    writeFileSync(marker, claimsTip(clone));
+    writeFileSync(
+      join(clone, ".git", "hooks", "reference-transaction"),
+      [
+        "#!/bin/sh",
+        '[ "$1" = committed ] || exit 0',
+        `marker='${marker}'`,
+        '[ -f "$marker" ] || exit 0',
+        'target=$(cat "$marker")',
+        "while read -r old new ref; do",
+        '  [ "$ref" = refs/heads/tasks-claims ] && [ "$new" != "$target" ] || continue',
+        '  rm -f "$marker"',
+        '  git update-ref refs/heads/tasks-claims "$target"',
+        "  exit 0",
+        "done",
+        "",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+  }
+
+  it("reports a claim only when the claim commit reached origin", async () => {
+    const remote = makeBareRemote();
+    const clone = makeClone(remote);
+    const backend = createGitNativeBackend(clone);
+    await backend.create({ title: "Race me", priority: "P1" });
+
+    rewindClaimsRefOnNextAppend(clone);
+    const result = await backend.claim("race-me", { actorId: "agent-a" });
+
+    const onOrigin = readEvents(makeClone(remote)).some(
+      (event) => event.event_type === "claimed" && event.payload.claim_id === result.claimId,
+    );
+    expect(result.status).toBe("claimed");
+    expect(onOrigin).toBe(true);
+  }, 30_000);
+
+  it("reports a created task only when it reached origin", async () => {
+    const remote = makeBareRemote();
+    const clone = makeClone(remote);
+    const backend = createGitNativeBackend(clone);
+    await backend.create({ title: "First", priority: "P1" });
+
+    rewindClaimsRefOnNextAppend(clone);
+    const created = await backend.create({ title: "Second", priority: "P1" });
+
+    const open = await createGitNativeBackend(makeClone(remote)).listOpen();
+    expect(open.map((task) => task.id)).toContain(created.id);
+  }, 30_000);
+
   it("ignores malformed events when folding the log", async () => {
     const directory = makeRepo("tasksmd-git-native-");
     const backend = createGitNativeBackend(directory);
