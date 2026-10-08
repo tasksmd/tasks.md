@@ -46,7 +46,7 @@ Every `/next-task` and `/lint-tasks` invocation in every supported agent comes f
 | Canonical source | Regenerated variants |
 |---|---|
 | [`commands/next-task.md`](commands/next-task.md) | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/devin/skills/next-task/SKILL.md`, `commands/gemini/next-task.toml`, `commands/windsurf/next-task.md` |
-| [`commands/lint-tasks.md`](commands/lint-tasks.md) | Same six per-agent variants for `/lint-tasks` |
+| [`commands/lint-tasks.md`](commands/lint-tasks.md) | The same per-agent variants as `/next-task`, under each agent's `commands/` directory |
 
 Run `npx tasks generate-commands` after editing a canonical source. The `commands-drift` CI job rejects any PR where a generated variant diverges.
 

@@ -35,8 +35,8 @@ const THRESHOLD_RE =
   /(?:[≥≤<>]=?|\bat least|\bup to|\bunder|\bover|\bmore than|\bfewer than|\bless than|\bmax(?:imum)?|\bmin(?:imum)?)\s*$/i;
 const ALLOWLIST_MARKER = "volatile-count-allowlist:";
 
-function scanFiles() {
-  const files = ["README.md", "CONTRIBUTING.md", "AGENTS.md"];
+export function scanFiles() {
+  const files = ["README.md", "CONTRIBUTING.md", "AGENTS.md", "ARCHITECTURE.md", "ROADMAP.md", "VISION.md"];
   const commandsDir = join(ROOT, "commands");
   if (existsSync(commandsDir)) {
     for (const entry of readdirSync(commandsDir)) {
