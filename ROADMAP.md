@@ -33,7 +33,7 @@ The active capability track:
 
 ## Adoption signals
 
-Adoption is the only metric that matters. Today the spec lands in `~/apps/tooling/agentbrew`, `~/apps/tooling/minsky`, `~/apps/tooling/dotfiles`, three work repos, and any repo any of those agents touch. The npm packages have weekly download counts on the badges in [`README.md`](README.md).
+Adoption is the only metric that matters. Today the spec lands in `~/apps/tooling/agentbrew`, `~/apps/tooling/minsky`, `~/apps/tooling/dotfiles`, some private repos, and any repo any of those agents touch. The npm packages have weekly download counts on the badges in [`README.md`](README.md).
 
 When a new agent vendor ships first-class `/next-task` support, that's a milestone-worthy event — file it under "agent integrations" in [`docs/user-stories/`](docs/user-stories/) and link the upstream PR.
 

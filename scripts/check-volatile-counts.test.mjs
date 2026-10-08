@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { scanLines } from "./check-volatile-counts.mjs";
+import { scanFiles, scanLines } from "./check-volatile-counts.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./check-volatile-counts.mjs", import.meta.url));
 
@@ -66,6 +66,13 @@ test("reports line numbers and matched text", () => {
 test("--self-test exits 0", () => {
   const result = spawnSync(process.execPath, [SCRIPT, "--self-test"], { encoding: "utf-8" });
   assert.equal(result.status, 0, result.stderr);
+});
+
+test("scans the canonical root docs", () => {
+  const files = scanFiles();
+  for (const rel of ["README.md", "CONTRIBUTING.md", "AGENTS.md", "ARCHITECTURE.md", "ROADMAP.md", "VISION.md"]) {
+    assert.ok(files.includes(rel), rel);
+  }
 });
 
 test("the repo docs report 0 violations", () => {
