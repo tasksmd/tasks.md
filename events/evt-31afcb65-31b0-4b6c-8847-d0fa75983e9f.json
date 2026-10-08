@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-31afcb65-31b0-4b6c-8847-d0fa75983e9f",
+  "task_id": "confirm-claims-reached-origin-before-reporting-success",
+  "event_type": "claimed",
+  "actor_id": "fyodoriv",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-08T03:09:14.074Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-f1d21952-d01c-475f-9203-afc12fecb8c3",
+    "lease_expires_at": 1791515354069
+  }
+}
