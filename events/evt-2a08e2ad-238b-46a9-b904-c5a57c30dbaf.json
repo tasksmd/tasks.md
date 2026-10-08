@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-2a08e2ad-238b-46a9-b904-c5a57c30dbaf",
+  "task_id": "fix-critical-dependabot-alerts-vitest-proxy-addr",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-08T21:21:28.964Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-a47a6877-f21e-435c-8504-2e1589290dcf",
+    "lease_expires_at": 1791580888964
+  }
+}
