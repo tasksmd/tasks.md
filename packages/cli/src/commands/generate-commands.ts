@@ -69,28 +69,6 @@ name: next-task
 description: ${AGENT_DESCRIPTION}
 ---`;
 
-const NEXT_TASK_WINDSURF_FRONTMATTER = `---
-description: ${AGENT_DESCRIPTION}
----`;
-
-const NEXT_TASK_DEVIN_FRONTMATTER = `---
-name: next-task
-description: ${AGENT_DESCRIPTION}
-allowed-tools:
-  - read
-  - edit
-  - grep
-  - glob
-  - exec
-permissions:
-  allow:
-    - Bash(git *)
-    - Bash(gh *)
-    - Bash(find *)
-    - Bash(cat *)
-    - Bash(node *)
----`;
-
 const NEXT_TASK_CONFIG: CommandConfig = {
   name: "next-task",
   canonicalPath: "commands/next-task.md",
@@ -112,19 +90,6 @@ const NEXT_TASK_CONFIG: CommandConfig = {
       outputPath: "commands/cursor/next-task.md",
       agentExample: "@cursor, @cursor-2",
       transform: (body) => body,
-    },
-    {
-      name: "devin",
-      outputPath: "commands/devin/skills/next-task/SKILL.md",
-      agentExample: "@devin, @devin-2",
-      transform: (body) => withFrontmatter(NEXT_TASK_DEVIN_FRONTMATTER, body),
-    },
-    {
-      name: "windsurf",
-      outputPath: "commands/windsurf/next-task.md",
-      agentExample: "@cascade, @cascade-2",
-      transform: (body) =>
-        withFrontmatter(NEXT_TASK_WINDSURF_FRONTMATTER, body),
     },
     {
       name: "gemini",
@@ -152,15 +117,6 @@ name: lint-tasks
 description: ${LINT_TASKS_DESCRIPTION}
 ---`;
 
-const LINT_TASKS_DEVIN_FRONTMATTER = `---
-name: lint-tasks
-description: ${LINT_TASKS_DESCRIPTION}
----`;
-
-const LINT_TASKS_WINDSURF_FRONTMATTER = `---
-description: ${LINT_TASKS_DESCRIPTION}
----`;
-
 const LINT_TASKS_CONFIG: CommandConfig = {
   name: "lint-tasks",
   canonicalPath: "commands/lint-tasks.md",
@@ -182,19 +138,6 @@ const LINT_TASKS_CONFIG: CommandConfig = {
       outputPath: "commands/cursor/lint-tasks.md",
       agentExample: "",
       transform: (body) => body,
-    },
-    {
-      name: "devin",
-      outputPath: "commands/devin/skills/lint-tasks/SKILL.md",
-      agentExample: "",
-      transform: (body) => withFrontmatter(LINT_TASKS_DEVIN_FRONTMATTER, body),
-    },
-    {
-      name: "windsurf",
-      outputPath: "commands/windsurf/lint-tasks.md",
-      agentExample: "",
-      transform: (body) =>
-        withFrontmatter(LINT_TASKS_WINDSURF_FRONTMATTER, body),
     },
     {
       name: "gemini",
@@ -223,27 +166,6 @@ name: setup
 description: ${SETUP_DESCRIPTION}
 ---`;
 
-const SETUP_DEVIN_FRONTMATTER = `---
-name: setup
-description: ${SETUP_DESCRIPTION}
-allowed-tools:
-  - read
-  - write
-  - edit
-  - grep
-  - glob
-  - exec
-permissions:
-  allow:
-    - Bash(git *)
-    - Bash(npx *)
-    - Bash(node *)
----`;
-
-const SETUP_WINDSURF_FRONTMATTER = `---
-description: ${SETUP_DESCRIPTION}
----`;
-
 const SETUP_CONFIG: CommandConfig = {
   name: "setup",
   canonicalPath: "commands/setup.md",
@@ -265,18 +187,6 @@ const SETUP_CONFIG: CommandConfig = {
       outputPath: "commands/cursor/setup.md",
       agentExample: "cursor",
       transform: (body) => body,
-    },
-    {
-      name: "devin",
-      outputPath: "commands/devin/skills/setup/SKILL.md",
-      agentExample: "devin",
-      transform: (body) => withFrontmatter(SETUP_DEVIN_FRONTMATTER, body),
-    },
-    {
-      name: "windsurf",
-      outputPath: "commands/windsurf/setup.md",
-      agentExample: "windsurf",
-      transform: (body) => withFrontmatter(SETUP_WINDSURF_FRONTMATTER, body),
     },
     {
       name: "gemini",
@@ -306,28 +216,6 @@ name: migrate
 description: ${MIGRATE_DESCRIPTION}
 ---`;
 
-const MIGRATE_DEVIN_FRONTMATTER = `---
-name: migrate
-description: ${MIGRATE_DESCRIPTION}
-allowed-tools:
-  - read
-  - write
-  - edit
-  - grep
-  - glob
-  - exec
-permissions:
-  allow:
-    - Bash(git *)
-    - Bash(npx *)
-    - Bash(node *)
-    - Bash(lefthook *)
----`;
-
-const MIGRATE_WINDSURF_FRONTMATTER = `---
-description: ${MIGRATE_DESCRIPTION}
----`;
-
 const MIGRATE_CONFIG: CommandConfig = {
   name: "migrate",
   canonicalPath: "commands/migrate.md",
@@ -349,18 +237,6 @@ const MIGRATE_CONFIG: CommandConfig = {
       outputPath: "commands/cursor/migrate.md",
       agentExample: "",
       transform: (body) => body,
-    },
-    {
-      name: "devin",
-      outputPath: "commands/devin/skills/migrate/SKILL.md",
-      agentExample: "",
-      transform: (body) => withFrontmatter(MIGRATE_DEVIN_FRONTMATTER, body),
-    },
-    {
-      name: "windsurf",
-      outputPath: "commands/windsurf/migrate.md",
-      agentExample: "",
-      transform: (body) => withFrontmatter(MIGRATE_WINDSURF_FRONTMATTER, body),
     },
     {
       name: "gemini",

@@ -92,31 +92,24 @@ describe("generateCommands", () => {
   });
 
   describe("next-task variants", () => {
-    it("generates all 6 agent command files", () => {
+    it("generates all 4 agent command files", () => {
       const result = generateCommands(tempDir);
       expect(result.errors).toHaveLength(0);
 
       expect(existsSync(join(tempDir, "commands/claude/skills/next-task/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/codex/skills/next-task/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/cursor/next-task.md"))).toBe(true);
-      expect(existsSync(join(tempDir, "commands/devin/skills/next-task/SKILL.md"))).toBe(true);
-      expect(existsSync(join(tempDir, "commands/windsurf/next-task.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/gemini/next-task.toml"))).toBe(true);
     });
 
-    it("generates the setup command for all 6 agents with per-agent install names", () => {
+    it("generates the setup command for all 4 agents with per-agent install names", () => {
       const result = generateCommands(tempDir);
       expect(result.errors).toHaveLength(0);
       expect(existsSync(join(tempDir, "commands/claude/skills/setup/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/codex/skills/setup/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/cursor/setup.md"))).toBe(true);
-      expect(existsSync(join(tempDir, "commands/devin/skills/setup/SKILL.md"))).toBe(true);
-      expect(existsSync(join(tempDir, "commands/windsurf/setup.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/gemini/setup.toml"))).toBe(true);
       // {{AGENT_EXAMPLE}} resolves to the agent's own install name.
-      expect(readFileSync(join(tempDir, "commands/devin/skills/setup/SKILL.md"), "utf-8")).toContain(
-        "tasks install --agent devin",
-      );
       expect(readFileSync(join(tempDir, "commands/cursor/setup.md"), "utf-8")).toContain(
         "tasks install --agent cursor",
       );
@@ -135,9 +128,6 @@ describe("generateCommands", () => {
       const cursor = readFileSync(join(tempDir, "commands/cursor/next-task.md"), "utf-8");
       expect(cursor).toContain("@cursor, @cursor-2");
 
-      const windsurf = readFileSync(join(tempDir, "commands/windsurf/next-task.md"), "utf-8");
-      expect(windsurf).toContain("@cascade, @cascade-2");
-
       const gemini = readFileSync(join(tempDir, "commands/gemini/next-task.toml"), "utf-8");
       expect(gemini).toContain("@gemini, @gemini-2");
     });
@@ -154,12 +144,6 @@ describe("generateCommands", () => {
       const content = readFileSync(join(tempDir, "commands/codex/skills/next-task/SKILL.md"), "utf-8");
       expect(content).toMatch(/^---\nname: next-task\n/);
       expect(content).not.toContain("disable-model-invocation");
-    });
-
-    it("adds correct frontmatter for Windsurf", () => {
-      generateCommands(tempDir);
-      const content = readFileSync(join(tempDir, "commands/windsurf/next-task.md"), "utf-8");
-      expect(content).toMatch(/^---\ndescription:/);
     });
 
     it("generates valid TOML for Gemini", () => {
@@ -186,8 +170,6 @@ describe("generateCommands", () => {
       const markdownVariants = [
         "commands/claude/skills/next-task/SKILL.md",
         "commands/codex/skills/next-task/SKILL.md",
-        "commands/devin/skills/next-task/SKILL.md",
-        "commands/windsurf/next-task.md",
       ];
 
       for (const path of markdownVariants) {
@@ -204,15 +186,13 @@ describe("generateCommands", () => {
   });
 
   describe("lint-tasks variants", () => {
-    it("generates all 6 lint-tasks agent variants", () => {
+    it("generates all 4 lint-tasks agent variants", () => {
       const result = generateCommands(tempDir);
       expect(result.errors).toHaveLength(0);
 
       expect(existsSync(join(tempDir, "commands/claude/skills/lint-tasks/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/codex/skills/lint-tasks/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/cursor/lint-tasks.md"))).toBe(true);
-      expect(existsSync(join(tempDir, "commands/devin/skills/lint-tasks/SKILL.md"))).toBe(true);
-      expect(existsSync(join(tempDir, "commands/windsurf/lint-tasks.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/gemini/lint-tasks.toml"))).toBe(true);
     });
 
@@ -223,8 +203,6 @@ describe("generateCommands", () => {
         "commands/claude/skills/lint-tasks/SKILL.md",
         "commands/codex/skills/lint-tasks/SKILL.md",
         "commands/cursor/lint-tasks.md",
-        "commands/devin/skills/lint-tasks/SKILL.md",
-        "commands/windsurf/lint-tasks.md",
       ];
 
       for (const path of variants) {
@@ -242,8 +220,6 @@ describe("generateCommands", () => {
       const markdownVariants = [
         "commands/claude/skills/lint-tasks/SKILL.md",
         "commands/codex/skills/lint-tasks/SKILL.md",
-        "commands/devin/skills/lint-tasks/SKILL.md",
-        "commands/windsurf/lint-tasks.md",
       ];
 
       for (const path of markdownVariants) {
@@ -285,14 +261,12 @@ describe("generateCommands", () => {
   });
 
   describe("migrate variants", () => {
-    it("generates all 6 migrate agent variants", () => {
+    it("generates all 4 migrate agent variants", () => {
       const result = generateCommands(tempDir);
       expect(result.errors).toHaveLength(0);
       expect(existsSync(join(tempDir, "commands/claude/skills/migrate/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/codex/skills/migrate/SKILL.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/cursor/migrate.md"))).toBe(true);
-      expect(existsSync(join(tempDir, "commands/devin/skills/migrate/SKILL.md"))).toBe(true);
-      expect(existsSync(join(tempDir, "commands/windsurf/migrate.md"))).toBe(true);
       expect(existsSync(join(tempDir, "commands/gemini/migrate.toml"))).toBe(true);
     });
 
@@ -301,8 +275,6 @@ describe("generateCommands", () => {
       for (const path of [
         "commands/claude/skills/migrate/SKILL.md",
         "commands/codex/skills/migrate/SKILL.md",
-        "commands/devin/skills/migrate/SKILL.md",
-        "commands/windsurf/migrate.md",
       ]) {
         expect(readFileSync(join(tempDir, path), "utf-8")).toContain(
           `description: ${MIGRATE_DESCRIPTION}`,
@@ -341,7 +313,7 @@ describe("generateCommands", () => {
 
   it("reports generated entries for all commands", () => {
     const result = generateCommands(tempDir);
-    expect(result.generated.length).toBe(24); // 6 agents × 4 commands
+    expect(result.generated.length).toBe(16); // 4 agents × 4 commands
     expect(result.generated).toContain("next-task/claude");
     expect(result.generated).toContain("lint-tasks/claude");
     expect(result.generated).toContain("setup/claude");

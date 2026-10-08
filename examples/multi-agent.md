@@ -6,7 +6,6 @@
      Example identities in use:
        @cursor-bg     — Cursor background agent
        @claude-code   — Claude Code
-       @devin         — Devin
        @codex         — OpenAI Codex CLI
      Each agent runs /next-task, claims the next unblocked unclaimed task, and loops. -->
 

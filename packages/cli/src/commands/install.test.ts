@@ -19,12 +19,8 @@ function setupCommandSources(dir: string): void {
   writeFileSync(join(cmds, "codex", "skills", "next-task", "SKILL.md"), "# Codex skill\n");
   mkdirSync(join(cmds, "cursor"), { recursive: true });
   writeFileSync(join(cmds, "cursor", "next-task.md"), "# Cursor\n");
-  mkdirSync(join(cmds, "devin", "skills", "next-task"), { recursive: true });
-  writeFileSync(join(cmds, "devin", "skills", "next-task", "SKILL.md"), "# Devin skill\n");
   mkdirSync(join(cmds, "gemini"), { recursive: true });
   writeFileSync(join(cmds, "gemini", "next-task.toml"), 'description = "test"\n');
-  mkdirSync(join(cmds, "windsurf"), { recursive: true });
-  writeFileSync(join(cmds, "windsurf", "next-task.md"), "# Windsurf\n");
 }
 
 beforeEach(() => {
@@ -58,20 +54,18 @@ describe("installCommands", () => {
     mkdirSync(targetDir);
 
     const result = installCommands(targetDir, commandsDir, { all: true });
-    expect(result.installed).toHaveLength(6);
+    expect(result.installed).toHaveLength(4);
     expect(result.installed).toContain("claude");
     expect(result.installed).toContain("codex");
     expect(result.installed).toContain("cursor");
-    expect(result.installed).toContain("devin");
     expect(result.installed).toContain("gemini");
-    expect(result.installed).toContain("windsurf");
   });
 
   // The destination paths in this test are documented in
   // docs/user-stories/03-agents-work-through-queue.md ("Auto-detect algorithm"
   // table). If you change a destination path in install.ts, update both the
   // test below and the story table — they are the user-facing contract.
-  it("pins the AGENT_MAPPINGS install paths for all 6 agents", () => {
+  it("pins the AGENT_MAPPINGS install paths for all 4 agents", () => {
     const targetDir = join(tempDir, "project");
     mkdirSync(targetDir);
 
@@ -80,9 +74,7 @@ describe("installCommands", () => {
     expect(existsSync(join(targetDir, ".claude", "skills", "next-task", "SKILL.md"))).toBe(true);
     expect(existsSync(join(targetDir, ".agents", "skills", "next-task", "SKILL.md"))).toBe(true);
     expect(existsSync(join(targetDir, ".cursor", "commands", "next-task.md"))).toBe(true);
-    expect(existsSync(join(targetDir, ".devin", "skills", "next-task", "SKILL.md"))).toBe(true);
     expect(existsSync(join(targetDir, ".gemini", "commands", "next-task.toml"))).toBe(true);
-    expect(existsSync(join(targetDir, ".windsurf", "workflows", "next-task.md"))).toBe(true);
   });
 
   it("filters to a specific agent", () => {
