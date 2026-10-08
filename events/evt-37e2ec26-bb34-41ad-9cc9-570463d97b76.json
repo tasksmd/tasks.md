@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-37e2ec26-bb34-41ad-9cc9-570463d97b76",
+  "task_id": "confirm-claims-reached-origin-before-reporting-success",
+  "event_type": "created",
+  "actor_id": "fyodoriv",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-08T03:08:22.112Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Confirm claims reached origin before reporting success",
+    "priority": "P1",
+    "tags": [
+      "git-native"
+    ],
+    "body": "A claim or create could report success while its commit never reached origin, when a sibling worktree force-fetched the shared tasks-claims ref between append and push. Push the exact appended commit instead of the ref name."
+  }
+}
