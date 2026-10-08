@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-0f86eed0-f75e-49a3-b8c9-d27136221caf",
+  "task_id": "remove-windsurf-and-devin-integration",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-08T20:46:32.990Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Remove Windsurf and Devin integration",
+    "priority": "P2",
+    "tags": []
+  }
+}
