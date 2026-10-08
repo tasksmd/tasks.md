@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-20520339-a575-412d-a9a9-238fc71f9c9c",
+  "task_id": "fix-critical-dependabot-alerts-vitest-proxy-addr",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-08T21:23:51.160Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
