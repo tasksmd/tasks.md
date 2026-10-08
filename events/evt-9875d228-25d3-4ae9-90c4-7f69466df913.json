@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-9875d228-25d3-4ae9-90c4-7f69466df913",
+  "task_id": "remove-windsurf-and-devin-integration",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-08T20:47:09.312Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-d3677532-128b-4f55-a9c7-d01fd357d467",
+    "lease_expires_at": 1791578829312
+  }
+}
