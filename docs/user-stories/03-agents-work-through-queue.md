@@ -36,9 +36,7 @@ tasks install --hooks             # also install the pre-commit hook that runs t
 | Claude Code | `.claude/` exists | `.claude/skills/next-task/` (directory) | `commands/claude/skills/next-task/` |
 | Codex | `.agents/` exists | `.agents/skills/next-task/` (directory) | `commands/codex/skills/next-task/` |
 | Cursor | `.cursor/` exists | `.cursor/commands/next-task.md` | `commands/cursor/next-task.md` |
-| Devin | `.devin/` exists | `.devin/skills/next-task/` (directory) | `commands/devin/skills/next-task/` |
 | Gemini CLI | `.gemini/` exists | `.gemini/commands/next-task.toml` | `commands/gemini/next-task.toml` |
-| Windsurf | `.windsurf/` exists | `.windsurf/workflows/next-task.md` | `commands/windsurf/next-task.md` |
 
 If the detection signal is missing and you didn't pass `--all`, the agent is skipped silently — `tasks install` exits 0 even when zero agents matched. Use `--all` to scaffold every agent's command directory regardless of what's already present, or `--agent <name>` to target one specific entry from the table.
 
@@ -103,9 +101,7 @@ Every agent variant contains the same logic — only the wrapper format differs:
 | Claude Code | SKILL.md + YAML frontmatter | `allowed-tools` header |
 | Codex | SKILL.md + YAML frontmatter | Same as Claude |
 | Cursor | Plain Markdown | No frontmatter |
-| Devin | SKILL.md + YAML frontmatter | `allowed-tools` + `permissions` scoping |
 | Gemini CLI | TOML with `prompt` field | Prompt wrapped in TOML |
-| Windsurf | Markdown + YAML frontmatter | `description` in frontmatter |
 
 > **Implemented**: Commands are generated from canonical sources (`commands/next-task.md` and `commands/lint-tasks.md`). The `tasks generate-commands` command produces one agent-specific file per supported agent for each command, and CI verifies they never drift.
 
@@ -116,9 +112,7 @@ Every agent variant contains the same logic — only the wrapper format differs:
 | `commands/claude/skills/next-task/SKILL.md` | Claude Code skill |
 | `commands/codex/skills/next-task/SKILL.md` | Codex skill |
 | `commands/cursor/next-task.md` | Cursor command |
-| `commands/devin/skills/next-task/SKILL.md` | Devin skill |
 | `commands/gemini/next-task.toml` | Gemini CLI command |
-| `commands/windsurf/next-task.md` | Windsurf workflow |
 | [commands/README.md](../../commands/README.md) | Format details |
 
 ## Try it yourself

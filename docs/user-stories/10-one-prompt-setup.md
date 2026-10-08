@@ -18,7 +18,7 @@ available, write the files directly from https://github.com/tasksmd/tasks.md.
 
 ## What the agent does
 
-The agent follows the canonical [`commands/setup.md`](../../commands/setup.md) workflow — which ships pre-generated as a `/setup` command for Claude Code, Codex, Cursor, Devin, Gemini CLI, and Windsurf, so the steps are identical across agents (VISION G2):
+The agent follows the canonical [`commands/setup.md`](../../commands/setup.md) workflow — which ships pre-generated as a `/setup` command for Claude Code, Codex, Cursor, and Gemini CLI, so the steps are identical across agents (VISION G2):
 
 1. **Confirm the repo root** (`git rev-parse --show-toplevel`).
 2. **Create `TASKS.md`** if missing (never overwrite an existing one).

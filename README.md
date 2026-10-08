@@ -17,7 +17,7 @@ AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 - **One Markdown file** any agent or human reads and writes — no accounts, no API, no server, works offline.
 - **In your editor, in git** — add a task without leaving your IDE; every change is version-controlled next to the code.
 - **Agent-native** — LLMs parse Markdown directly, and the [`/next-task`](#the-next-task-command) command turns the queue into an autonomous work loop.
-- **Vendor-neutral** — one spec for Claude Code, Cursor, Devin, Codex, Gemini CLI, and Windsurf, any CI.
+- **Vendor-neutral** — one spec for Claude Code, Cursor, Codex, and Gemini CLI, any CI.
 - **Scales with you** — start solo on the file backend; switch to the collision-free [git-native backend](#backends) the instant a second writer or a fleet of agents shares the queue — configuration, never a migration.
 
 ## Installation
@@ -26,7 +26,7 @@ Two ways to add TASKS.md to a repo. Both are idempotent — safe to re-run, they
 
 ### 1. Copy this prompt into your agent
 
-Paste this into whatever agent you use (Claude Code, Cursor, Devin, Codex, Gemini CLI, Windsurf) and it does the rest — scaffolds the queue, wires up `AGENTS.md`, installs its own `/next-task` command, verifies, and reports back:
+Paste this into whatever agent you use (Claude Code, Cursor, Codex, Gemini CLI) and it does the rest — scaffolds the queue, wires up `AGENTS.md`, installs its own `/next-task` command, verifies, and reports back:
 
 ```text
 Set up tasks.md in this repo: run `npx -y @tasks-md/cli init --install` to create
@@ -92,7 +92,7 @@ Nine commands take a fresh repo from zero to a queue an agent can pick from. Out
    ```
    Prints `✓ Created TASKS.md` and `✓ Created AGENTS.md with Task Management section`.
 
-3. **Install the `/next-task` command for your agent** — auto-detects from agent dirs (`.claude/`, `.cursor/`, `.devin/`, etc.). See [story 3 → Auto-detect algorithm](docs/user-stories/03-agents-work-through-queue.md#auto-detect-algorithm) for the full table.
+3. **Install the `/next-task` command for your agent** — auto-detects from agent dirs (`.claude/`, `.cursor/`, `.agents/`, etc.). See [story 3 → Auto-detect algorithm](docs/user-stories/03-agents-work-through-queue.md#auto-detect-algorithm) for the full table.
    ```bash
    npx -y @tasks-md/cli install
    ```
@@ -289,13 +289,11 @@ Or copy manually into your project (commit it so your team gets it too):
 | Claude Code | `cp -r commands/claude/skills/next-task .claude/skills/` |
 | Codex | `cp -r commands/codex/skills/next-task .agents/skills/` |
 | Cursor | `cp commands/cursor/next-task.md .cursor/commands/` |
-| Devin | `cp -r commands/devin/skills/next-task .devin/skills/` |
 | Gemini CLI | `cp commands/gemini/next-task.toml .gemini/commands/` |
-| Windsurf | `cp commands/windsurf/next-task.md .windsurf/workflows/` |
 
 All paths are **project-local** (inside your repo). See [commands/](commands/) for source files and format details.
 
-The Devin and Windsurf variants are frozen. They are still generated, but they get no agent-specific fixes or features.
+Windsurf and Devin variants were removed on 2026-10-08.
 
 ### Queue entry modes
 
@@ -367,7 +365,7 @@ The [`@tasks-md/cli`](packages/cli/) provides task queue management — pick tas
 | Command | What it does |
 |---------|-------------|
 | `tasks init` | Scaffold TASKS.md + AGENTS.md in the current repo |
-| `tasks install` | Install `/next-task` for detected agents (Claude Code, Cursor, Devin, etc.) |
+| `tasks install` | Install `/next-task` for detected agents (Claude Code, Cursor, Codex, etc.) |
 | `tasks pick` | Pick the highest-priority unblocked, unclaimed, non-standing-loop task (`--json` for scripts) |
 | `tasks list` | List every task matching filters — CLI counterpart of MCP `list_tasks` (`--json` for scripts) |
 | `tasks watch` | Watch TASKS.md files and auto-lint on save (`--fix` auto-corrects on save) |

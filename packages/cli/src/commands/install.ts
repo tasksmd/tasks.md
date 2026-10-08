@@ -36,24 +36,10 @@ const AGENT_MAPPINGS: AgentMapping[] = [
     isDirectory: false,
   },
   {
-    name: "devin",
-    detectDir: ".devin",
-    sourcePath: "commands/devin/skills/next-task",
-    destPath: ".devin/skills/next-task",
-    isDirectory: true,
-  },
-  {
     name: "gemini",
     detectDir: ".gemini",
     sourcePath: "commands/gemini/next-task.toml",
     destPath: ".gemini/commands/next-task.toml",
-    isDirectory: false,
-  },
-  {
-    name: "windsurf",
-    detectDir: ".windsurf",
-    sourcePath: "commands/windsurf/next-task.md",
-    destPath: ".windsurf/workflows/next-task.md",
     isDirectory: false,
   },
 ];

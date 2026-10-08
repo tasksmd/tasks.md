@@ -13,7 +13,7 @@ supporting tools that make the format useful for humans and agents:
 - `packages/mcp` exposes TASKS.md operations through the Model Context Protocol.
 - `packages/cli` provides the `tasks` command-line interface.
 - `commands/` contains the shared `/next-task` and `/lint-tasks` command variants
-  for Claude Code, Codex, Cursor, Devin, Gemini CLI, and Windsurf.
+  for Claude Code, Codex, Cursor, and Gemini CLI.
 
 ## Repo Layout
 
@@ -30,9 +30,7 @@ tasks.md/
 |   +-- claude/skills/*/SKILL.md    # Claude Code skill variants
 |   +-- codex/skills/*/SKILL.md     # OpenAI Codex skill variants
 |   +-- cursor/*.md                 # Cursor command variants
-|   +-- devin/skills/*/SKILL.md     # Devin skill variants
 |   +-- gemini/*.toml               # Gemini CLI command variants
-|   +-- windsurf/*.md               # Windsurf workflow variants
 +-- packages/
 |   +-- parser/                     # @tasks-md/parser TypeScript package
 |   +-- lint/                       # @tasks-md/lint and tasks-lint binary
@@ -140,13 +138,11 @@ edges that cost real debugging time — captured here so they don't recur:
 The root docs and command files are the source of truth. Installed copies under
 agent config directories are generated mirrors; do not edit those mirrors.
 
-### Frozen agent variants
+### Removed agent variants
 
-The Devin and Windsurf variants are frozen (owner decision 2026-10-02). Keep
-generating them with `npx tasks generate-commands`, and keep their entries in
-`packages/cli/src/commands/install.ts`. Never add a Devin- or Windsurf-specific
-fix, feature, format, or task. If a change for another agent breaks a frozen
-variant's existing test, skip that test with a note naming this section.
+Windsurf and Devin support was removed on 2026-10-08. Do not re-add their
+command variants, install targets, docs, tests, or tasks. Augment (Auggie)
+stays frozen: do not touch it.
 
 ### Command Propagation
 
@@ -160,10 +156,10 @@ Generated variants regenerated from each canonical source:
 
 | Canonical | Generated variants |
 |-----------|--------------------|
-| `commands/next-task.md` | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/devin/skills/next-task/SKILL.md`, `commands/gemini/next-task.toml`, `commands/windsurf/next-task.md` |
-| `commands/lint-tasks.md` | `commands/claude/skills/lint-tasks/SKILL.md`, `commands/codex/skills/lint-tasks/SKILL.md`, `commands/cursor/lint-tasks.md`, `commands/devin/skills/lint-tasks/SKILL.md`, `commands/gemini/lint-tasks.toml`, `commands/windsurf/lint-tasks.md` |
-| `commands/setup.md` | `commands/claude/skills/setup/SKILL.md`, `commands/codex/skills/setup/SKILL.md`, `commands/cursor/setup.md`, `commands/devin/skills/setup/SKILL.md`, `commands/gemini/setup.toml`, `commands/windsurf/setup.md` |
-| `commands/migrate.md` | `commands/claude/skills/migrate/SKILL.md`, `commands/codex/skills/migrate/SKILL.md`, `commands/cursor/migrate.md`, `commands/devin/skills/migrate/SKILL.md`, `commands/gemini/migrate.toml`, `commands/windsurf/migrate.md` |
+| `commands/next-task.md` | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/gemini/next-task.toml` |
+| `commands/lint-tasks.md` | `commands/claude/skills/lint-tasks/SKILL.md`, `commands/codex/skills/lint-tasks/SKILL.md`, `commands/cursor/lint-tasks.md`, `commands/gemini/lint-tasks.toml` |
+| `commands/setup.md` | `commands/claude/skills/setup/SKILL.md`, `commands/codex/skills/setup/SKILL.md`, `commands/cursor/setup.md`, `commands/gemini/setup.toml` |
+| `commands/migrate.md` | `commands/claude/skills/migrate/SKILL.md`, `commands/codex/skills/migrate/SKILL.md`, `commands/cursor/migrate.md`, `commands/gemini/migrate.toml` |
 
 Other files that may need to change in the same commit when behavior
 shifts:

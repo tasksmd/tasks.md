@@ -92,10 +92,6 @@ const AGENT_CONFIG = {
     name: "Gemini CLI",
     install: "cp commands/gemini/next-task.toml .gemini/commands/",
   },
-  windsurf: {
-    name: "Windsurf",
-    install: "cp commands/windsurf/next-task.md .windsurf/workflows/",
-  },
 };
 
 function generateInstallTable() {

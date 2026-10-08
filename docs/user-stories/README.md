@@ -8,7 +8,7 @@ TASKS.md is a spec, not a product. The user stories below cover both **spec user
 |---|-------|-----|
 | 1 | [Agents know what to work on](01-agents-know-what-to-work-on.md) | `tasks init` scaffolds TASKS.md + AGENTS.md |
 | 2 | [Tasks agents complete without asking](02-tasks-agents-complete-without-asking.md) | One-liners vs. rich metadata |
-| 3 | [Agents work through the queue autonomously](03-agents-work-through-queue.md) | [`tasks install`](03-agents-work-through-queue.md#auto-detect-algorithm) auto-detects Claude Code, Codex, Cursor, Devin, Gemini CLI, and Windsurf |
+| 3 | [Agents work through the queue autonomously](03-agents-work-through-queue.md) | [`tasks install`](03-agents-work-through-queue.md#auto-detect-algorithm) auto-detects Claude Code, Codex, Cursor, and Gemini CLI |
 | 4 | [Agents work in the right order](04-agents-work-in-right-order.md) | IDs, `Blocked by`, unblocking impact |
 | 5 | [Each team member has their own queue](05-separate-queues-per-member.md) | Monorepo with multiple TASKS.md files |
 | 6 | [Issue tracker decisions flow to agents](06-issue-tracker-flows-to-agents.md) | `tasks sync github`, `tasks sync jira`, `tasks sync linear` |
@@ -26,7 +26,6 @@ All originally-identified automation gaps have been implemented:
 | `tasks init` scaffolding | [01](01-agents-know-what-to-work-on.md) | ✅ `tasks init` |
 | `tasks install` auto-detect | [03](03-agents-work-through-queue.md) | ✅ `tasks install` |
 | Write-once commands (canonical + generate) | [03](03-agents-work-through-queue.md) | ✅ `tasks generate-commands` + CI drift check |
-| Devin `/next-task` skill | [03](03-agents-work-through-queue.md) | ✅ `commands/devin/skills/next-task/SKILL.md` |
 | Deterministic `pick_task` | [07](07-monitor-queue-health.md) | ✅ `tasks pick` + `tasks-mcp` MCP tool |
 | CLI ↔ MCP `list_tasks` parity | [07](07-monitor-queue-health.md#enumerate-tasks-programmatically) | ✅ `tasks list` (same filters as MCP) |
 | Linter `--fix` mode | [01](01-agents-know-what-to-work-on.md#keeping-the-queue-valid) | ✅ `npx @tasks-md/lint --fix` (canonical lint surface) |

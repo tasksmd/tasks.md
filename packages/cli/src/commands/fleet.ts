@@ -264,7 +264,7 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
     detail: `backend = ${config.backend}${existsSync(join(directory, ".tasksmd.json")) ? "" : " (default; no .tasksmd.json)"}`,
   });
 
-  const agentDirs = [".claude", ".agents", ".cursor", ".devin", ".gemini", ".windsurf"];
+  const agentDirs = [".claude", ".agents", ".cursor", ".gemini"];
   const installed = agentDirs.filter((d) => existsSync(join(directory, d)));
   checks.push({
     name: "agent commands",
