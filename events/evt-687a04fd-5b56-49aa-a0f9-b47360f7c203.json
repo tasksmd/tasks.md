@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-687a04fd-5b56-49aa-a0f9-b47360f7c203",
+  "task_id": "release-0-11-0-with-the-windsurf-and-devin-removal",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-09T11:49:44.052Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Release 0.11.0 with the Windsurf and Devin removal",
+    "priority": "P1",
+    "tags": [
+      "release"
+    ],
+    "body": "main carries a breaking removal (tasks install --agent windsurf|devin) since the 0.10.3 bump. Bump all published packages to 0.11.0 so the release signals it, then publish."
+  }
+}
