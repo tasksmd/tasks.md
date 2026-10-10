@@ -18,11 +18,11 @@ Set up the [TASKS.md](https://github.com/tasksmd/tasks.md) task queue and the `/
 
 4. **Install your own command.** Install `/next-task` (and `/lint-tasks`) for yourself:
    - **Node present:** `npx -y @tasks-md/cli install --agent claude` — `--agent` force-installs even if your config dir does not exist yet.
-   - **No Node:** write your command file directly from the canonical command text (see [`commands/README.md`](README.md) for the per-agent install path) into your agent's command directory.
+   - **No Node:** write your command file directly from the canonical command text (see [`commands/README.md`](https://github.com/tasksmd/tasks.md/blob/main/commands/README.md) for the per-agent install path) into your agent's command directory.
 
 5. **(Optional) GitHub repo extras — offer, do not force.**
    - Add the reusable lint workflow `.github/workflows/tasks-lint.yml`.
-   - For a **fleet or any multi-contributor repo** (more than one writer on the queue): switch to the collision-free **git-native** backend with the `/migrate` command — or run `npx -y @tasks-md/cli migrate --apply` (imports the current `TASKS.md` into the `tasks-claims` log) **then** `npx -y @tasks-md/cli fleet init`, then `lefthook install`. Run `migrate --apply` before `fleet init` so a populated queue is never lost. See [`spec.md` § Fleet coordination](../spec.md#fleet-coordination).
+   - For a **fleet or any multi-contributor repo** (more than one writer on the queue): switch to the collision-free **git-native** backend with the `/migrate` command — or run `npx -y @tasks-md/cli migrate --apply` (imports the current `TASKS.md` into the `tasks-claims` log) **then** `npx -y @tasks-md/cli fleet init`, then `lefthook install`. Run `migrate --apply` before `fleet init` so a populated queue is never lost. See [`spec.md` § Fleet coordination](https://github.com/tasksmd/tasks.md/blob/main/spec.md#fleet-coordination).
 
 6. **Verify before reporting done.**
    - `npx -y @tasks-md/lint TASKS.md` exits 0.

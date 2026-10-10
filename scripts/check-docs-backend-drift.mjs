@@ -51,6 +51,9 @@ function scanFiles() {
     "commands/next-task.md",
     "commands/lint-tasks.md",
     "commands/setup.md",
+    "commands/migrate.md",
+    "docs/release-and-ci.md",
+    "docs/task-policy-snippet.md",
   ];
   const userStories = join(ROOT, "docs", "user-stories");
   if (existsSync(userStories)) {

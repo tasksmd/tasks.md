@@ -161,13 +161,13 @@ every remaining task is either claimed by another agent, has an unresolved
 `**Blocked by**:`, or has a non-empty `**Blocked**:` reason (see
 [Refuse forbidden work](#refuse-forbidden-work)):
 
-1. First, check for [blocked tasks you can enrich](#enrich-blocked-tasks). When a
+1. First, check for [blocked tasks you can enrich](references/enrich-blocked-tasks.md#enrich-blocked-tasks). When a
    task is blocked but its `**Last-enriched**` field is missing or older than 7
    days, spend this turn adding read-only research notes so the developer has an
    easier time picking it up once the block resolves. Enrichment never touches
    the `**Blocked**` or `**Blocked by**` lines.
 2. If every blocked task is freshly enriched (or there are no blocked tasks at
-   all), proceed to [Empty queue: roam to the next repo](#empty-queue).
+   all), proceed to [Empty queue: roam to the next repo](references/empty-queue.md#empty-queue).
 
 **Large or complex tasks are still actionable.** A P0 epic with 5 acceptance
 criteria is not "no actionable tasks" — it needs decomposition, not avoidance.
@@ -182,139 +182,11 @@ criteria is not "no actionable tasks" — it needs decomposition, not avoidance.
 
 ### Enrich blocked tasks {#enrich-blocked-tasks}
 
-When every remaining task in the current repo is blocked — either by an unresolved `**Blocked by**:` or by a `**Blocked**:` reason — don't just roam. Spend this turn **enriching** the blocked tasks with read-only research so the developer has less discovery work to do once the block resolves.
-
-**Pick one blocked task.** Prefer, in order:
-
-1. Highest priority (P0 → P1 → P2 → P3).
-2. Most downstream consumers — tasks whose `**Blocked by**:` references this task's `**ID**` are waiting on it; enriching those blockers pays compounding interest.
-3. Staleness — pick a task whose `**Last-enriched**` field is missing or older than 7 days. Skip tasks enriched more recently than that. If every blocked task has a fresh `**Last-enriched**`, move on to [Empty queue: roam to the next repo](#empty-queue) instead.
-
-**Research, read-only.** No file edits outside TASKS.md, no shell side-effects, no network writes. The agent may:
-
-- Re-read the task's full metadata block.
-- Read the files listed in `**Files**:`.
-- `grep` the codebase for terms from the task summary, details, and IDs.
-- Read `AGENTS.md`, `README.md`, relevant docs, and recent git log entries.
-- For `**Blocked**:`-by-reason tasks:
-  - If the block is about posting publicly (Slack, Jira, GitHub issues), draft the **exact** message text the user would paste, list the surface + recipients, and note any links or ping targets. Sample tone from prior posts in git log or pinned docs.
-  - If the block is about credentials or environment access, document which credentials are needed, who owns them, and where the request goes.
-  - If the block is a refused policy, document alternatives the user could consider.
-- For `**Blocked by**:` dependency tasks:
-  - Read the blocker task's current state (metadata, any WIP branches, related PRs) and note what it will produce.
-  - Sketch the consuming approach: where the new code will live, which tests it will add, and which acceptance criteria will carry over.
-
-**Append findings to the task block.** Stage only the hunks inside the task's own block — never touch unrelated tasks, and never touch the task's `**Blocked**` or `**Blocked by**` lines.
-
-1. Extend `**Research**:` with today's notes. The first dated heading goes on the same line as the field label; body text follows on 4-space-indented continuation lines. When you accumulate over sessions, append a blank line + a new dated subheading to the existing field:
-
-   ````markdown
-     - **Research**: 2026-04-20 — draft message
-       :rocket: v1.2 is live — highlights:
-       • Rate limiter now honors `X-Api-Key` headers
-       • Webhook processor is idempotent by event ID
-       Deploying 09:00 Pacific; rollback plan in runbooks/rate-limiter.md.
-       Recipients: #eng-announcements, #customer-success.
-   ````
-
-   Don't overwrite prior research — append a new heading under the same field. The parser treats indented continuation lines (4+ spaces) as part of the value, so the Research field stays a single growing string.
-
-2. If research surfaced new files worth knowing about, append them to `**Files**:`. Don't rewrite the author's existing entries.
-3. If research surfaced sharper acceptance criteria, append them to `**Acceptance**:`. Again, append — don't edit the author's text.
-4. Stamp the task with `**Last-enriched**: YYYY-MM-DD` using today's UTC date. If the field already exists, overwrite it with today's date.
-
-**Commit and move on.** Stage only the blocked task's hunk; the commit message should be:
-
-```
-chore: enrich <task-id> with research notes
-```
-
-Do not claim the task. Do not push to any public surface (the work stayed local to TASKS.md, which is what you already commit on a feature branch or directly on main depending on the repo's workflow).
-
-After committing, return to [Find the queue](#find-the-queue). The task is still blocked — the next pick step will skip it because the `**Blocked**` / `**Blocked by**` line is still there — but it's now richer for the next session or the human reviewer.
-
-> **MCP shortcut:** If `tasks-mcp` is available, use `enrich_task` — it appends `**Research**` notes, optionally extends `**Files**` / `**Acceptance**`, and sets `**Last-enriched**` atomically without manual file editing.
+Full steps: [references/enrich-blocked-tasks.md](references/enrich-blocked-tasks.md).
 
 ### Empty queue: roam to the next repo {#empty-queue}
 
-When the current repo's queue is truly empty (no unclaimed, unblocked tasks):
-
-1. **Scan for work across repos:**
-
-```bash
-# Find all TASKS.md files in ~/apps/
-for repo in ~/apps/*/; do
-  tasks_file="$repo/TASKS.md"
-  [ -f "$tasks_file" ] || continue
-  # Count unclaimed, unblocked tasks per priority (P0 first)
-  p0=$(grep -c '^\- \[ \]' "$tasks_file" 2>/dev/null | head -1)
-  blocked_by=$(grep -c '\*\*Blocked by\*\*:' "$tasks_file" 2>/dev/null | head -1)
-  blocked=$(grep -c '\*\*Blocked\*\*:' "$tasks_file" 2>/dev/null | head -1)
-  actionable=$((p0 - blocked_by - blocked))
-  [ "$actionable" -gt 0 ] && echo "$repo $actionable"
-done
-```
-
-2. **Pick the repo with the highest-priority work** (most P0 > most P1 > most total).
-   Read each candidate's TASKS.md to verify tasks are truly actionable (not just recurring/watch tasks).
-
-3. **Switch without asking:**
-   ```
-   Switching to ~/apps/<repo> (N actionable tasks)
-   ```
-   Then `cd` to that repo and restart the next-task loop from the top.
-
-4. **If ALL repos are empty/blocked**, run the [audit cascade](#audit-cascade).
-
-### Audit cascade {#audit-cascade}
-
-Run these tiers **in order** on the current repo. Stop as soon as any tier produces actionable findings — write them as tasks to TASKS.md and implement the highest-priority one immediately.
-
-**The audit is re-runnable.** Every time you reach this point (queue empty, all repos checked), run the full cascade from Tier 1. Code changes between sessions may introduce new findings. Never treat a previous audit as "permanently done."
-
-**Tier 1 — Verify**
-- `git pull --rebase` and prune stale worktrees (`git worktree list`)
-- Run the full verify suite: typecheck, lint, test, build
-- Any failure → write a task, fix it
-
-**Tier 2 — Security & dead code**
-- Hardcoded secrets, missing input validation, unsafe patterns
-- Dead exports, unused variables, unreachable code paths
-- Actionable `TODO`, `FIXME`, `HACK` comments
-
-**Tier 3 — Doc drift & stale references**
-- README examples vs actual behavior
-- AGENTS.md with outdated build/test commands
-- Stale comments referencing changed or deleted code
-- Broken links in docs
-
-**Tier 4 — Dependency modernization** *(applies to every repo type)*
-- Node.js: outdated packages, deprecated APIs, missing lockfile entries
-- Rust: `cargo outdated`, deprecated crate features
-- Python: pinned versions with known CVEs, deprecated stdlib usage
-- Shell/Markdown repos: outdated tool references, broken install instructions, stale CI action versions
-- Any repo: LICENSE accuracy, .gitignore completeness, CI config drift
-
-**Tier 5 — DX polish** *(applies to every repo type)*
-- Help text accuracy: do `--help` outputs match actual behavior?
-- Error message quality: are failures actionable or cryptic?
-- Naming consistency: file names, function names, CLI flags vs project conventions
-- Onboarding friction: can a new contributor clone → run in < 5 minutes?
-- Example accuracy: do code examples in docs actually work when copy-pasted?
-
-**After each tier:** if you found issues, write tasks to TASKS.md (with ID, Tags, Details, Files, Acceptance) and start working on the highest-priority one. Do not continue to the next tier — fixing a real issue is more valuable than completing the audit.
-
-### Terminal state {#terminal-state}
-
-If ALL five tiers produce zero findings across ALL repos:
-
-1. Print a final summary exactly once:
-   ```
-   All [N] repos scanned. Audit clean across 5 tiers. Nothing to do — stopping.
-   Repos checked: [list]
-   ```
-2. **Stop the loop.** Do not print "nothing to do" again on subsequent invocations in the same session.
-3. If the user invokes `/next-task` again (new session), re-run the full loop from the top — starting with the context snapshot. The audit is fresh each session.
+Full steps: [references/empty-queue.md](references/empty-queue.md).
 
 ## Resume unfinished work
 
@@ -561,5 +433,5 @@ In queue mode, go back to [Find the queue](#find-the-queue) and pick the next ta
 - **Do not stop after one task in queue mode** — loop until the queue is empty or the user interrupts. In targeted mode, work only the requested ID and then stop.
 - **Do not claim tasks already claimed by another agent** — skip `(@agent-name)` unless it's your own stale claim.
 - **Do not run blocked-by-default actions** — see [Refuse forbidden work](#refuse-forbidden-work). Instead of attempting a Slack/Jira/issue-comment/publish action, add `**Blocked**: <reason>` to the task so it's skipped in future sessions.
-- **Enrich before roaming** — when every remaining task is blocked, run [Enrich blocked tasks](#enrich-blocked-tasks) instead of jumping straight to another repo. Read-only research on the task's `**Research**:` field leaves the next session (or the human) with less work to do.
+- **Enrich before roaming** — when every remaining task is blocked, run [Enrich blocked tasks](references/enrich-blocked-tasks.md#enrich-blocked-tasks) instead of jumping straight to another repo. Read-only research on the task's `**Research**:` field leaves the next session (or the human) with less work to do.
 - **Audit findings become tasks** — when all repos are empty, run the 5-tier cascade, write findings as tasks, and implement the highest-priority one. Only stop when all tiers are clean (terminal state).

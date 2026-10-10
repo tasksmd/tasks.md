@@ -28,6 +28,29 @@ This file is the root-level architecture summary that the `load-project-context`
    └──────────────────────────────────────────────────────────────┘
 ```
 
+## Repo layout
+
+```text
+tasks.md/
++-- spec.md                         # Canonical TASKS.md format spec
++-- README.md                       # User-facing docs and quick start
++-- Agentfile.yaml                  # Repo-local agentbrew MCP manifest
++-- TASKS.md                        # Local task queue for this repo
++-- examples/                       # Valid TASKS.md example files
++-- commands/
+|   +-- next-task.md                # Shared canonical /next-task source
+|   +-- lint-tasks.md               # Shared canonical /lint-tasks source
+|   +-- claude/skills/*/SKILL.md    # Claude Code skill variants
+|   +-- codex/skills/*/SKILL.md     # OpenAI Codex skill variants
+|   +-- cursor/*.md                 # Cursor command variants
+|   +-- gemini/*.toml               # Gemini CLI command variants
++-- packages/
+|   +-- parser/                     # @tasks-md/parser TypeScript package
+|   +-- lint/                       # @tasks-md/lint and tasks-lint binary
+|   +-- mcp/                        # tasks-mcp server
+|   +-- cli/                        # @tasks-md/cli and tasks binary
+```
+
 ## Packages
 
 | Package | Path | Role |
@@ -41,12 +64,16 @@ All four are TypeScript strict-ESM, Node 18+. The workspace at the repo root coo
 
 ## Cross-agent command generation
 
-Every `/next-task` and `/lint-tasks` invocation in every supported agent comes from the same two canonical markdown files:
+Every `/next-task`, `/lint-tasks`, `/setup`, and `/migrate` invocation in every supported agent comes from one canonical markdown file per command:
 
-| Canonical source | Regenerated variants |
-|---|---|
-| [`commands/next-task.md`](commands/next-task.md) | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/gemini/next-task.toml` |
-| [`commands/lint-tasks.md`](commands/lint-tasks.md) | The same per-agent variants as `/next-task`, under each agent's `commands/` directory |
+| Canonical | Generated variants |
+|-----------|--------------------|
+| `commands/next-task.md` | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/gemini/next-task.toml` |
+| `commands/lint-tasks.md` | `commands/claude/skills/lint-tasks/SKILL.md`, `commands/codex/skills/lint-tasks/SKILL.md`, `commands/cursor/lint-tasks.md`, `commands/gemini/lint-tasks.toml` |
+| `commands/setup.md` | `commands/claude/skills/setup/SKILL.md`, `commands/codex/skills/setup/SKILL.md`, `commands/cursor/setup.md`, `commands/gemini/setup.toml` |
+| `commands/migrate.md` | `commands/claude/skills/migrate/SKILL.md`, `commands/codex/skills/migrate/SKILL.md`, `commands/cursor/migrate.md`, `commands/gemini/migrate.toml` |
+
+Skill variants are folders, installed with `cp -r`. A canonical file can wrap rarely-needed detail in `<!-- reference: <name> -->` … `<!-- /reference -->`; the generator writes that block to the skill's `references/<name>.md` and leaves the heading and a link in `SKILL.md`. Cursor and Gemini variants keep the text inline.
 
 Run `npx tasks generate-commands` after editing a canonical source. The `commands-drift` CI job rejects any PR where a generated variant diverges.
 
