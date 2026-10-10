@@ -32,7 +32,7 @@ Convert THIS repo's [TASKS.md](https://github.com/tasksmd/tasks.md) queue from t
    - `npx -y @tasks-md/cli list` reproduces every open task id captured in step 2 (nothing lost).
    - `npx -y @tasks-md/lint TASKS.md` exits 0 on the regenerated snapshot.
 
-7. **Report — including rollback.** Tell the user the repo is now git-native, how to add/claim/complete tasks, and that they can roll back at any time with `rm .tasksmd.json` and `git update-ref -d refs/heads/tasks-claims` (the original `TASKS.md` content is preserved in the log and the file). Point them at [`spec.md` § Fleet coordination](../spec.md#fleet-coordination) for the model.
+7. **Report — including rollback.** Tell the user the repo is now git-native, how to add/claim/complete tasks, and that they can roll back at any time with `rm .tasksmd.json` and `git update-ref -d refs/heads/tasks-claims` (the original `TASKS.md` content is preserved in the log and the file). Point them at [`spec.md` § Fleet coordination](https://github.com/tasksmd/tasks.md/blob/main/spec.md#fleet-coordination) for the model.
 
 ### Idempotency + safety
 

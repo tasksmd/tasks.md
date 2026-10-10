@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 
 interface AgentConfig {
@@ -54,6 +54,108 @@ function toGeminiToml(description: string, body: string): string {
     "'''",
     "",
   ].join("\n");
+}
+
+// ── reference blocks ──
+//
+// A canonical command can wrap rarely-needed detail in
+//   <!-- reference: <name> -->  …  <!-- /reference -->
+// Skill variants (SKILL.md) are folders that `cp -r` installs whole, so the
+// block moves to references/<name>.md and SKILL.md keeps the block's first
+// heading plus a link. That keeps SKILL.md under Anthropic's 500-line body
+// guideline. Single-file variants (Cursor, Gemini) keep the text inline.
+
+const REFERENCE_START = /^<!-- reference: ([a-z0-9-]+) -->$/;
+const REFERENCE_END = /^<!-- \/reference -->$/;
+
+interface ReferenceBlock {
+  name: string;
+  lines: string[];
+  anchors: Set<string>;
+}
+
+interface ParsedBody {
+  // Lines outside blocks; a block is held as `{ block: index }`.
+  parts: Array<string | { block: number }>;
+  blocks: ReferenceBlock[];
+}
+
+export function parseReferenceBlocks(body: string): ParsedBody {
+  const parts: ParsedBody["parts"] = [];
+  const blocks: ReferenceBlock[] = [];
+  let open: ReferenceBlock | undefined;
+  for (const line of body.split("\n")) {
+    const start = REFERENCE_START.exec(line);
+    if (start) {
+      if (open) throw new Error(`nested reference block '${start[1]}' inside '${open.name}'`);
+      open = { name: start[1], lines: [], anchors: new Set() };
+      blocks.push(open);
+      parts.push({ block: blocks.length - 1 });
+      continue;
+    }
+    if (REFERENCE_END.test(line)) {
+      if (!open) throw new Error("reference end marker without a start");
+      open = undefined;
+      continue;
+    }
+    if (open) {
+      open.lines.push(line);
+      for (const m of line.matchAll(/\{#([a-z0-9-]+)\}/g)) open.anchors.add(m[1]);
+    } else {
+      parts.push(line);
+    }
+  }
+  if (open) throw new Error(`unclosed reference block '${open.name}'`);
+  return { parts, blocks };
+}
+
+function inlineReferences(parsed: ParsedBody): string {
+  return parsed.parts
+    .flatMap((part) => (typeof part === "string" ? [part] : parsed.blocks[part.block].lines))
+    .join("\n");
+}
+
+function rewriteAnchorLinks(text: string, target: (anchor: string) => string | undefined): string {
+  return text.replace(/\]\(#([a-z0-9-]+)\)/g, (whole, anchor: string) => {
+    const to = target(anchor);
+    return to === undefined ? whole : `](${to}#${anchor})`;
+  });
+}
+
+// Reference files must not link onward (Anthropic: one level deep from
+// SKILL.md), so a link to a section outside the block becomes plain text that
+// names the section.
+function nameOutsideSections(text: string, isLocal: (anchor: string) => boolean): string {
+  return text.replace(/\[([^\]]+)\]\(#([a-z0-9-]+)\)/g, (whole, label: string, anchor: string) =>
+    isLocal(anchor) ? whole : `**${label}** in SKILL.md`,
+  );
+}
+
+function splitReferences(parsed: ParsedBody): { skill: string; references: Map<string, string> } {
+  const owner = new Map<string, string>();
+  for (const block of parsed.blocks) for (const a of block.anchors) owner.set(a, block.name);
+
+  const skillLines = parsed.parts.flatMap((part) => {
+    if (typeof part === "string") return [part];
+    const block = parsed.blocks[part.block];
+    const heading = block.lines.find((l) => l.startsWith("#"));
+    const link = `Full steps: [references/${block.name}.md](references/${block.name}.md).`;
+    return heading ? [heading, "", link] : [link];
+  });
+  const skill = rewriteAnchorLinks(skillLines.join("\n"), (a) => {
+    const name = owner.get(a);
+    return name === undefined ? undefined : `references/${name}.md`;
+  });
+
+  const references = new Map<string, string>();
+  for (const block of parsed.blocks) {
+    const text = nameOutsideSections(
+      block.lines.join("\n").trim() + "\n",
+      (a) => block.anchors.has(a),
+    );
+    references.set(block.name, text);
+  }
+  return { skill, references };
 }
 
 // ── next-task command ──
@@ -273,18 +375,34 @@ export function generateCommands(repoDir: string): GenerateResult {
     }
 
     const canonical = readFileSync(canonicalPath, "utf-8");
+    let parsedCanonical: ParsedBody;
+    try {
+      parsedCanonical = parseReferenceBlocks(canonical);
+    } catch (error) {
+      errors.push(`${command.canonicalPath}: ${(error as Error).message}`);
+      continue;
+    }
     messages.push(`${command.name}:`);
 
     for (const agent of command.agents) {
-      const body = canonical.replaceAll(
-        "{{AGENT_EXAMPLE}}",
-        agent.agentExample,
-      );
-      const output = agent.transform(body);
       const outputPath = join(repoDir, agent.outputPath);
+      const isSkill = agent.outputPath.endsWith("/SKILL.md");
+      const withExample = (text: string) =>
+        text.replaceAll("{{AGENT_EXAMPLE}}", agent.agentExample);
 
       mkdirSync(dirname(outputPath), { recursive: true });
-      writeFileSync(outputPath, output);
+      if (isSkill) {
+        const { skill, references } = splitReferences(parsedCanonical);
+        const referencesDir = join(dirname(outputPath), "references");
+        rmSync(referencesDir, { recursive: true, force: true });
+        for (const [name, text] of references) {
+          mkdirSync(referencesDir, { recursive: true });
+          writeFileSync(join(referencesDir, `${name}.md`), withExample(text));
+        }
+        writeFileSync(outputPath, agent.transform(withExample(skill)));
+      } else {
+        writeFileSync(outputPath, agent.transform(withExample(inlineReferences(parsedCanonical))));
+      }
 
       generated.push(`${command.name}/${agent.name}`);
       messages.push(`  ✓ ${agent.name}`);

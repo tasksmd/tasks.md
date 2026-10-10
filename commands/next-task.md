@@ -175,6 +175,7 @@ criteria is not "no actionable tasks" — it needs decomposition, not avoidance.
 5. Implement the first sub-task
 6. Do NOT run the audit while decomposable tasks exist
 
+<!-- reference: enrich-blocked-tasks -->
 ### Enrich blocked tasks {#enrich-blocked-tasks}
 
 When every remaining task in the current repo is blocked — either by an unresolved `**Blocked by**:` or by a `**Blocked**:` reason — don't just roam. Spend this turn **enriching** the blocked tasks with read-only research so the developer has less discovery work to do once the block resolves.
@@ -229,7 +230,9 @@ Do not claim the task. Do not push to any public surface (the work stayed local 
 After committing, return to [Find the queue](#find-the-queue). The task is still blocked — the next pick step will skip it because the `**Blocked**` / `**Blocked by**` line is still there — but it's now richer for the next session or the human reviewer.
 
 > **MCP shortcut:** If `tasks-mcp` is available, use `enrich_task` — it appends `**Research**` notes, optionally extends `**Files**` / `**Acceptance**`, and sets `**Last-enriched**` atomically without manual file editing.
+<!-- /reference -->
 
+<!-- reference: empty-queue -->
 ### Empty queue: roam to the next repo {#empty-queue}
 
 When the current repo's queue is truly empty (no unclaimed, unblocked tasks):
@@ -310,6 +313,7 @@ If ALL five tiers produce zero findings across ALL repos:
    ```
 2. **Stop the loop.** Do not print "nothing to do" again on subsequent invocations in the same session.
 3. If the user invokes `/next-task` again (new session), re-run the full loop from the top — starting with the context snapshot. The audit is fresh each session.
+<!-- /reference -->
 
 ## Resume unfinished work
 

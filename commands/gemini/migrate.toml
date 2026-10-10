@@ -23,7 +23,7 @@ Steps
    - `npx -y @tasks-md/cli doctor` exits 0 (claims ref, projection workflow, claim-check, enforcement level, stale heartbeats, compaction all ok/warn — no fail).
    - `npx -y @tasks-md/cli list` reproduces every open task id captured in step 2 (nothing lost).
    - `npx -y @tasks-md/lint TASKS.md` exits 0 on the regenerated snapshot.
-7. **Report — including rollback.** Tell the user the repo is now git-native, how to add/claim/complete tasks, and that they can roll back at any time with `rm .tasksmd.json` and `git update-ref -d refs/heads/tasks-claims` (the original `TASKS.md` content is preserved in the log and the file). Point them at [`spec.md` § Fleet coordination](../spec.md#fleet-coordination) for the model.
+7. **Report — including rollback.** Tell the user the repo is now git-native, how to add/claim/complete tasks, and that they can roll back at any time with `rm .tasksmd.json` and `git update-ref -d refs/heads/tasks-claims` (the original `TASKS.md` content is preserved in the log and the file). Point them at [`spec.md` § Fleet coordination](https://github.com/tasksmd/tasks.md/blob/main/spec.md#fleet-coordination) for the model.
 Idempotency + safety
 Re-running is safe: step 1 detects an already-migrated repo and stops at `doctor`. The dry-run in step 3 never mutates state. `migrate` preserves task ids and never modifies the original `TASKS.md` before `--apply`. The whole flip is reversible via the step-7 rollback. Migrating other repos is the same command run in each — this repo is converted by exactly this path (VISION G8).
 '''

@@ -17,26 +17,7 @@ supporting tools that make the format useful for humans and agents:
 
 ## Repo Layout
 
-```text
-tasks.md/
-+-- spec.md                         # Canonical TASKS.md format spec
-+-- README.md                       # User-facing docs and quick start
-+-- Agentfile.yaml                  # Repo-local agentbrew MCP manifest
-+-- TASKS.md                        # Local task queue for this repo
-+-- examples/                       # Valid TASKS.md example files
-+-- commands/
-|   +-- next-task.md                # Shared canonical /next-task source
-|   +-- lint-tasks.md               # Shared canonical /lint-tasks source
-|   +-- claude/skills/*/SKILL.md    # Claude Code skill variants
-|   +-- codex/skills/*/SKILL.md     # OpenAI Codex skill variants
-|   +-- cursor/*.md                 # Cursor command variants
-|   +-- gemini/*.toml               # Gemini CLI command variants
-+-- packages/
-|   +-- parser/                     # @tasks-md/parser TypeScript package
-|   +-- lint/                       # @tasks-md/lint and tasks-lint binary
-|   +-- mcp/                        # tasks-mcp server
-|   +-- cli/                        # @tasks-md/cli and tasks binary
-```
+The annotated repo tree lives in [ARCHITECTURE.md § Repo layout](ARCHITECTURE.md#repo-layout).
 
 ## Development
 
@@ -77,47 +58,9 @@ explicitly approved that exact action in the current session.
 
 ## Release And CI Gotchas
 
-The tag-triggered release (`.github/workflows/publish.yml`) and CI have sharp
-edges that cost real debugging time — captured here so they don't recur:
-
-- **npm OIDC Trusted Publishing needs npm >= 11.5.1.** Node 22 ships npm 10.x,
-  which signs the provenance statement but **cannot authenticate the publish via
-  OIDC** — the publish `PUT` 404s (`'<pkg>@<version>' is not in this registry`)
-  even with a correct Trusted Publisher configured. The signature is: provenance
-  signs, then 404 on PUT. `publish.yml` runs `npm install -g npm@latest` after
-  `setup-node` for exactly this reason; do not remove it.
-- **Trusted Publishers are configured per-package on npmjs.com**, not in the repo.
-  `@tasks-md/parser`, `@tasks-md/lint`, `@tasks-md/cli`, and `tasks-mcp` each list
-  `tasksmd/tasks.md` -> `publish.yml` (no environment). All four are set.
-- **`publish.yml` never pushes to `main`.** The `main` rulesets (no
-  non-fast-forward, required `claim-check`) reject a push from the release job.
-  Bump versions in a PR with `bash scripts/sync-versions.sh <version>` before you
-  tag. The workflow only checks the tag against `package.json` and stops before
-  publishing on a mismatch.
-- **`scripts/sync-versions.sh` must skip the private `@tasks-md/conformance`.**
-  Bumping its cross-reference to `^<version>` makes `npm ci` try to fetch the
-  unpublished package from the registry -> 404. It stays pinned `*` so it always
-  resolves to the local workspace.
-- **CI's `npm ci` may resolve through a registry mirror**, which can time out
-  (`ETIMEDOUT`) on brand-new dependency versions that aren't mirrored yet (a fresh
-  `yaml@2.9.0` broke CI this way — the workspaces config is now dependency-free
-  JSON). Prefer mature, already-mirrored dependency versions; trust the GitHub
-  Actions run over a local `npm view` (a registry mirror can lag the public registry).
-- **`tasks-claim-check` is advisory by default** (warns, never blocks, so it never
-  red-X's a bootstrap or docs PR) — but **armed on this repo**: `TASKS_CLAIM_ENFORCE=1`
-  plus a required `claim-check` ruleset, so an unclaimed code PR is blocked. Re-arm
-  here or on any dogfood repo in one action with `scripts/arm-enforcement.sh`. The
-  workflow installs the published cli at a **pinned** `CLI_VERSION` (not `@latest`) so
-  the required gate stays reproducible; bump it when `check-push` changes.
-- **The `tasks-snapshot` projection builds + runs the *local* cli**, not
-  `npx @tasks-md/cli` (the generic `fleet init` form). Because this repo is the
-  cli's own source, the published package is redundant and `npx` is subject to
-  registry mirror lag right after a release (a fresh publish 404s / fails to
-  install on CI). The workflow does `npm ci` + `npm run build` +
-  `node packages/cli/dist/cli.js render`. `fleet init` skips existing files, so
-  this intentional divergence survives a re-run. The render still skips
-  gracefully on failure (temp-file swap), so it never truncates `TASKS.md`. The
-  `tasks-claim-check` workflow keeps the generic `npx` form (it's advisory).
+Before you touch the release workflow, CI, `scripts/sync-versions.sh`, or the
+claim-check gate, read [docs/release-and-ci.md](docs/release-and-ci.md). It
+records the npm OIDC, ruleset, registry-mirror, and claim-check traps.
 
 ## Code Style
 
@@ -152,14 +95,13 @@ regenerate every agent variant in one shot. The CI `commands-drift` job
 runs the generator on every PR and rejects diffs in `commands/`, so a
 manual edit to a generated variant fails CI.
 
-Generated variants regenerated from each canonical source:
+Each canonical source regenerates a Claude skill folder, a Codex skill
+folder, a Cursor command, and a Gemini TOML. The full map is in
+[ARCHITECTURE.md § Cross-agent command generation](ARCHITECTURE.md#cross-agent-command-generation).
 
-| Canonical | Generated variants |
-|-----------|--------------------|
-| `commands/next-task.md` | `commands/claude/skills/next-task/SKILL.md`, `commands/codex/skills/next-task/SKILL.md`, `commands/cursor/next-task.md`, `commands/gemini/next-task.toml` |
-| `commands/lint-tasks.md` | `commands/claude/skills/lint-tasks/SKILL.md`, `commands/codex/skills/lint-tasks/SKILL.md`, `commands/cursor/lint-tasks.md`, `commands/gemini/lint-tasks.toml` |
-| `commands/setup.md` | `commands/claude/skills/setup/SKILL.md`, `commands/codex/skills/setup/SKILL.md`, `commands/cursor/setup.md`, `commands/gemini/setup.toml` |
-| `commands/migrate.md` | `commands/claude/skills/migrate/SKILL.md`, `commands/codex/skills/migrate/SKILL.md`, `commands/cursor/migrate.md`, `commands/gemini/migrate.toml` |
+To keep a skill body under 500 lines, wrap rarely-needed detail in
+`<!-- reference: <name> -->` … `<!-- /reference -->` in the canonical file.
+Skill variants get it as `references/<name>.md`; Cursor and Gemini keep it inline.
 
 Other files that may need to change in the same commit when behavior
 shifts:
@@ -251,34 +193,5 @@ at the end of this section is what consumers copy; see also
   `git push origin refs/heads/tasks-claims` (operator action) makes the queue
   live for CI's projection job and other contributors.
 
-### Canonical backend-aware policy snippet
-
-Copy this into another repo's `AGENTS.md` / `CLAUDE.md` / Cursor rules so agents
-learn the backend-aware default rather than a file-only one:
-
-```markdown
-## Task Management
-- Read `TASKS.md` for available work; obey any `<!-- policy: ... -->` comments.
-- Determine the backend from `.tasksmd.json` (default: file backend `tasks-md`).
-  - **File backend:** claim by appending `(@you)` to the task line; complete by
-    removing the whole task block (history lives in git log). Best-effort.
-  - **Generated backend** (`git-native` / `github-issues`): `TASKS.md` is a
-    generated snapshot — never hand-edit it. Use `tasks claim <id>` /
-    `tasks complete <id>` / `tasks create "<title>"` (or the `tasks-mcp` tools);
-    git-native claims are collision-free with a `claimId` fencing token.
-- Pick highest-priority unblocked task (P0→P3); skip others' claims and blocked tasks.
-```
-
-### Downstream drift (outside this repo)
-
-Operators have copied the older **file-only** snippet into other repos. Replace it
-with the snippet above wherever it appears. The exact file-backend-only phrasings to
-find-and-replace — "Claim tasks by appending `(@agent)`" / "edit `TASKS.md` directly" — appear at these locations: <!-- drift-allow: names the banned phrasings to replace -->
-
-- `~/.config/agentbrew/` shared rules and `global_rules.md` "TASKS.md Format" /
-  "Task Backend Configuration" sections.
-- Any downstream repo `AGENTS.md` / `CLAUDE.md` whose Task-Management section
-  predates the backend split.
-
-These live outside this repo, so they are recorded here rather than edited; a
-maintainer (or an `agentbrew sync`) propagates the backend-aware snippet.
+The backend-aware snippet that other repos copy, and the known downstream
+drift, live in [docs/task-policy-snippet.md](docs/task-policy-snippet.md).

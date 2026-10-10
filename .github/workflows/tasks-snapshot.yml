@@ -29,7 +29,7 @@ jobs:
       # instead of `npx @tasks-md/cli` (the generic fleet-init form). npx would
       # fetch the published package and is subject to registry mirror lag right
       # after a release. fleet init never clobbers this file, so the divergence
-      # is durable — see AGENTS.md § Release And CI Gotchas.
+      # is durable — see docs/release-and-ci.md.
       - run: npm ci
       - run: npm run build
       # Render to a temp file and only swap on success, so a failure skips the

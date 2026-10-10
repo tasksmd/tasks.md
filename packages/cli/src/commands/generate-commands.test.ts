@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, readdirSync } from "node:fs";
+import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import {
   generateCommands,
@@ -308,6 +308,124 @@ describe("generateCommands", () => {
       expect(existsSync(join(tempDir, "commands/claude/skills/next-task/SKILL.md"))).toBe(true);
       // lint-tasks should be skipped
       expect(existsSync(join(tempDir, "commands/claude/skills/lint-tasks/SKILL.md"))).toBe(false);
+    });
+  });
+
+  describe("reference blocks", () => {
+    const WITH_REFERENCE = `# Next Task
+
+Read [the roam steps](#empty-queue) or [refusals](#refuse).
+
+<!-- reference: empty-queue -->
+### Empty queue {#empty-queue}
+
+Roam on. If all are blocked, run the [audit cascade](#audit-cascade).
+See [refusals](#refuse).
+
+### Audit cascade {#audit-cascade}
+
+Audit everything.
+<!-- /reference -->
+
+## Refuse {#refuse}
+
+Do not do forbidden work.
+`;
+
+    beforeEach(() => {
+      writeFileSync(join(tempDir, "commands", "next-task.md"), WITH_REFERENCE);
+    });
+
+    it("moves reference blocks into references/ for skill variants", () => {
+      const result = generateCommands(tempDir);
+      expect(result.errors).toHaveLength(0);
+      for (const agent of ["claude", "codex"]) {
+        const dir = join(tempDir, `commands/${agent}/skills/next-task`);
+        const skill = readFileSync(join(dir, "SKILL.md"), "utf-8");
+        const ref = readFileSync(join(dir, "references/empty-queue.md"), "utf-8");
+        expect(skill).not.toContain("Audit everything.");
+        expect(skill).toContain("### Empty queue {#empty-queue}");
+        expect(skill).toContain("[references/empty-queue.md](references/empty-queue.md)");
+        expect(skill).toContain("[the roam steps](references/empty-queue.md#empty-queue)");
+        expect(skill).not.toContain("<!--");
+        expect(ref).toContain("Audit everything.");
+        expect(ref).toContain("[audit cascade](#audit-cascade)");
+        expect(ref).toContain("**refusals** in SKILL.md");
+        expect(ref).not.toContain("SKILL.md#");
+        expect(ref).not.toContain("<!--");
+      }
+    });
+
+    it("keeps reference blocks inline for single-file variants", () => {
+      generateCommands(tempDir);
+      const cursor = readFileSync(join(tempDir, "commands/cursor/next-task.md"), "utf-8");
+      expect(cursor).toContain("Audit everything.");
+      expect(cursor).toContain("[the roam steps](#empty-queue)");
+      expect(cursor).not.toContain("<!-- reference");
+      expect(existsSync(join(tempDir, "commands/cursor/references"))).toBe(false);
+      const gemini = readFileSync(join(tempDir, "commands/gemini/next-task.toml"), "utf-8");
+      expect(gemini).toContain("Audit everything.");
+      expect(gemini).not.toContain("<!-- reference");
+    });
+
+    it("names sections outside the block in plain text (one level deep)", () => {
+      writeFileSync(
+        join(tempDir, "commands", "next-task.md"),
+        [
+          "# T", "",
+          "<!-- reference: first -->", "### First {#first}", "", "Then go [second](#second).", "<!-- /reference -->", "",
+          "<!-- reference: second -->", "### Second {#second}", "", "Done.", "<!-- /reference -->", "",
+        ].join("\n"),
+      );
+      generateCommands(tempDir);
+      const ref = readFileSync(
+        join(tempDir, "commands/claude/skills/next-task/references/first.md"),
+        "utf-8",
+      );
+      expect(ref).toContain("**second** in SKILL.md");
+      expect(ref).not.toContain("second.md");
+    });
+
+    it("fails on an unclosed reference block", () => {
+      writeFileSync(
+        join(tempDir, "commands", "next-task.md"),
+        "# T\n\n<!-- reference: open -->\n### Open\n",
+      );
+      const result = generateCommands(tempDir);
+      expect(result.errors.join("\n")).toContain("unclosed reference block 'open'");
+    });
+  });
+
+  describe("packaged skills in this repo", () => {
+    const repoRoot = join(__dirname, "../../../..");
+    const skills = ["next-task", "lint-tasks", "setup", "migrate"].flatMap((name) =>
+      ["claude", "codex"].map((agent) => join(repoRoot, `commands/${agent}/skills/${name}`)),
+    );
+
+    it("keep every SKILL.md body under 500 lines", () => {
+      for (const dir of skills) {
+        const body = readFileSync(join(dir, "SKILL.md"), "utf-8").split("\n---\n").slice(1).join("\n---\n");
+        expect(body.split("\n").length, dir).toBeLessThan(500);
+      }
+    });
+
+    it("link only to URLs, anchors, or files inside the installed skill folder", () => {
+      // Skills are installed with `cp -r <skill> .claude/skills/`, so a link
+      // to the tasks.md repo itself breaks in the user's project.
+      for (const dir of skills) {
+        const files = [join(dir, "SKILL.md")];
+        const refs = join(dir, "references");
+        if (existsSync(refs)) files.push(...readdirSync(refs).map((f) => join(refs, f)));
+        for (const file of files) {
+          const text = readFileSync(file, "utf-8");
+          for (const match of text.matchAll(/\]\(([^)\s]+)\)/g)) {
+            const target = match[1];
+            if (/^(https?:|mailto:|#)/.test(target)) continue;
+            const path = join(dirname(file), target.split("#")[0]);
+            expect(path.startsWith(dir) && existsSync(path), `${file}: ${target}`).toBe(true);
+          }
+        }
+      }
     });
   });
 
