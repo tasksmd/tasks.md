@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-b43d5346-c2c0-491a-a118-f3c7ba4b3161",
+  "task_id": "fix-packaged-skill-audit-findings-repo-links-next-task-size-",
+  "event_type": "completed",
+  "actor_id": "claude-code",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-10T17:59:13.507Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
