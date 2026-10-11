@@ -4,12 +4,7 @@
 
 ## P1
 
-- [ ] Bootstrap the public tasks-claims log and release flow (@tasks-md)
-  - **ID**: bootstrap-public-tasks-claims-log-and-release-flow
-  - **Tags**: git-native, enforcement, release
-  - **Details**: The public repo was recreated without its tasks-claims ref, so the armed claim-check rejects every code PR and the open backlog was lost. Push a clean log that restores the generic backlog, render TASKS.md from it, and stop publish.yml from pushing to main (the main rulesets reject that push).
-
-- [ ] Land the 0.10.3 version bump and the claim-check CLI pin
+- [ ] Land the 0.10.3 version bump and the claim-check CLI pin (@tasks-md)
   - **ID**: land-0-10-3-version-bump-and-claim-check-cli-pin
   - **Tags**: release, ci
   - **Details**: Land the 0.10.3 version bump (`bash scripts/sync-versions.sh 0.10.3`) on main in a PR with Task/Task-Claim trailers. After @tasks-md/cli 0.10.3 is on public npm (`curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '."dist-tags".latest'`), change `CLI_VERSION: "0.10.0"` to `CLI_VERSION: "0.10.3"` in .github/workflows/tasks-claim-check.yml.
