@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-49f971ea-10d3-4a57-96b6-24432ce7f69e",
+  "task_id": "make-the-agent-and-human-docs-follow-the-agentbrew-docs-cont",
+  "event_type": "claimed",
+  "actor_id": "claude-docs-fork",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-13T12:25:03.279Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-0bf974b4-0e36-45dc-82be-0c6aebad9943",
+    "lease_expires_at": 1791980703279
+  }
+}
