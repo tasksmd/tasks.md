@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-fb4c13fe-dabf-48c8-9e4c-d12a183d3c58",
+  "task_id": "make-the-agent-and-human-docs-follow-the-agentbrew-docs-cont",
+  "event_type": "created",
+  "actor_id": "claude-docs-fork",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-13T12:24:57.448Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Make the agent and human docs follow the agentbrew docs contract",
+    "priority": "P1",
+    "tags": [
+      "docs"
+    ],
+    "body": "Restructure AGENTS.md into the contract sections (<= 10,000 bytes), add CLAUDE.md, a docs map, the README opening, and a contract test. Contract: agentbrew docs/agent-guide-baseline.md."
+  }
+}
