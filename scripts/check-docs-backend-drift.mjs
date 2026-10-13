@@ -54,6 +54,8 @@ function scanFiles() {
     "commands/migrate.md",
     "docs/release-and-ci.md",
     "docs/task-policy-snippet.md",
+    "docs/editing-rules.md",
+    "docs/README.md",
   ];
   const userStories = join(ROOT, "docs", "user-stories");
   if (existsSync(userStories)) {
