@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-9b6471f3-1ce8-46ee-82c6-301c2e9f74e0",
+  "task_id": "make-the-agent-and-human-docs-follow-the-agentbrew-docs-cont",
+  "event_type": "completed",
+  "actor_id": "claude-docs-fork",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-13T12:29:37.726Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
