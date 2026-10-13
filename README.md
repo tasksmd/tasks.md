@@ -12,6 +12,9 @@ A lightweight spec for AI agent task queues — the companion to [AGENTS.md](htt
 
 AGENTS.md tells agents *how* to work. TASKS.md tells them *what* to work on.
 
+**Who it is for:** developers and teams who let AI coding agents pick up work from a queue in the repo, alone or as a fleet.
+**Documentation:** the [documentation map](docs/README.md) lists every doc by question. Contributors and coding agents: read [`AGENTS.md`](AGENTS.md) first.
+
 ## Highlights
 
 - **One Markdown file** any agent or human reads and writes — no accounts, no API, no server, works offline.

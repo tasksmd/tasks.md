@@ -1,197 +1,106 @@
-# AGENTS.md - tasks.md Codebase Guide
+# AGENTS.md - tasks.md guide for agents
 
-## What This Repo Is
+## Start here
 
-`tasks.md` defines the TASKS.md task-queue specification and ships the
-supporting tools that make the format useful for humans and agents:
+`tasks.md` defines the TASKS.md task-queue spec (`spec.md`) and ships the tools
+around it: `packages/parser`, `packages/lint`, `packages/mcp`, `packages/cli`,
+plus the shared `/next-task` and `/lint-tasks` commands in `commands/`. The
+canonical repo is `github.com/tasksmd/tasks.md`, branch `main`. It is public.
 
-- `spec.md` is the canonical format specification.
-- `README.md` is the landing page and quick start.
-- `examples/` contains valid TASKS.md examples used as documentation fixtures.
-- `packages/parser` parses task files, metadata, blockers, claims, and policies.
-- `packages/lint` validates task files against the spec.
-- `packages/mcp` exposes TASKS.md operations through the Model Context Protocol.
-- `packages/cli` provides the `tasks` command-line interface.
-- `commands/` contains the shared `/next-task` and `/lint-tasks` command variants
-  for Claude Code, Codex, Cursor, and Gemini CLI.
+Read this file first. Then open only the doc that the routing table names. Do
+not read `README.md` end to end; it is the user landing page. `CLAUDE.md` is a
+symlink to this file. The docs map is [`docs/README.md`](docs/README.md).
 
-## Repo Layout
+## Commands
 
-The annotated repo tree lives in [ARCHITECTURE.md § Repo layout](ARCHITECTURE.md#repo-layout).
+An npm workspace repo. Run commands from the repo root.
 
-## Development
+| Task | Command |
+|---|---|
+| Install | `npm ci` |
+| Type-check and build every package | `npm run build` |
+| All tests | `npm test` |
+| One package's tests | `npm test -w packages/<name>` |
+| Lint TASKS.md, docs drift, counts, docs contract | `npm run lint` |
+| Rebuild the website | `npm run build:site` |
+| Regenerate agent command files | `node packages/cli/dist/cli.js generate-commands` |
+| Run the local CLI | `node packages/cli/dist/cli.js <command>` (after `npm run build`) |
 
-This is an npm workspace repo. Install dependencies once, then run commands from
-the repo root unless a package README says otherwise.
+### Verification gate
 
-```bash
-npm install                         # Install workspace dependencies
-npm run build                       # Type-check and build parser, lint, MCP, CLI
-npm run build:site                  # Rebuild the static docs site
-npm run lint                        # Run local TASKS.md lint via built package
-npm test                            # Run all workspace tests
-npm run test:cached                 # Cached test wrapper for repeated local runs
-npx -y @tasks-md/lint TASKS.md      # Validate the public linter package path
-```
+- Docs-only or TASKS.md edits: `npm run lint`.
+- Spec, parser, lint, MCP, CLI, or command behavior: `npm run build`, `npm test`, `npm run lint`.
+- README or website changes: add `npm run build:site` when rendered output can change.
 
-Package-level commands also work with npm workspaces:
+Do not claim work is complete until those commands pass.
 
-```bash
-npm run build -w packages/parser
-npm test -w packages/mcp
-```
+## Where to change what
 
-## Verification Gate
+| I want to… | Change | Update this doc too |
+|---|---|---|
+| Change the format | `spec.md` | README examples, `examples/`, parser, lint, MCP and CLI docs ([rules](docs/editing-rules.md#spec-propagation)) |
+| Change parsing | `packages/parser/src/` | `packages/parser/README.md` |
+| Add or change a lint rule | `packages/lint/src/` | `packages/lint/README.md` |
+| Change an MCP tool | `packages/mcp/src/` | `packages/mcp/README.md` |
+| Change a CLI command | `packages/cli/src/` | `packages/cli/README.md`, README |
+| Change `/next-task` or `/lint-tasks` | `commands/next-task.md`, `commands/lint-tasks.md`, then regenerate | README "What it does", `commands/README.md` |
+| Add an agent variant | the command generator in `packages/cli/` | [ARCHITECTURE.md](ARCHITECTURE.md#cross-agent-command-generation) |
+| Change the website | `docs/template.html`, `scripts/build-site.js` | none (`docs/index.html` is generated) |
+| Change CI or release | `.github/workflows/`, `scripts/sync-versions.sh` | [docs/release-and-ci.md](docs/release-and-ci.md) |
+| Add or change an example | `examples/` (must stay valid TASKS.md) | README if it shows a new feature |
+| Add a top-level doc | `docs/<name>.md` | a row in [docs/README.md](docs/README.md) |
 
-Before committing a normal change, run the smallest gate that covers the files
-you touched, then run the full gate for cross-package or command/spec changes:
+## Rules
 
-- **Docs-only / TASKS.md edits**: `npm run lint` and `npx -y @tasks-md/lint TASKS.md`.
-- **Spec, parser, lint, MCP, CLI, or command behavior**: `npm run build`, `npm test`,
-  `npm run lint`, and `npx -y @tasks-md/lint TASKS.md`.
-- **README or website changes**: include `npm run build:site` when rendered site output
-  could change.
+Full text: [docs/editing-rules.md](docs/editing-rules.md).
 
-Do not claim work is complete until the verification commands you ran have
-finished successfully. Never bypass hooks with `--no-verify` unless the user has
-explicitly approved that exact action in the current session.
+1. TypeScript packages are strict ESM for Node.js 18+.
+2. Markdown examples stay valid TASKS.md: `# Tasks`, `## P0`–`## P3`, checkbox tasks, indented bold metadata. Fence code with a language tag.
+3. Prefer small, obvious APIs. Merge overlapping tools or flags instead of adding new ones.
+4. Publishing (`npm publish`, releases, PRs, pushes) needs explicit current-session operator approval.
+5. Never bypass hooks with `--no-verify`.
+6. Commit only scoped files. Never `git add -A`, `git add .`, `git reset --hard`, or `git clean -fd`.
 
-## Release And CI Gotchas
+### Canonical source boundaries
 
-Before you touch the release workflow, CI, `scripts/sync-versions.sh`, or the
-claim-check gate, read [docs/release-and-ci.md](docs/release-and-ci.md). It
-records the npm OIDC, ruleset, registry-mirror, and claim-check traps.
+Root docs and `commands/` sources are the truth. Installed copies in agent config
+directories are generated mirrors; never edit them. Edit only
+`commands/next-task.md` and `commands/lint-tasks.md`, then regenerate every
+variant. Windsurf and Devin support was removed; Augment is frozen. Details:
+[docs/editing-rules.md](docs/editing-rules.md#canonical-source-boundaries).
 
-## Code Style
+### Task queue
 
-- TypeScript packages are strict ESM modules targeting Node.js 18+.
-- Keep Markdown examples valid TASKS.md files: first line `# Tasks`, sections
-  `## P0` through `## P3`, checkbox tasks, and indented bold metadata labels.
-- Use fenced code blocks with a language tag, especially `markdown` for TASKS.md
-  examples.
-- Prefer small, obvious APIs. If two tools or flags overlap, merge behavior
-  instead of adding another public command.
-- Keep docs and tooling behavior in sync. README drift is a bug.
-- Public publishing actions such as `npm publish`, creating releases, opening or
-  merging pull requests, and pushing remote branches require explicit
-  current-session operator approval.
+This repo runs the git-native backend. `TASKS.md` is a generated snapshot; never
+hand-edit it. Pick with `tasks list` / `tasks pick`, claim with `tasks claim <id>`
+(it returns a `claimId`), file with `tasks create "<title>"`, finish with
+`tasks complete <id>`. Non-trivial tasks need a plan in `docs/plans/<task-id>.md`.
+Full policy: [docs/editing-rules.md](docs/editing-rules.md#task-queue-policy).
 
-## Canonical Source Boundaries
+## Gotchas
 
-The root docs and command files are the source of truth. Installed copies under
-agent config directories are generated mirrors; do not edit those mirrors.
+- `TASKS.md` here is generated from the `tasks-claims` ref. Edits to the file are lost; use the CLI.
+- The claim check is armed (`TASKS_CLAIM_ENFORCE=1`, required check). A PR that changes non-Markdown files needs `Task: <id>` and `Task-Claim: <claimId>` trailers as the last paragraph of a commit. `tasks claim` pushes the `tasks-claims` ref itself.
+- Set `TASKS_ACTOR=<your-name>` before `tasks create` or `tasks claim`, so the log names you.
+- Inside this repo, `npx @tasks-md/cli` resolves the unbuilt local package. Run `npm run build`, then `node packages/cli/dist/cli.js`.
+- The CI `commands-drift` job fails if you edit a generated command variant by hand.
+- The owner's global gitignore lists `TASKS.md`. Fixture git repos in tests need `GIT_CONFIG_GLOBAL=/dev/null`.
+- In the agent sandbox, git push, ssh, and `npm ci` network access can fail. Run them outside the sandbox.
+- CI may install through a lagging registry mirror. Release, OIDC, and ruleset traps: [docs/release-and-ci.md](docs/release-and-ci.md).
 
-### Removed agent variants
+## Delivery
 
-Windsurf and Devin support was removed on 2026-10-08. Do not re-add their
-command variants, install targets, docs, tests, or tasks. Augment (Auggie)
-stays frozen: do not touch it.
+1. Claim a task, then branch `type/short-description` from `main` in a worktree.
+2. Make the change with its tests and its docs.
+3. Run the verification gate above.
+4. Commit with a conventional header. Put the `Task:` and `Task-Claim:` trailers last.
+5. Push and open a PR. The body has `## Summary`, `## Details`, `## Docs`, and `## Visual proof` (a pasted terminal transcript).
+6. Wait for every CI check, squash-merge, then `tasks complete <id>`. Remove the worktree and branch.
 
-### Command Propagation
+## Docs upkeep
 
-Edit only the canonical sources (`commands/next-task.md` and
-`commands/lint-tasks.md`) and run `npx tasks generate-commands` to
-regenerate every agent variant in one shot. The CI `commands-drift` job
-runs the generator on every PR and rejects diffs in `commands/`, so a
-manual edit to a generated variant fails CI.
-
-Each canonical source regenerates a Claude skill folder, a Codex skill
-folder, a Cursor command, and a Gemini TOML. The full map is in
-[ARCHITECTURE.md § Cross-agent command generation](ARCHITECTURE.md#cross-agent-command-generation).
-
-To keep a skill body under 500 lines, wrap rarely-needed detail in
-`<!-- reference: <name> -->` … `<!-- /reference -->` in the canonical file.
-Skill variants get it as `references/<name>.md`; Cursor and Gemini keep it inline.
-
-Other files that may need to change in the same commit when behavior
-shifts:
-
-- `README.md` "What it does" step list and `commands/README.md` when
-  user-facing behavior changes.
-- `examples/complex-tasks.md` when the change illustrates a new format
-  feature.
-
-After changing a repeated term or command step, run a targeted search such as:
-
-```bash
-grep -r "<changed-term>" commands/ examples/ README.md spec.md
-```
-
-### Spec Propagation
-
-- A metadata field change in `spec.md` must update README examples, affected
-  examples, parser/linter behavior, MCP/CLI docs, and every command that reads
-  or writes that field.
-- A new workflow step must update README's "What it does" list and every
-  `/next-task` variant.
-- Examples must remain valid and should demonstrate new format features when
-  they would help agents learn the pattern.
-
-## Agentfile And MCP
-
-`Agentfile.yaml` declares repo-local agent integrations:
-
-```yaml
-mcp:
-  - context7
-  - tasks-mcp
-  - github
-```
-
-If you edit `Agentfile.yaml`, run `agentbrew sync` from the repo root so the MCP
-configuration is deployed to all managed agents. Do not add generated agent
-config files to this repo; keep shared agent tools in `commands/` or the
-appropriate source repo.
-
-## Task Queue Policy
-
-This repo runs the **git-native backend** (`.tasksmd.json` declares
-`"backend": "git-native"`) — it dogfoods the collision-free backend it recommends
-for collaborative repos (VISION G8). So **`TASKS.md` here is a generated snapshot,
-not the source of truth** — never hand-edit it. Task state lives in the
-`tasks-claims` git ref; you mutate it through the `tasks` CLI (or the `tasks-mcp`
-tools), and the projection job regenerates `TASKS.md`. The backend-aware snippet
-at the end of this section is what consumers copy; see also
-[`spec.md` § Task backends](spec.md#task-backends) and
-[§ Fleet coordination](spec.md#fleet-coordination).
-
-- Read `TASKS.md` (or `tasks list` / `tasks pick`) for available work. Treat
-  `tasks list` as authoritative — `TASKS.md` on disk may lag the log between
-  projection runs. **Repo policy** (the queue is tech-lead-curated): pick in
-  priority order, focus on hardening user stories and simplifying CLI features,
-  and do **not** roam beyond the `tasks.md` repo. (This lived in a `<!-- policy -->`
-  comment under the file backend; on git-native it lives here, since `TASKS.md`
-  is generated.)
-- **Claim before working:** `tasks claim <id>` — it returns a `claimId` fencing
-  token and is collision-free; a lost race exits nonzero, so pick another task.
-- For non-trivial tasks, write a plan to `docs/plans/<task-id>.md` by copying
-  `docs/templates/plan-template.md`, then validate it with a reviewer subagent
-  (`reviewer` profile, fallback chain `qa-engineer` → `researcher`). Read
-  `writing-plans` when it is installed. Plans lead with overall goal/vision and
-  alternatives, distinguish facts from proposals, and use numbered tasks with
-  why, dependencies/parallelism, evidence, and verification. Cross-system
-  plans also define the source, transport, versioned bootstrap contract, and
-  state provenance. Commit the plan + the appended `## Reviewer verdict` block
-  (`**Verdict**: approved`) before any implementation commit lands. Trivial
-  tasks — single file under 30 minutes with an obvious fix — skip the plan
-  step. See `commands/next-task.md` § "Plan and validate" for the full rules.
-- **Complete via the CLI**, never by editing `TASKS.md`: `tasks complete <id>`
-  appends a `completed` event and the projection refreshes the snapshot. Add a
-  task with `tasks create "<title>"`, release one with `tasks unclaim <id>`.
-  History lives in the `tasks-claims` log + git.
-- If a task requires public writes, external purchases, publishing, or another
-  blocked action, mark it blocked (`tasks update <id> --blocked "<reason>"`)
-  instead of attempting it — a blocked task is skipped by `tasks next` and
-  rejected by `tasks claim`.
-- Code commits that change non-markdown files should carry `Task: <id>` and
-  `Task-Claim: <claimId>` trailers — the path-scoped claim-check gate
-  (`.github/workflows/tasks-claim-check.yml`) requires them on protected branches.
-- Commit only scoped files or hunks. Never use `git add -A`, `git add .`,
-  `git reset --hard`, `git checkout --`, or `git clean -fd` in a multi-agent
-  worktree.
-- The `tasks-claims` ref is local until pushed: a one-time
-  `git push origin refs/heads/tasks-claims` (operator action) makes the queue
-  live for CI's projection job and other contributors.
-
-The backend-aware snippet that other repos copy, and the known downstream
-drift, live in [docs/task-policy-snippet.md](docs/task-policy-snippet.md).
+- Every behavior change updates its docs in the same PR. The routing table names the doc.
+- A gotcha that cost you time goes into `## Gotchas` in the same PR, or becomes a check.
+- Every PR body has a `## Docs` section: the docs you changed, or `Docs: none — <reason>`.
+- A new top-level `docs/*.md` file needs a row in [docs/README.md](docs/README.md). `npm run lint` runs `scripts/check-docs-contract.mjs`, which checks this file's sections and size, the docs map, and the README opening.
+- The contract: agentbrew `docs/agent-guide-baseline.md`.

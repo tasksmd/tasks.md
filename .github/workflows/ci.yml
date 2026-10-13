@@ -38,6 +38,9 @@ jobs:
       - name: Check volatile inventory counts
         run: npm run lint:volatile-counts
 
+      - name: Check docs contract
+        run: npm run lint:docs-contract
+
   commands-drift:
     runs-on: ubuntu-latest
     steps:
