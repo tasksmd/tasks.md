@@ -4,7 +4,7 @@
 
 `tasks.md` defines the TASKS.md task-queue spec (`spec.md`) and ships the tools
 around it: `packages/parser`, `packages/lint`, `packages/mcp`, `packages/cli`,
-plus the shared `/next-task` and `/lint-tasks` commands in `commands/`. The
+plus the shared agent commands (`/next-task`, `/lint-tasks`, `/review-tasks`, …) in `commands/`. The
 canonical repo is `github.com/tasksmd/tasks.md`, branch `main`. It is public.
 
 Read this file first. Then open only the doc that the routing table names. Do
@@ -43,7 +43,7 @@ Do not claim work is complete until those commands pass.
 | Add or change a lint rule | `packages/lint/src/` | `packages/lint/README.md` |
 | Change an MCP tool | `packages/mcp/src/` | `packages/mcp/README.md` |
 | Change a CLI command | `packages/cli/src/` | `packages/cli/README.md`, README |
-| Change `/next-task` or `/lint-tasks` | `commands/next-task.md`, `commands/lint-tasks.md`, then regenerate | README "What it does", `commands/README.md` |
+| Change a shared command (`/next-task`, `/lint-tasks`, `/review-tasks`, …) | `commands/<name>.md`, then regenerate | README, `commands/README.md` |
 | Add an agent variant | the command generator in `packages/cli/` | [ARCHITECTURE.md](ARCHITECTURE.md#cross-agent-command-generation) |
 | Change the website | `docs/template.html`, `scripts/build-site.js` | none (`docs/index.html` is generated) |
 | Change CI or release | `.github/workflows/`, `scripts/sync-versions.sh` | [docs/release-and-ci.md](docs/release-and-ci.md) |
@@ -64,9 +64,8 @@ Full text: [docs/editing-rules.md](docs/editing-rules.md).
 ### Canonical source boundaries
 
 Root docs and `commands/` sources are the truth. Installed copies in agent config
-directories are generated mirrors; never edit them. Edit only
-`commands/next-task.md` and `commands/lint-tasks.md`, then regenerate every
-variant. Windsurf and Devin support was removed; Augment is frozen. Details:
+directories are generated mirrors; never edit them. Edit only the canonical
+`commands/<name>.md` sources, then regenerate every variant. Windsurf and Devin support was removed; Augment is frozen. Details:
 [docs/editing-rules.md](docs/editing-rules.md#canonical-source-boundaries).
 
 ### Task queue
