@@ -349,11 +349,62 @@ const MIGRATE_CONFIG: CommandConfig = {
   ],
 };
 
+// ── review-tasks command ──
+
+export const REVIEW_TASKS_DESCRIPTION =
+  'Review every open task for truth, usefulness, and priority against the current code and history, then clean the queue. Use when the user says "review tasks", "groom the queue", "audit the backlog", "which tasks are stale", or "are these priorities right". Format checks belong to /lint-tasks.';
+
+export const REVIEW_TASKS_GEMINI_DESCRIPTION =
+  "Review open tasks for truth, usefulness, and priority, then clean the queue";
+
+const REVIEW_TASKS_CLAUDE_FRONTMATTER = `---
+name: review-tasks
+description: ${REVIEW_TASKS_DESCRIPTION}
+allowed-tools: Bash, Read, Write, Edit, Grep, Glob, LS
+---`;
+
+const REVIEW_TASKS_CODEX_FRONTMATTER = `---
+name: review-tasks
+description: ${REVIEW_TASKS_DESCRIPTION}
+---`;
+
+const REVIEW_TASKS_CONFIG: CommandConfig = {
+  name: "review-tasks",
+  canonicalPath: "commands/review-tasks.md",
+  agents: [
+    {
+      name: "claude",
+      outputPath: "commands/claude/skills/review-tasks/SKILL.md",
+      agentExample: "",
+      transform: (body) => withFrontmatter(REVIEW_TASKS_CLAUDE_FRONTMATTER, body),
+    },
+    {
+      name: "codex",
+      outputPath: "commands/codex/skills/review-tasks/SKILL.md",
+      agentExample: "",
+      transform: (body) => withFrontmatter(REVIEW_TASKS_CODEX_FRONTMATTER, body),
+    },
+    {
+      name: "cursor",
+      outputPath: "commands/cursor/review-tasks.md",
+      agentExample: "",
+      transform: (body) => body,
+    },
+    {
+      name: "gemini",
+      outputPath: "commands/gemini/review-tasks.toml",
+      agentExample: "",
+      transform: (body) => toGeminiToml(REVIEW_TASKS_GEMINI_DESCRIPTION, body),
+    },
+  ],
+};
+
 const COMMANDS: CommandConfig[] = [
   NEXT_TASK_CONFIG,
   LINT_TASKS_CONFIG,
   SETUP_CONFIG,
   MIGRATE_CONFIG,
+  REVIEW_TASKS_CONFIG,
 ];
 
 export interface GenerateResult {

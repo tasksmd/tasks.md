@@ -156,6 +156,40 @@ describe("tasks-lint", () => {
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toMatch(/completed task should be removed/);
     });
+
+    it("fails on a bare metadata field without the list dash", () => {
+      const result = lint("# Tasks\n\n## P1\n\n- [ ] Task\n  **ID**: task-a\n");
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/TASKS.md:6: metadata field must be a list item/);
+    });
+
+    it("adds the list dash to bare metadata fields in fix mode", () => {
+      const dir = mkdtempSync(join(tmpdir(), "tasks-lint-test-"));
+      const file = join(dir, "TASKS.md");
+      writeFileSync(file, "# Tasks\n\n## P1\n\n- [ ] Task\n  **ID**: task-a\n  **Details**: more\n");
+      try {
+        const result = spawnSync("node", [CLI, "--fix", file], { encoding: "utf-8" });
+        expect(result.status).toBe(0);
+        expect(readFileSync(file, "utf-8")).toBe("# Tasks\n\n## P1\n\n- [ ] Task\n  - **ID**: task-a\n  - **Details**: more\n");
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
+    });
+
+    it("fails when one task repeats a field (a lost task line)", () => {
+      const result = lint(
+        "# Tasks\n\n## P1\n\n- [ ] First\n  - **ID**: first\n\n  - **ID**: second\n  - **Tags**: x\n"
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/TASKS.md:8: duplicate \*\*ID\*\* field in one task \(first at line 6\)/);
+    });
+
+    it("does not count nested bullets as repeated task fields", () => {
+      const result = lint(
+        "# Tasks\n\n## P1\n\n- [ ] First\n  - **Details**: a\n    - **Note**: one\n    - **Note**: two\n"
+      );
+      expect(result.exitCode).toBe(0);
+    });
   });
 
   describe("priority errors", () => {

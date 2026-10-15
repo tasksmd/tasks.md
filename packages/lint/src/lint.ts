@@ -64,6 +64,9 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     let semanticContent = content;
     let lastPriority = -1;
     let inTask = false;
+    let rewritten = false;
+    // Field label → first line number, for the current task only.
+    let taskFields = new Map<string, number>();
 
     // Line 1: must be "# Tasks"
     if (lines.length < 1 || lines[0] !== "# Tasks") {
@@ -154,6 +157,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         }
         lastPriority = priority;
         inTask = false;
+        taskFields = new Map();
         continue;
       }
 
@@ -187,6 +191,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
           reportError(filePath, lineNum, "task found before any priority heading; add a '## P0'-'## P3' heading first");
         }
         inTask = true;
+        taskFields = new Map();
         continue;
       }
 
@@ -198,8 +203,36 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
 
       // Indented content (metadata or subtask)
       if (/^\s{2,}/.test(line)) {
-        if (!inTask && /^\s+-\s+\*\*/.test(line)) {
+        // Bare bold field without the list dash. The parser only reads
+        // `- **Field**: value`, so these fields are invisible to every tool.
+        const bare = line.match(/^(\s{2,})(\*\*[A-Z][A-Za-z0-9 -]*\*\*:\s.*)$/);
+        if (bare && inTask) {
+          if (fixMode) {
+            lines[i] = `${bare[1]}- ${bare[2]}`;
+            rewritten = true;
+            fixed++;
+            console.log(`FIX: ${filePath}:${lineNum}: added list dash to metadata field`);
+          } else {
+            reportError(filePath, lineNum, "metadata field must be a list item ('  - **Field**: value'); parsers ignore bare '**Field**:' lines");
+          }
+        }
+        const normalized = bare ? `${bare[1]}- ${bare[2]}` : line;
+        const field = normalized.match(/^\s+-\s+\*\*(.+?)\*\*:/);
+        if (!inTask && field) {
           reportError(filePath, lineNum, "orphaned metadata (no parent task); nest under a '- [ ]' task line or remove the line");
+        } else if (field && /^\s{2,3}-\s/.test(normalized)) {
+          // Top-level task fields only; deeper bullets are free-form notes.
+          const label = field[1];
+          const first = taskFields.get(label);
+          if (first !== undefined) {
+            reportError(
+              filePath,
+              lineNum,
+              `duplicate **${label}** field in one task (first at line ${first}); parsers keep one value — merge the two, or add the missing '- [ ]' line if a new task starts here`
+            );
+          } else {
+            taskFields.set(label, lineNum);
+          }
         }
         continue;
       }
@@ -211,7 +244,7 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
     }
 
     // Apply fixes if in fix mode
-    if (fixMode && linesToRemove.size > 0) {
+    if (fixMode && (linesToRemove.size > 0 || rewritten)) {
       const fixedLines = lines.filter((_, idx) => !linesToRemove.has(idx));
       const cleaned = fixedLines.filter((l, idx) => {
         if (idx === 0) return true;

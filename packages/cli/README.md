@@ -37,7 +37,7 @@ tasks sync github --merge             # sync GitHub Issues into TASKS.md
 |---------|-------|--------------|
 | `init` | `--install` | Scaffold TASKS.md with P0–P3 headings and add the Task Management section to AGENTS.md |
 | `install` | `--all`, `--agent <name>`, `--hooks` | Install the `/next-task` command for detected agents (Claude Code, Codex, Cursor, Gemini CLI). Auto-detects unless `--all` |
-| `generate-commands` | — | Regenerate every agent variant from `commands/next-task.md` and `commands/lint-tasks.md`. Run after editing a canonical source |
+| `generate-commands` | — | Regenerate every agent variant from the canonical `commands/*.md` sources. Run after editing a canonical source |
 | `pick` | `--tags <a,b>`, `--json` | Pick the highest-priority unblocked, unclaimed task. `--tags` is a soft preference. `--json` emits `{picked: false}` or `{picked, summary, priority, file, line, metadata, candidates, unblocks}` |
 | `list` | `--priority <P0..P3>`, `--tag <t>`, `--unclaimed`, `--unblocked`, `--json` | Enumerate every task that matches. Default output is `<priority>\t<id>\t<summary>` per line; `--json` returns `{id, summary, priority, tags, blocked, claimed, file, line}` records |
 | `stats` | `--json` | Queue overview by priority + throughput counted from `git log` |

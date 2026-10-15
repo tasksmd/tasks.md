@@ -10,6 +10,8 @@ import {
   LINT_TASKS_GEMINI_DESCRIPTION,
   MIGRATE_DESCRIPTION,
   MIGRATE_GEMINI_DESCRIPTION,
+  REVIEW_TASKS_DESCRIPTION,
+  REVIEW_TASKS_GEMINI_DESCRIPTION,
 } from "./generate-commands.js";
 
 let tempDir: string;
@@ -61,6 +63,13 @@ npx -y @tasks-md/cli fleet init
 \`\`\`
 `;
 
+const REVIEW_TASKS_CANONICAL = `# Review Tasks
+
+## Step 2 — Judge each task
+
+| # | Question | How to check | Verdict if no |
+`;
+
 beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), "gen-commands-test-"));
   mkdirSync(join(tempDir, "commands"), { recursive: true });
@@ -68,6 +77,7 @@ beforeEach(() => {
   writeFileSync(join(tempDir, "commands", "lint-tasks.md"), LINT_TASKS_CANONICAL);
   writeFileSync(join(tempDir, "commands", "setup.md"), SETUP_CANONICAL);
   writeFileSync(join(tempDir, "commands", "migrate.md"), MIGRATE_CANONICAL);
+  writeFileSync(join(tempDir, "commands", "review-tasks.md"), REVIEW_TASKS_CANONICAL);
 });
 
 afterEach(() => {
@@ -182,6 +192,36 @@ describe("generateCommands", () => {
       generateCommands(tempDir);
       const content = readFileSync(join(tempDir, "commands/gemini/next-task.toml"), "utf-8");
       expect(content).toContain(`description = "${GEMINI_DESCRIPTION}"`);
+    });
+  });
+
+  describe("review-tasks variants", () => {
+    it("generates all 4 review-tasks agent variants with their descriptions", () => {
+      const result = generateCommands(tempDir);
+      expect(result.errors).toHaveLength(0);
+
+      for (const path of ["commands/claude/skills/review-tasks/SKILL.md", "commands/codex/skills/review-tasks/SKILL.md"]) {
+        const content = readFileSync(join(tempDir, path), "utf-8");
+        expect(content).toContain("name: review-tasks");
+        expect(content).toContain(`description: ${REVIEW_TASKS_DESCRIPTION}`);
+        expect(content).toContain("# Review Tasks");
+      }
+      expect(readFileSync(join(tempDir, "commands/cursor/review-tasks.md"), "utf-8")).toContain("Judge each task");
+      expect(readFileSync(join(tempDir, "commands/gemini/review-tasks.toml"), "utf-8")).toContain(
+        `description = "${REVIEW_TASKS_GEMINI_DESCRIPTION}"`
+      );
+    });
+
+    it("keeps the canonical review rubric evidence-based and read-only", () => {
+      const repoRoot = join(import.meta.dirname, "..", "..", "..", "..");
+      const canonical = readFileSync(join(repoRoot, "commands", "review-tasks.md"), "utf-8");
+      for (const term of ["**DONE**", "**OBSOLETE**", "**DUPLICATE**", "**MOVE**", "**REPRIORITIZE**", "**REWRITE**", "**BLOCKED-STALE**", "**KEEP**"]) {
+        expect(canonical).toContain(term);
+      }
+      expect(canonical).toContain("Evidence for every verdict.");
+      expect(canonical).toContain("Review is read-only.");
+      expect(canonical).toContain("Do not publish.");
+      expect(canonical).toContain("--dry-run");
     });
   });
 
@@ -431,10 +471,11 @@ Do not do forbidden work.
 
   it("reports generated entries for all commands", () => {
     const result = generateCommands(tempDir);
-    expect(result.generated.length).toBe(16); // 4 agents × 4 commands
+    expect(result.generated.length).toBe(20); // 4 agents × 5 commands
     expect(result.generated).toContain("next-task/claude");
     expect(result.generated).toContain("lint-tasks/claude");
     expect(result.generated).toContain("setup/claude");
     expect(result.generated).toContain("migrate/claude");
+    expect(result.generated).toContain("review-tasks/claude");
   });
 });

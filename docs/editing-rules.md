@@ -31,8 +31,8 @@ stays frozen: do not touch it.
 
 ### Command Propagation
 
-Edit only the canonical sources (`commands/next-task.md` and
-`commands/lint-tasks.md`) and run `npx tasks generate-commands` to
+Edit only the canonical sources (`commands/*.md`, such as
+`commands/next-task.md` and `commands/review-tasks.md`) and run `npx tasks generate-commands` to
 regenerate every agent variant in one shot. The CI `commands-drift` job
 runs the generator on every PR and rejects diffs in `commands/`, so a
 manual edit to a generated variant fails CI.

@@ -8,7 +8,7 @@ This file is the root-level architecture summary that the `load-project-context`
 
 ```
    ┌──────────────────────────────────────────────────────────────┐
-   │ spec.md  +  examples/  +  commands/{next-task,lint-tasks}.md │
+   │ spec.md  +  examples/  +  commands/*.md (canonical sources)   │
    │                  THE SPEC — canonical                         │
    └──────────────────────────────────────────────────────────────┘
                               │
@@ -40,6 +40,7 @@ tasks.md/
 +-- commands/
 |   +-- next-task.md                # Shared canonical /next-task source
 |   +-- lint-tasks.md               # Shared canonical /lint-tasks source
+|   +-- review-tasks.md             # Shared canonical /review-tasks source
 |   +-- claude/skills/*/SKILL.md    # Claude Code skill variants
 |   +-- codex/skills/*/SKILL.md     # OpenAI Codex skill variants
 |   +-- cursor/*.md                 # Cursor command variants
@@ -64,7 +65,7 @@ All four are TypeScript strict-ESM, Node 18+. The workspace at the repo root coo
 
 ## Cross-agent command generation
 
-Every `/next-task`, `/lint-tasks`, `/setup`, and `/migrate` invocation in every supported agent comes from one canonical markdown file per command:
+Every `/next-task`, `/lint-tasks`, `/setup`, `/migrate`, and `/review-tasks` invocation in every supported agent comes from one canonical markdown file per command:
 
 | Canonical | Generated variants |
 |-----------|--------------------|
@@ -72,6 +73,7 @@ Every `/next-task`, `/lint-tasks`, `/setup`, and `/migrate` invocation in every 
 | `commands/lint-tasks.md` | `commands/claude/skills/lint-tasks/SKILL.md`, `commands/codex/skills/lint-tasks/SKILL.md`, `commands/cursor/lint-tasks.md`, `commands/gemini/lint-tasks.toml` |
 | `commands/setup.md` | `commands/claude/skills/setup/SKILL.md`, `commands/codex/skills/setup/SKILL.md`, `commands/cursor/setup.md`, `commands/gemini/setup.toml` |
 | `commands/migrate.md` | `commands/claude/skills/migrate/SKILL.md`, `commands/codex/skills/migrate/SKILL.md`, `commands/cursor/migrate.md`, `commands/gemini/migrate.toml` |
+| `commands/review-tasks.md` | `commands/claude/skills/review-tasks/SKILL.md`, `commands/codex/skills/review-tasks/SKILL.md`, `commands/cursor/review-tasks.md`, `commands/gemini/review-tasks.toml` |
 
 Skill variants are folders, installed with `cp -r`. A canonical file can wrap rarely-needed detail in `<!-- reference: <name> -->` … `<!-- /reference -->`; the generator writes that block to the skill's `references/<name>.md` and leaves the heading and a link in `SKILL.md`. Cursor and Gemini variants keep the text inline.
 

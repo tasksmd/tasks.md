@@ -24,7 +24,7 @@ npx -y @tasks-md/lint TASKS.md
 tasks-lint TASKS.md                      # lint one file
 tasks-lint TASKS.md packages/            # root file + nested package TASKS.md files
 tasks-lint frontend/TASKS.md backend/    # explicit monorepo paths
-tasks-lint --fix TASKS.md                # auto-fix completed tasks and orphaned blanks
+tasks-lint --fix TASKS.md                # auto-fix completed tasks, bare fields, and orphaned blanks
 tasks-lint --require-prereg TASKS.md     # enforce rule-#9 pre-registration fields
 ```
 
@@ -51,12 +51,14 @@ tasks-lint [--fix] <file|directory> [file|directory...]
 | Empty `**Research**` | `**Research**:` must have a non-empty value |
 | ISO `**Last-enriched**` | Must be `YYYY-MM-DD` |
 | No orphaned metadata | `**ID**:`, `**Tags**:`, etc. must nest under a task |
+| Dashed metadata | A field is a list item (`  - **Field**: value`); parsers ignore a bare `**Field**:` line |
+| One value per field | A task repeats no top-level field; a repeat usually means a lost `- [ ]` line merged two tasks |
 | Policy in comment | `policy:` directives must live inside `<!-- ... -->` |
 | Policy not empty | `<!-- policy: -->` with no directive text is an error |
 | Unclosed comments | HTML comments must have a closing `-->` |
 | Rule-#9 fields *(opt-in)* | With `--require-prereg`: every task block must have **Hypothesis**, **Success**/**Acceptance**, **Pivot**, **Measurement**, **Anchor** |
 
-`--fix` removes `[x]` completed tasks (and their metadata blocks) and cleans up consecutive blank lines. Ambiguous cases (priority reordering, dangling blockers) are reported but not auto-fixed.
+`--fix` removes `[x]` completed tasks (and their metadata blocks), adds the missing list dash to bare `**Field**:` lines, and cleans up consecutive blank lines. Ambiguous cases (priority reordering, dangling blockers) are reported but not auto-fixed.
 
 | Exit code | Meaning |
 |-----------|---------|
