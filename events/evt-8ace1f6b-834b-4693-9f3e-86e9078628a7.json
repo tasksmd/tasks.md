@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-8ace1f6b-834b-4693-9f3e-86e9078628a7",
+  "task_id": "ship-review-tasks-and-lint-bare-or-duplicate-task-fields",
+  "event_type": "created",
+  "actor_id": "claude-opus",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-15T16:31:28.427Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Ship /review-tasks and lint bare or duplicate task fields",
+    "priority": "P1",
+    "tags": [
+      "commands",
+      "lint"
+    ],
+    "body": "Users can run /review-tasks to judge every open task for truth, usefulness, and priority against the code and history, then clean the queue. The linter also flags bare '**Field**:' metadata (invisible to parsers) and duplicate fields in one task (a lost '- [ ]' line), which hid broken blocks in real queues."
+  }
+}
