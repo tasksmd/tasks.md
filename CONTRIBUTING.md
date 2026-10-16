@@ -36,7 +36,10 @@ The canonical format lives in [`spec.md`](spec.md); examples live in
 
 ## The verify gate
 
-Before you open a PR, run:
+The quickest way is `npm run check`: it runs build, test, lint, the user-story
+e2e tests, and a secret scan through Turborepo, which skips any step whose
+inputs did not change (`NO_CACHE=1 npm run check` runs everything). Each step's
+time goes to `.metrics/events.jsonl`. The commands it wraps are:
 
 ```bash
 npm run build

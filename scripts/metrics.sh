@@ -30,7 +30,7 @@ downloads() {
   echo "${n:-(stub)}"
 }
 
-# gate_ms: median wall time of the last 10 full gate runs in .metrics/events.jsonl.
+# gate_ms: median wall time of the last 10 full gate runs (scripts/check.sh) in .metrics/events.jsonl.
 gate_ms="(stub)"
 cached_gate_ms="(stub)"
 events="$root/.metrics/events.jsonl"
@@ -39,7 +39,7 @@ if [ -f "$events" ]; then
 $(node -e '
 const lines = require("fs").readFileSync(process.argv[1], "utf-8").split("\n").filter(Boolean);
 const gates = lines.map((l) => { try { return JSON.parse(l); } catch { return null; } })
-  .filter((e) => e && e.event === "gate" && Number.isFinite(e.ms));
+  .filter((e) => e && e.event === "gate" && e.mode !== "fast" && Number.isFinite(e.ms));
 const median = (xs) => { if (!xs.length) return "(stub)"; const s = xs.slice(-10).sort((a, b) => a - b); return String(s[Math.floor(s.length / 2)]); };
 console.log(median(gates.filter((e) => !e.cached_all).map((e) => e.ms)), median(gates.filter((e) => e.cached_all).map((e) => e.ms)));
 ' "$events")

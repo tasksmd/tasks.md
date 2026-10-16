@@ -37,6 +37,7 @@ This folder also holds the website (`index.html`, `template.html`, `style.css`).
 | [`../spec.md`](../spec.md) | What exactly is the TASKS.md format, field by field? | both |
 | [`editing-rules.md`](editing-rules.md) | What are the full editing rules, source boundaries, and task queue policy? | agent |
 | [`observability.md`](observability.md) | Where are the logs, how do errors map to stories, and how do I check an install's health? | both |
+| [`learnings.md`](learnings.md) | What did we predict for a change, what happened, and what did we learn? | both |
 | [`metrics.md`](metrics.md) | What do we measure, with which goal, pivot, and command? | both |
 | [`release-and-ci.md`](release-and-ci.md) | Which release, CI, npm OIDC, and claim-check traps exist? | agent |
 | [`security/`](security/) | What is the threat model for git-native claims? | both |
@@ -51,6 +52,7 @@ This folder also holds the website (`index.html`, `template.html`, `style.css`).
 |---|---|---|
 | [`../VISION.md`](../VISION.md) | Why does tasks.md exist, and what will it never do? | both |
 | [`../ARCHITECTURE.md`](../ARCHITECTURE.md) | How do the spec, packages, and command generator fit together? | both |
+| [`../RECURRING.md`](../RECURRING.md) | What runs on a schedule (checkup, speed review, audit)? | both |
 | [`../ROADMAP.md`](../ROADMAP.md) | What is done and what comes next? | both |
 | [`user-stories/`](user-stories/) | What should a user be able to do, with which metric? | both |
 | [`competitors/`](competitors/) | How does TASKS.md compare with other task tools? | both |

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "envMode": "loose",
+  "dangerouslyDisablePackageManagerCheck": true,
+  "globalDependencies": [
+    "package-lock.json",
+    "turbo.json",
+    "vitest.config.mjs"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!dist/**"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "@tasks-md/cli#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!dist/**",
+        "!commands/**",
+        "$TURBO_ROOT$/commands/**"
+      ],
+      "outputs": [
+        "dist/**",
+        "commands/**"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!dist/**"
+      ],
+      "outputs": []
+    },
+    "@tasks-md/cli#test": {
+      "dependsOn": [
+        "build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!dist/**",
+        "!commands/**",
+        "$TURBO_ROOT$/.github/**",
+        "$TURBO_ROOT$/commands/**",
+        "$TURBO_ROOT$/docs/templates/**",
+        "$TURBO_ROOT$/scripts/**",
+        "$TURBO_ROOT$/packages/*/package.json",
+        "$TURBO_ROOT$/packages/mcp/src/events.ts"
+      ],
+      "outputs": []
+    },
+    "//#lint": {
+      "dependsOn": [
+        "@tasks-md/lint#build",
+        "@tasks-md/cli#build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "packages/*/src/**",
+        "packages/*/README.md",
+        "!**/dist/**",
+        "!packages/cli/commands/**"
+      ],
+      "outputs": []
+    },
+    "//#e2e": {
+      "dependsOn": [
+        "@tasks-md/parser#build",
+        "@tasks-md/lint#build",
+        "tasks-mcp#build",
+        "@tasks-md/cli#build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "packages/*/src/**",
+        "packages/*/package.json",
+        "!**/dist/**"
+      ],
+      "env": [
+        "E2E_SKIP_BUILD"
+      ],
+      "outputs": []
+    }
+  }
+}
