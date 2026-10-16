@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-11282aaa-b1ea-41bd-b884-b70a24edeadb",
+  "task_id": "make-the-readme-setup-map-honest-and-give-stories-outcome-me",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:54:53.060Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-9956b0d0-a7af-4eb2-ab2d-f89a9f3d5035",
+    "lease_expires_at": 1792266893060
+  }
+}
