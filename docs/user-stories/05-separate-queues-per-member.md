@@ -2,7 +2,7 @@
 
 > In a monorepo, each team member or team owns their own task queue — agents work across all of them, prioritizing globally.
 
-- **Metric**: duplicate IDs across queues that pass the lint: 0 (`npm run e2e`, the US05 error case).
+- **Metric**: share of MCP `find_next_task_across_workspaces` calls that fail (story US05) in the local event log ([how to read it](../observability.md#per-story-outcome-rate)); goal 0%. Guard: duplicate IDs across queues that pass the lint: 0.
 - **Tests**: `tests/e2e/us05-separate-queues-per-member.test.mjs` (happy: list finds tasks in every package queue; error: a shared ID fails the lint)
 
 ## When to Split

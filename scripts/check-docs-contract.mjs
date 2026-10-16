@@ -78,6 +78,11 @@ export function checkDocsContract(root) {
   const opening = read("README.md").split("\n").slice(0, 60).join("\n");
   if (!/```(bash|sh|text)\n/.test(opening)) errors.push("README.md: the first 60 lines need a quickstart code block");
   if (!opening.includes("(docs/README.md)")) errors.push("README.md: the first 60 lines need a link to docs/README.md");
+  // The first quickstart block is the one-command setup; it must end in the health check.
+  const firstBlock = /```[a-z]*\n([\s\S]*?)```/.exec(opening)?.[1] ?? "";
+  if (firstBlock && !firstBlock.includes("@tasks-md/cli doctor")) {
+    errors.push("README.md: the first quickstart block must verify with `npx -y @tasks-md/cli doctor`");
+  }
 
   return errors;
 }

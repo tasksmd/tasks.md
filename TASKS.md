@@ -2,16 +2,6 @@
 
 ## P0
 
-- [ ] tasks.md meets every new-project requirement (or waives it with a reason) (@claude)
-  - **ID**: tasks-md-meets-every-new-project-requirement-or-waives-it-wi
-  - **Tags**: requirements, agents, observability
-  - **Details**: Outcome: tasks.md meets all 10 new-project required areas (vision, metrics, observability, user-stories, setup, e2e, self-improving, tasks, checkup, caching), each met, mapped in .agents/requirements.yaml, or waived with a reason. Audit 2026-10-16: path score 7/22 (31%); by intent 0 met, 6 partial, 4 missing (metrics, self-improving, checkup, caching). Ordered gaps: (1) add the 5 prereg fields to every task and turn on --require-prereg in npm run lint; (2) .gitignore: .env, .env.*, !.env.example, *.pem, *.key, .metrics/, plus a lefthook pre-commit secret scan; (3) VISION.md: numeric dated adoption goal, pivot, command, dated Kill criteria, refresh last_reviewed, drop the Windsurf/Devin line; (4) docs/metrics.md + scripts/metrics.sh: adoption (code search), npm weekly downloads per package, gate time, lint false-positive rate, each with goal/pivot/command, (stub) when no data; (5) one contributor setup command (npm ci, build, test, lint, tasks doctor) first in CONTRIBUTING; (6) end init --install output and the setup prompt with tasks doctor; (7) Metric: and Tests: lines per story plus a drift check in scripts/check-docs-contract.mjs; (8) stranger-install e2e from the packed CLI in an empty temp repo; (9) e2e for US06 and US10; (10) content-free JSONL events and error->story map for tasks watch, tasks-mcp, fleet claims (docs/observability.md); (11) a fix command on every doctor warn/fail line; (12) a repo-wide checkup command (npm run checkup: doctor, cached gate, metrics, open P0s, monthly audit-due); (13) caching: gate steps and workspace tests cached by input hash (Nx or Turborepo across packages/*), full rerun on any change, NO_CACHE=1 forces; (14) timed gate steps + speed review inside the checkup; docs/learnings.md (predicted vs observed); (15) docs/decisions/ ADRs (git-native dogfood, backend plugins); (16) CHANGELOG generated at release. Push back already accepted: keep root VISION.md and tasks doctor (map them); JSONL logs only for long-running parts; no external error reporter; lint fixture tests (not e2e) for writing-guidance stories US02/US08.
-    - **Hypothesis**: meeting the areas makes contributor and agent work measurable; the setup score rises from 7/24 (29%) to 100% (mapped or waived honestly).
-    - **Measurement**: bash ~/.claude/skills/new-project/scripts/check-setup.sh . --profile tool
-    - **Success**: 100% with every waiver reasoned, and the monthly audit finds no new gap.
-    - **Pivot**: an area that costs more than it returns here becomes a waiver or a requirement-change PR on agentbrew new-project.
-    - **Anchor**: agentbrew skill-plugins/workflow/new-project/references/owner-practices.md and requirements-map.md; audit 2026-10-16.
-
 ## P1
 
 - [ ] Owner runs scripts/setup-npm-trusted-publishing.sh once (@tasks-md)
@@ -36,6 +26,26 @@
     - **Anchor**: docs/release-and-ci.md Autonomous release; Forsgren, Humble, Kim 2018 (deployment frequency).
   - **Blocked by**: land-0-10-3-version-bump-and-claim-check-cli-pin
 
+- [ ] sync github treats a failed gh issue list as an empty result
+  - **ID**: sync-github-treats-a-failed-gh-issue-list-as-an-empty-result
+  - **Tags**: sync, bug, stability
+  - **Details**: In packages/cli/src/sync/github.ts, a failing `gh issue list` (network, rate limit, wrong --repo) is caught and returns []. With `tasks sync github --merge`, an empty fetch can drop every synced task from TASKS.md, and without --merge it writes an empty queue with exit 0. Throw instead, with the gh stderr, and exit nonzero. Add a US06 e2e error case with a gh shim whose `issue list` fails.
+    - **Hypothesis**: failing loudly removes silent queue wipes; synced tasks lost to a failed fetch drop from possible (1 path) to 0, and the exit code becomes nonzero.
+    - **Measurement**: npm run e2e (a new US06 case: gh issue list exits 1 -> sync exits nonzero and TASKS.md is unchanged)
+    - **Success**: the new case passes and the existing US06 cases stay green.
+    - **Pivot**: if gh returns partial JSON on some errors, validate the JSON shape instead of trusting the exit code.
+    - **Anchor**: docs/user-stories/06-issue-tracker-flows-to-agents.md; Nygard 2018, Release It! (fail fast).
+
+- [ ] Make the README setup map honest and give stories outcome metrics (@claude)
+  - **ID**: make-the-readme-setup-map-honest-and-give-stories-outcome-me
+  - **Tags**: requirements, docs, observability
+  - **Details**: Follow-up from the independent grade of tasks-md-meets-every-new-project-requirement-or-waives-it-wi. (1) map.setup named CONTRIBUTING.md, but the requirement is "first in the README": the README first block is the one-prompt setup, which still ends with tasks-lint, not tasks doctor (README and docs/user-stories/10 copies were missed when commands/setup.md changed). End both copies with `npx -y @tasks-md/cli doctor`, add a contributor pointer to `bash scripts/setup.sh` near the top, and map setup to README.md + scripts/setup.sh. (2) Six story metrics count passing e2e tests; replace US03, US04, US05, US07 with outcome rates from the local event log (docs/observability.md), keep test-count guards only where no event exists. (3) Re-render the TASKS.md snapshot.
+    - **Hypothesis**: the setup map then truly meets "one command, first in the README, ending with the doctor", and stories with an outcome metric rise from 4/10 to 8/10.
+    - **Measurement**: head -60 README.md (first block ends with tasks doctor) and grep -c "events.jsonl" docs/user-stories/0*.md
+    - **Success**: the first README block names tasks doctor; 4 stories cite an events.jsonl rate; npm run lint and check-setup.sh stay green.
+    - **Pivot**: if the README prompt cannot end with the doctor without hurting the landing page, waive setup with that reason instead.
+    - **Anchor**: agentbrew new-project SKILL.md (setup row); Basili et al. 1994 (GQM).
+
 ## P2
 
 - [ ] Protect tasks-claims and main from force-push/delete (with compactor exemption)
@@ -48,6 +58,16 @@
     - **Pivot**: if no bypass actor works without a long-lived PAT, keep 2/3 and document the residual risk in the threat model.
     - **Anchor**: docs/security/git-native-claims-threat-model.md B6; GitHub docs 'About rulesets'.
   - **Blocked**: needs-user-decision — DONE: main force-push+delete (ruleset 24311973) + tasks-claims deletion (24311989), so the log can't be nuked and main can't be rewritten. REMAINING + BLOCKED: tasks-claims force-push (non-fast-forward) rewrite protection. GitHub 422-rejects the github-actions bot (app 15368) as a ruleset bypass actor even on this org repo ('must be part of the ruleset source or owner organization'), so the compactor can't be exempted; arming non_fast_forward without the exemption wedges compaction at the 5000-event threshold (the log is far below it, so no live impact yet). Unblock options: (a) an org-level Actions ruleset-bypass setting; (b) push tasks-claims from tasks-snapshot.yml via an admin PAT + bypass the Repository-admin role in the ruleset (introduces a long-lived PAT — your call). The fold already dedups replayed/edited events by event_id; only a dropped-event rewrite is unprotected.
+
+- [ ] tasks install --agent with an unknown name exits 0 with a misleading message
+  - **ID**: tasks-install-agent-with-an-unknown-name-exits-0-with-a-misl
+  - **Tags**: cli, bug
+  - **Details**: `tasks install --agent nosuch` prints "No agent directories detected" and exits 0. It should name the known agents (claude, codex, cursor, gemini) and exit 2 (usage error).
+    - **Hypothesis**: a clear usage error stops silent no-op installs; misleading exits for an unknown agent drop from 1 to 0.
+    - **Measurement**: node packages/cli/dist/cli.js install --agent nosuch; echo $? (expect 2 and the list of agents) plus a cli.test.ts case
+    - **Success**: exit 2 with the agent list; existing install tests stay green.
+    - **Pivot**: if agent names are dynamic (plugins), validate against the generator registry instead of a fixed list.
+    - **Anchor**: docs/user-stories/03-agents-work-through-queue.md; POSIX utility conventions (exit 2 for usage errors).
 
 ## P3
 
@@ -62,3 +82,13 @@
     - **Pivot**: if no domain under 20 characters costs less than 20 USD a year, close this task and keep the github.io URL.
     - **Anchor**: GitHub docs 'Managing a custom domain for your GitHub Pages site'.
   - **Blocked**: needs-owner-decision-and-money — checked 2026-10-16: tasks.md is already registered by a third party (whois: created 1994-03-24, expires 2027-04-25, NS ns1.netim.net), so it cannot simply be bought. Owner picks and buys another domain (money + DNS). Repo part after that: add docs/CNAME with the domain, set it in Pages settings, add the DNS CNAME to tasksmd.github.io.
+
+- [ ] tasks list --priority accepts an invalid priority silently
+  - **ID**: tasks-list-priority-accepts-an-invalid-priority-silently
+  - **Tags**: cli, bug
+  - **Details**: `tasks list --priority P9` prints "No tasks match the filters." and exits 0. Reject values outside P0-P3 with exit 2 and the allowed values, matching the MCP list_tasks validation.
+    - **Hypothesis**: validating the flag turns a silent empty result into a usage error; invalid-priority runs that exit 0 drop from 1 to 0.
+    - **Measurement**: node packages/cli/dist/cli.js list --priority P9; echo $? (expect 2) plus a cli.test.ts case
+    - **Success**: exit 2 for P9; lower-case input handled the same way as pick.
+    - **Pivot**: if the MCP tool accepts other spellings, align both to one validator instead.
+    - **Anchor**: docs/user-stories/07-monitor-queue-health.md; POSIX utility conventions.

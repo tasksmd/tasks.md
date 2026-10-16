@@ -15,8 +15,9 @@ Paste the prompt from the [README Installation](../../README.md#1-copy-this-prom
 Set up tasks.md in this repo: run `npx -y @tasks-md/cli init --install` to create
 TASKS.md and a "## Task Management" section in AGENTS.md, then install your own
 /next-task command with `npx -y @tasks-md/cli install --agent <your-name>`, verify
-with `npx -y @tasks-md/lint TASKS.md`, and tell me what you did. If Node isn't
-available, write the files directly from https://github.com/tasksmd/tasks.md.
+with `npx -y @tasks-md/lint TASKS.md` and `npx -y @tasks-md/cli doctor`, and tell me
+what you did. If Node isn't available, write the files directly from
+https://github.com/tasksmd/tasks.md.
 ```
 
 ## What the agent does

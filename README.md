@@ -35,8 +35,9 @@ Paste this into whatever agent you use (Claude Code, Cursor, Codex, Gemini CLI) 
 Set up tasks.md in this repo: run `npx -y @tasks-md/cli init --install` to create
 TASKS.md and a "## Task Management" section in AGENTS.md, then install your own
 /next-task command with `npx -y @tasks-md/cli install --agent <your-name>`, verify
-with `npx -y @tasks-md/lint TASKS.md`, and tell me what you did. If Node isn't
-available, write the files directly from https://github.com/tasksmd/tasks.md.
+with `npx -y @tasks-md/lint TASKS.md` and `npx -y @tasks-md/cli doctor`, and tell me
+what you did. If Node isn't available, write the files directly from
+https://github.com/tasksmd/tasks.md.
 ```
 
 The same steps ship as a `/setup` command for every supported agent — see [`commands/setup.md`](commands/setup.md).
@@ -47,7 +48,9 @@ The same steps ship as a `/setup` command for every supported agent — see [`co
 npx @tasks-md/cli init --install
 ```
 
-Creates `TASKS.md`, adds (or creates) a `## Task Management` section in `AGENTS.md`, and installs the `/next-task` command for every agent it detects in the repo. Drop the `npx` prefix after a global `npm install -g @tasks-md/cli`. Running a **fleet** — a team of machines each driving parallel agents on one queue? Also run `tasks fleet init` to switch to the collision-free [git-native backend](spec.md#fleet-coordination).
+Creates `TASKS.md`, adds (or creates) a `## Task Management` section in `AGENTS.md`, installs the `/next-task` command for every agent it detects in the repo, and ends by running `tasks doctor`, which prints a `fix:` command under any problem. Drop the `npx` prefix after a global `npm install -g @tasks-md/cli`. Running a **fleet** — a team of machines each driving parallel agents on one queue? Also run `tasks fleet init` to switch to the collision-free [git-native backend](spec.md#fleet-coordination).
+
+Working on tasks.md itself? `bash scripts/setup.sh` installs, builds, tests, and lints this repo, then runs `tasks doctor` ([CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## What a TASKS.md looks like
 

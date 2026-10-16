@@ -16,7 +16,7 @@ function fixture(files) {
 }
 
 const GOOD_GUIDE = `# Guide\n\n${REQUIRED_HEADINGS.join("\n\ntext\n\n")}\n`;
-const GOOD_README = "# X\n\n```bash\nnpx x\n```\n\n[docs](docs/README.md)\n";
+const GOOD_README = "# X\n\n```bash\nnpx x && npx -y @tasks-md/cli doctor\n```\n\n[docs](docs/README.md)\n";
 
 test("this repo meets the docs contract", () => {
   assert.deepEqual(checkDocsContract(repoRoot), []);
@@ -93,6 +93,16 @@ test("story drift fails: no metric, a missing file, a renamed case, an unbound o
     assert.match(errors, /02-b\.md: `pkg\/lint\.test\.ts` has no case "renamed case"/);
     assert.match(errors, /us03-c\.test\.mjs does not name US03/);
     assert.match(errors, /us04-d\.test\.mjs is not listed/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("the README's first quickstart block must end in the doctor", () => {
+  const root = fixture({ "AGENTS.md": GOOD_GUIDE, "README.md": "# X\n\n```bash\nnpx x\n```\n\n[docs](docs/README.md)\n", "docs/README.md": "" });
+  symlinkSync("AGENTS.md", join(root, "CLAUDE.md"));
+  try {
+    assert.match(checkDocsContract(root).join("\n"), /first quickstart block must verify/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
