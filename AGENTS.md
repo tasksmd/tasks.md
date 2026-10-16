@@ -17,6 +17,7 @@ An npm workspace repo. Run commands from the repo root.
 
 | Task | Command |
 |---|---|
+| Set up from scratch (install, build, test, lint, hooks, doctor) | `bash scripts/setup.sh` |
 | Install | `npm ci` |
 | Type-check and build every package | `npm run build` |
 | All tests | `npm test` |

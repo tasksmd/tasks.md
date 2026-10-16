@@ -338,6 +338,32 @@ describe("CLI", () => {
     }
   });
 
+  it("init ends by pointing to tasks doctor", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "init"], { encoding: "utf-8", cwd: dir });
+      expect(result.status).toBe(0);
+      expect(result.stdout.trimEnd().split("\n").at(-1)).toMatch(/Next: run `tasks doctor`/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("init --install ends with the tasks doctor report", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const result = spawnSync("node", [CLI, "init", "--install"], { encoding: "utf-8", cwd: dir });
+      expect(result.status).toBe(0);
+      const tail = result.stdout.slice(result.stdout.indexOf("Verifying with `tasks doctor`"));
+      expect(tail).toMatch(/^Verifying with `tasks doctor`/);
+      expect(tail).toMatch(/backend config/);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
   it("pick works with a valid TASKS.md", () => {
     const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
     writeFileSync(

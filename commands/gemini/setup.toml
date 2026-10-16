@@ -17,7 +17,8 @@ Steps
    - `npx -y @tasks-md/lint TASKS.md` exits 0.
    - `AGENTS.md` has exactly one `## Task Management` section.
    - Your own command file exists at the right project-local path.
-7. **Report.** Tell the user what you created/installed and that they can now run `/next-task`.
+   - Last, with Node present: `npx -y @tasks-md/cli doctor` prints no `✗` line. Fix each `⚠` it can (the line names the command).
+7. **Report.** Tell the user what you created/installed, paste the `tasks doctor` result, and say that they can now run `/next-task`.
 Idempotency + Node-optional fallback
 Re-running is safe: it merges, never clobbering an existing `TASKS.md` or duplicating the `AGENTS.md` section. If `npx`/Node is available, prefer `tasks init` + `tasks install --agent gemini`; otherwise write `TASKS.md`, the `AGENTS.md` `## Task Management` section, and your command file directly from the spec — the format is plain markdown, no tooling required.
 '''

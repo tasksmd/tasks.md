@@ -27,8 +27,9 @@ Set up the [TASKS.md](https://github.com/tasksmd/tasks.md) task queue and the `/
    - `npx -y @tasks-md/lint TASKS.md` exits 0.
    - `AGENTS.md` has exactly one `## Task Management` section.
    - Your own command file exists at the right project-local path.
+   - Last, with Node present: `npx -y @tasks-md/cli doctor` prints no `✗` line. Fix each `⚠` it can (the line names the command).
 
-7. **Report.** Tell the user what you created/installed and that they can now run `/next-task`.
+7. **Report.** Tell the user what you created/installed, paste the `tasks doctor` result, and say that they can now run `/next-task`.
 
 ### Idempotency + Node-optional fallback
 
