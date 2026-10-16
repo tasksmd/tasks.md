@@ -89,6 +89,22 @@ jobs:
       - name: Run all tests
         run: npm test
 
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Packs every package, installs the tarballs like a stranger would, and
+      # runs one test file per user story (tests/e2e/).
+      - name: User-story e2e tests
+        run: bash scripts/e2e.sh
+
   action-dogfood:
     runs-on: ubuntu-latest
     steps:

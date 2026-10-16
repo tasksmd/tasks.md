@@ -50,6 +50,11 @@ Measurement, Success, Pivot, Anchor); `npm run lint` fails without them. The
 pre-commit hook runs a [gitleaks](https://github.com/gitleaks/gitleaks) secret
 scan on staged files, so install it once (`brew install gitleaks`).
 
+When a change can affect a user story, also run `npm run e2e`. It packs every
+package, installs the tarballs into an empty folder like a new user would, and
+runs one test file per story in `tests/e2e/` (`usNN-*.test.mjs`, a happy case
+and an error case each).
+
 These four commands are what CI runs on every PR. If they pass locally, CI
 should pass too. For docs-only changes, `npm run lint` plus the last command
 are usually enough.
