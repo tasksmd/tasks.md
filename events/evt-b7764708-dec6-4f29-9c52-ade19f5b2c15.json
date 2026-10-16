@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-b7764708-dec6-4f29-9c52-ade19f5b2c15",
+  "task_id": "give-every-user-story-an-outcome-metric",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T20:12:32.324Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-5a869c8f-402a-489a-8fe9-25c8b08a00c2",
+    "lease_expires_at": 1792267952324
+  }
+}
