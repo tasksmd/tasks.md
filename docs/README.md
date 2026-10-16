@@ -56,6 +56,7 @@ This folder also holds the website (`index.html`, `template.html`, `style.css`).
 | [`../ROADMAP.md`](../ROADMAP.md) | What is done and what comes next? | both |
 | [`user-stories/`](user-stories/) | What should a user be able to do, with which metric? | both |
 | [`competitors/`](competitors/) | How does TASKS.md compare with other task tools? | both |
+| [`decisions/`](decisions/) | Which architecture decisions shape the project, and why (ADRs)? | both |
 | [`research/`](research/) | Spikes and research behind past decisions. | agent |
 | [`blog/`](blog/) | Long-form posts about why agents need a backlog. | human |
 
