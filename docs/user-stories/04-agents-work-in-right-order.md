@@ -2,7 +2,7 @@
 
 > I want agents to respect dependencies automatically — no manual sequencing, no wasted work on blocked tasks.
 
-- **Metric**: blocked tasks picked in the e2e suite: 0 (`npm run e2e`, the US04 cases).
+- **Metric**: share of MCP `pick_task` calls that fail (story US04) in the local event log ([how to read it](../observability.md#per-story-outcome-rate)); goal 0%. Guard: blocked tasks picked in the e2e suite: 0.
 - **Tests**: `tests/e2e/us04-agents-work-in-right-order.test.mjs` (happy: pick skips a blocked P1 and picks its blocker; error: a blocker cycle leaves nothing to pick)
 
 ## How It Works

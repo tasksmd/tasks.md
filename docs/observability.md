@@ -40,6 +40,18 @@ Read it with `jq`:
 jq -c 'select(.ok == false)' ~/.local/state/tasks-md/events.jsonl | tail -20
 ```
 
+### Per-story outcome rate
+
+Stories US03, US04, US05, and US07 use the share of failed events as their
+metric. For one story:
+
+```bash
+jq -s --arg s US04 '[.[] | select(.story == $s)] | {calls: length, failed: (map(select(.ok | not)) | length)}' \
+  ~/.local/state/tasks-md/events.jsonl
+```
+
+The log is per machine and never leaves it, so each user reads their own rate.
+
 The writers are `packages/cli/src/events.ts` and its twin
 `packages/mcp/src/events.ts`. A test keeps the two identical.
 
