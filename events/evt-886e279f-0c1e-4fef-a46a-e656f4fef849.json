@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-886e279f-0c1e-4fef-a46a-e656f4fef849",
+  "task_id": "set-up-github-pages-custom-domain",
+  "event_type": "updated",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:07:03.413Z",
+  "parent_event_ids": [],
+  "payload": {
+    "body": "Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md\ndomain for a cleaner URL.\n**Hypothesis**: a short custom domain makes the site easier to share; the URL length drops from 30 characters (tasksmd.github.io/tasks.md/) to under 20.\n**Measurement**: gh api repos/tasksmd/tasks.md/pages --jq .cname\n**Success**: the custom domain serves the site over HTTPS.\n**Pivot**: if no domain under 20 characters costs less than 20 USD a year, close this task and keep the github.io URL.\n**Anchor**: GitHub docs 'Managing a custom domain for your GitHub Pages site'."
+  }
+}
