@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-32c7a2f4-082c-463e-ab53-10aff3e7cb61",
+  "task_id": "report-which-events-are-corrupt-not-just-the-count",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:31:33.861Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
