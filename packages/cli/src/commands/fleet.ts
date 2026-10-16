@@ -75,7 +75,7 @@ jobs:
       # (never clobbers a concurrent claim); best-effort (|| true) so a lease
       # conflict or no-op never fails the projection.
       - run: npx -y @tasks-md/cli fleet compact || true
-      - name: Open/update the snapshot PR
+      - name: Update the snapshot branch
         run: |
           git config user.name "tasks-md-bot"
           git config user.email "tasks-md-bot@users.noreply.github.com"
@@ -344,8 +344,9 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
             : "no corrupt events",
       });
       // Last-projection signal: when the generated TASKS.md snapshot was last
-      // written. The freshness *threshold* is deferred (decide-projection-to-main-
-      // snapshot-freshness), so this is informational, not a warn.
+      // written. The default branch's copy has no freshness guarantee (spec.md
+      // § Generated TASKS.md projection, "Freshness contract"), so this is
+      // informational, not a warn.
       const lastSnapshot = (() => {
         try {
           return execFileSync("git", ["log", "-1", "--format=%cr", "--", "TASKS.md"], {

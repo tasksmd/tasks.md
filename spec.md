@@ -670,8 +670,12 @@ A single scheduled job regenerates `TASKS.md` from the log:
 
 - **Trigger** — a schedule and on-demand (`workflow_dispatch`), plus near-real-time `repository_dispatch`. A github.com Actions `push:` trigger on `tasks-claims` cannot fire (the ref is an orphan log with no `.github/workflows`, and Actions resolves push-event workflows from the pushed branch), so the writer instead fires a `repository_dispatch` (`tasks-claims-updated`) after a successful claims push — opt-in via `.tasksmd.json` `"autoRefresh": true`, reusing the host CLI's auth, best-effort with the schedule as the guaranteed fallback. On GHE/GitLab a server-side `pre-receive` hook can fire on the push directly.
 - **Single writer** — only this job writes `TASKS.md`, so there are never competing edits. A concurrency group serializes runs; the latest fold wins.
-- **One branch, one PR** — it updates a stable projection branch and reuses one PR. Because the change touches only `TASKS.md` (markdown), it passes the path-scoped claim check by the same rule that passes any docs-only change — no per-actor CI bypass.
-- **No loop** — the regeneration commit lands on the default branch, not on `tasks-claims`, so it never re-triggers itself.
+- **One branch** — it force-updates a stable projection branch (`tasksmd/generated-snapshot`). Bringing that copy to the default branch is a normal PR, opened by a person or an agent. Because the change touches only `TASKS.md` (markdown), it passes the path-scoped claim check by the same rule that passes any docs-only change — no per-actor CI bypass.
+- **No loop** — the regeneration commit lands on the projection branch, not on `tasks-claims`, so it never re-triggers itself.
+- **Freshness contract** — three surfaces, three promises:
+  1. the `tasks-claims` log is authoritative and real time; `tasks list` / `tasks pick` read it;
+  2. the projection branch is at most one schedule interval behind (sooner with `repository_dispatch`);
+  3. the default branch's `TASKS.md` is a convenience copy with **no freshness guarantee**. A bot cannot auto-merge it without a long-lived credential or a weaker default-branch gate, so it is refreshed when someone merges the projection branch. Never decide what to work on from it.
 - **Idempotent** — re-folding the same log yields identical bytes; a failed run is safely re-run.
 
 ### Actor identity and privacy
