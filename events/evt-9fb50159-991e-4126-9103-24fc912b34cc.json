@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-9fb50159-991e-4126-9103-24fc912b34cc",
+  "task_id": "make-the-us03-and-us02-metric-commands-match-metrics-sh",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T20:32:26.249Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Make the US03 and US02 metric commands match metrics.sh",
+    "priority": "P2",
+    "tags": [
+      "metrics"
+    ],
+    "body": "An independent grade of main (7eaf7d5) found that us03_claim_losses in metrics.sh counts every US03 event while docs/metrics.md counts only claim events, and acceptance_share describes its formula in prose. Count only claim events in metrics.sh and give acceptance_share one runnable command.\n- **Hypothesis**: metric rows whose doc command and script disagree drop from 2 to 0.\n- **Measurement**: run the docs/metrics.md command and bash scripts/metrics.sh on the same event log and compare the US03 numbers; grep the acceptance_share command cell for prose.\n- **Success**: equal US03 numbers on a fixture log; the acceptance_share cell is one runnable command.\n- **Pivot**: if claim events need all US03 events, change the doc instead of the script.\n- **Anchor**: tasks.md docs/metrics.md rule (exact runnable command per metric)."
+  }
+}
