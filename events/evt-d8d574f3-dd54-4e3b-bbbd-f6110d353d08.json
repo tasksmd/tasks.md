@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d8d574f3-dd54-4e3b-bbbd-f6110d353d08",
+  "task_id": "land-0-10-3-version-bump-and-claim-check-cli-pin",
+  "event_type": "updated",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:35:07.496Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Owner runs scripts/setup-npm-trusted-publishing.sh once",
+    "body": "One-time owner step so publish.yml can publish through npm Trusted Publishing (the v0.10.3 run 404'd on PUT: no trust rule after the repo was recreated). In a real terminal: cd ~/apps/tooling/tasks.md && git pull && npm login && bash scripts/setup-npm-trusted-publishing.sh. It is idempotent and stores no token. Then complete this task (tasks complete land-0-10-3-version-bump-and-claim-check-cli-pin); that is precondition 1 of docs/release-and-ci.md 'Autonomous release'. The old 0.10.3 bump is superseded: main is at 0.11.0.",
+    "tags": [
+      "release",
+      "ci",
+      "human-only"
+    ],
+    "blocked": "human-only — npm login needs the owner's browser 2FA in a real terminal; agents cannot do it."
+  }
+}
