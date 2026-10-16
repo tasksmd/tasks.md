@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d5ac8bec-1ab1-488d-bc76-f54fa8ff9365",
+  "task_id": "claim-check-conflates-a-tooling-failure-with-a-missing-claim",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:16:52.323Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
