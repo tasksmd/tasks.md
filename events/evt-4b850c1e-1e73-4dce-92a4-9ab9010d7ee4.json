@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-4b850c1e-1e73-4dce-92a4-9ab9010d7ee4",
+  "task_id": "give-every-user-story-an-outcome-metric",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T20:12:28.911Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Give every user story an outcome metric",
+    "priority": "P1",
+    "tags": [
+      "requirements",
+      "docs",
+      "metrics"
+    ],
+    "body": "The new-project rules (agentbrew #204) say a story metric is an outcome users create, not a count of passing tests. US02, US06, US09, and US10 still use test or repo-internal counts. Replace them with pinned, measurable outcome metrics in docs/metrics.md and scripts/metrics.sh; keep the e2e counts as guards.\n- **Hypothesis**: stories with an outcome metric rise from 6/10 to 10/10, and each new metric has a pinned query, a goal, and a pivot.\n- **Measurement**: grep \"Guard\" docs/user-stories/0*.md; bash scripts/metrics.sh\n- **Success**: 10/10 stories cite an outcome metric that metrics.sh prints or the event log answers.\n- **Pivot**: a story without an outcome source keeps its guard metric with a stated reason.\n- **Anchor**: agentbrew skill-plugins/workflow/new-project SKILL.md (user-stories row); Basili et al. 1994 (GQM)."
+  }
+}
