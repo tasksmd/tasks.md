@@ -46,7 +46,7 @@ Do not claim work is complete until those commands pass.
 | Change a shared command (`/next-task`, `/lint-tasks`, `/review-tasks`, …) | `commands/<name>.md`, then regenerate | README, `commands/README.md` |
 | Add an agent variant | the command generator in `packages/cli/` | [ARCHITECTURE.md](ARCHITECTURE.md#cross-agent-command-generation) |
 | Change the website | `docs/template.html`, `scripts/build-site.js` | none (`docs/index.html` is generated) |
-| Change CI or release | `.github/workflows/`, `scripts/sync-versions.sh` | [docs/release-and-ci.md](docs/release-and-ci.md) |
+| Change CI or release | `.github/workflows/`, `scripts/sync-versions.sh`, `scripts/setup-npm-trusted-publishing.sh` | [docs/release-and-ci.md](docs/release-and-ci.md) |
 | Add or change an example | `examples/` (must stay valid TASKS.md) | README if it shows a new feature |
 | Add a top-level doc | `docs/<name>.md` | a row in [docs/README.md](docs/README.md) |
 
@@ -57,7 +57,7 @@ Full text: [docs/editing-rules.md](docs/editing-rules.md).
 1. TypeScript packages are strict ESM for Node.js 18+.
 2. Markdown examples stay valid TASKS.md: `# Tasks`, `## P0`–`## P3`, checkbox tasks, indented bold metadata. Fence code with a language tag.
 3. Prefer small, obvious APIs. Merge overlapping tools or flags instead of adding new ones.
-4. Publishing (`npm publish`, releases, PRs, pushes) needs explicit current-session operator approval.
+4. Publishing (`npm publish`, releases, PRs, pushes) needs explicit current-session operator approval. Exception: an npm release via `gh release create` when every check in [docs/release-and-ci.md § Autonomous release](docs/release-and-ci.md#autonomous-release) holds (owner, 2026-10-16).
 5. Never bypass hooks with `--no-verify`.
 6. Commit only scoped files. Never `git add -A`, `git add .`, `git reset --hard`, or `git clean -fd`.
 
@@ -95,6 +95,7 @@ Full policy: [docs/editing-rules.md](docs/editing-rules.md#task-queue-policy).
 4. Commit with a conventional header. Put the `Task:` and `Task-Claim:` trailers last.
 5. Push and open a PR. The body has `## Summary`, `## Details`, `## Docs`, and `## Visual proof` (a pasted terminal transcript).
 6. Wait for every CI check, squash-merge, then `tasks complete <id>`. Remove the worktree and branch.
+7. Release: bump with `bash scripts/sync-versions.sh <version>` in a PR, then follow [§ Autonomous release](docs/release-and-ci.md#autonomous-release). Never publish with a token or from a laptop.
 
 ## Docs upkeep
 
