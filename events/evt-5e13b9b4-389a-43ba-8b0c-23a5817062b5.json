@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-5e13b9b4-389a-43ba-8b0c-23a5817062b5",
+  "task_id": "release-v0-11-0-and-pin-the-claim-check-cli-to-it",
+  "event_type": "updated",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:35:17.851Z",
+  "parent_event_ids": [],
+  "payload": {
+    "blocked_by": [
+      "land-0-10-3-version-bump-and-claim-check-cli-pin"
+    ]
+  }
+}
