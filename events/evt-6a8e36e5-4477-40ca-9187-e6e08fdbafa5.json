@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-6a8e36e5-4477-40ca-9187-e6e08fdbafa5",
+  "task_id": "tasks-workspaces-list-prints-machine-readable-output-for-scr",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:19:37.682Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
