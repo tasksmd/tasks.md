@@ -2,7 +2,7 @@
   "name": "tasks-md",
   "private": true,
   "type": "module",
-  "description": "A spec and tooling for TASKS.md \u2014 the AI-native task queue format",
+  "description": "A spec and tooling for TASKS.md — the AI-native task queue format",
   "author": "Fyodor Ivanischev",
   "workspaces": [
     "packages/*"
@@ -16,7 +16,8 @@
     "lint:docs-drift": "node scripts/check-docs-backend-drift.mjs",
     "lint:volatile-counts": "node scripts/check-volatile-counts.mjs --self-test && node --test scripts/check-volatile-counts.test.mjs && node scripts/check-volatile-counts.mjs",
     "test": "npm test --workspaces --if-present",
-    "test:cached": "cached-run npm test",
+    "check": "bash scripts/check.sh",
+    "checkup": "bash scripts/checkup.sh",
     "e2e": "bash scripts/e2e.sh",
     "lint:changelog": "node --test scripts/changelog.test.mjs"
   },
@@ -24,5 +25,8 @@
     "type": "git",
     "url": "https://github.com/tasksmd/tasks.md"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "turbo": "2.5.4"
+  }
 }
