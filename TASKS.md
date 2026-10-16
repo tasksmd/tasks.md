@@ -4,12 +4,7 @@
 
 ## P1
 
-- [ ] Bootstrap the public tasks-claims log and release flow (@tasks-md)
-  - **ID**: bootstrap-public-tasks-claims-log-and-release-flow
-  - **Tags**: git-native, enforcement, release
-  - **Details**: The public repo was recreated without its tasks-claims ref, so the armed claim-check rejects every code PR and the open backlog was lost. Push a clean log that restores the generic backlog, render TASKS.md from it, and stop publish.yml from pushing to main (the main rulesets reject that push).
-
-- [ ] Land the 0.10.3 version bump and the claim-check CLI pin
+- [ ] Land the 0.10.3 version bump and the claim-check CLI pin (@tasks-md)
   - **ID**: land-0-10-3-version-bump-and-claim-check-cli-pin
   - **Tags**: release, ci
   - **Details**: Land the 0.10.3 version bump (`bash scripts/sync-versions.sh 0.10.3`) on main in a PR with Task/Task-Claim trailers. After @tasks-md/cli 0.10.3 is on public npm (`curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '."dist-tags".latest'`), change `CLI_VERSION: "0.10.0"` to `CLI_VERSION: "0.10.3"` in .github/workflows/tasks-claim-check.yml.
@@ -31,6 +26,11 @@
   - **ID**: claim-check-conflates-a-tooling-failure-with-a-missing-claim
   - **Tags**: ci, enforcement, observability
   - **Details**: In tasks-claim-check.yml the guard is 'if [ -f tcli ] && node tcli check-push ...; then exit 0; fi' — so BOTH a tooling failure (install failed, or the pinned cli lacks the check-push command) AND a genuine no-claim rejection fall into the same enforce branch. With TASKS_CLAIM_ENFORCE=1 a tooling failure then prints '::error::code change without a live task claim' and exit 1 — a MISLEADING message that blocks the PR for the wrong reason (observed live: pinning CLI_VERSION to a stale 0.7.0 that predates check-push produced 'unknown command check-push' followed by the bogus no-claim error). Fix: distinguish check-push's clean reject (a known nonzero exit code / sentinel) from any other failure (missing cli, unknown command, crash). On a tooling failure, emit a distinct '::error::claim-check could not run (cli/tooling problem)' and decide fail-open vs fail-closed deliberately rather than mislabeling it a claim violation. Bonus: a tiny pre-step asserting the pinned cli exposes check-push would catch a bad pin with a clear message. Surfaced fixing the pin.
+
+- [ ] tasks workspaces list prints machine-readable output for scripts
+  - **ID**: tasks-workspaces-list-prints-machine-readable-output-for-scr
+  - **Tags**: cli, workspaces, dx
+  - **Details**: Outcome: scripts can read configured and auto-detected workspaces without parsing human text or the config file. Today `tasks workspaces list` only prints text lines (packages/cli/src/cli.ts:823-828 calls runWorkspacesList, packages/cli/src/commands/workspaces.ts:177-197, which returns strings). `tasks pick`, `list`, `stats`, and `diff` already take --json. Because of this gap, a downstream dotfiles script reads ~/.config/tasks-md/workspaces.json directly (its lib/workspace-discovery.sh says so), so it breaks if the config format changes. Acceptance: `tasks workspaces list --json` prints {configured:[{name,root,repos}],detected:[root]}; a test covers empty, configured, and detected cases; README command table lists the flag. Hypothesis: a --json flag lets consumers stop reading the config file. Measurement: `node packages/cli/dist/cli.js workspaces list --json | jq .configured` exits 0. Success: valid JSON with both arrays. Pivot: if JSON shape is contested, add --porcelain (one tab-separated line per workspace) instead. Anchor: CLI Guidelines (clig.dev) machine-readable output.
 
 ## P3
 
