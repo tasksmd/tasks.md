@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-106e6af2-bad4-401e-938b-1154eebb4607",
+  "task_id": "sync-github-treats-a-failed-gh-issue-list-as-an-empty-result",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:30:00.512Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "sync github treats a failed gh issue list as an empty result",
+    "priority": "P1",
+    "tags": [
+      "sync",
+      "bug",
+      "stability"
+    ],
+    "body": "In packages/cli/src/sync/github.ts, a failing `gh issue list` (network, rate limit, wrong --repo) is caught and returns []. With `tasks sync github --merge`, an empty fetch can drop every synced task from TASKS.md, and without --merge it writes an empty queue with exit 0. Throw instead, with the gh stderr, and exit nonzero. Add a US06 e2e error case with a gh shim whose `issue list` fails.\n- **Hypothesis**: failing loudly removes silent queue wipes; synced tasks lost to a failed fetch drop from possible (1 path) to 0, and the exit code becomes nonzero.\n- **Measurement**: npm run e2e (a new US06 case: gh issue list exits 1 -> sync exits nonzero and TASKS.md is unchanged)\n- **Success**: the new case passes and the existing US06 cases stay green.\n- **Pivot**: if gh returns partial JSON on some errors, validate the JSON shape instead of trusting the exit code.\n- **Anchor**: docs/user-stories/06-issue-tracker-flows-to-agents.md; Nygard 2018, Release It! (fail fast)."
+  }
+}
