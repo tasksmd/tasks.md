@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-a02b9dea-969f-42dc-8e08-4f8b402fba05",
+  "task_id": "memoize-foldlog-per-ref-tip-within-a-process",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:27:28.647Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-6fa590d1-0b2b-459c-942d-ca92b30353bd",
+    "lease_expires_at": 1792240048647
+  }
+}
