@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-39188f9b-8b9f-4553-8260-a3f99941aaf6",
+  "task_id": "land-0-10-3-version-bump-and-claim-check-cli-pin",
+  "event_type": "updated",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:04:04.208Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Pin the claim-check CLI to 0.11.0 once it is on public npm",
+    "body": "The version bump part is done: main is at 0.11.0 (PR #10 superseded the 0.10.3 bump from PR #3). 0.10.3 was never published. Remaining: after @tasks-md/cli 0.11.0 is on public npm (curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '.\"dist-tags\".latest' prints 0.11.0), change CLI_VERSION in .github/workflows/tasks-claim-check.yml to 0.11.0 in a PR with Task/Task-Claim trailers. Checked 2026-10-16: public latest is 0.10.2.",
+    "blocked": "needs-human-npm-publish — the owner runs the 0.11.0 release (npm publish needs browser 2FA in a real terminal; agents cannot publish). Unblocks when public npm latest is 0.11.0."
+  }
+}
