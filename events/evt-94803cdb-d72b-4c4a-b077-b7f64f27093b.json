@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-94803cdb-d72b-4c4a-b077-b7f64f27093b",
+  "task_id": "pin-every-metrics-command-and-refresh-the-requirements-map-c",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T20:26:26.856Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-05d55905-59de-43bc-920d-47ea91b90fcd",
+    "lease_expires_at": 1792268786855
+  }
+}
