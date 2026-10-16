@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d4315968-eb06-42d3-b8dc-dcc7321b05f9",
+  "task_id": "protect-tasks-claims-and-main-from-force-push-delete-with-co",
+  "event_type": "updated",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:09:37.657Z",
+  "parent_event_ids": [],
+  "payload": {
+    "body": "Split out of arm-hard-claim-enforcement (which is now done: TASKS_CLAIM_ENFORCE=1 + a required claim-check ruleset). This is the SEPARATE threat-model B6 hardening: a ruleset on the tasks-claims ref (and main) blocking force-push + deletion, so the append-only log/history can't be rewritten to bypass the gate. CRITICAL: the tasks-claims rule MUST exempt the projection/compaction bot — compaction force-pushes the log with --force-with-lease, so a naive no-force-push rule would wedge compaction (log never shrinks). Use a ruleset bypass actor for the bot, or scope the rule to exclude lease-guarded pushes. gh api rulesets POST, idempotent. Not urgent: the primary gate (required claim-check) is already armed; this is defense-in-depth against a malicious-insider history rewrite. Surfaced arming enforcement.\n- **Hypothesis**: a non-fast-forward rule on tasks-claims with a compactor exemption blocks history rewrites; protected rewrite paths rise from 2/3 (main force-push, claims delete) to 3/3 with compaction still working.\n- **Measurement**: gh api repos/tasksmd/tasks.md/rulesets --jq '.[].name' and a lease-guarded tasks fleet compact dry run\n- **Success**: all 3 rules active and one compaction run succeeds under them.\n- **Pivot**: if no bypass actor works without a long-lived PAT, keep 2/3 and document the residual risk in the threat model.\n- **Anchor**: docs/security/git-native-claims-threat-model.md B6; GitHub docs 'About rulesets'."
+  }
+}
