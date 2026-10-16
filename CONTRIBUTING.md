@@ -45,6 +45,11 @@ npm run lint
 npx -y @tasks-md/lint TASKS.md
 ```
 
+Every task in the queue needs the five rule-#9 fields (Hypothesis,
+Measurement, Success, Pivot, Anchor); `npm run lint` fails without them. The
+pre-commit hook runs a [gitleaks](https://github.com/gitleaks/gitleaks) secret
+scan on staged files, so install it once (`brew install gitleaks`).
+
 These four commands are what CI runs on every PR. If they pass locally, CI
 should pass too. For docs-only changes, `npm run lint` plus the last command
 are usually enough.

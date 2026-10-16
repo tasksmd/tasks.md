@@ -2,35 +2,52 @@
 
 ## P0
 
+- [ ] tasks.md meets every new-project requirement (or waives it with a reason) (@claude)
+  - **ID**: tasks-md-meets-every-new-project-requirement-or-waives-it-wi
+  - **Tags**: requirements, agents, observability
+  - **Details**: Outcome: tasks.md meets all 10 new-project required areas (vision, metrics, observability, user-stories, setup, e2e, self-improving, tasks, checkup, caching), each met, mapped in .agents/requirements.yaml, or waived with a reason. Audit 2026-10-16: path score 7/22 (31%); by intent 0 met, 6 partial, 4 missing (metrics, self-improving, checkup, caching). Ordered gaps: (1) add the 5 prereg fields to every task and turn on --require-prereg in npm run lint; (2) .gitignore: .env, .env.*, !.env.example, *.pem, *.key, .metrics/, plus a lefthook pre-commit secret scan; (3) VISION.md: numeric dated adoption goal, pivot, command, dated Kill criteria, refresh last_reviewed, drop the Windsurf/Devin line; (4) docs/metrics.md + scripts/metrics.sh: adoption (code search), npm weekly downloads per package, gate time, lint false-positive rate, each with goal/pivot/command, (stub) when no data; (5) one contributor setup command (npm ci, build, test, lint, tasks doctor) first in CONTRIBUTING; (6) end init --install output and the setup prompt with tasks doctor; (7) Metric: and Tests: lines per story plus a drift check in scripts/check-docs-contract.mjs; (8) stranger-install e2e from the packed CLI in an empty temp repo; (9) e2e for US06 and US10; (10) content-free JSONL events and error->story map for tasks watch, tasks-mcp, fleet claims (docs/observability.md); (11) a fix command on every doctor warn/fail line; (12) a repo-wide checkup command (npm run checkup: doctor, cached gate, metrics, open P0s, monthly audit-due); (13) caching: gate steps and workspace tests cached by input hash (Nx or Turborepo across packages/*), full rerun on any change, NO_CACHE=1 forces; (14) timed gate steps + speed review inside the checkup; docs/learnings.md (predicted vs observed); (15) docs/decisions/ ADRs (git-native dogfood, backend plugins); (16) CHANGELOG generated at release. Push back already accepted: keep root VISION.md and tasks doctor (map them); JSONL logs only for long-running parts; no external error reporter; lint fixture tests (not e2e) for writing-guidance stories US02/US08.
+    - **Hypothesis**: meeting the areas makes contributor and agent work measurable; the setup score rises from 7/24 (29%) to 100% (mapped or waived honestly).
+    - **Measurement**: bash ~/.claude/skills/new-project/scripts/check-setup.sh . --profile tool
+    - **Success**: 100% with every waiver reasoned, and the monthly audit finds no new gap.
+    - **Pivot**: an area that costs more than it returns here becomes a waiver or a requirement-change PR on agentbrew new-project.
+    - **Anchor**: agentbrew skill-plugins/workflow/new-project/references/owner-practices.md and requirements-map.md; audit 2026-10-16.
+
 ## P1
 
-- [ ] Land the 0.10.3 version bump and the claim-check CLI pin (@tasks-md)
+- [ ] Owner runs scripts/setup-npm-trusted-publishing.sh once (@tasks-md)
   - **ID**: land-0-10-3-version-bump-and-claim-check-cli-pin
+  - **Tags**: release, ci, human-only
+  - **Details**: One-time owner step so publish.yml can publish through npm Trusted Publishing (the v0.10.3 run 404'd on PUT: no trust rule after the repo was recreated). In a real terminal: cd ~/apps/tooling/tasks.md && git pull && npm login && bash scripts/setup-npm-trusted-publishing.sh. It is idempotent and stores no token. Then complete this task (tasks complete land-0-10-3-version-bump-and-claim-check-cli-pin); that is precondition 1 of docs/release-and-ci.md 'Autonomous release'. The old 0.10.3 bump is superseded: main is at 0.11.0.
+    - **Hypothesis**: one owner run of the trust script lets publish.yml publish through npm Trusted Publishing; the publish failure rate drops from 1/1 (the v0.10.3 404 on PUT) to 0.
+    - **Measurement**: gh run list --workflow publish.yml --limit 1 --json conclusion -q '.[0].conclusion' after the next release
+    - **Success**: the next publish.yml run concludes success with no npm token in the repo.
+    - **Pivot**: if the run still 404s after the script ran, stop retrying and file an npm support ticket; switch to a manual publish checklist.
+    - **Anchor**: npm docs 'Trusted publishing for npm packages' (2025); docs/release-and-ci.md Autonomous release.
+  - **Blocked**: human-only — npm login needs the owner's browser 2FA in a real terminal; agents cannot do it.
+
+- [ ] Release v0.11.0 and pin the claim-check CLI to it
+  - **ID**: release-v0-11-0-and-pin-the-claim-check-cli-to-it
   - **Tags**: release, ci
-  - **Details**: Land the 0.10.3 version bump (`bash scripts/sync-versions.sh 0.10.3`) on main in a PR with Task/Task-Claim trailers. After @tasks-md/cli 0.10.3 is on public npm (`curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '."dist-tags".latest'`), change `CLI_VERSION: "0.10.0"` to `CLI_VERSION: "0.10.3"` in .github/workflows/tasks-claim-check.yml.
+  - **Details**: After the owner's trust setup (land-0-10-3-version-bump-and-claim-check-cli-pin) is done, follow docs/release-and-ci.md 'Autonomous release' to publish v0.11.0 (package.json is already 0.11.0). Then change CLI_VERSION in .github/workflows/tasks-claim-check.yml from 0.10.0 to 0.11.0 in a PR with Task/Task-Claim trailers. Verify: curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '."dist-tags".latest' prints 0.11.0.
+    - **Hypothesis**: publishing v0.11.0 and pinning the claim check to it makes CI use the current check-push; the CLI version lag in tasks-claim-check.yml drops from 1 minor (0.10.0) to 0.
+    - **Measurement**: curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '."dist-tags".latest' and grep CLI_VERSION .github/workflows/tasks-claim-check.yml
+    - **Success**: both print 0.11.0 and the claim-check job passes on the pin PR.
+    - **Pivot**: if the publish fails twice with the trust rule in place, stop and keep the 0.10.0 pin; file a task with the run log.
+    - **Anchor**: docs/release-and-ci.md Autonomous release; Forsgren, Humble, Kim 2018 (deployment frequency).
+  - **Blocked by**: land-0-10-3-version-bump-and-claim-check-cli-pin
 
 ## P2
-
-- [ ] Migrated owners can't retrieve their random fencing token to fence pushes
-  - **ID**: migrated-owners-can-t-retrieve-their-random-fencing-token-to
-  - **Tags**: git-native, migration, fencing, dx
-  - **Details**: Now that migrated claims use a random claim_id (claim-migrated-<uuid>), the migrated owner never sees it — the migration created the claim, not 'tasks claim' (which is what prints the token). So once TASKS_CLAIM_ENFORCE is armed, a migrated owner cannot put the right Task-Claim trailer on their commit and check-push blocks their own legit push. This makes expose-claimid-and-assignee-in-list-json a PREREQUISITE for arming enforcement on a migrated repo (the owner must be able to look up their own token). Options: (a) implement token retrieval (expose-claimid...) and document it in the arm-hard-claim-enforcement checklist, and/or (b) let 'tasks claim <id>' by the current owner re-print the existing token without stealing. Surfaced fixing the guessable-token security bug.
 
 - [ ] Protect tasks-claims and main from force-push/delete (with compactor exemption)
   - **ID**: protect-tasks-claims-and-main-from-force-push-delete-with-co
   - **Tags**: git-native, security, enforcement
   - **Details**: Split out of arm-hard-claim-enforcement (which is now done: TASKS_CLAIM_ENFORCE=1 + a required claim-check ruleset). This is the SEPARATE threat-model B6 hardening: a ruleset on the tasks-claims ref (and main) blocking force-push + deletion, so the append-only log/history can't be rewritten to bypass the gate. CRITICAL: the tasks-claims rule MUST exempt the projection/compaction bot — compaction force-pushes the log with --force-with-lease, so a naive no-force-push rule would wedge compaction (log never shrinks). Use a ruleset bypass actor for the bot, or scope the rule to exclude lease-guarded pushes. gh api rulesets POST, idempotent. Not urgent: the primary gate (required claim-check) is already armed; this is defense-in-depth against a malicious-insider history rewrite. Surfaced arming enforcement.
+    - **Hypothesis**: a non-fast-forward rule on tasks-claims with a compactor exemption blocks history rewrites; protected rewrite paths rise from 2/3 (main force-push, claims delete) to 3/3 with compaction still working.
+    - **Measurement**: gh api repos/tasksmd/tasks.md/rulesets --jq '.[].name' and a lease-guarded tasks fleet compact dry run
+    - **Success**: all 3 rules active and one compaction run succeeds under them.
+    - **Pivot**: if no bypass actor works without a long-lived PAT, keep 2/3 and document the residual risk in the threat model.
+    - **Anchor**: docs/security/git-native-claims-threat-model.md B6; GitHub docs 'About rulesets'.
   - **Blocked**: needs-user-decision — DONE: main force-push+delete (ruleset 24311973) + tasks-claims deletion (24311989), so the log can't be nuked and main can't be rewritten. REMAINING + BLOCKED: tasks-claims force-push (non-fast-forward) rewrite protection. GitHub 422-rejects the github-actions bot (app 15368) as a ruleset bypass actor even on this org repo ('must be part of the ruleset source or owner organization'), so the compactor can't be exempted; arming non_fast_forward without the exemption wedges compaction at the 5000-event threshold (the log is far below it, so no live impact yet). Unblock options: (a) an org-level Actions ruleset-bypass setting; (b) push tasks-claims from tasks-snapshot.yml via an admin PAT + bypass the Repository-admin role in the ruleset (introduces a long-lived PAT — your call). The fold already dedups replayed/edited events by event_id; only a dropped-event rewrite is unprotected.
-
-- [ ] claim-check conflates a tooling failure with a missing claim
-  - **ID**: claim-check-conflates-a-tooling-failure-with-a-missing-claim
-  - **Tags**: ci, enforcement, observability
-  - **Details**: In tasks-claim-check.yml the guard is 'if [ -f tcli ] && node tcli check-push ...; then exit 0; fi' — so BOTH a tooling failure (install failed, or the pinned cli lacks the check-push command) AND a genuine no-claim rejection fall into the same enforce branch. With TASKS_CLAIM_ENFORCE=1 a tooling failure then prints '::error::code change without a live task claim' and exit 1 — a MISLEADING message that blocks the PR for the wrong reason (observed live: pinning CLI_VERSION to a stale 0.7.0 that predates check-push produced 'unknown command check-push' followed by the bogus no-claim error). Fix: distinguish check-push's clean reject (a known nonzero exit code / sentinel) from any other failure (missing cli, unknown command, crash). On a tooling failure, emit a distinct '::error::claim-check could not run (cli/tooling problem)' and decide fail-open vs fail-closed deliberately rather than mislabeling it a claim violation. Bonus: a tiny pre-step asserting the pinned cli exposes check-push would catch a bad pin with a clear message. Surfaced fixing the pin.
-
-- [ ] tasks workspaces list prints machine-readable output for scripts
-  - **ID**: tasks-workspaces-list-prints-machine-readable-output-for-scr
-  - **Tags**: cli, workspaces, dx
-  - **Details**: Outcome: scripts can read configured and auto-detected workspaces without parsing human text or the config file. Today `tasks workspaces list` only prints text lines (packages/cli/src/cli.ts:823-828 calls runWorkspacesList, packages/cli/src/commands/workspaces.ts:177-197, which returns strings). `tasks pick`, `list`, `stats`, and `diff` already take --json. Because of this gap, a downstream dotfiles script reads ~/.config/tasks-md/workspaces.json directly (its lib/workspace-discovery.sh says so), so it breaks if the config format changes. Acceptance: `tasks workspaces list --json` prints {configured:[{name,root,repos}],detected:[root]}; a test covers empty, configured, and detected cases; README command table lists the flag. Hypothesis: a --json flag lets consumers stop reading the config file. Measurement: `node packages/cli/dist/cli.js workspaces list --json | jq .configured` exits 0. Success: valid JSON with both arrays. Pivot: if JSON shape is contested, add --porcelain (one tab-separated line per workspace) instead. Anchor: CLI Guidelines (clig.dev) machine-readable output.
 
 ## P3
 
@@ -39,46 +56,9 @@
   - **Tags**: docs, github-pages, domain, public-write
   - **Details**: Site is live at tasksmd.github.io/tasks.md/. Consider buying tasks.md
     domain for a cleaner URL.
-  - **Blocked**: needs-user-approval — buying or configuring a public
-    domain/DNS and GitHub Pages custom domain is an external public action that
-    requires explicit current-session operator approval.
-
-- [ ] Decide projection-to-main snapshot freshness
-  - **ID**: decide-projection-to-main-snapshot-freshness
-  - **Tags**: git-native, projection
-  - **Details**: The projection force-pushes TASKS.md to the tasksmd/generated-snapshot branch, so main lags the live log until a human opens and merges a PR from it (the step named 'Open/update the snapshot PR' opens no PR). Decide whether to auto-merge the snapshot PR, commit directly to main, or keep the manual gate, and document the chosen freshness contract in spec.md.
-
-- [ ] Reclaim unreachable objects after compaction on self-hosted remotes
-  - **ID**: reclaim-unreachable-objects-after-compaction-on-self-hosted
-  - **Tags**: git-native, compaction, ops
-  - **Details**: Compaction force-pushes a rewritten tasks-claims ref; the dropped (completed-task) commits become unreachable but linger in the remote's object store until git gc. github.com auto-GCs periodically so clone/fetch cost still drops (clone only fetches reachable objects), but a self-hosted bare remote (GHE/GitLab/Gitea) needs periodic gc to actually reclaim disk. Document the recommended server gc cadence (or a post-compaction maintenance hint), and consider whether the projection should hint it. Surfaced implementing auto-trigger-git-native-log-compaction.
-
-- [ ] Memoize foldLog per ref-tip within a process
-  - **ID**: memoize-foldlog-per-ref-tip-within-a-process
-  - **Tags**: git-native, performance
-  - **Details**: readEvents is now O(1) git processes per fold (cat-file --batch), but several operations fold MORE THAN ONCE per process (e.g. claim does a check fold + appendWithRetry; render+stats+doctor each fold). Cache foldLog keyed on the current tasks-claims commit sha (currentClaimsCommit) so repeated folds in one process reuse the result; invalidate when the ref tip changes (after any append). Complements bound-git-native-fold-cost-at-scale (the read is cheap; this removes redundant reads). Surfaced implementing the batched readEvents.
-
-- [ ] Fence cancel on the claim token for consistency
-  - **ID**: fence-cancel-on-the-claim-token-for-consistency
-  - **Tags**: git-native, fencing, consistency
-  - **Details**: complete, release, update, and heartbeat all accept --claim and fence on it (reject a stale/foreign token); cancel is the only mutating git-native op without it. A foreign actor can cancel someone's claimed task. Add fenceCheck to the backend cancel() (no token → unfenced, as before) and a --claim option to the cancel CLI command, mirroring the complete/release/update pattern. Low-risk, non-breaking. Surfaced exposing the fencing token on complete/release/update.
-
-- [ ] Report which events are corrupt, not just the count
-  - **ID**: report-which-events-are-corrupt-not-just-the-count
-  - **Tags**: git-native, observability, dx
-  - **Details**: tasks doctor + fleet stats now report a corrupt-event COUNT (corruptEventCount), but not WHICH events/commits are malformed, so debugging a corrupt tasks-claims log still means manual git archaeology. Add a way to list the offending commit + path (e.g. tasks fleet doctor --verbose or a dedicated diagnostic) — readEvents already knows the spec (<commit>:<path>) of each blob it fails to parse; thread that out. Surfaced adding error+health visibility to the git-native backend.
-
-- [ ] Document retrieving your claim token via list --json
-  - **ID**: document-retrieving-your-claim-token-via-list-json
-  - **Tags**: git-native, docs, dx
-  - **Details**: list --json now surfaces claimId for the owner's claimed tasks, but nothing tells users that's how you re-obtain a lost token. The commands/next-task.md heartbeat note (added in the heartbeat PR) only says the token is printed by 'tasks claim'. Extend it (and/or README) to mention: retrieve it later with 'tasks list --json' (the claimId field on your claimed task). Regenerate the 6 command variants. Surfaced implementing expose-claimid-in-list-json. Note: this partially resolves migrated-owners-can-t-retrieve-their-random-fencing-token (retrieval now exists; that task's remaining half is documenting it in the arm-hard-claim-enforcement checklist).
-
-- [ ] Guard against non-standard commit types prescribed in command docs
-  - **ID**: guard-against-non-standard-commit-types-prescribed-in-comman
-  - **Tags**: commands, ci, guardrail
-  - **Details**: The plan: commit type prescribed by next-task.md was rejected by conventional-commit hooks (@commitlint/config-conventional) — a class of bug where the shared command docs prescribe a git commit -m subject whose type isn't in the conventional set (feat/fix/docs/style/refactor/perf/test/build/ci/chore/revert). Add a check (script or CI step, like commands-drift) that greps commands/ for prescribed 'git commit -m "<type>: ..."' / backtick-quoted '<type>: <id>' subjects and fails if <type> isn't a standard conventional type. Turns this one-off fix into a mechanical guard (feedback-loop-guardrails: every bug becomes a rule). Surfaced reconciling the plan: commit convention.
-
-- [ ] Finish README reorder: fundamentals before scaling; deep walkthrough after How It Works
-  - **ID**: finish-readme-reorder-fundamentals-before-scaling-deep-walkt
-  - **Tags**: docs, onboarding
-  - **Details**: An earlier change reordered the top of the README (Highlights -> Installation -> format teaser) but left the mid-document order as-is (defensible but improvable). Two remaining order smells: (1) the 70-line 'Worked example: first 10 minutes' deep walkthrough sits before 'Why TASKS.md?' and 'How It Works' — move it AFTER 'How It Works' so the conceptual frame precedes the hands-on dive; (2) 'Writing Good Tasks' + 'The Format' (fundamentals) come after 'Backends' + 'Workspaces' (scaling/advanced) — consider moving the fundamentals up, or Workspaces down. Deferred from that change to avoid risky large-block moves in the same PR as the install-gap fix. Files: README.md. Low risk, low urgency — the top (above-the-fold) order is already best-practice.
+    - **Hypothesis**: a short custom domain makes the site easier to share; the URL length drops from 30 characters (tasksmd.github.io/tasks.md/) to under 20.
+    - **Measurement**: gh api repos/tasksmd/tasks.md/pages --jq .cname
+    - **Success**: the custom domain serves the site over HTTPS.
+    - **Pivot**: if no domain under 20 characters costs less than 20 USD a year, close this task and keep the github.io URL.
+    - **Anchor**: GitHub docs 'Managing a custom domain for your GitHub Pages site'.
+  - **Blocked**: needs-owner-decision-and-money — checked 2026-10-16: tasks.md is already registered by a third party (whois: created 1994-03-24, expires 2027-04-25, NS ns1.netim.net), so it cannot simply be bought. Owner picks and buys another domain (money + DNS). Repo part after that: add docs/CNAME with the domain, set it in Pages settings, add the DNS CNAME to tasksmd.github.io.

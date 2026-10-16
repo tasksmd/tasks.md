@@ -14,3 +14,14 @@ node_modules/
 
 # Taskgrind session state — written by the running grind, not source
 .taskgrind-state
+
+# Secrets — never commit them. Copy .env.example instead.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local run metrics and build caches
+.metrics/
+.turbo/

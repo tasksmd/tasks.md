@@ -125,6 +125,12 @@ at the end of this section is what consumers copy; see also
   (`**Verdict**: approved`) before any implementation commit lands. Trivial
   tasks — single file under 30 minutes with an obvious fix — skip the plan
   step. See `commands/next-task.md` § "Plan and validate" for the full rules.
+- **Pre-register every task.** `npm run lint` runs the rule-#9 lint with
+  `--require-prereg`, so each task body needs five nested list lines:
+  `- **Hypothesis**:`, `- **Measurement**:`, `- **Success**:`, `- **Pivot**:`,
+  `- **Anchor**:`. Put them on their own lines at the end of the body you pass to
+  `tasks create --body` or `tasks update <id> --body`. The snapshot job warns
+  when a task lacks them; fix it with `tasks update` before the next refresh.
 - **Complete via the CLI**, never by editing `TASKS.md`: `tasks complete <id>`
   appends a `completed` event and the projection refreshes the snapshot. Add a
   task with `tasks create "<title>"`, release one with `tasks unclaim <id>`.
