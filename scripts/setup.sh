@@ -34,7 +34,10 @@ npm run lint
 
 if command -v lefthook >/dev/null 2>&1; then
   step "lefthook install (pre-commit lint + secret scan, pre-push claim check)"
-  lefthook install
+  # A global core.hooksPath (shared hooks) makes lefthook refuse; those hooks
+  # still run, so warn with the fix instead of failing setup.
+  lefthook install \
+    || echo "⚠ lefthook install failed (often a global core.hooksPath), so this repo's hooks are not active. Fix: lefthook install --force, or unset core.hooksPath"
 else
   echo "⚠ lefthook is missing, so git hooks are not installed. Fix: brew install lefthook && lefthook install"
 fi
