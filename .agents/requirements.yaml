@@ -13,15 +13,18 @@ map.docs: docs/README.md scripts/check-docs-contract.mjs
 # command), dated Kill criteria, and Prior art.
 map.vision: VISION.md
 
-# docs/metrics.md: every metric has a goal, a pivot, and a command; missing
-# data prints (stub). scripts/metrics.sh prints the table, including gate speed.
+# docs/metrics.md: every metric has a goal, a pivot, and its exact command
+# (queries pinned); missing data, an API error, or a source that answers 0 for
+# something that does not exist (a missing label) prints (stub).
+# scripts/metrics.sh prints the table, including gate speed.
 map.metrics: docs/metrics.md scripts/metrics.sh
 
 # User setup is the first README code block: one idempotent prompt / command
 # (npx -y @tasks-md/cli init --install) that ends with tasks doctor; the docs
 # contract check fails if that block stops naming the doctor. Contributor setup
 # is scripts/setup.sh (install, build, test, lint, hooks, doctor), linked right
-# after it and first in CONTRIBUTING.md's Quick start.
+# after it and first in CONTRIBUTING.md's Quick start; its optional git-hooks
+# step warns with the fix instead of failing.
 map.setup: README.md scripts/setup.sh CONTRIBUTING.md
 
 # Each story in docs/user-stories/NN-*.md has a Metric line that names an
@@ -33,7 +36,9 @@ map.user-stories: docs/user-stories/README.md tests/e2e scripts/check-docs-contr
 
 # docs/observability.md has Logs (content-free JSONL for tasks watch, tasks-mcp,
 # and git-native claims; accepted push back: only the long-running parts log),
-# Errors (local only, no external reporter; each event names its story), and
+# string fields allow-listed so no free text can leak, logging off in tests
+# (vitest.config.mjs TASKS_EVENTS=0, asserted by a test), Errors (local only,
+# no external reporter; each event names its story), and
 # Health check: tasks doctor (runDoctor in fleet.ts) instead of scripts/doctor.sh,
 # by accepted push back; every warn/fail line carries a fix command.
 map.observability: docs/observability.md packages/cli/src/events.ts packages/mcp/src/events.ts packages/cli/src/commands/fleet.ts
