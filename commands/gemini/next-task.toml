@@ -309,6 +309,9 @@ git checkout -b <branch-name>
 claim is reclaimable by another agent — so on work that runs longer than the
 lease window, periodically renew it so you are not stolen from mid-task:
 tasks heartbeat <id> --claim <token>   # <token> is the claim_id printed by `tasks claim`
+Lost the token, or never saw one (a migration created your claim)? Read it back
+from the `claimId` field of your claimed task:
+tasks list --json | jq -r '.[] | select(.id == "<id>") | .claimId'
 A renew is rejected (non-zero exit) if you are no longer the owner or your
 fencing token is stale — that is your signal that the task was reclaimed and you
 should stop. Backends without leases (the file backend) report `unsupported` and
