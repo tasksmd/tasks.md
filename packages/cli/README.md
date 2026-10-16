@@ -35,7 +35,7 @@ tasks sync github --merge             # sync GitHub Issues into TASKS.md
 
 | Command | Flags | What it does |
 |---------|-------|--------------|
-| `init` | `--install` | Scaffold TASKS.md with P0–P3 headings and add the Task Management section to AGENTS.md |
+| `init` | `--install` | Scaffold TASKS.md with P0–P3 headings and add the Task Management section to AGENTS.md. Ends by pointing to `tasks doctor`; with `--install` it runs the doctor and exits nonzero on a `✗` |
 | `install` | `--all`, `--agent <name>`, `--hooks` | Install the `/next-task` command for detected agents (Claude Code, Codex, Cursor, Gemini CLI). Auto-detects unless `--all` |
 | `generate-commands` | — | Regenerate every agent variant from the canonical `commands/*.md` sources. Run after editing a canonical source |
 | `pick` | `--tags <a,b>`, `--json` | Pick the highest-priority unblocked, unclaimed task. `--tags` is a soft preference. `--json` emits `{picked: false}` or `{picked, summary, priority, file, line, metadata, candidates, unblocks}` |

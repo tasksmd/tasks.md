@@ -61,7 +61,7 @@ program
   .command("init")
   .description("Initialize a task queue in the current repo")
   .option("--install", "Also install /next-task for detected agents")
-  .action((opts: { install?: boolean }) => {
+  .action(async (opts: { install?: boolean }) => {
     const result = initTaskQueue(process.cwd());
     for (const message of result.messages) {
       console.log(message);
@@ -80,6 +80,16 @@ program
     console.log("✓ Task queue initialized. Add tasks with:");
     console.log("  ## P1");
     console.log("  - [ ] Your first task");
+    console.log("");
+    // Setup ends with the health check, so a broken install shows up now.
+    if (opts.install) {
+      console.log("Verifying with `tasks doctor`:");
+      const report = await runDoctor(process.cwd());
+      console.log(formatDoctorReport(report));
+      if (!report.ok) process.exitCode = 1;
+    } else {
+      console.log("Next: run `tasks doctor` to verify the install.");
+    }
   });
 
 // ── generate-commands (TypeScript-native) ──

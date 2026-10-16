@@ -16,3 +16,8 @@ map.vision: VISION.md
 # docs/metrics.md: every metric has a goal, a pivot, and a command; missing
 # data prints (stub). scripts/metrics.sh prints the table, including gate speed.
 map.metrics: docs/metrics.md scripts/metrics.sh
+
+# Contributor setup is scripts/setup.sh, first in CONTRIBUTING.md's Quick start.
+# The root README's first code block is the user install (npx @tasks-md/cli
+# init), because the README is the landing page for spec users, not contributors.
+map.setup: scripts/setup.sh CONTRIBUTING.md

@@ -15,12 +15,12 @@ Everyone interacting in this project is expected to follow the
 ## Quick start
 
 ```bash
-git clone https://github.com/tasksmd/tasks.md.git
-cd tasks.md
-npm install
-npm run build
-npm test
+git clone https://github.com/tasksmd/tasks.md.git && cd tasks.md && bash scripts/setup.sh
 ```
+
+`scripts/setup.sh` is the one setup command. It runs `npm ci`, `npm run build`,
+`npm test`, and `npm run lint`, installs the git hooks, and ends with
+`tasks doctor`. It is safe to re-run and needs no sudo.
 
 This is an npm workspace. Each package lives under `packages/`:
 
