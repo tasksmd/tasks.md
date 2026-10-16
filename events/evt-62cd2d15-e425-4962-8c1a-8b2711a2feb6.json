@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-62cd2d15-e425-4962-8c1a-8b2711a2feb6",
+  "task_id": "decide-projection-to-main-snapshot-freshness",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:38:22.101Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-3496669a-32e4-4740-935a-a528dda209d9",
+    "lease_expires_at": 1792240702101
+  }
+}
