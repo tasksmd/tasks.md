@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-a5633191-95d2-4edf-bb27-46095b37c349",
+  "task_id": "make-the-readme-setup-map-honest-and-give-stories-outcome-me",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:54:38.616Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Make the README setup map honest and give stories outcome metrics",
+    "priority": "P1",
+    "tags": [
+      "requirements",
+      "docs",
+      "observability"
+    ],
+    "body": "Follow-up from the independent grade of tasks-md-meets-every-new-project-requirement-or-waives-it-wi. (1) map.setup named CONTRIBUTING.md, but the requirement is \"first in the README\": the README first block is the one-prompt setup, which still ends with tasks-lint, not tasks doctor (README and docs/user-stories/10 copies were missed when commands/setup.md changed). End both copies with `npx -y @tasks-md/cli doctor`, add a contributor pointer to `bash scripts/setup.sh` near the top, and map setup to README.md + scripts/setup.sh. (2) Six story metrics count passing e2e tests; replace US03, US04, US05, US07 with outcome rates from the local event log (docs/observability.md), keep test-count guards only where no event exists. (3) Re-render the TASKS.md snapshot.\n- **Hypothesis**: the setup map then truly meets \"one command, first in the README, ending with the doctor\", and stories with an outcome metric rise from 4/10 to 8/10.\n- **Measurement**: head -60 README.md (first block ends with tasks doctor) and grep -c \"events.jsonl\" docs/user-stories/0*.md\n- **Success**: the first README block names tasks doctor; 4 stories cite an events.jsonl rate; npm run lint and check-setup.sh stay green.\n- **Pivot**: if the README prompt cannot end with the doctor without hurting the landing page, waive setup with that reason instead.\n- **Anchor**: agentbrew new-project SKILL.md (setup row); Basili et al. 1994 (GQM)."
+  }
+}
