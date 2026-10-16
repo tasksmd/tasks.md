@@ -21,3 +21,9 @@ map.metrics: docs/metrics.md scripts/metrics.sh
 # The root README's first code block is the user install (npx @tasks-md/cli
 # init), because the README is the landing page for spec users, not contributors.
 map.setup: scripts/setup.sh CONTRIBUTING.md
+
+# Each story in docs/user-stories/NN-*.md has a Metric line and a Tests line
+# that names one e2e file per story (tests/e2e/usNN-*, happy + error case).
+# US02 and US08 are writing guidance, so lint fixture tests cover them
+# (accepted push back). checkUserStories in check-docs-contract.mjs fails on drift.
+map.user-stories: docs/user-stories/README.md tests/e2e scripts/check-docs-contract.mjs

@@ -2,6 +2,9 @@
 
 > I want agents to respect dependencies automatically — no manual sequencing, no wasted work on blocked tasks.
 
+- **Metric**: blocked tasks picked in the e2e suite: 0 (`npm run e2e`, the US04 cases).
+- **Tests**: `tests/e2e/us04-agents-work-in-right-order.test.mjs` (happy: pick skips a blocked P1 and picks its blocker; error: a blocker cycle leaves nothing to pick)
+
 ## How It Works
 
 Give a task an **ID**. Reference that ID in another task's **Blocked by** field. The agent skips blocked tasks automatically.

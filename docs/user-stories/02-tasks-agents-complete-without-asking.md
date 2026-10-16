@@ -2,6 +2,9 @@
 
 > I want every task to be clear enough that agents complete it autonomously — no follow-up questions, no guessing.
 
+- **Metric**: open tasks in this repo missing a rule-#9 field: 0 (`node packages/lint/dist/cli.js --require-prereg TASKS.md`, the `blocking=` count).
+- **Tests**: lint fixture tests, not e2e, because this story is writing guidance: `packages/lint/src/lint.test.ts` ("passes a file with metadata", "fails on a bare metadata field without the list dash"), `packages/lint/src/rule9.test.ts` ("identifies missing fields by name", "treats **Acceptance** as equivalent to **Success**")
+
 ## The Principle
 
 A task is a small contract. The more specific, the better the result. Both humans and agents add tasks — agents discover work during implementation and add follow-up tasks to the queue. Most tasks don't need much — a clear one-liner is often enough.

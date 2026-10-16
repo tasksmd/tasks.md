@@ -2,6 +2,9 @@
 
 > I want to see how my task queue is performing — what's pending, what's getting done, and what changed recently.
 
+- **Metric**: `stats --json` totals that disagree with the queue: 0 (`npm run e2e`, the US07 cases).
+- **Tests**: `tests/e2e/us07-monitor-queue-health.test.mjs` (happy: counts by priority, blocked, claimed; error: an empty repo reports 0, not a failure)
+
 ## Quick Overview
 
 ```bash
