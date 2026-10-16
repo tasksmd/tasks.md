@@ -2,7 +2,7 @@
 
 > I want agents to pick up tasks, do the work, and loop — without me prompting each step.
 
-- **Metric**: share of git-native `claim` events that lose (`ok: false`, story US03) in the local event log ([how to read it](../observability.md#per-story-outcome-rate)); goal under 5% per month. Guard: `npm_cli_weekly` in [docs/metrics.md](../metrics.md).
+- **Metric**: `us03_claim_losses` in [docs/metrics.md](../metrics.md): share of git-native `claim` events that lose in the local event log ([how to read it](../observability.md#per-story-outcome-rate)); goal under 5% per month. Guard: `npm_cli_weekly` in [docs/metrics.md](../metrics.md).
 - **Tests**: `tests/e2e/us03-agents-work-through-queue.test.mjs` (happy: install auto-detects the agent dir; error: no agent dir, install explains `--all`)
 
 ## What It Does

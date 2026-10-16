@@ -2,7 +2,7 @@
 
 > Decisions made in GitHub Issues, Jira, or Linear flow into TASKS.md automatically — agents execute without needing API access.
 
-- **Metric**: synced tasks that fail the lint: 0 (`npm run e2e`, the US06 cases lint the generated file).
+- **Metric**: `sync_bug_reports` in [docs/metrics.md](../metrics.md): issues labelled `sync` in the last 90 days; goal 0. Guard: synced tasks that fail the lint in the e2e suite: 0 (`npm run e2e`, US06).
 - **Tests**: `tests/e2e/us06-issue-tracker-flows-to-agents.test.mjs` (happy: GitHub and Jira sync with mapped priority; error: unauthenticated `gh`, Jira HTTP 401)
 
 ## How It Works
