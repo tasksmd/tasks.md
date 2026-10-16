@@ -16,7 +16,10 @@ propagation, the Agentfile, and the git-native task queue policy.
 - Keep docs and tooling behavior in sync. README drift is a bug.
 - Public publishing actions such as `npm publish`, creating releases, opening or
   merging pull requests, and pushing remote branches require explicit
-  current-session operator approval.
+  current-session operator approval. One standing exception (owner,
+  2026-10-16): an npm release through `gh release create` when every check in
+  [release-and-ci.md § Autonomous release](release-and-ci.md#autonomous-release)
+  holds.
 
 ## Canonical Source Boundaries
 

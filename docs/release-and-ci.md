@@ -13,8 +13,11 @@ edges that cost real debugging time — captured here so they don't recur:
   signs, then 404 on PUT. `publish.yml` runs `npm install -g npm@latest` after
   `setup-node` for exactly this reason; do not remove it.
 - **Trusted Publishers are configured per-package on npmjs.com**, not in the repo.
-  `@tasks-md/parser`, `@tasks-md/lint`, `@tasks-md/cli`, and `tasks-mcp` each list
-  `tasksmd/tasks.md` -> `publish.yml` (no environment). All four are set.
+  `@tasks-md/parser`, `@tasks-md/lint`, `@tasks-md/cli`, and `tasks-mcp` must each
+  list `tasksmd/tasks.md` -> `publish.yml` (no environment). Without that rule the
+  publish `PUT` 404s (`npm error 404 Not Found - PUT .../@tasks-md%2fparser`), as
+  the v0.10.3 run did on 2026-10-01 after the repo was recreated. The owner sets
+  all four once with `scripts/setup-npm-trusted-publishing.sh` (see below).
 - **`publish.yml` never pushes to `main`.** The `main` rulesets (no
   non-fast-forward, required `claim-check`) reject a push from the release job.
   Bump versions in a PR with `bash scripts/sync-versions.sh <version>` before you
@@ -48,3 +51,60 @@ edges that cost real debugging time — captured here so they don't recur:
   this intentional divergence survives a re-run. The render still skips
   gracefully on failure (temp-file swap), so it never truncates `TASKS.md`. The
   `tasks-claim-check` workflow keeps the generic `npx` form (it's advisory).
+
+## Autonomous release
+
+Standing approval from the owner on 2026-10-16: an agent may publish a
+release to npm **without asking**, but only when every check below holds.
+If any check fails, stop and report it. Do not work around it.
+
+The owner does one thing once, in a real terminal (npm asks for 2FA):
+
+```bash
+npm login
+bash scripts/setup-npm-trusted-publishing.sh
+```
+
+The script checks `npm whoami`, adds the `tasksmd/tasks.md` -> `publish.yml`
+trusted publisher to each package, skips a package that already has it, and
+reports (never revokes) a package that trusts something else. It stores no
+token. Re-running it is safe.
+
+### Preconditions (all must hold)
+
+1. **Trust is set.** The queue has no open task for the owner's one-time
+   `setup-npm-trusted-publishing.sh` run (`tasks list --json`).
+2. **The version bump is merged.** A PR that ran
+   `bash scripts/sync-versions.sh <version>` is merged to `main`, and every
+   `packages/*/package.json` on `origin/main` has that version.
+3. **The gate is green on `main`'s head.** In a fresh worktree at
+   `origin/main`: `npm ci && npm run build && npm test && npm run lint` exits 0,
+   and the latest `CI` run on that commit passed
+   (`gh run list --branch main --workflow CI -L 1`).
+4. **The version is new.** For each of the four packages,
+   `npm view <pkg>@<version> version` prints nothing (not yet on npm), and the
+   tag `v<version>` does not exist (`git ls-remote --tags origin v<version>`).
+
+### Publish
+
+```bash
+sha=$(git rev-parse origin/main)          # the commit you just verified
+gh release create "v<version>" --target "$sha" --generate-notes
+gh run watch "$(gh run list --workflow publish.yml -L 1 --json databaseId -q '.[0].databaseId')" --exit-status
+for p in @tasks-md/parser @tasks-md/lint @tasks-md/cli tasks-mcp; do npm view "$p" version; done
+```
+
+The release event runs `publish.yml`, which publishes through Trusted
+Publishing (OIDC) with provenance. Every `npm view` must print `<version>`.
+
+### Never
+
+- Never use an npm token, and never publish from a laptop (`npm publish`
+  stays human-only outside `publish.yml`).
+- Never re-run a failed publish blindly. Read the run log first. A 404 on
+  `PUT` means trust is missing: reopen the owner's setup task.
+- Never unpublish to undo a bad release. Ship a fixed patch version.
+
+After a release, bump `CLI_VERSION` in `.github/workflows/tasks-claim-check.yml`
+when `check-push` changed.
+
