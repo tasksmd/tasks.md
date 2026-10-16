@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-35d4d030-767c-44a1-92b7-a540c1fc893d",
+  "task_id": "memoize-foldlog-per-ref-tip-within-a-process",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:38:00.455Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
