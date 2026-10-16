@@ -480,6 +480,14 @@ function parseEvent(text: string): GitNativeEvent | undefined {
 // filtering are identical (linear chain ⇒ `git log --reverse` == `rev-list
 // --reverse`; bad/missing blobs are skipped). Exported for the O(1) spawn test.
 export function readEvents(directory: string): GitNativeEvent[] {
+  return readEventLog(directory).events;
+}
+
+/**
+ * `readEvents` plus the `<commit>:<path>` spec of every blob that exists but
+ * failed to parse, so diagnostics can name the corrupt events.
+ */
+export function readEventLog(directory: string): { events: GitNativeEvent[]; corrupt: string[] } {
   const output = tryGit(directory, [
     "log",
     "--reverse",
@@ -490,7 +498,7 @@ export function readEvents(directory: string): GitNativeEvent[] {
     "events/",
   ]);
   if (!output) {
-    return [];
+    return { events: [], corrupt: [] };
   }
   const specs: string[] = [];
   for (const record of output.split("\x1e")) {
@@ -506,17 +514,19 @@ export function readEvents(directory: string): GitNativeEvent[] {
     }
   }
   const events: GitNativeEvent[] = [];
-  for (const blob of catFileBatch(directory, specs)) {
+  const corrupt: string[] = [];
+  catFileBatch(directory, specs).forEach((blob, index) => {
     const event = blob ? parseEvent(blob.toString("utf-8")) : undefined;
     if (event) {
       events.push(event);
     } else if (blob) {
       // The blob exists but is malformed (corrupt JSON / wrong shape). Skip it
-      // to stay robust, but count it so the loss is observable, not silent.
+      // to stay robust, but count and name it so the loss is observable.
       corruptEvents += 1;
+      corrupt.push(specs[index]);
     }
-  }
-  return events;
+  });
+  return { events, corrupt };
 }
 
 function priorityValue(value: unknown): string {
@@ -621,6 +631,8 @@ export interface FleetStats {
   staleClaims: number;
   /** Event blobs present in the log but unparseable (malformed) — silently skipped. */
   corruptEvents: number;
+  /** `<commit>:<path>` of each corrupt event blob, in log order. */
+  corruptEventSpecs: string[];
   /**
    * Churn proxy: reclaimed ÷ distinct-tasks-ever-claimed. The git-native CAS
    * rejects lost claims WITHOUT appending an event, so the log cannot count
@@ -632,9 +644,7 @@ export interface FleetStats {
 /** Fold the tasks-claims log into contention/observability metrics (Phase 4). */
 export function gitNativeFleetStats(directory: string, now: number = Date.now()): FleetStats {
   fetchClaimsRef(directory);
-  const corruptBefore = corruptEventCount();
-  const events = readEvents(directory);
-  const corruptInFold = corruptEventCount() - corruptBefore;
+  const { events, corrupt } = readEventLog(directory);
   const eventsByType: Record<GitNativeEventType, number> = {
     created: 0,
     updated: 0,
@@ -679,7 +689,8 @@ export function gitNativeFleetStats(directory: string, now: number = Date.now())
     actors: actors.size,
     reclaimedTasks,
     staleClaims,
-    corruptEvents: corruptInFold,
+    corruptEvents: corrupt.length,
+    corruptEventSpecs: corrupt,
     contentionRatio: tasksEverClaimed === 0 ? 0 : reclaimedTasks / tasksEverClaimed,
   };
 }

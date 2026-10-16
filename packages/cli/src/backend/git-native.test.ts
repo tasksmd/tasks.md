@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { runDoctor } from "../commands/fleet.js";
+import { runDoctor, runFleetStats } from "../commands/fleet.js";
 import {
   autoRefreshEnabled,
   catFileBatch,
@@ -568,6 +568,21 @@ describe("error + health visibility", () => {
     expect(stats.tasksCreated).toBe(1); // the valid event still folds
     const open = await backend.listOpen();
     expect(open.map((t) => t.id)).toContain("valid-one"); // corrupt event doesn't break the fold
+  });
+
+  it("names each corrupt event as <commit>:<path>, not just the count", async () => {
+    const dir = makeRepo("tasksmd-corrupt-");
+    writeFileSync(join(dir, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    const backend = createGitNativeBackend(dir);
+    await backend.create({ title: "Valid one", priority: "P1" });
+    injectCorruptEvent(dir);
+    const commit = git(dir, ["rev-parse", "refs/heads/tasks-claims"]);
+    const spec = `${commit}:events/zzz-corrupt.json`;
+
+    expect(gitNativeFleetStats(dir).corruptEventSpecs).toEqual([spec]);
+    expect(runFleetStats(dir).lines.join("\n")).toContain(spec);
+    const report = await runDoctor(dir);
+    expect(report.checks.find((c) => c.name === "log integrity")?.detail).toContain(spec);
   });
 
   it("tasks doctor warns when the log has corrupt events", async () => {

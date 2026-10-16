@@ -340,7 +340,7 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
         level: stats.corruptEvents > 0 ? "warn" : "ok",
         detail:
           stats.corruptEvents > 0
-            ? `${stats.corruptEvents} corrupt event(s) skipped while folding — \`tasks fleet compact --force\` rewrites the log to the valid folded set`
+            ? `${stats.corruptEvents} corrupt event(s) skipped while folding (${listSpecs(stats.corruptEventSpecs, 3)}) — \`tasks fleet compact --force\` rewrites the log to the valid folded set`
             : "no corrupt events",
       });
       // Last-projection signal: when the generated TASKS.md snapshot was last
@@ -405,6 +405,14 @@ export interface FleetStatsReport {
   tripwireCrossed: boolean;
 }
 
+const MAX_LISTED_SPECS = 20;
+
+// "a, b, c, +N more" for a one-line detail.
+function listSpecs(specs: string[], max: number): string {
+  const shown = specs.slice(0, max).join(", ");
+  return specs.length > max ? `${shown}, +${specs.length - max} more` : shown;
+}
+
 /** `tasks fleet stats` — contention/observability metrics for the git-native log. */
 export function runFleetStats(directory: string): FleetStatsReport {
   const config = resolveBackendConfig(directory);
@@ -427,7 +435,13 @@ export function runFleetStats(directory: string): FleetStatsReport {
       : `✓ contention below tripwire — linear-CAS remains sufficient; no Phase 4 work is justified.`,
   ];
   if (stats.corruptEvents > 0) {
-    lines.push(`⚠ ${stats.corruptEvents} corrupt event(s) skipped — the log has malformed entries.`);
+    lines.push(`⚠ ${stats.corruptEvents} corrupt event(s) skipped — the log has malformed entries:`);
+    for (const spec of stats.corruptEventSpecs.slice(0, MAX_LISTED_SPECS)) {
+      lines.push(`    ${spec}   (inspect: git show ${spec})`);
+    }
+    if (stats.corruptEventSpecs.length > MAX_LISTED_SPECS) {
+      lines.push(`    …and ${stats.corruptEventSpecs.length - MAX_LISTED_SPECS} more`);
+    }
   }
   return { lines, contentionRatio: stats.contentionRatio, tripwireCrossed: crossed };
 }
