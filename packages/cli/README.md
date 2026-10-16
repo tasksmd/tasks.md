@@ -62,7 +62,7 @@ These run against the active backend (`tasks-md`, `github-issues`, or `git-nativ
 | `claim <id>` | `--as`, `--json` | Claim a task. Best-effort on the file backend; collision-free (with a `claimId` fencing token) on git-native |
 | `unclaim <id>` | `--as`, `--json` | Release a claimed task back to the queue |
 | `complete <id>` | `--as`, `--json` | Complete a task (remove the block / close the issue / append a `completed` event) |
-| `cancel <id>` | `--as`, `--json` | Drop a task without completing the work |
+| `cancel <id>` | `--as`, `--claim`, `--json` | Drop a task without completing the work. On git-native, `--claim <token>` rejects a stale or foreign fencing token, like `complete`, `unclaim`, `update`, and `heartbeat` |
 | `render` | `--json` | Print the human-readable `TASKS.md` snapshot from the backend (the file itself for `tasks-md`; the folded log for git-native) |
 
 `tasks sync <provider>` is the canonical sync surface. The legacy `sync-issues`, `sync-jira`, and `sync-linear` commands still work but print a deprecation warning the first time you call them.

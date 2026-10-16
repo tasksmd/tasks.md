@@ -342,6 +342,28 @@ describe("git-native backend", () => {
     expect(unfenced.status).toBe("ok");
   });
 
+  it("fences cancel with the claim token — a foreign token cannot cancel a claimed task", async () => {
+    const directory = makeRepo("tasksmd-git-native-");
+    const backend = createGitNativeBackend(directory);
+    await backend.create({ title: "Cancelable", priority: "P1" });
+    await backend.create({ title: "Other", priority: "P2" });
+    const claim = await backend.claim("cancelable", { actorId: "@alice" });
+
+    // A foreign/guessed token is rejected and the task stays open.
+    const stale = await backend.cancel("cancelable", { actorId: "@mallory", claimId: "claim-bogus" });
+    expect(stale.status).toBe("conflict");
+    expect((await backend.listOpen()).map((t) => t.id)).toContain("cancelable");
+
+    // The live owner's token succeeds.
+    const ok = await backend.cancel("cancelable", { actorId: "@alice", claimId: claim.claimId });
+    expect(ok.status).toBe("ok");
+    expect((await backend.listOpen()).map((t) => t.id)).not.toContain("cancelable");
+
+    // No token → unfenced (backward-compatible), still succeeds.
+    const unfenced = await backend.cancel("other", { actorId: "@alice" });
+    expect(unfenced.status).toBe("ok");
+  });
+
   it("models blocked + blocked-by: unpickable, unclaimable, and rendered", async () => {
     const directory = makeRepo("tasksmd-git-native-");
     const backend = createGitNativeBackend(directory);

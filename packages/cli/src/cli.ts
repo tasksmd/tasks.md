@@ -730,6 +730,7 @@ program
   .argument("<id>", "Task id (issue number for github-issues)")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
   .option("--as <actor>", "Actor identity (defaults to $TASKS_ACTOR)")
+  .option("--claim <token>", "Fencing token from `tasks claim` — rejects a stale/foreign token")
   .option("--json", "Emit the operation result as JSON")
   .action(async (id: string, opts: BackendOpts) => {
     const result = await getBackend(process.cwd(), opts.backend).cancel(id, actorOptions(opts));
