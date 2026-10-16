@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-07eb1663-9687-49a9-acbe-47216b8bd8c4",
+  "task_id": "tasks-workspaces-list-prints-machine-readable-output-for-scr",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:11:25.011Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-7a84376a-0ba4-454c-a2f0-b685dfd04d41",
+    "lease_expires_at": 1792239085011
+  }
+}
