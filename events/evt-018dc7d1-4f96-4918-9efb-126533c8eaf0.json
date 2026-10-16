@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-018dc7d1-4f96-4918-9efb-126533c8eaf0",
+  "task_id": "document-retrieving-your-claim-token-via-list-json",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:22:27.468Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
