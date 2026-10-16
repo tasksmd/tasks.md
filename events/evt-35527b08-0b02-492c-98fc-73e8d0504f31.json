@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-35527b08-0b02-492c-98fc-73e8d0504f31",
+  "task_id": "finish-readme-reorder-fundamentals-before-scaling-deep-walkt",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:43:50.105Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-6400e501-2603-4a3d-a23e-a29b9398ed51",
+    "lease_expires_at": 1792241030105
+  }
+}
