@@ -45,15 +45,16 @@ standing_loops="$(code_search 'filename:TASKS.md path:/ "standing-loop"')"
 # US03, US04, US05, US07: failure rate of this machine's own events per story,
 # from the content-free log (docs/observability.md). "(stub)" without a log or events.
 events_log="${TASKS_EVENTS_FILE:-${XDG_STATE_HOME:-$HOME/.local/state}/tasks-md/events.jsonl}"
+# story_failures <story> [event]: optional event name narrows it (US03 counts only claim).
 story_failures() {
   [ -f "$events_log" ] || { echo "(stub)"; return; }
   node -e '
-const [file, story] = process.argv.slice(1);
+const [file, story, event] = process.argv.slice(1);
 const ev = require("fs").readFileSync(file, "utf-8").split("\n").filter(Boolean)
   .map((l) => { try { return JSON.parse(l); } catch { return null; } })
-  .filter((e) => e && e.story === story);
+  .filter((e) => e && e.story === story && (!event || e.event === event));
 console.log(ev.length ? Math.round((100 * ev.filter((e) => !e.ok).length) / ev.length) + "% of " + ev.length : "(stub)");
-' "$events_log" "$1"
+' "$events_log" "$1" "${2:-}"
 }
 # US10: public repos with this project's /next-task skill installed for Claude Code.
 next_task_installs="$(code_search 'filename:SKILL.md path:.claude/skills/next-task "TASKS.md"')"
@@ -95,7 +96,7 @@ row acceptance_share "$acceptance_share" ">=25% by 2027-06-30" "<15% on 2027-03-
 row sync_bug_reports "$(labelled_issues sync)" "0 per 90 days" ">=3 per 90 days"
 row standing_loop_queues "$standing_loops" ">=5 by 2027-06-30" "0 on 2027-03-31"
 row next_task_installs "$next_task_installs" ">=50 by 2027-06-30" "<15 on 2027-03-31"
-row us03_claim_losses "$(story_failures US03)" "<5% per month" ">=15% per month"
+row us03_claim_losses "$(story_failures US03 claim)" "<5% per month" ">=15% per month"
 row us04_pick_failures "$(story_failures US04)" "0%" ">=5%"
 row us05_workspace_failures "$(story_failures US05)" "0%" ">=5%"
 row us07_list_failures "$(story_failures US07)" "0%" ">=5%"
