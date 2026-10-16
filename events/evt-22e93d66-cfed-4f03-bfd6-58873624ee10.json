@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-22e93d66-cfed-4f03-bfd6-58873624ee10",
+  "task_id": "give-every-user-story-an-outcome-metric",
+  "event_type": "completed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T20:22:27.273Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
