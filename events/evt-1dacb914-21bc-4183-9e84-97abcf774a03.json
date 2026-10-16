@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-1dacb914-21bc-4183-9e84-97abcf774a03",
+  "task_id": "decide-projection-to-main-snapshot-freshness",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:43:46.986Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
