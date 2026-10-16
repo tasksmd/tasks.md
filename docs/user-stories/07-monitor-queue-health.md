@@ -2,7 +2,7 @@
 
 > I want to see how my task queue is performing — what's pending, what's getting done, and what changed recently.
 
-- **Metric**: share of MCP `list_tasks` calls that fail (story US07) in the local event log ([how to read it](../observability.md#per-story-outcome-rate)); goal 0%. Guard: `stats --json` totals that disagree with the queue in the e2e suite: 0.
+- **Metric**: `us07_list_failures` in [docs/metrics.md](../metrics.md): share of MCP `list_tasks` calls that fail in the local event log ([how to read it](../observability.md#per-story-outcome-rate)); goal 0%. Guard: `stats --json` totals that disagree with the queue in the e2e suite: 0.
 - **Tests**: `tests/e2e/us07-monitor-queue-health.test.mjs` (happy: counts by priority, blocked, claimed; error: an empty repo reports 0, not a failure)
 
 ## Quick Overview

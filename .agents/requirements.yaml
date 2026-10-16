@@ -24,8 +24,9 @@ map.metrics: docs/metrics.md scripts/metrics.sh
 # after it and first in CONTRIBUTING.md's Quick start.
 map.setup: README.md scripts/setup.sh CONTRIBUTING.md
 
-# Each story in docs/user-stories/NN-*.md has a Metric line and a Tests line
-# that names one e2e file per story (tests/e2e/usNN-*, happy + error case).
+# Each story in docs/user-stories/NN-*.md has a Metric line that names an
+# outcome (a docs/metrics.md row; test counts only after "Guard:") and a Tests
+# line that names one e2e file per story (tests/e2e/usNN-*, happy + error case).
 # US02 and US08 are writing guidance, so lint fixture tests cover them
 # (accepted push back). checkUserStories in check-docs-contract.mjs fails on drift.
 map.user-stories: docs/user-stories/README.md tests/e2e scripts/check-docs-contract.mjs

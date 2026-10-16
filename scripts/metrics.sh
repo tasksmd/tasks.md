@@ -13,7 +13,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 offline=0
 [ "${1:-}" = --offline ] && offline=1
 
-row() { printf '%-22s %-12s %-28s %s\n' "$1" "$2" "$3" "$4"; }
+row() { printf '%-24s %-12s %-28s %s\n' "$1" "$2" "$3" "$4"; }
 
 # code_search <query>: GitHub code search hit count, or "(stub)" offline or on error.
 code_search() {
@@ -30,7 +30,7 @@ labelled_issues() {
   since="$(date -u -v-90d +%Y-%m-%d 2>/dev/null || date -u -d '90 days ago' +%Y-%m-%d)"
   has_label="$(cd "$root" && gh label list --search "$1" --json name --jq "[.[] | select(.name == \"$1\")] | length" 2>/dev/null || true)"
   [ "${has_label:-0}" -ge 1 ] 2>/dev/null || { echo "(stub)"; return; }
-  n="$(cd "$root" && gh issue list --label "$1" --state all --search "created:>=$since" --json number --jq length 2>/dev/null || true)"
+  n="$(cd "$root" && gh issue list --label "$1" --state all --limit 1000 --search "created:>=$since" --json number --jq length 2>/dev/null || true)"
   case "$n" in ''|*[!0-9]*) echo "(stub)" ;; *) echo "$n" ;; esac
 }
 
@@ -42,6 +42,19 @@ acceptance_share="(stub)"
 case "$acceptance$adoption" in *stub*) ;; *) [ "$adoption" -gt 0 ] && acceptance_share="$((acceptance * 100 / adoption))%" ;; esac
 # US09: root queues that use a standing audit loop.
 standing_loops="$(code_search 'filename:TASKS.md path:/ "standing-loop"')"
+# US03, US04, US05, US07: failure rate of this machine's own events per story,
+# from the content-free log (docs/observability.md). "(stub)" without a log or events.
+events_log="${TASKS_EVENTS_FILE:-${XDG_STATE_HOME:-$HOME/.local/state}/tasks-md/events.jsonl}"
+story_failures() {
+  [ -f "$events_log" ] || { echo "(stub)"; return; }
+  node -e '
+const [file, story] = process.argv.slice(1);
+const ev = require("fs").readFileSync(file, "utf-8").split("\n").filter(Boolean)
+  .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+  .filter((e) => e && e.story === story);
+console.log(ev.length ? Math.round((100 * ev.filter((e) => !e.ok).length) / ev.length) + "% of " + ev.length : "(stub)");
+' "$events_log" "$1"
+}
 # US10: public repos with this project's /next-task skill installed for Claude Code.
 next_task_installs="$(code_search 'filename:SKILL.md path:.claude/skills/next-task "TASKS.md"')"
 
@@ -82,3 +95,7 @@ row acceptance_share "$acceptance_share" ">=25% by 2027-06-30" "<15% on 2027-03-
 row sync_bug_reports "$(labelled_issues sync)" "0 per 90 days" ">=3 per 90 days"
 row standing_loop_queues "$standing_loops" ">=5 by 2027-06-30" "0 on 2027-03-31"
 row next_task_installs "$next_task_installs" ">=50 by 2027-06-30" "<15 on 2027-03-31"
+row us03_claim_losses "$(story_failures US03)" "<5% per month" ">=15% per month"
+row us04_pick_failures "$(story_failures US04)" "0%" ">=5%"
+row us05_workspace_failures "$(story_failures US05)" "0%" ">=5%"
+row us07_list_failures "$(story_failures US07)" "0%" ">=5%"
