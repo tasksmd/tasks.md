@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-5de24b48-5298-4b00-8d68-04f16a762148",
+  "task_id": "release-v0-11-0-and-pin-the-claim-check-cli-to-it",
+  "event_type": "updated",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:06:59.462Z",
+  "parent_event_ids": [],
+  "payload": {
+    "body": "After the owner's trust setup (land-0-10-3-version-bump-and-claim-check-cli-pin) is done, follow docs/release-and-ci.md 'Autonomous release' to publish v0.11.0 (package.json is already 0.11.0). Then change CLI_VERSION in .github/workflows/tasks-claim-check.yml from 0.10.0 to 0.11.0 in a PR with Task/Task-Claim trailers. Verify: curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '.\"dist-tags\".latest' prints 0.11.0.\n**Hypothesis**: publishing v0.11.0 and pinning the claim check to it makes CI use the current check-push; the CLI version lag in tasks-claim-check.yml drops from 1 minor (0.10.0) to 0.\n**Measurement**: curl -s https://registry.npmjs.org/@tasks-md/cli | jq -r '.\"dist-tags\".latest' and grep CLI_VERSION .github/workflows/tasks-claim-check.yml\n**Success**: both print 0.11.0 and the claim-check job passes on the pin PR.\n**Pivot**: if the publish fails twice with the trust rule in place, stop and keep the 0.10.0 pin; file a task with the run log.\n**Anchor**: docs/release-and-ci.md Autonomous release; Forsgren, Humble, Kim 2018 (deployment frequency)."
+  }
+}
