@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-b1b0f6aa-ff68-474d-b87d-787054027d96",
+  "task_id": "land-0-10-3-version-bump-and-claim-check-cli-pin",
+  "event_type": "updated",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:09:30.097Z",
+  "parent_event_ids": [],
+  "payload": {
+    "body": "One-time owner step so publish.yml can publish through npm Trusted Publishing (the v0.10.3 run 404'd on PUT: no trust rule after the repo was recreated). In a real terminal: cd ~/apps/tooling/tasks.md && git pull && npm login && bash scripts/setup-npm-trusted-publishing.sh. It is idempotent and stores no token. Then complete this task (tasks complete land-0-10-3-version-bump-and-claim-check-cli-pin); that is precondition 1 of docs/release-and-ci.md 'Autonomous release'. The old 0.10.3 bump is superseded: main is at 0.11.0.\n- **Hypothesis**: one owner run of the trust script lets publish.yml publish through npm Trusted Publishing; the publish failure rate drops from 1/1 (the v0.10.3 404 on PUT) to 0.\n- **Measurement**: gh run list --workflow publish.yml --limit 1 --json conclusion -q '.[0].conclusion' after the next release\n- **Success**: the next publish.yml run concludes success with no npm token in the repo.\n- **Pivot**: if the run still 404s after the script ran, stop retrying and file an npm support ticket; switch to a manual publish checklist.\n- **Anchor**: npm docs 'Trusted publishing for npm packages' (2025); docs/release-and-ci.md Autonomous release."
+  }
+}
