@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-a830c79c-d81e-4bd5-ac1f-687598f85e99",
+  "task_id": "tasks-md-meets-every-new-project-requirement-or-waives-it-wi",
+  "event_type": "heartbeat",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:27:23.227Z",
+  "parent_event_ids": [],
+  "payload": {
+    "lease_expires_at": 1792265243227
+  }
+}
