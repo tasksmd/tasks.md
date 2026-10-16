@@ -35,6 +35,10 @@ edges that cost real debugging time — captured here so they don't recur:
   here or on any dogfood repo in one action with `scripts/arm-enforcement.sh`. The
   workflow installs the published cli at a **pinned** `CLI_VERSION` (not `@latest`) so
   the required gate stays reproducible; bump it when `check-push` changes.
+  A tooling failure (the cli did not install, has no `check-push`, or crashed)
+  prints `claim-check could not run (cli/tooling problem)`, not the no-claim
+  message. It fails closed when enforcing and warns when advisory. Only a
+  `check-push` exit with a `rejected:` line counts as a missing claim.
 - **The `tasks-snapshot` projection builds + runs the *local* cli**, not
   `npx @tasks-md/cli` (the generic `fleet init` form). Because this repo is the
   cli's own source, the published package is redundant and `npx` is subject to
