@@ -79,6 +79,25 @@ No Node required — this is the whole format, and you can write it by hand. Mos
 
 Tasks with dependencies get an **ID** so blockers can reference them stably. That's the zero-setup **file backend** (best-effort `(@you)` claims) — perfect for a solo repo. The moment you have **more than one writer**, switch to the collision-free [git-native backend](#backends) with `/migrate` so two agents can never grab the same task.
 
+## Why TASKS.md?
+
+**You think faster than agents can code.** Ideas come in bursts — while an agent implements one feature, you've already thought of three more. Without a queue, those ideas live in your head or scatter across chat windows. TASKS.md is your buffer: write tasks down as they come, and agents work through them at their own pace.
+
+**Planning first leads to better results.** When you write a task down — even a one-liner — you're forced to think about what you actually want before the agent starts coding. That small act of planning is the difference between an agent that builds the right thing and one that guesses. TASKS.md makes planning the natural first step, not an afterthought.
+
+**Zero friction beats any tool.** Opening Jira to write a task takes you out of flow — you switch context, fill in fields, pick a project, assign a sprint. With TASKS.md, you add a line to a file that's already open in your editor. The lower the friction, the more likely you are to actually write tasks down — and written tasks are the whole point.
+
+## How It Works
+
+1. **Plan** — Write tasks under P0–P3 priority headings as ideas come to you
+2. **Delegate** — Agent reads the file, claims a task with `(@agent-name)`, implements it
+3. **Remove** — Completed tasks are deleted from the file; history lives in git log
+4. **Repeat** — You keep adding tasks while agents keep working through them
+
+You're always adding to the queue; agents are always draining it. No ideas get lost, and agents never run out of work.
+
+The contract is the same on every backend: **humans read the queue and tell agents what to do; agents (or tools) mutate task state.** In the default file backend the file *is* the surface, so hand-editing `TASKS.md` is the zero-setup path. In a generated backend the queue is a projection and an agent runs the operation — but the human's experience ("add a task", "mark it done") is unchanged.
+
 ## Worked example: first 10 minutes
 
 Nine commands take a fresh repo from zero to a queue an agent can pick from. Output snippets below are real (`tasks` here is `npx -y @tasks-md/cli` — `npm install -g @tasks-md/cli` once to drop the `npx -y` prefix).
@@ -152,54 +171,6 @@ Nine commands take a fresh repo from zero to a queue an agent can pick from. Out
 
 9. **Run the autonomous loop** — `/next-task` from inside your agent picks, claims, works, removes, and repeats. See [story 3](docs/user-stories/03-agents-work-through-queue.md) for the precise picking algorithm and [story 6](docs/user-stories/06-issue-tracker-flows-to-agents.md) when you want issues from GitHub / Jira / Linear feeding the queue automatically.
 
-## Why TASKS.md?
-
-**You think faster than agents can code.** Ideas come in bursts — while an agent implements one feature, you've already thought of three more. Without a queue, those ideas live in your head or scatter across chat windows. TASKS.md is your buffer: write tasks down as they come, and agents work through them at their own pace.
-
-**Planning first leads to better results.** When you write a task down — even a one-liner — you're forced to think about what you actually want before the agent starts coding. That small act of planning is the difference between an agent that builds the right thing and one that guesses. TASKS.md makes planning the natural first step, not an afterthought.
-
-**Zero friction beats any tool.** Opening Jira to write a task takes you out of flow — you switch context, fill in fields, pick a project, assign a sprint. With TASKS.md, you add a line to a file that's already open in your editor. The lower the friction, the more likely you are to actually write tasks down — and written tasks are the whole point.
-
-## How It Works
-
-1. **Plan** — Write tasks under P0–P3 priority headings as ideas come to you
-2. **Delegate** — Agent reads the file, claims a task with `(@agent-name)`, implements it
-3. **Remove** — Completed tasks are deleted from the file; history lives in git log
-4. **Repeat** — You keep adding tasks while agents keep working through them
-
-You're always adding to the queue; agents are always draining it. No ideas get lost, and agents never run out of work.
-
-The contract is the same on every backend: **humans read the queue and tell agents what to do; agents (or tools) mutate task state.** In the default file backend the file *is* the surface, so hand-editing `TASKS.md` is the zero-setup path. In a generated backend the queue is a projection and an agent runs the operation — but the human's experience ("add a task", "mark it done") is unchanged.
-
-## Backends
-
-`TASKS.md` (local markdown) is the default, zero-infra backend. The same spec / parser / CLI / MCP surface can target another **backend** — switching is configuration in `.tasksmd.json`, never a migration ([`spec.md` § Task backends](spec.md#task-backends)):
-
-| Backend | Capability | Use it when |
-|---|---|---|
-| **File** (`tasks-md`, default) | spec-compatible, offline, **human-editable** `TASKS.md`, best-effort claims | solo or offline — the zero-setup default |
-| **Git-native** (recommended for shared repos) | spec-compatible, **collision-free** claims via git ref compare-and-swap; `TASKS.md` becomes a generated snapshot | **more than one writer**: a multi-contributor project, or a fleet of machines each running parallel agents on one queue ([Fleet coordination](spec.md#fleet-coordination)). Run `tasks fleet init` |
-| **GitHub Issues** | spec-compatible, infra-required (a tracker) | a team already living in GitHub Issues |
-| **Atomic queue / MCP broker** | server-backed | only where that infra already exists |
-
-"Collision-free" means no two agents ever hold the same task at once — not a globally reproducible race winner; only the *fold of the log* is reproducible. Move an existing file queue to git-native with the **`/migrate` command** (or `tasks migrate --apply` then `tasks fleet init`) — it imports your current `TASKS.md` into the log first, so no task is lost. The portable layer is the spec; the coordination is borrowed. **This repo runs git-native to dogfood it** (G8) — its own `TASKS.md` is a generated snapshot, produced by the very `/migrate` path you'd run.
-
-**Writing your own backend?** Any backend works behind the same surface if it passes the capability-scoped [`@tasks-md/conformance`](packages/conformance/) suite — implement a `ConformanceTarget`, run it, and publish the JSON report. tasks.md is not a backend registry; you self-certify which compatibility classes (file / operation / collision-free) you support.
-
-## Workspaces (many repos, one queue)
-
-Have a parent folder of repos that each carry a `TASKS.md`? Workspace mode picks the highest-priority unblocked task across all of them:
-
-```bash
-tasks next --workspace ~/apps/tooling          # one workspace
-tasks next --workspaces ~/apps/tooling,~/apps/work   # several
-tasks workspaces add ~/apps/tooling --name tooling          # save to config
-tasks workspaces list --json                    # configured + detected, for scripts
-tasks next                                      # no flag → aggregate all configured
-```
-
-Declared workspaces live in `~/.config/tasks-md/workspaces.json`; once configured, plain `tasks next` aggregates across them and prints `<workspace>::<repo>:<task-id>`. Tasks can depend across repos (`**Blocked by**: api#fix`) or across workspaces (`**Blocked by**: work::api#fix`). With no config and no flag, `tasks next` reads the local `./TASKS.md` as before. See [`spec.md` § Workspaces](spec.md#workspaces).
-
 ## Writing Good Tasks
 
 The quality of your task description directly affects the quality of the agent's output. A task is a small contract between you and the agent — the more specific you are, the better the result.
@@ -262,6 +233,35 @@ The quality of your task description directly affects the quality of the agent's
 **Policies**: Project rules embedded in HTML comments that agents follow when picking and executing tasks. Use `<!-- policy: ... -->` between `# Tasks` and the first section for file-wide rules, or after a `## P*` heading for section-scoped rules. Policies are invisible in rendered Markdown but readable by agents. See the [spec](spec.md#policies) for details.
 
 See the [full specification](spec.md) for all rules and edge cases.
+
+## Backends
+
+`TASKS.md` (local markdown) is the default, zero-infra backend. The same spec / parser / CLI / MCP surface can target another **backend** — switching is configuration in `.tasksmd.json`, never a migration ([`spec.md` § Task backends](spec.md#task-backends)):
+
+| Backend | Capability | Use it when |
+|---|---|---|
+| **File** (`tasks-md`, default) | spec-compatible, offline, **human-editable** `TASKS.md`, best-effort claims | solo or offline — the zero-setup default |
+| **Git-native** (recommended for shared repos) | spec-compatible, **collision-free** claims via git ref compare-and-swap; `TASKS.md` becomes a generated snapshot | **more than one writer**: a multi-contributor project, or a fleet of machines each running parallel agents on one queue ([Fleet coordination](spec.md#fleet-coordination)). Run `tasks fleet init` |
+| **GitHub Issues** | spec-compatible, infra-required (a tracker) | a team already living in GitHub Issues |
+| **Atomic queue / MCP broker** | server-backed | only where that infra already exists |
+
+"Collision-free" means no two agents ever hold the same task at once — not a globally reproducible race winner; only the *fold of the log* is reproducible. Move an existing file queue to git-native with the **`/migrate` command** (or `tasks migrate --apply` then `tasks fleet init`) — it imports your current `TASKS.md` into the log first, so no task is lost. The portable layer is the spec; the coordination is borrowed. **This repo runs git-native to dogfood it** (G8) — its own `TASKS.md` is a generated snapshot, produced by the very `/migrate` path you'd run.
+
+**Writing your own backend?** Any backend works behind the same surface if it passes the capability-scoped [`@tasks-md/conformance`](packages/conformance/) suite — implement a `ConformanceTarget`, run it, and publish the JSON report. tasks.md is not a backend registry; you self-certify which compatibility classes (file / operation / collision-free) you support.
+
+## Workspaces (many repos, one queue)
+
+Have a parent folder of repos that each carry a `TASKS.md`? Workspace mode picks the highest-priority unblocked task across all of them:
+
+```bash
+tasks next --workspace ~/apps/tooling          # one workspace
+tasks next --workspaces ~/apps/tooling,~/apps/work   # several
+tasks workspaces add ~/apps/tooling --name tooling          # save to config
+tasks workspaces list --json                    # configured + detected, for scripts
+tasks next                                      # no flag → aggregate all configured
+```
+
+Declared workspaces live in `~/.config/tasks-md/workspaces.json`; once configured, plain `tasks next` aggregates across them and prints `<workspace>::<repo>:<task-id>`. Tasks can depend across repos (`**Blocked by**: api#fix`) or across workspaces (`**Blocked by**: work::api#fix`). With no config and no flag, `tasks next` reads the local `./TASKS.md` as before. See [`spec.md` § Workspaces](spec.md#workspaces).
 
 ## Examples
 
@@ -557,17 +557,21 @@ The workflow never pushes to `main`, because the `main` rulesets reject direct p
 
 ### Setup (one-time)
 
-The workflow requires an `NPM_TOKEN` secret:
+The workflow publishes through npm [Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (GitHub OIDC). There is no `NPM_TOKEN` secret. The owner sets the trust rule for every package once, in a real terminal:
 
-1. Create an npm **Automation** token at [npmjs.com/settings → Access Tokens](https://www.npmjs.com/settings/) (automation tokens bypass 2FA/OTP)
-2. Add it as a repository secret named `NPM_TOKEN` at [Settings → Secrets → Actions](https://github.com/tasksmd/tasks.md/settings/secrets/actions)
+```bash
+npm login
+bash scripts/setup-npm-trusted-publishing.sh
+```
+
+Agents may cut a release without asking only when every check in [docs/release-and-ci.md § Autonomous release](docs/release-and-ci.md#autonomous-release) holds.
 
 ### Manual publishing
 
-If you need to publish without a GitHub Release (e.g. from a local machine):
+Owner-only fallback when the workflow cannot run (agents never publish from a laptop):
 
 ```bash
-npm adduser                        # authenticate once
+npm login                          # authenticate once (2FA)
 scripts/sync-versions.sh 0.3.1    # bump all package versions
 scripts/publish-all.sh             # publish in dependency order (requires OTP)
 ```
