@@ -63,6 +63,14 @@ npm start
 
 For mutation tools (`claim_task`, `unclaim_task`, `complete_task`, `enrich_task`), exact `**ID**` matching wins even when an earlier task summary contains the same query. Use `pick_task` with `task_id` when you need ID-only behavior that reports `missing`, `duplicate`, `blocked`, or `claimed` instead of falling back to summaries.
 
+## Events
+
+Each tool call appends one content-free JSONL event (tool name, ok, outcome
+code, duration, and the user story it serves; never task text) to
+`~/.local/state/tasks-md/events.jsonl`. Set `TASKS_EVENTS=0` to turn it off or
+`TASKS_EVENTS_FILE=<path>` to move it. Details:
+[docs/observability.md](../../docs/observability.md).
+
 ## See also
 
 - [Specification](../../spec.md) — the canonical TASKS.md format

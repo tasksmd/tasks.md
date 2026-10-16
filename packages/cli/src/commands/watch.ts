@@ -2,6 +2,7 @@ import { watch } from "node:fs";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, basename } from "node:path";
 import { lintFiles } from "@tasks-md/lint";
+import { recordEvent } from "../events.js";
 
 export interface LintResult {
   success: boolean;
@@ -102,7 +103,16 @@ function runLint(file: string, fix: boolean): void {
   const timestamp = new Date().toLocaleTimeString("en-US", { hour12: false });
   console.log("");
   console.log(`\x1b[2m[${timestamp}] Change detected: ${basename(file)}\x1b[0m`);
+  const started = performance.now();
   const result = lintTaskFile(file, fix);
+  recordEvent({
+    component: "watch",
+    event: "lint",
+    ok: result.success,
+    count: result.errors,
+    ms: performance.now() - started,
+    story: "US01",
+  });
   if (fix && result.fixed > 0) {
     if (result.success) {
       console.log(`\x1b[32m✓ Fixed ${result.fixed} issue(s)\x1b[0m`);

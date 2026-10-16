@@ -253,10 +253,13 @@ export function runFleetInit(directory: string, options: FleetInitOptions = {}):
 
 export type CheckLevel = "ok" | "warn" | "fail";
 
-export interface DoctorCheck {
-  name: string;
-  level: CheckLevel;
-  detail: string;
+/** A check line. A warn or fail always names the command that fixes it. */
+export type DoctorCheck =
+  | { name: string; level: "ok"; detail: string }
+  | { name: string; level: "warn" | "fail"; detail: string; fix: string };
+
+function check(name: string, healthy: boolean, okDetail: string, warnDetail: string, fix: string): DoctorCheck {
+  return healthy ? { name, level: "ok", detail: okDetail } : { name, level: "warn", detail: warnDetail, fix };
 }
 
 export interface DoctorReport {
@@ -288,61 +291,72 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
 
   const agentDirs = [".claude", ".agents", ".cursor", ".gemini"];
   const installed = agentDirs.filter((d) => existsSync(join(directory, d)));
-  checks.push({
-    name: "agent commands",
-    level: installed.length > 0 ? "ok" : "warn",
-    detail: installed.length > 0 ? `detected ${installed.join(", ")}` : "no agent command dirs (run `tasks install`)",
-  });
+  checks.push(
+    check(
+      "agent commands",
+      installed.length > 0,
+      `detected ${installed.join(", ")}`,
+      "no agent command dirs",
+      "tasks install --agent <claude|codex|cursor|gemini>",
+    ),
+  );
 
-  checks.push({
-    name: "lefthook",
-    level: existsSync(join(directory, "lefthook.yml")) ? "ok" : "warn",
-    detail: existsSync(join(directory, "lefthook.yml")) ? "lefthook.yml present" : "no lefthook.yml (run `tasks fleet init`)",
-  });
+  checks.push(
+    check("lefthook", existsSync(join(directory, "lefthook.yml")), "lefthook.yml present", "no lefthook.yml", "tasks fleet init && lefthook install"),
+  );
 
   if (config.backend === "git-native") {
-    checks.push({
-      name: "claims ref",
-      level: gitRefExists(directory) ? "ok" : "warn",
-      detail: gitRefExists(directory) ? `${CLAIMS_REF} present` : "no tasks-claims ref yet (created on first claim)",
-    });
-    checks.push({
-      name: "projection workflow",
-      level: existsSync(join(directory, ".github", "workflows", "tasks-snapshot.yml")) ? "ok" : "warn",
-      detail: existsSync(join(directory, ".github", "workflows", "tasks-snapshot.yml"))
-        ? "tasks-snapshot.yml present"
-        : "no projection workflow (run `tasks fleet init`)",
-    });
+    checks.push(
+      check(
+        "claims ref",
+        gitRefExists(directory),
+        `${CLAIMS_REF} present`,
+        "no tasks-claims ref yet (created on first claim)",
+        "git fetch origin tasks-claims:tasks-claims, or create the first task: tasks create \"<title>\"",
+      ),
+    );
+    checks.push(
+      check(
+        "projection workflow",
+        existsSync(join(directory, ".github", "workflows", "tasks-snapshot.yml")),
+        "tasks-snapshot.yml present",
+        "no projection workflow",
+        "tasks fleet init",
+      ),
+    );
     // Conformance smoke: the backend must fold its log without throwing.
     try {
       await getBackend(directory).listOpen();
       checks.push({ name: "backend smoke", level: "ok", detail: "git-native log folds cleanly" });
       // Phase-2 health: stale (dead-owner) leases + log size vs compaction.
       const stats = gitNativeFleetStats(directory);
-      checks.push({
-        name: "stale heartbeats",
-        level: stats.staleClaims > 0 ? "warn" : "ok",
-        detail:
-          stats.staleClaims > 0
-            ? `${stats.staleClaims} claim(s) past lease expiry — reclaimable (dead owner?)`
-            : "no expired leases",
-      });
-      checks.push({
-        name: "compaction",
-        level: stats.events > COMPACTION_SUGGESTED_AT ? "warn" : "ok",
-        detail:
-          stats.events > COMPACTION_SUGGESTED_AT
-            ? `${stats.events} events ≥ ${COMPACTION_SUGGESTED_AT} — the projection auto-compacts (lease-guarded); \`tasks fleet compact --force\` runs it now`
-            : `${stats.events} events (compaction not needed)`,
-      });
-      checks.push({
-        name: "log integrity",
-        level: stats.corruptEvents > 0 ? "warn" : "ok",
-        detail:
-          stats.corruptEvents > 0
-            ? `${stats.corruptEvents} corrupt event(s) skipped while folding (${listSpecs(stats.corruptEventSpecs, 3)}) — \`tasks fleet compact --force\` rewrites the log to the valid folded set`
-            : "no corrupt events",
-      });
+      checks.push(
+        check(
+          "stale heartbeats",
+          stats.staleClaims === 0,
+          "no expired leases",
+          `${stats.staleClaims} claim(s) past lease expiry — reclaimable (dead owner?)`,
+          "tasks list --json (find the stale assignee), then the owner runs tasks heartbeat <id> or anyone runs tasks unclaim <id>",
+        ),
+      );
+      checks.push(
+        check(
+          "compaction",
+          stats.events <= COMPACTION_SUGGESTED_AT,
+          `${stats.events} events (compaction not needed)`,
+          `${stats.events} events ≥ ${COMPACTION_SUGGESTED_AT} — the projection auto-compacts (lease-guarded)`,
+          "tasks fleet compact --force",
+        ),
+      );
+      checks.push(
+        check(
+          "log integrity",
+          stats.corruptEvents === 0,
+          "no corrupt events",
+          `${stats.corruptEvents} corrupt event(s) skipped while folding (${listSpecs(stats.corruptEventSpecs, 3)})`,
+          "tasks fleet compact --force (rewrites the log to the valid folded set)",
+        ),
+      );
       // Last-projection signal: when the generated TASKS.md snapshot was last
       // written. The default branch's copy has no freshness guarantee (spec.md
       // § Generated TASKS.md projection, "Freshness contract"), so this is
@@ -376,7 +390,9 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
       const hasClientHook = existsSync(join(directory, "lefthook.yml"));
       checks.push({
         name: "enforcement",
-        level: hasClaimCheck || hasClientHook ? "ok" : "warn",
+        ...(hasClaimCheck || hasClientHook
+          ? { level: "ok" as const }
+          : { level: "warn" as const, fix: "tasks fleet init" }),
         detail: hasClaimCheck
           ? "advisory→hard: claim-check workflow present (advisory by default — warns, doesn't block). For hard enforcement set repo var `TASKS_CLAIM_ENFORCE=1`, make the check REQUIRED, and add the ruleset (see `tasks fleet init` output)"
           : hasClientHook
@@ -388,6 +404,7 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
         name: "backend smoke",
         level: "fail",
         detail: error instanceof Error ? error.message : String(error),
+        fix: "git fetch origin tasks-claims:tasks-claims, check .tasksmd.json, then tasks doctor",
       });
     }
   }
@@ -397,7 +414,9 @@ export async function runDoctor(directory: string): Promise<DoctorReport> {
 
 export function formatDoctorReport(report: DoctorReport): string {
   const icon = { ok: "✓", warn: "⚠", fail: "✗" };
-  return report.checks.map((c) => `${icon[c.level]} ${c.name}: ${c.detail}`).join("\n");
+  return report.checks
+    .map((c) => `${icon[c.level]} ${c.name}: ${c.detail}${c.level === "ok" ? "" : `\n  fix: ${c.fix}`}`)
+    .join("\n");
 }
 
 export interface FleetStatsReport {

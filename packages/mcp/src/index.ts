@@ -19,6 +19,7 @@ import {
   TOOL_DESCRIPTIONS,
 } from "./tools.js";
 import { buildListArgs, buildPickArgs, resolveBackend, runTasksCli } from "./backend.js";
+import { timedTool } from "./events.js";
 
 const pkg = JSON.parse(
   readFileSync(join(import.meta.dirname, "..", "package.json"), "utf-8")
@@ -28,6 +29,11 @@ const server = new McpServer({
   name: "tasks-mcp",
   version: pkg.version,
 });
+
+// Every tool call logs one content-free event (docs/observability.md).
+const registerTool = server.registerTool.bind(server);
+server.registerTool = ((name: string, config: unknown, handler: (...args: unknown[]) => unknown) =>
+  (registerTool as (n: string, c: unknown, h: unknown) => unknown)(name, config, timedTool(name, handler))) as typeof server.registerTool;
 
 function getWorkingDirectory(): string {
   return process.env.TASKS_MCP_DIR || process.cwd();

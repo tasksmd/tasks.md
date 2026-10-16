@@ -12,6 +12,7 @@ import {
   listTasks,
 } from "./lib.js";
 import { initTaskQueue } from "./commands/init.js";
+import { recordEvent } from "./events.js";
 import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
@@ -706,6 +707,7 @@ program
     } else {
       console.log(formatClaimResult(result));
     }
+    recordClaimEvent(result.backend, "claim", result.status === "claimed", result.status);
     if (result.status !== "claimed") process.exitCode = 1;
   });
 
@@ -902,5 +904,17 @@ function emitOperationResult(result: OperationResult, opts: BackendOpts): void {
   } else {
     console.log(formatOperationResult(result));
   }
-  if (result.status !== "ok" && result.status !== "noop") process.exitCode = 1;
+  const ok = result.status === "ok" || result.status === "noop";
+  recordClaimEvent(result.backend, result.operation, ok, result.status);
+  if (!ok) process.exitCode = 1;
+}
+
+/**
+ * Fleet claim operations on the git-native backend log one content-free event
+ * (docs/observability.md). `ms` is the process run time, which for these
+ * one-shot commands is the operation time including the push.
+ */
+function recordClaimEvent(backend: string, operation: string, ok: boolean, status: string): void {
+  if (backend !== "git-native") return;
+  recordEvent({ component: "claims", event: operation, ok, code: status, ms: performance.now(), story: "US03" });
 }

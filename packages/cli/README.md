@@ -42,13 +42,13 @@ tasks sync github --merge             # sync GitHub Issues into TASKS.md
 | `list` | `--priority <P0..P3>`, `--tag <t>`, `--unclaimed`, `--unblocked`, `--json` | Enumerate every task that matches. Default output is `<priority>\t<id>\t<summary>` per line; `--json` returns `{id, summary, priority, tags, blocked, claimed, file, line}` records |
 | `stats` | `--json` | Queue overview by priority + throughput counted from `git log` |
 | `diff` | `[<ref>]`, `--json` | Show TASKS.md changes since the given git ref (default `HEAD`) |
-| `watch` | `[<dir>]`, `--fix` | Watch TASKS.md and auto-lint on save. `--fix` reuses `tasks-lint --fix` to remove `[x]` completed tasks |
+| `watch` | `[<dir>]`, `--fix` | Watch TASKS.md and auto-lint on save. `--fix` reuses `tasks-lint --fix` to remove `[x]` completed tasks. Logs one content-free event per lint run ([observability](../../docs/observability.md)); `TASKS_EVENTS=0` turns it off |
 | `sync <provider>` | provider-specific (below) | Sync issues from `github`, `jira`, or `linear` into TASKS.md |
 | `migrate` | `--apply` | Import the file-backend `TASKS.md` into a git-native event log (dry-run unless `--apply`; preserves ids; rollback documented in the output) |
 | `fleet init` | `--backend`, `--agent`, `--all` | Idempotent one-prompt fleet install: writes `.tasksmd.json`, `lefthook.yml`, the projection workflow, installs agent commands, and prints ruleset guidance |
 | `fleet stats` | — | Contention metrics for the git-native `tasks-claims` log (events by type, open/claimed/done, stale leases, reclaim count, contention ratio vs the 20% Phase-4 tripwire). Names each corrupt event as `<commit>:<path>` so you can `git show` it |
 | `fleet compact` | — | Rewrite the `tasks-claims` log to a fold-equivalent minimum (drops terminal tasks; preserves open-task state). Single-writer maintenance |
-| `doctor` | `--quiet` | Verify the fleet install — backend config, agent commands, lefthook, claims ref, projection workflow, stale leases, compaction, enforcement level. Exits nonzero on a hard failure |
+| `doctor` | `--quiet` | Verify the fleet install — backend config, agent commands, lefthook, claims ref, projection workflow, stale leases, compaction, enforcement level. Every `⚠`/`✗` line is followed by `fix:` and the command. Exits nonzero on a hard failure |
 | `check-push <paths...>` | `--task`, `--claim` | Path-scoped claim gate: allows doc-only pushes, requires a live claim + matching `Task-Claim` token for code (incl. code under `docs/`). The shared primitive behind the client hook, the CI required check, and the `pre-receive` recipe |
 | `workspaces list` | `--json` | List configured and auto-detected workspaces. `--json` prints `{configured: [{name, root, repos}], detected: [root]}` so scripts need not read `workspaces.json` |
 
