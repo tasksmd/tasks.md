@@ -18,6 +18,7 @@ import { startWatching } from "./commands/watch.js";
 import { runMigrate } from "./commands/migrate.js";
 import { checkWorkPush } from "./backend/git-native.js";
 import {
+  listWorkspaces,
   pickAcrossWorkspaces,
   resolveWorkspaceSelection,
   runWorkspacesAdd,
@@ -823,7 +824,12 @@ const workspaces = program
 workspaces
   .command("list")
   .description("List configured and auto-detected workspaces")
-  .action(() => {
+  .option("--json", "Print {configured:[{name,root,repos}],detected:[root]} for scripts")
+  .action((opts: { json?: boolean }) => {
+    if (opts.json) {
+      console.log(JSON.stringify(listWorkspaces(), null, 2));
+      return;
+    }
     for (const line of runWorkspacesList()) console.log(line);
   });
 workspaces

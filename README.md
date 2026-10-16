@@ -194,6 +194,7 @@ Have a parent folder of repos that each carry a `TASKS.md`? Workspace mode picks
 tasks next --workspace ~/apps/tooling          # one workspace
 tasks next --workspaces ~/apps/tooling,~/apps/work   # several
 tasks workspaces add ~/apps/tooling --name tooling          # save to config
+tasks workspaces list --json                    # configured + detected, for scripts
 tasks next                                      # no flag → aggregate all configured
 ```
 
