@@ -27,3 +27,10 @@ map.setup: scripts/setup.sh CONTRIBUTING.md
 # US02 and US08 are writing guidance, so lint fixture tests cover them
 # (accepted push back). checkUserStories in check-docs-contract.mjs fails on drift.
 map.user-stories: docs/user-stories/README.md tests/e2e scripts/check-docs-contract.mjs
+
+# docs/observability.md has Logs (content-free JSONL for tasks watch, tasks-mcp,
+# and git-native claims; accepted push back: only the long-running parts log),
+# Errors (local only, no external reporter; each event names its story), and
+# Health check: tasks doctor (runDoctor in fleet.ts) instead of scripts/doctor.sh,
+# by accepted push back; every warn/fail line carries a fix command.
+map.observability: docs/observability.md packages/cli/src/events.ts packages/mcp/src/events.ts packages/cli/src/commands/fleet.ts

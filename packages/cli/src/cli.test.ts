@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { parseTasksContent, type TaskFile } from "@tasks-md/parser";
@@ -823,6 +823,27 @@ describe("CLI", () => {
       const render = spawnSync("node", [CLI, "render", ...gn], { encoding: "utf-8", cwd: dir });
       expect(render.status).toBe(0);
       expect(render.stdout).toContain("Round trip");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("git-native claims log content-free events with the story they serve", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    spawnSync("git", ["init"], { cwd: dir });
+    const gn = ["--backend", "git-native"];
+    const env = { ...process.env, TASKS_EVENTS: "1", TASKS_EVENTS_FILE: join(dir, "events.jsonl") };
+    try {
+      spawnSync("node", [CLI, "create", "Secret title", ...gn], { encoding: "utf-8", cwd: dir, env });
+      spawnSync("node", [CLI, "claim", "secret-title", ...gn, "--as", "@alice"], { encoding: "utf-8", cwd: dir, env });
+      spawnSync("node", [CLI, "claim", "secret-title", ...gn, "--as", "@bob"], { encoding: "utf-8", cwd: dir, env });
+      const text = readFileSync(join(dir, "events.jsonl"), "utf-8");
+      const events = text.trim().split("\n").map((line) => JSON.parse(line));
+      expect(events.map((e) => [e.component, e.event, e.ok, e.code, e.story])).toEqual([
+        ["claims", "claim", true, "claimed", "US03"],
+        ["claims", "claim", false, "already_claimed", "US03"],
+      ]);
+      expect(text).not.toMatch(/secret|alice|bob/i);
     } finally {
       rmSync(dir, { recursive: true });
     }

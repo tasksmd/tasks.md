@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createGitNativeBackend } from "../backend/git-native.js";
-import { runDoctor, runFleetInit, runFleetStats } from "./fleet.js";
+import { formatDoctorReport, runDoctor, runFleetInit, runFleetStats } from "./fleet.js";
 
 let dir: string;
 
@@ -50,6 +50,21 @@ describe("runDoctor", () => {
     expect(names).toContain("backend config");
     expect(names).toContain("lefthook");
     expect(names).toContain("projection workflow");
+  });
+
+  it("gives every warn and fail line a fix command", async () => {
+    const reports = [await runDoctor(dir)];
+    writeFileSync(join(dir, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    reports.push(await runDoctor(dir));
+    const problems = reports.flatMap((r) => r.checks).flatMap((c) => (c.level === "ok" ? [] : [c]));
+    expect(problems.length).toBeGreaterThan(2);
+    for (const check of problems) expect(check.fix, check.name).toMatch(/\S/);
+  });
+
+  it("prints the fix under each warn and fail line", async () => {
+    const text = formatDoctorReport(await runDoctor(dir));
+    expect(text).toMatch(/⚠ agent commands: .*\n {2}fix: tasks install/);
+    expect(text).not.toMatch(/✓ backend config: .*\n {2}fix:/);
   });
 
   it("warns (not fails) on an uninitialized repo", async () => {
