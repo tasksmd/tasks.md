@@ -2,6 +2,11 @@
 # for hook management. Run `lefthook install` to activate.
 pre-commit:
   commands:
+    # Secret scan on staged files. Install: brew install gitleaks
+    # (https://github.com/gitleaks/gitleaks). Missing gitleaks fails the
+    # commit, so a secret never slips past a machine without the scanner.
+    secret-scan:
+      run: gitleaks git --staged --redact --no-banner
     lint-tasks:
       glob: "TASKS.md"
       run: npx -y @tasks-md/lint {staged_files}

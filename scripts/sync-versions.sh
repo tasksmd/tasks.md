@@ -57,5 +57,9 @@ for pkg in "${PACKAGES[@]}"; do
   "
 done
 
+# The version-bump PR carries the generated CHANGELOG section (scripts/changelog.mjs).
+echo ""
+node scripts/changelog.mjs --release "$VERSION" --write
+
 echo ""
 echo "Done. All packages at $VERSION."

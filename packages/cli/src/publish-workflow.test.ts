@@ -37,6 +37,7 @@ function makeFixture(): void {
   dir = mkdtempSync(join(tmpdir(), "tasksmd-publish-"));
   mkdirSync(join(dir, "scripts"));
   copyFileSync(join(repoRoot, "scripts", "sync-versions.sh"), join(dir, "scripts", "sync-versions.sh"));
+  copyFileSync(join(repoRoot, "scripts", "changelog.mjs"), join(dir, "scripts", "changelog.mjs"));
   for (const pkg of PACKAGES) {
     mkdirSync(join(dir, "packages", pkg), { recursive: true });
     copyFileSync(

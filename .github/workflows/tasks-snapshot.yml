@@ -42,6 +42,12 @@ jobs:
             rm -f TASKS.md.next
             exit 0
           fi
+      # This repo lints TASKS.md with --require-prereg. Warn here, naming the
+      # task, so a task filed without the five rule-#9 fields is fixed with
+      # `tasks update` before the next snapshot refresh PR, not by a red main.
+      - run: |
+          node packages/lint/dist/cli.js --require-prereg TASKS.md \
+            || echo "::warning::a task lacks rule-#9 fields; run tasks update <id> --body with Hypothesis, Measurement, Success, Pivot, Anchor"
       # Single-writer maintenance: bound the log past the threshold. Lease-guarded
       # (never clobbers a concurrent claim); best-effort (|| true) so a lease
       # conflict or no-op never fails the projection.

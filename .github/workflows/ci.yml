@@ -27,7 +27,7 @@ jobs:
       - name: Lint TASKS.md
         run: |
           if [ -f TASKS.md ]; then
-            node packages/lint/dist/cli.js TASKS.md
+            node packages/lint/dist/cli.js --require-prereg TASKS.md
           fi
 
       - name: Check docs backend drift
@@ -40,6 +40,9 @@ jobs:
 
       - name: Check docs contract
         run: npm run lint:docs-contract
+
+      - name: Test the changelog generator
+        run: npm run lint:changelog
 
   commands-drift:
     runs-on: ubuntu-latest

@@ -1,0 +1,9 @@
+# Where this repo meets each agentbrew new-project required area.
+# check-setup.sh reads it: map.<area> lists files that meet the area,
+# waive.<area> gives the reason an area does not fit. The monthly audit
+# (npm run checkup) re-reads every map and waiver.
+# Rules: agentbrew skill-plugins/workflow/new-project/references/requirements-map.md
+
+# docs/README.md is the docs map; check-docs-contract.mjs (npm run lint) fails
+# when a docs/*.md file has no row, when AGENTS.md drifts, or the README opening drifts.
+map.docs: docs/README.md scripts/check-docs-contract.mjs
