@@ -41,6 +41,11 @@ Each canonical source regenerates a Claude skill folder, a Codex skill
 folder, a Cursor command, and a Gemini TOML. The full map is in
 [ARCHITECTURE.md § Cross-agent command generation](ARCHITECTURE.md#cross-agent-command-generation).
 
+A commit subject that a command source prescribes (`git commit -m "..."`, or a
+backtick span such as `` `chore: block <id>` `` on a line about committing) must
+use a standard Conventional Commits type. `npm run lint` runs
+`scripts/check-command-commit-types.mjs`, which fails on any other type.
+
 To keep a skill body under 500 lines, wrap rarely-needed detail in
 `<!-- reference: <name> -->` … `<!-- /reference -->` in the canonical file.
 Skill variants get it as `references/<name>.md`; Cursor and Gemini keep it inline.
