@@ -17,6 +17,7 @@
     "lint:volatile-counts": "node scripts/check-volatile-counts.mjs --self-test && node --test scripts/check-volatile-counts.test.mjs && node scripts/check-volatile-counts.mjs",
     "test": "npm test --workspaces --if-present",
     "test:cached": "cached-run npm test",
+    "e2e": "bash scripts/e2e.sh",
     "lint:changelog": "node --test scripts/changelog.test.mjs"
   },
   "repository": {
