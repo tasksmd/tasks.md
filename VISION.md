@@ -1,7 +1,7 @@
 ---
 schema: vision-v1
 version: 4
-last_reviewed: 2026-06-02
+last_reviewed: 2026-10-16
 goals:
   - id: G1
     name: Spec first, packages second
@@ -45,7 +45,7 @@ non_goals:
 
 ## The one job
 
-Every AI coding agent starts a session with the same question: **"What should I work on?"** `tasks.md` answers it with one file at the repo root — `TASKS.md` — that every agent (Claude Code, Cursor, Windsurf, Devin, Codex, Gemini CLI, and 30+ others) can read, claim from, and update through one shared format:
+Every AI coding agent starts a session with the same question: **"What should I work on?"** `tasks.md` answers it with one file at the repo root — `TASKS.md` — that every agent (Claude Code, Cursor, Codex, Gemini CLI, and 30+ others) can read, claim from, and update through one shared format:
 
 ```markdown
 # Tasks
@@ -137,4 +137,33 @@ AGENTS.md sets the rules of the repo; TASKS.md lists the work; per-agent files (
 
 ## How we measure success
 
-Adoption — the number of repos with a `TASKS.md` at their root — is the only metric that counts, not any package's feature list. Ready-made `/next-task` commands ship today for Claude Code, Codex, Cursor, and Gemini CLI (`npx tasks generate-commands`). Windsurf and Devin variants were removed on 2026-10-08. Every new agent that reads `TASKS.md` or ships first-class `/next-task` support is a milestone.
+Adoption is the one metric that counts, not any package's feature list. We
+measure it as the number of `TASKS.md` files with a `## P0` section that
+GitHub code search finds. Ready-made `/next-task` commands ship today for
+Claude Code, Codex, Cursor, and Gemini CLI (`npx tasks generate-commands`).
+Every new agent that reads `TASKS.md` or ships first-class `/next-task`
+support is a milestone.
+
+| Metric | Baseline (2026-10-16) | Goal | Pivot |
+|---|---|---|---|
+| `TASKS.md` files with `## P0` on GitHub code search | 340 | 1,000 by 2027-06-30 | under 450 on 2027-03-31: rethink distribution, not features |
+
+Command: `bash scripts/metrics.sh` (row `adoption`). All metrics, with their
+goals and pivots: [docs/metrics.md](docs/metrics.md).
+
+## Kill criteria
+
+We stop adding features and put the spec in maintenance mode (fixes only) if,
+on **2027-10-16**, either holds:
+
+- fewer than 600 `TASKS.md` files with `## P0` on GitHub code search, or
+- no agent outside this repo reads `TASKS.md` natively or ships `/next-task`.
+
+Either one means the format did not find users, and more tooling will not fix
+that. The owner re-reads this section at each monthly checkup.
+
+## Prior art
+
+Issue trackers, `TODO.md` checklists, Backlog.md, and agent-native to-do
+lists each solve part of this job. The comparison, and why `TASKS.md` still
+exists: [docs/competitors/](docs/competitors/).
