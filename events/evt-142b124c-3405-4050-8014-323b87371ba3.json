@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-142b124c-3405-4050-8014-323b87371ba3",
+  "task_id": "tasks-workspaces-list-prints-machine-readable-output-for-scr",
+  "event_type": "created",
+  "actor_id": "claude-agent",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T02:41:39.383Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "tasks workspaces list prints machine-readable output for scripts",
+    "priority": "P2",
+    "tags": [
+      "cli",
+      "workspaces",
+      "dx"
+    ],
+    "body": "Outcome: scripts can read configured and auto-detected workspaces without parsing human text or the config file. Today `tasks workspaces list` only prints text lines (packages/cli/src/cli.ts:823-828 calls runWorkspacesList, packages/cli/src/commands/workspaces.ts:177-197, which returns strings). `tasks pick`, `list`, `stats`, and `diff` already take --json. Because of this gap, a downstream dotfiles script reads ~/.config/tasks-md/workspaces.json directly (its lib/workspace-discovery.sh says so), so it breaks if the config format changes. Acceptance: `tasks workspaces list --json` prints {configured:[{name,root,repos}],detected:[root]}; a test covers empty, configured, and detected cases; README command table lists the flag. Hypothesis: a --json flag lets consumers stop reading the config file. Measurement: `node packages/cli/dist/cli.js workspaces list --json | jq .configured` exits 0. Success: valid JSON with both arrays. Pivot: if JSON shape is contested, add --porcelain (one tab-separated line per workspace) instead. Anchor: CLI Guidelines (clig.dev) machine-readable output."
+  }
+}
