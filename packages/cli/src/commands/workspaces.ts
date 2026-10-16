@@ -174,22 +174,38 @@ export async function pickAcrossWorkspaces(
 
 // ── `tasks workspaces <list|add|detect>` ──
 
-export function runWorkspacesList(): string[] {
+/** Machine-readable `tasks workspaces list --json` output. */
+export interface WorkspacesListing {
+  configured: { name: string; root: string; repos: number }[];
+  /** Auto-detected workspace roots that are not configured yet. */
+  detected: string[];
+}
+
+export function listWorkspaces(): WorkspacesListing {
   const config = loadWorkspacesConfig();
-  const lines: string[] = [];
-  if (!config || config.workspaces.length === 0) {
-    lines.push("No configured workspaces. Run `tasks workspaces detect` or `tasks workspaces add <path>`.");
-  } else {
-    lines.push(`Configured workspaces (${config.workspaces.length}):`);
-    for (const ws of config.workspaces) {
-      const repos = existsSync(ws.root) ? countRepos(ws.root) : 0;
-      lines.push(`  ${ws.name}  ${ws.root}  (${repos} repos)`);
-    }
-  }
+  const configured = (config?.workspaces ?? []).map((ws) => ({
+    name: ws.name,
+    root: ws.root,
+    repos: existsSync(ws.root) ? countRepos(ws.root) : 0,
+  }));
   const scanRoots = (config?.discovery?.scanRoots ?? ["~/apps"]).map(expandTilde);
   const detected = detectWorkspaces(scanRoots).filter(
-    (root) => !config?.workspaces.some((w) => w.root === root),
+    (root) => !configured.some((w) => w.root === root),
   );
+  return { configured, detected };
+}
+
+export function runWorkspacesList(): string[] {
+  const { configured, detected } = listWorkspaces();
+  const lines: string[] = [];
+  if (configured.length === 0) {
+    lines.push("No configured workspaces. Run `tasks workspaces detect` or `tasks workspaces add <path>`.");
+  } else {
+    lines.push(`Configured workspaces (${configured.length}):`);
+    for (const ws of configured) {
+      lines.push(`  ${ws.name}  ${ws.root}  (${ws.repos} repos)`);
+    }
+  }
   if (detected.length > 0) {
     lines.push(`Auto-detected (not yet configured): ${detected.join(", ")}`);
   }
