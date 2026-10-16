@@ -10,7 +10,8 @@
   "scripts": {
     "build": "npm run build -w packages/parser && npm run build -w packages/conformance && npm run build -w packages/lint -w packages/mcp -w packages/cli",
     "build:site": "node scripts/build-site.js",
-    "lint": "node packages/lint/dist/cli.js TASKS.md && node scripts/check-docs-backend-drift.mjs && npm run lint:volatile-counts && npm run lint:docs-contract",
+    "lint": "node packages/lint/dist/cli.js TASKS.md && node scripts/check-docs-backend-drift.mjs && npm run lint:volatile-counts && npm run lint:docs-contract && npm run lint:commit-types",
+    "lint:commit-types": "node --test scripts/check-command-commit-types.test.mjs && node scripts/check-command-commit-types.mjs",
     "lint:docs-contract": "node --test scripts/check-docs-contract.test.mjs && node scripts/check-docs-contract.mjs",
     "lint:docs-drift": "node scripts/check-docs-backend-drift.mjs",
     "lint:volatile-counts": "node scripts/check-volatile-counts.mjs --self-test && node --test scripts/check-volatile-counts.test.mjs && node scripts/check-volatile-counts.mjs",
