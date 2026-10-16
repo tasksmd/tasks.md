@@ -2,11 +2,12 @@
 
 How people use TASKS.md — one doc per workflow.
 
-Each story starts with a `- **Metric**:` line (how we know it works for users)
-and a `- **Tests**:` line (the e2e test file in `tests/e2e/`, with a happy and an
+Each story starts with a `- **Metric**:` line: an outcome users create (a row in
+[`docs/metrics.md`](../metrics.md) or a rate from the local event log), with any
+test count only after `Guard:`. Next comes a `- **Tests**:` line (the e2e test file in `tests/e2e/`, with a happy and an
 error case, or lint fixture tests for the writing-guidance stories 02 and 08).
-`npm run lint` fails when a story lacks either line, names a missing file or
-case, or when an e2e file is not listed by its story.
+`npm run lint` fails when a story lacks either line, its metric is only a test
+count, it names a missing file or case, or an e2e file is not listed by its story.
 
 TASKS.md is a spec, not a product. The user stories below cover both **spec users** (developers adding TASKS.md to their repos) and **tooling users** (people using the CLI, linter, and sync scripts shipped with this repo).
 

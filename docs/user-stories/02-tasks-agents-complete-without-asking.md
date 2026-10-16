@@ -2,7 +2,7 @@
 
 > I want every task to be clear enough that agents complete it autonomously — no follow-up questions, no guessing.
 
-- **Metric**: open tasks in this repo missing a rule-#9 field: 0 (`node packages/lint/dist/cli.js --require-prereg TASKS.md`, the `blocking=` count).
+- **Metric**: `acceptance_share` in [docs/metrics.md](../metrics.md): root `TASKS.md` files that define done with `**Acceptance**`; goal ≥ 25% by 2027-06-30. Guard: open tasks in this repo missing a rule-#9 field: 0 (`node packages/lint/dist/cli.js --require-prereg TASKS.md`).
 - **Tests**: lint fixture tests, not e2e, because this story is writing guidance: `packages/lint/src/lint.test.ts` ("passes a file with metadata", "fails on a bare metadata field without the list dash"), `packages/lint/src/rule9.test.ts` ("identifies missing fields by name", "treats **Acceptance** as equivalent to **Success**")
 
 ## The Principle

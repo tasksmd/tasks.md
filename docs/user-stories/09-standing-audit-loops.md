@@ -2,7 +2,7 @@
 
 > A recurring queue-filling pass — drop one task block into `TASKS.md`, and any agent can run the audit on demand without reciting a long prompt.
 
-- **Metric**: standing-loop tasks picked in a normal walk: 0 (`npm run e2e`, the US09 cases).
+- **Metric**: `standing_loop_queues` in [docs/metrics.md](../metrics.md): root `TASKS.md` files that use `standing-loop`; goal ≥ 5 by 2027-06-30. Guard: standing-loop tasks picked in a normal walk: 0 (`npm run e2e`, US09).
 - **Tests**: `tests/e2e/us09-standing-audit-loops.test.mjs` (happy: a P0 loop does not shadow P2 work; error: a loop-only queue has nothing to pick)
 
 [Story 08](08-rich-task-metadata.md#standing-audit-loops) introduces the pattern: a single task that asks an agent to *queue* follow-up work instead of fixing the findings immediately. This story walks through one full cycle — when to reach for the pattern, the exact TASKS.md shape, how `/next-task` and `tasks pick` handle it, the audit run itself, and the anti-pattern to avoid.

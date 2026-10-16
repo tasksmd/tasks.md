@@ -91,7 +91,8 @@ const TEST_REF = /`([^`\s]+\.(?:mjs|js|ts))`(?:\s*\(([^)]*)\))?/g;
 
 /**
  * User-story drift: every docs/user-stories/NN-*.md has a `- **Metric**:` line
- * and a `- **Tests**:` line. Each backticked test path exists; each quoted case
+ * that names an outcome (a docs/metrics.md row or the event log; test counts
+ * only after "Guard:") and a `- **Tests**:` line. Each backticked test path exists; each quoted case
  * name after a path appears in that file; each tests/e2e file names its story
  * (`USNN`); and every tests/e2e/usNN-* file is listed by story NN.
  */
@@ -107,6 +108,14 @@ export function checkUserStories(root) {
     const text = readFileSync(join(storyDir, name), "utf8");
     const metric = /^- \*\*Metric\*\*: *(\S.*)$/m.exec(text);
     if (!metric) errors.push(`docs/user-stories/${name}: no \`- **Metric**:\` line`);
+    // The metric is an outcome users create (a docs/metrics.md row or the event
+    // log), not a count of passing tests; a test count may follow as a guard.
+    const outcome = metric?.[1].split("Guard:")[0] ?? "";
+    if (metric && (!/metrics\.md|observability\.md/.test(outcome) || /npm run e2e/.test(outcome))) {
+      errors.push(
+        `docs/user-stories/${name}: the Metric must be an outcome (a docs/metrics.md row or the event log); put a test count after "Guard:"`,
+      );
+    }
     const tests = /^- \*\*Tests\*\*: *(\S.*)$/m.exec(text);
     if (!tests) {
       errors.push(`docs/user-stories/${name}: no \`- **Tests**:\` line`);

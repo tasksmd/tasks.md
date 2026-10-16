@@ -60,7 +60,7 @@ function storyFixture(files) {
   return root;
 }
 
-const STORY = (tests) => `# US\n\n> I want x.\n\n- **Metric**: wrong picks: 0\n- **Tests**: ${tests}\n`;
+const STORY = (tests) => `# US\n\n> I want x.\n\n- **Metric**: \`adoption\` in [docs/metrics.md](../metrics.md)\n- **Tests**: ${tests}\n`;
 
 test("stories that name a metric and existing tests pass", () => {
   const root = storyFixture({
@@ -107,3 +107,20 @@ test("the README's first quickstart block must end in the doctor", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("a story metric must be an outcome, with test counts only as a guard", () => {
+  const root = storyFixture({
+    "docs/user-stories/01-a.md": "# US\n\n- **Metric**: wrong picks in the e2e suite: 0 (`npm run e2e`)\n- **Tests**: `tests/e2e/us01-a.test.mjs`\n",
+    "docs/user-stories/02-b.md": "# US\n\n- **Metric**: `adoption` in [docs/metrics.md](../metrics.md). Guard: 0 failures (`npm run e2e`)\n- **Tests**: `tests/e2e/us02-b.test.mjs`\n",
+    "tests/e2e/us01-a.test.mjs": "// US01\n",
+    "tests/e2e/us02-b.test.mjs": "// US02\n",
+  });
+  try {
+    const errors = checkUserStories(root).join("\n");
+    assert.match(errors, /01-a\.md: the Metric must be an outcome/);
+    assert.doesNotMatch(errors, /02-b\.md/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+

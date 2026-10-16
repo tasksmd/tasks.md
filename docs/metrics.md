@@ -21,6 +21,10 @@ never picked after seeing the result (see the pre-registration rule in
 | `gate_ms`: median wall time of the last 10 full gate runs | ≤ 120,000 ms | > 180,000 ms: split or cache the slowest step | `bash scripts/metrics.sh` (reads `.metrics/events.jsonl`) | (stub) until the timed gate lands |
 | `cached_gate_ms`: median wall time of the last 10 gate runs where every step was a cache hit | ≤ 15,000 ms | > 30,000 ms: the cache key is too wide | `bash scripts/metrics.sh` | (stub) until the timed gate lands |
 | `lint_false_positives`: issues labelled `lint-false-positive` opened in the last 90 days | 0 | ≥ 3: review the rules that fired, and loosen or drop them | `gh issue list --label lint-false-positive --state all --search "created:>=<date>"` | 0 |
+| `acceptance_share` (US02): root `TASKS.md` files with an `**Acceptance**` field, as a share of `adoption` | ≥ 25% by 2027-06-30 | < 15% on 2027-03-31: the writing guidance does not land; rewrite US02 and the README example | `gh api -X GET search/code -f q='filename:TASKS.md path:/ "**Acceptance**"' --jq .total_count`, divided by `adoption` | 57/340 (16%) |
+| `sync_bug_reports` (US06): issues labelled `sync` opened in the last 90 days | 0 | ≥ 3: freeze new trackers and harden the existing syncs | `gh issue list --label sync --state all --search "created:>=<date>"` | 0 (label created 2026-10-16) |
+| `standing_loop_queues` (US09): root `TASKS.md` files that use the `standing-loop` tag | ≥ 5 by 2027-06-30 | 0 on 2027-03-31: nobody uses it; move standing loops to a doc pattern and drop the special pick rule | `gh api -X GET search/code -f q='filename:TASKS.md path:/ "standing-loop"' --jq .total_count` | 0 |
+| `next_task_installs` (US10): public repos with this project's `/next-task` skill installed for Claude Code | ≥ 50 by 2027-06-30 | < 15 on 2027-03-31: one-prompt setup is not the entry point; invest in the README path instead | `gh api -X GET search/code -f q='filename:SKILL.md path:.claude/skills/next-task "TASKS.md"' --jq .total_count` | 9 |
 
 ## Notes
 
@@ -30,6 +34,6 @@ never picked after seeing the result (see the pre-registration rule in
 - The adoption query counts files, not repos, and GitHub code search only
   indexes public repos. It is a lower bound and a trend, not a census.
 - Report a lint false positive by opening an issue with the
-  `lint-false-positive` label.
+  `lint-false-positive` label, and a sync bug with the `sync` label.
 - The kill criteria that use these metrics live in
   [`VISION.md` § Kill criteria](../VISION.md#kill-criteria).
