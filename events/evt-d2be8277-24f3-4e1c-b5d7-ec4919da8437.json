@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d2be8277-24f3-4e1c-b5d7-ec4919da8437",
+  "task_id": "tasks-md-meets-every-new-project-requirement-or-waives-it-wi",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:04:54.300Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-5780e1b0-0536-493a-b7ac-c87063a77b17",
+    "lease_expires_at": 1792263894299
+  }
+}
