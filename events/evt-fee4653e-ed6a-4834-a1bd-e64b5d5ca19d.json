@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-fee4653e-ed6a-4834-a1bd-e64b5d5ca19d",
+  "task_id": "let-agents-publish-tasks-md-releases-without-asking-once-saf",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:28:02.161Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Let agents publish tasks.md releases without asking, once safe",
+    "priority": "P1",
+    "tags": [
+      "release",
+      "ci"
+    ],
+    "body": "Owner request 2026-10-16: auto-publish to npm without asking, only when safe. Deliver scripts/setup-npm-trusted-publishing.sh (one-time owner trust setup, idempotent) and a documented autonomous-release rule (version PR merged, gate green on main, tag matches package.json, version not on npm; then gh release create; publish.yml publishes via OIDC)."
+  }
+}
