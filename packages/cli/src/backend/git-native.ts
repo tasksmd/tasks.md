@@ -790,7 +790,7 @@ export async function renderGitNativeSnapshot(directory: string): Promise<string
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-// Reject a complete/release whose fencing token no longer matches the live
+// Reject a mutation whose fencing token no longer matches the live
 // claim (the lease was stolen). No token supplied → no fencing (backcompat).
 function fenceCheck(
   directory: string,
@@ -1057,6 +1057,8 @@ export function createGitNativeBackend(
     },
 
     async cancel(id: string, options?: ActorOptions): Promise<OperationResult> {
+      const fence = fenceCheck(directory, id, options, "cancel");
+      if (fence) return fence;
       await appendWithRetry(directory, () => makeEvent(id, "cancelled", options, {}), "cancelled");
       return { status: "ok", backend: "git-native", operation: "cancel", taskId: id };
     },
