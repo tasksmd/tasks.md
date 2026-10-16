@@ -55,6 +55,7 @@ Do not claim work is complete until those commands pass.
 | Change CI or release | `.github/workflows/`, `scripts/sync-versions.sh`, `scripts/setup-npm-trusted-publishing.sh` | [docs/release-and-ci.md](docs/release-and-ci.md) |
 | Add or change an example | `examples/` (must stay valid TASKS.md) | README if it shows a new feature |
 | Add a top-level doc | `docs/<name>.md` | a row in [docs/README.md](docs/README.md) |
+| Record a costly-to-reverse decision | `docs/decisions/NNNN-<slug>.md` (ADR) | a row in [docs/decisions/README.md](docs/decisions/README.md) |
 
 ## Rules
 
