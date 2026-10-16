@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-2022d820-fe97-41cb-bb46-b2765a6ce1d6",
+  "task_id": "tasks-install-agent-with-an-unknown-name-exits-0-with-a-misl",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:30:04.198Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "tasks install --agent with an unknown name exits 0 with a misleading message",
+    "priority": "P2",
+    "tags": [
+      "cli",
+      "bug"
+    ],
+    "body": "`tasks install --agent nosuch` prints \"No agent directories detected\" and exits 0. It should name the known agents (claude, codex, cursor, gemini) and exit 2 (usage error).\n- **Hypothesis**: a clear usage error stops silent no-op installs; misleading exits for an unknown agent drop from 1 to 0.\n- **Measurement**: node packages/cli/dist/cli.js install --agent nosuch; echo $? (expect 2 and the list of agents) plus a cli.test.ts case\n- **Success**: exit 2 with the agent list; existing install tests stay green.\n- **Pivot**: if agent names are dynamic (plugins), validate against the generator registry instead of a fixed list.\n- **Anchor**: docs/user-stories/03-agents-work-through-queue.md; POSIX utility conventions (exit 2 for usage errors)."
+  }
+}
