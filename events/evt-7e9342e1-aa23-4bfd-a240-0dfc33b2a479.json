@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-7e9342e1-aa23-4bfd-a240-0dfc33b2a479",
+  "task_id": "guard-against-non-standard-commit-types-prescribed-in-comman",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:40:42.595Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
