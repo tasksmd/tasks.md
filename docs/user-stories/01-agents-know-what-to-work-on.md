@@ -2,6 +2,9 @@
 
 > I want agents to start working immediately without asking me what to do — they read TASKS.md and go.
 
+- **Metric**: `adoption` in [docs/metrics.md](../metrics.md): root `TASKS.md` files on GitHub code search; goal ≥ 1,000 by 2027-06-30.
+- **Tests**: `tests/e2e/us01-stranger-install.test.mjs` (happy: init in an empty repo, lint clean, doctor passes; error: the linter names the bad line)
+
 ## Quick Start ✓
 
 ```bash

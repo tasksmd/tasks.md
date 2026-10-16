@@ -110,5 +110,5 @@ Full policy: [docs/editing-rules.md](docs/editing-rules.md#task-queue-policy).
 - Every behavior change updates its docs in the same PR. The routing table names the doc.
 - A gotcha that cost you time goes into `## Gotchas` in the same PR, or becomes a check.
 - Every PR body has a `## Docs` section: the docs you changed, or `Docs: none — <reason>`.
-- A new top-level `docs/*.md` file needs a row in [docs/README.md](docs/README.md). `npm run lint` runs `scripts/check-docs-contract.mjs`, which checks this file's sections and size, the docs map, and the README opening.
+- A new top-level `docs/*.md` file needs a row in [docs/README.md](docs/README.md). `npm run lint` runs `scripts/check-docs-contract.mjs`, which checks this file's sections and size, the docs map, the README opening, and that each user story names its metric and existing tests.
 - The contract: agentbrew `docs/agent-guide-baseline.md`.

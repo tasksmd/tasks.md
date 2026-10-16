@@ -2,6 +2,8 @@
 // Docs contract (agentbrew docs/agent-guide-baseline.md): AGENTS.md is a short
 // router that Claude Code loads through CLAUDE.md, docs/README.md maps every
 // top-level doc, and the README opening links the map.
+// Each user story in docs/user-stories/NN-*.md names its metric and its tests,
+// and the tests it names exist (see checkUserStories).
 // Run: `node scripts/check-docs-contract.mjs`. Exit 1 lists every violation.
 
 import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
@@ -80,14 +82,68 @@ export function checkDocsContract(root) {
   return errors;
 }
 
+const TEST_REF = /`([^`\s]+\.(?:mjs|js|ts))`(?:\s*\(([^)]*)\))?/g;
+
+/**
+ * User-story drift: every docs/user-stories/NN-*.md has a `- **Metric**:` line
+ * and a `- **Tests**:` line. Each backticked test path exists; each quoted case
+ * name after a path appears in that file; each tests/e2e file names its story
+ * (`USNN`); and every tests/e2e/usNN-* file is listed by story NN.
+ */
+export function checkUserStories(root) {
+  const errors = [];
+  const storyDir = join(root, "docs", "user-stories");
+  if (!existsSync(storyDir)) return errors;
+  const listed = new Set();
+  for (const name of readdirSync(storyDir).sort()) {
+    const match = /^(\d\d)-.+\.md$/.exec(name);
+    if (!match) continue;
+    const id = `US${match[1]}`;
+    const text = readFileSync(join(storyDir, name), "utf8");
+    const metric = /^- \*\*Metric\*\*: *(\S.*)$/m.exec(text);
+    if (!metric) errors.push(`docs/user-stories/${name}: no \`- **Metric**:\` line`);
+    const tests = /^- \*\*Tests\*\*: *(\S.*)$/m.exec(text);
+    if (!tests) {
+      errors.push(`docs/user-stories/${name}: no \`- **Tests**:\` line`);
+      continue;
+    }
+    const refs = [...tests[1].matchAll(TEST_REF)];
+    if (refs.length === 0) errors.push(`docs/user-stories/${name}: the Tests line names no test file`);
+    for (const [, path, cases = ""] of refs) {
+      const file = join(root, path);
+      if (!existsSync(file)) {
+        errors.push(`docs/user-stories/${name}: \`${path}\` does not exist`);
+        continue;
+      }
+      const body = readFileSync(file, "utf8");
+      for (const [, caseName] of cases.matchAll(/"([^"]+)"/g)) {
+        if (!body.includes(caseName)) errors.push(`docs/user-stories/${name}: \`${path}\` has no case "${caseName}"`);
+      }
+      if (path.startsWith("tests/e2e/")) {
+        listed.add(path);
+        if (!body.includes(id)) errors.push(`${path} does not name ${id}; tag its cases with the story ID`);
+      }
+    }
+  }
+  const e2eDir = join(root, "tests", "e2e");
+  if (existsSync(e2eDir)) {
+    for (const name of readdirSync(e2eDir).sort()) {
+      if (/^us\d\d-.+\.test\.mjs$/.test(name) && !listed.has(`tests/e2e/${name}`)) {
+        errors.push(`tests/e2e/${name} is not listed by its story's Tests line`);
+      }
+    }
+  }
+  return errors;
+}
+
 const isCli = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isCli) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-  const errors = checkDocsContract(root);
+  const errors = [...checkDocsContract(root), ...checkUserStories(root)];
   if (errors.length > 0) {
     console.error(`✗ docs contract check failed — ${errors.length} violation(s):\n`);
     for (const error of errors) console.error(`  - ${error}`);
     process.exit(1);
   }
-  console.log("✓ docs contract check passed (AGENTS.md router, CLAUDE.md, docs map, README opening).");
+  console.log("✓ docs contract check passed (AGENTS.md router, CLAUDE.md, docs map, README opening, user stories).");
 }

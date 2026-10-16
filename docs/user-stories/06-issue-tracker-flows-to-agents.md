@@ -2,6 +2,9 @@
 
 > Decisions made in GitHub Issues, Jira, or Linear flow into TASKS.md automatically — agents execute without needing API access.
 
+- **Metric**: synced tasks that fail the lint: 0 (`npm run e2e`, the US06 cases lint the generated file).
+- **Tests**: `tests/e2e/us06-issue-tracker-flows-to-agents.test.mjs` (happy: GitHub and Jira sync with mapped priority; error: unauthenticated `gh`, Jira HTTP 401)
+
 ## How It Works
 
 `tasks sync <provider>` fetches open issues from a tracker and generates (or merges into) a valid TASKS.md file with proper priority headings, IDs, and tags. Provider is one of `github`, `jira`, or `linear`.

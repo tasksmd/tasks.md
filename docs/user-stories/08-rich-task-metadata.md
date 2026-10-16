@@ -2,6 +2,9 @@
 
 > I want my queue to model the messy reality — tasks that are blocked on humans, tasks that grow context across sessions, big tasks that need to be broken down, and project-level rules that apply to every task.
 
+- **Metric**: `lint_false_positives` in [docs/metrics.md](../metrics.md): rich-metadata lint false positives; goal 0 per 90 days.
+- **Tests**: lint fixture tests, not e2e, because this story is writing guidance: `packages/lint/src/lint.test.ts` ("passes a task blocked with a real reason", "fails on an empty **Blocked** line", "passes a task with research notes and a valid ISO date", "fails when **Last-enriched** is not an ISO date", "passes a file with valid section-level policy")
+
 The basic fields (`**ID**`, `**Tags**`, `**Details**`, `**Files**`, `**Acceptance**`, `**Blocked by**`) cover most tasks in a single session. This story covers the spec features you reach for when work spans multiple sessions, agents, or external decisions:
 
 - `**Blocked**` — external constraint (vs. `**Blocked by**` which is task-to-task)

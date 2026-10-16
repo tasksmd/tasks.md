@@ -2,6 +2,9 @@
 
 > **I am a developer and I want to tell my agent to use tasks.md in my repo — in one step.**
 
+- **Metric**: setup re-runs that duplicate the Task Management section or overwrite `TASKS.md`: 0 (`npm run e2e`, the US10 cases).
+- **Tests**: `tests/e2e/us10-one-prompt-setup.test.mjs` (happy: two runs, one section, doctor passes; error: an existing `TASKS.md` is never overwritten)
+
 Adoption should cost one prompt, not a nine-command walkthrough. The developer pastes a single block into whatever agent they already use, and the agent does the entire setup end to end — no CLI knowledge required.
 
 ## What the developer does
