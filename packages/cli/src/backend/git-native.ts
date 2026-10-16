@@ -613,8 +613,27 @@ function foldEvents(events: GitNativeEvent[]): Map<string, FoldedTask> {
   return tasks;
 }
 
-function foldLog(directory: string): Map<string, FoldedTask> {
-  return foldEvents(readEvents(directory));
+// Module-scope fold cache: one entry per repo directory, valid for this
+// process only. A tasks-claims commit is immutable, so a fold keyed on the ref
+// tip sha stays correct until the tip moves; any append or fetch moves it, and
+// the next foldLog re-reads. Entries are replaced, never deleted; the map is
+// bounded by the number of repos one process touches.
+// The cached Map is shared: callers must treat it as read-only.
+const foldCache = new Map<string, { tip: string; fold: Map<string, FoldedTask> }>();
+
+/** Fold the log, reusing the last fold while the tasks-claims tip is unchanged. */
+export function foldLog(directory: string): Map<string, FoldedTask> {
+  const tip = currentClaimsCommit(directory);
+  if (!tip) {
+    return foldEvents(readEvents(directory));
+  }
+  const cached = foldCache.get(directory);
+  if (cached?.tip === tip) {
+    return cached.fold;
+  }
+  const fold = foldEvents(readEvents(directory));
+  foldCache.set(directory, { tip, fold });
+  return fold;
 }
 
 export interface FleetStats {

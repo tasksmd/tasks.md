@@ -13,6 +13,7 @@ import {
   createGitNativeBackend,
   forcePushCompaction,
   gitNativeFleetStats,
+  foldLog,
   gitSpawnCount,
   parseGithubSlug,
   readEvents,
@@ -534,6 +535,23 @@ describe("readEvents — bounded fold cost", () => {
     // The multi-byte title round-trips through the batched reader.
     expect(open.some((t) => t.title.includes("🚀"))).toBe(true);
   }, 30_000);
+
+  it("reuses the fold while the tasks-claims tip is unchanged, and refolds after an append", async () => {
+    const dir = makeRepo("tasksmd-memo-");
+    const backend = createGitNativeBackend(dir);
+    await backend.create({ title: "First", priority: "P1" });
+
+    const first = foldLog(dir);
+    const before = gitSpawnCount();
+    const second = foldLog(dir);
+    expect(gitSpawnCount() - before).toBe(1); // only the rev-parse of the tip
+    expect(second).toBe(first);
+
+    await backend.create({ title: "Second", priority: "P1" });
+    const third = foldLog(dir);
+    expect(third).not.toBe(first);
+    expect([...third.keys()]).toEqual(expect.arrayContaining(["first", "second"]));
+  });
 
   it("spawns a constant number of git processes regardless of event count (O(1))", async () => {
     const small = makeRepo("tasksmd-o1-");
