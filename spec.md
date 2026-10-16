@@ -664,6 +664,8 @@ A task is **blocked** (skipped by `next`/`pick` and rejected by `claim` with sta
 
 The log grows unbounded as tasks churn. **Compaction** rewrites `tasks-claims` to the minimal event set that folds to the **same open-task state** — one `created` per open task plus one `claimed` (carrying its `claim_id` + `lease_expires_at`) per live claim; terminal (completed/cancelled) tasks are dropped (their history stays in the old ref's objects until git GC). Because the fold of open tasks is byte-identical before and after, compaction is transparent to readers. It rewrites history, so it is a **single-writer maintenance step** (like the projection job), never a concurrent operation. `tasks fleet compact` performs it locally; `tasks doctor` flags when the log is large enough to warrant it.
 
+Compaction makes the dropped commits **unreachable, not deleted**. Clones and fetches get cheaper at once (they only transfer reachable objects), but the remote keeps the old objects until it runs `git gc`. github.com runs it on its own schedule. A self-hosted bare remote (GHE, GitLab, Gitea, plain `git` over SSH) reclaims the disk only through its own maintenance: keep the host's scheduled housekeeping on, or run `git gc --prune=now` in the bare repo after a compaction. A weekly cadence is enough, because the projection only compacts past `COMPACTION_SUGGESTED_AT` events. `tasks fleet compact` prints this hint after every pushed rewrite.
+
 ### Generated `TASKS.md` projection
 
 A single scheduled job regenerates `TASKS.md` from the log:

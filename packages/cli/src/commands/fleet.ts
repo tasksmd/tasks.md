@@ -466,5 +466,10 @@ export function runFleetCompact(
     result.pushed
       ? "Pushed the rewrite with --force-with-lease (a concurrent claim would have safely aborted it)."
       : "Did NOT push: no remote, or a concurrent claim held the lease — the rewrite was discarded and the next cycle retries.",
+    ...(result.pushed
+      ? [
+          "The dropped commits stay in the remote's object store until it runs gc. github.com does that on its own; a self-hosted bare remote needs `git gc --prune=now` (or its scheduled maintenance) to free the disk.",
+        ]
+      : []),
   ];
 }

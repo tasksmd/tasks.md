@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { runDoctor, runFleetStats } from "../commands/fleet.js";
+import { runDoctor, runFleetCompact, runFleetStats } from "../commands/fleet.js";
 import {
   autoRefreshEnabled,
   catFileBatch,
@@ -459,6 +459,26 @@ describe("git-native backend", () => {
       beforeRemote,
     );
     expect(await renderGitNativeSnapshot(directory)).toBe(beforeSnapshot);
+  }, 30_000);
+
+  it("dropped commits linger on the remote until gc, and fleet compact says so", async () => {
+    const remote = makeBareRemote();
+    const directory = makeClone(remote);
+    writeFileSync(join(directory, ".tasksmd.json"), JSON.stringify({ backend: "git-native" }));
+    const backend = createGitNativeBackend(directory);
+    await backend.create({ title: "Keep", priority: "P1" });
+    await backend.create({ title: "Drop me", priority: "P2" });
+    await backend.complete("drop-me", { actorId: "@x" });
+    const oldTip = git(remote, ["rev-parse", "refs/heads/tasks-claims"]);
+
+    const lines = runFleetCompact(directory, { force: true });
+    expect(lines.join("\n")).toMatch(/git gc --prune=now/);
+
+    // Unreachable, but still stored: compaction alone frees no remote disk.
+    expect(() => git(remote, ["cat-file", "-e", oldTip])).not.toThrow();
+    git(remote, ["reflog", "expire", "--expire=now", "--all"]);
+    git(remote, ["gc", "--prune=now", "--quiet"]);
+    expect(() => git(remote, ["cat-file", "-e", oldTip])).toThrow();
   }, 30_000);
 
   it("compaction's lease-guarded push aborts when the remote advanced (no clobber)", async () => {
