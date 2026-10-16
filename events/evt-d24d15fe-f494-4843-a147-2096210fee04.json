@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d24d15fe-f494-4843-a147-2096210fee04",
+  "task_id": "report-which-events-are-corrupt-not-just-the-count",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:22:38.167Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-00866cd6-96e3-4ad3-bb4d-79484f5bd649",
+    "lease_expires_at": 1792239758167
+  }
+}
