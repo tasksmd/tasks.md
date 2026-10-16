@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-11a4d73c-8d55-4b0f-bff2-6bc93f9d3509",
+  "task_id": "tasks-list-priority-accepts-an-invalid-priority-silently",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T19:30:08.225Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "tasks list --priority accepts an invalid priority silently",
+    "priority": "P3",
+    "tags": [
+      "cli",
+      "bug"
+    ],
+    "body": "`tasks list --priority P9` prints \"No tasks match the filters.\" and exits 0. Reject values outside P0-P3 with exit 2 and the allowed values, matching the MCP list_tasks validation.\n- **Hypothesis**: validating the flag turns a silent empty result into a usage error; invalid-priority runs that exit 0 drop from 1 to 0.\n- **Measurement**: node packages/cli/dist/cli.js list --priority P9; echo $? (expect 2) plus a cli.test.ts case\n- **Success**: exit 2 for P9; lower-case input handled the same way as pick.\n- **Pivot**: if the MCP tool accepts other spellings, align both to one validator instead.\n- **Anchor**: docs/user-stories/07-monitor-queue-health.md; POSIX utility conventions."
+  }
+}
