@@ -59,7 +59,7 @@ These run against the active backend (`tasks-md`, `github-issues`, or `git-nativ
 |---------|-------|--------------|
 | `create <title>` | `--priority`, `--body`, `--tag`, `--as`, `--json` | File a new task |
 | `update <id>` | `--title`, `--priority`, `--body`, `--tag`, `--as`, `--json` | Update a task's fields (file backend is human-editable → `unsupported`) |
-| `claim <id>` | `--as`, `--json` | Claim a task. Best-effort on the file backend; collision-free (with a `claimId` fencing token) on git-native |
+| `claim <id>` | `--as`, `--json` | Claim a task. Best-effort on the file backend; collision-free (with a `claimId` fencing token) on git-native. Read a lost token back from the `claimId` field of `tasks list --json` |
 | `unclaim <id>` | `--as`, `--json` | Release a claimed task back to the queue |
 | `complete <id>` | `--as`, `--json` | Complete a task (remove the block / close the issue / append a `completed` event) |
 | `cancel <id>` | `--as`, `--json` | Drop a task without completing the work |

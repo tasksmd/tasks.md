@@ -100,6 +100,11 @@ The path rule is one shared primitive — `tasks check-push <paths...> --task <i
   `TASKS_CLAIM_ENFORCE=1` (`gh variable set TASKS_CLAIM_ENFORCE --body 1`) so the workflow exits
   nonzero on a missing claim, **and** make it a **required status check** on the `main` ruleset.
   Protect `main` + `tasks-claims` against force-push/delete (see the ruleset guidance the command prints).
+  **On a migrated repo, first give each migrated owner their token.** `tasks migrate` creates
+  claims with a random `claim-migrated-<uuid>` token that no one saw printed. Once enforcement is
+  armed, an owner without it cannot write a matching `Task-Claim:` trailer, so the gate blocks
+  their own push. Each owner reads it back with
+  `tasks list --json | jq -r '.[] | select(.id == "<id>") | .claimId'`.
 - **GHE / GitLab / Gitea `pre-receive`** — same rule, server-side and unbypassable:
 
   ```bash
