@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-746a9b4a-a6d8-41b3-a745-c148aa76e5ad",
+  "task_id": "reclaim-unreachable-objects-after-compaction-on-self-hosted",
+  "event_type": "completed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:47:49.977Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
