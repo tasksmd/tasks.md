@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-40d74256-2e21-403e-835c-943fc2db754b",
+  "task_id": "document-retrieving-your-claim-token-via-list-json",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:17:24.480Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-cb839a2d-2927-4368-8789-14c345d9a12e",
+    "lease_expires_at": 1792239444480
+  }
+}
