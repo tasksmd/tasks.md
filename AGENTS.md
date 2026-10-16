@@ -22,6 +22,7 @@ An npm workspace repo. Run commands from the repo root.
 | All tests | `npm test` |
 | One package's tests | `npm test -w packages/<name>` |
 | Lint TASKS.md, docs drift, counts, docs contract | `npm run lint` |
+| Print metrics (adoption, downloads, gate speed) | `bash scripts/metrics.sh` |
 | Rebuild the website | `npm run build:site` |
 | Regenerate agent command files | `node packages/cli/dist/cli.js generate-commands` |
 | Run the local CLI | `node packages/cli/dist/cli.js <command>` (after `npm run build`) |

@@ -7,3 +7,12 @@
 # docs/README.md is the docs map; check-docs-contract.mjs (npm run lint) fails
 # when a docs/*.md file has no row, when AGENTS.md drifts, or the README opening drifts.
 map.docs: docs/README.md scripts/check-docs-contract.mjs
+
+# VISION.md (root, by accepted push back) has The problem it solves, What it is
+# not (non-goals), How we measure success (dated numeric goal + pivot +
+# command), dated Kill criteria, and Prior art.
+map.vision: VISION.md
+
+# docs/metrics.md: every metric has a goal, a pivot, and a command; missing
+# data prints (stub). scripts/metrics.sh prints the table, including gate speed.
+map.metrics: docs/metrics.md scripts/metrics.sh

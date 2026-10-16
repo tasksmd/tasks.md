@@ -36,6 +36,7 @@ This folder also holds the website (`index.html`, `template.html`, `style.css`).
 |---|---|---|
 | [`../spec.md`](../spec.md) | What exactly is the TASKS.md format, field by field? | both |
 | [`editing-rules.md`](editing-rules.md) | What are the full editing rules, source boundaries, and task queue policy? | agent |
+| [`metrics.md`](metrics.md) | What do we measure, with which goal, pivot, and command? | both |
 | [`release-and-ci.md`](release-and-ci.md) | Which release, CI, npm OIDC, and claim-check traps exist? | agent |
 | [`security/`](security/) | What is the threat model for git-native claims? | both |
 | [`../packages/cli/README.md`](../packages/cli/README.md) | Which commands does the `tasks` CLI have? | both |
