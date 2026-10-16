@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-1c5d72de-3810-42c5-8c8c-c995d932a9c2",
+  "task_id": "pin-every-metrics-command-and-refresh-the-requirements-map-c",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T20:26:21.956Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Pin every metrics command and refresh the requirements map comments",
+    "priority": "P2",
+    "tags": [
+      "requirements",
+      "metrics"
+    ],
+    "body": "A fresh grade of main after #35 found six docs/metrics.md rows that say \"same\" instead of a runnable command, and requirements.yaml comments that predate the updated new-project rules (allow-listed event fields, logs off in tests, pinned queries, (stub) for sources that answer 0, hooks step warns).\n- **Hypothesis**: rows with an exact runnable command rise from 6/16 to 16/16, and every map comment names the current rule.\n- **Measurement**: grep -c \"| same\" docs/metrics.md (expect 0) and an independent grade of rules 4 and 10\n- **Success**: 0 \"same\" rows; grader PASS on rules 4 and 10.\n- **Pivot**: if a command cannot be one line, link a named function in scripts/metrics.sh instead.\n- **Anchor**: agentbrew new-project SKILL.md (metrics row); tasks.md PR #35 grade."
+  }
+}
