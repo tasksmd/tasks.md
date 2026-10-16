@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-8e08867c-b5e9-4e7c-9f5e-19a899306e99",
+  "task_id": "fence-cancel-on-the-claim-token-for-consistency",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-16T12:19:44.953Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-718dd784-da96-4378-86f1-065835e3238b",
+    "lease_expires_at": 1792239584953
+  }
+}
