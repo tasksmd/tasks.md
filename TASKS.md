@@ -36,16 +36,6 @@
     - **Pivot**: if gh returns partial JSON on some errors, validate the JSON shape instead of trusting the exit code.
     - **Anchor**: docs/user-stories/06-issue-tracker-flows-to-agents.md; Nygard 2018, Release It! (fail fast).
 
-- [ ] Make the README setup map honest and give stories outcome metrics (@claude)
-  - **ID**: make-the-readme-setup-map-honest-and-give-stories-outcome-me
-  - **Tags**: requirements, docs, observability
-  - **Details**: Follow-up from the independent grade of tasks-md-meets-every-new-project-requirement-or-waives-it-wi. (1) map.setup named CONTRIBUTING.md, but the requirement is "first in the README": the README first block is the one-prompt setup, which still ends with tasks-lint, not tasks doctor (README and docs/user-stories/10 copies were missed when commands/setup.md changed). End both copies with `npx -y @tasks-md/cli doctor`, add a contributor pointer to `bash scripts/setup.sh` near the top, and map setup to README.md + scripts/setup.sh. (2) Six story metrics count passing e2e tests; replace US03, US04, US05, US07 with outcome rates from the local event log (docs/observability.md), keep test-count guards only where no event exists. (3) Re-render the TASKS.md snapshot.
-    - **Hypothesis**: the setup map then truly meets "one command, first in the README, ending with the doctor", and stories with an outcome metric rise from 4/10 to 8/10.
-    - **Measurement**: head -60 README.md (first block ends with tasks doctor) and grep -c "events.jsonl" docs/user-stories/0*.md
-    - **Success**: the first README block names tasks doctor; 4 stories cite an events.jsonl rate; npm run lint and check-setup.sh stay green.
-    - **Pivot**: if the README prompt cannot end with the doctor without hurting the landing page, waive setup with that reason instead.
-    - **Anchor**: agentbrew new-project SKILL.md (setup row); Basili et al. 1994 (GQM).
-
 ## P2
 
 - [ ] Protect tasks-claims and main from force-push/delete (with compactor exemption)
