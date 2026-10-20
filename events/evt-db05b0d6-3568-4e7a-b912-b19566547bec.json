@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-db05b0d6-3568-4e7a-b912-b19566547bec",
+  "task_id": "agents-continue-open-prs-and-branches-before-new-work",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-20T01:53:21.094Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-1f447388-e115-4929-bd33-5691be8e49f2",
+    "lease_expires_at": 1792547601094
+  }
+}
