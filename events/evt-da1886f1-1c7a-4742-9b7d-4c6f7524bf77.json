@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-da1886f1-1c7a-4742-9b7d-4c6f7524bf77",
+  "task_id": "agents-continue-open-prs-and-branches-before-new-work",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-20T01:52:41.694Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Agents continue open PRs and branches before new work",
+    "priority": "P1",
+    "tags": [
+      "commands"
+    ],
+    "body": "next-task skips red or conflicted PRs, ignores drafts, and never looks at pushed branches or worktrees without a PR, so a new session starts fresh work while parked work (for example a /wrap-up draft PR) waits. Add a step before picking: list your open PRs (drafts too), unmerged branches and worktrees, match them to queued tasks, and continue that work first.\n  - **Hypothesis**: Agents resume parked work instead of starting new tasks, so open draft PRs per repo stop growing.\n  - **Measurement**: grep -c 'Continue open work' commands/next-task.md commands/claude/skills/next-task/SKILL.md commands/codex/skills/next-task/SKILL.md commands/cursor/next-task.md commands/gemini/next-task.toml\n  - **Success**: every generated variant has the step (5 of 5) and commands-drift passes\n  - **Pivot**: if agents still start new tasks while a resumable draft PR exists in 2 checkups, move the check into tasks pick\n  - **Anchor**: git-town park/continue workflow; owner goal 2026-10-19"
+  }
+}
