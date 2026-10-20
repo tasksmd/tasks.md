@@ -97,7 +97,7 @@ If a target ID is provided, handle it before [Resume unfinished work](#resume-un
 2. **Duplicate** — if more than one task has that ID, report every matching file/path and stop so the queue can be fixed.
 3. **Claimed** — if the target is claimed by another agent, report the claim and stop. If it is claimed by you, resume it.
 4. **Blocked** — if it has a non-empty `**Blocked**:` reason, or any `**Blocked by**:` reference that still exists in any TASKS.md, report the blocker(s) and stop.
-5. **Actionable** — claim it (or keep your existing claim), then continue at [Refuse forbidden work](#refuse-forbidden-work), [Plan](#plan-complex-tasks-only), and [Claim and do the work](#claim-and-do-the-work). When it completes, ship it and stop; do not fall through to generic queue mode unless the user invokes `/next-task` again.
+5. **Actionable** — claim it (or keep your existing claim). When an open PR, branch, or worktree already carries this task ID, check it out and continue from there (see [Continue open work](#continue-open-work)) instead of starting fresh. Then continue at [Refuse forbidden work](#refuse-forbidden-work), [Plan](#plan-complex-tasks-only), and [Claim and do the work](#claim-and-do-the-work). When it completes, ship it and stop; do not fall through to generic queue mode unless the user invokes `/next-task` again.
 
 If the targeted task is refused because it requires forbidden work, add the `**Blocked**:` reason as usual, commit that hunk, explain the refusal, and stop instead of continuing to the next task.
 
@@ -126,9 +126,42 @@ Read the context snapshot and follow the first matching branch:
 
 **On a feature branch, no uncommitted changes** → check if there's a claimed task for this branch in TASKS.md. If yes, skip to [Finish the work](#finish-the-work). If not, switch to main.
 
-**On main, clean** → continue to [Tidy open PRs](#tidy-open-prs).
+**On main, clean** → continue to [Continue open work](#continue-open-work).
 
 **Shared-file rule** → `TASKS.md`, `README.md`, and agent config files often contain unrelated edits from another agent. Do not treat that as a stop signal. Apply your change on top of the live file, then stage only your exact hunk so both changes survive.
+
+## Continue open work {#continue-open-work}
+
+Before you pick a new task, look for work that already started: an open PR or
+draft PR of yours (for example one that `/wrap-up` parked), a pushed branch
+with no PR, or a worktree with commits. Finishing it is cheaper than new work,
+and it goes stale fast.
+
+```bash
+gh pr list --author @me --state open --json number,isDraft,headRefName,title,body,mergeable,statusCheckRollup
+git for-each-ref --format='%(refname:short) %(upstream:short) %(upstream:track)' refs/heads
+git worktree list
+```
+
+With the agentbrew `wrap-up` skill installed,
+`bash ~/.claude/skills/wrap-up/scripts/open-work.sh .` prints all of this in one pass.
+
+Match each item to a task: the task ID in the branch name, a `Task:` line in
+the PR body, or a task whose `**PR**:` field names the PR. Then:
+
+1. **A queued task that is not blocked and not claimed by another agent** →
+   claim it (or keep your claim), check out the branch in a worktree, read the
+   PR's `## Pending` list and the task's `**Resume**:` line, and continue at
+   [Finish the work](#finish-the-work). Fix red checks and conflicts on your
+   own PR; do not skip them. When nothing is pending and the checks pass, mark
+   a draft ready (`gh pr ready <number>`) and [Ship it](#ship-it).
+2. **A blocked task** (its `**Blocked**:` line names a human step) → leave it,
+   name it in your report, and look at the next item.
+3. **No task** → your own branch with real commits gets a task (the PR or
+   branch title), then case 1. Another agent's or a bot's branch stays as it is.
+
+Several resumable items: take the one tied to the highest-priority task.
+Only when nothing is resumable, continue to [Tidy open PRs](#tidy-open-prs).
 
 ## Tidy open PRs
 
@@ -139,7 +172,7 @@ gh pr list --state open --json number,title,author,headRefName,headRepositoryOwn
 ```
 
 - Checks pass + no conflicts → merge by the repo's normal merge path; if ship-it mode is active, use `/ship-it` ownership, CI, and admin/bypass-merge rules before merging
-- Checks failing or conflicts → skip
+- Checks failing or conflicts → skip (your own PRs were handled in [Continue open work](#continue-open-work))
 - Stale (>7 days, no linked task) → only close under the repo/global PR-close rules (reasoned closing comment + branch deletion when safe); otherwise skip
 
 Then sync:
