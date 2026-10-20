@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The repo-wide checkup: one command that reports health, the cached gate,
+# The repo-wide checkup: one command that reports open work, health, the cached gate,
 # broken user stories, metrics and speed, the task queue, and the monthly
 # requirements audit, then ends with at most three questions for the owner.
 #
@@ -22,6 +22,21 @@ ask() { questions="$questions
 $1"; }
 
 [ -f packages/cli/dist/cli.js ] || npm run build >/dev/null
+
+section "0. Open work (open PRs, drafts, unmerged branches, worktrees)"
+# Finish these before new work: /next-task continues them first (Continue open work).
+if command -v gh >/dev/null 2>&1; then
+  gh pr list --author @me --state open --json number,isDraft,headRefName,title \
+    --jq '.[] | "  \(if .isDraft then "draft-pr" else "pr" end) #\(.number) \(.headRefName): \(.title)"' \
+    2>/dev/null || echo "  (pull requests not checked: gh is not signed in)"
+fi
+git for-each-ref --format='%(refname:short)' refs/heads | while read -r b; do
+  case "$b" in tasks-claims | gh-pages | dependabot/* | renovate/*) continue ;; esac  # data and bot branches
+  n="$(git rev-list --count "origin/main..$b" 2>/dev/null || echo 0)"
+  if [ "$n" -gt 0 ]; then echo "  branch $b: $n commit(s) not on main"; fi
+done
+git worktree list | sed -n '2,$s/^/  worktree /p'
+echo "-> continue each with /next-task (it resumes open PRs and branches first)"
 
 section "1. Health (tasks doctor)"
 if ! $cli doctor; then
