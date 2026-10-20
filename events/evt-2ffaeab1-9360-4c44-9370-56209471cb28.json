@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-2ffaeab1-9360-4c44-9370-56209471cb28",
+  "task_id": "agents-continue-open-prs-and-branches-before-new-work",
+  "event_type": "completed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-20T12:33:55.545Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
