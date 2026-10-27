@@ -69,8 +69,10 @@ export function createGitHubSource(options: GitHubOptions = {}): SyncSource {
           `gh issue list ${repoFlag} --label "${label}" --state open --limit 200 --json number,title,body,labels`,
           { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], timeout: 30_000 }
         ).trim();
-      } catch {
-        return [];
+      } catch (err) {
+        // Fail loudly: an empty result here would let --merge drop every synced task.
+        const stderr = String((err as { stderr?: unknown }).stderr ?? "").trim();
+        throw new Error(`gh issue list failed${stderr ? `: ${stderr}` : ""}`);
       }
 
       if (!output || output === "[]") return [];

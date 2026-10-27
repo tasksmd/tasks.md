@@ -16,7 +16,7 @@ const ISSUES = [
   { number: 12, title: "Fix the login redirect", body: "Users loop on /login.", labels: [{ name: "tasks.md" }, { name: "P1" }, { name: "auth" }] },
 ];
 
-function fakeGh(dir, { authFails = false } = {}) {
+function fakeGh(dir, { authFails = false, listFails = false } = {}) {
   const bin = join(dir, ".fake-bin");
   mkdirSync(bin);
   writeFileSync(join(bin, "issues.json"), JSON.stringify(ISSUES));
@@ -25,6 +25,7 @@ function fakeGh(dir, { authFails = false } = {}) {
     [
       "#!/bin/sh",
       `if [ "$1 $2" = "auth status" ]; then exit ${authFails ? 1 : 0}; fi`,
+      `if [ "$1 $2" = "issue list" ] && [ ${listFails ? 1 : 0} = 1 ]; then echo "HTTP 502: rate limited" >&2; exit 1; fi`,
       `if [ "$1 $2" = "issue list" ]; then cat "${join(bin, "issues.json")}"; exit 0; fi`,
       "exit 2",
     ].join("\n"),
@@ -53,6 +54,20 @@ test("US06 error: an unauthenticated gh fails the sync with the fix", () => {
     const result = tasks(["sync", "github", "--output", "TASKS.md"], { cwd: dir, env: fakeGh(dir, { authFails: true }) });
     assert.notEqual(result.code, 0);
     assert.match(result.stdout + result.stderr, /gh auth login/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("US06 error: a failed gh issue list fails the sync and leaves TASKS.md unchanged", () => {
+  const dir = scratchRepo();
+  try {
+    const before = "# Tasks\n\n## P1\n\n- [ ] Keep me\n  - **ID**: issue-1\n";
+    writeFileSync(join(dir, "TASKS.md"), before);
+    const result = tasks(["sync", "github", "--merge", "--output", "TASKS.md"], { cwd: dir, env: fakeGh(dir, { listFails: true }) });
+    assert.notEqual(result.code, 0);
+    assert.match(result.stdout + result.stderr, /rate limited/);
+    assert.equal(readFileSync(join(dir, "TASKS.md"), "utf-8"), before);
   } finally {
     cleanup(dir);
   }
