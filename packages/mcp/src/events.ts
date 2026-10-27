@@ -16,7 +16,7 @@ import { appendFileSync, mkdirSync, renameSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-export type Component = "watch" | "claims" | "mcp";
+export type Component = "watch" | "claims" | "mcp" | "cli";
 
 export interface TaskEvent {
   component: Component;

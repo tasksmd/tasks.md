@@ -52,7 +52,7 @@ story_failures() {
 const [file, story, event] = process.argv.slice(1);
 const ev = require("fs").readFileSync(file, "utf-8").split("\n").filter(Boolean)
   .map((l) => { try { return JSON.parse(l); } catch { return null; } })
-  .filter((e) => e && e.story === story && (!event || e.event === event));
+  .filter((e) => e && e.component !== "cli" && e.story === story && (!event || e.event === event));
 console.log(ev.length ? Math.round((100 * ev.filter((e) => !e.ok).length) / ev.length) + "% of " + ev.length : "(stub)");
 ' "$events_log" "$1" "${2:-}"
 }

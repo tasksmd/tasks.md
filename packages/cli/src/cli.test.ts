@@ -838,7 +838,7 @@ describe("CLI", () => {
       spawnSync("node", [CLI, "claim", "secret-title", ...gn, "--as", "@alice"], { encoding: "utf-8", cwd: dir, env });
       spawnSync("node", [CLI, "claim", "secret-title", ...gn, "--as", "@bob"], { encoding: "utf-8", cwd: dir, env });
       const text = readFileSync(join(dir, "events.jsonl"), "utf-8");
-      const events = text.trim().split("\n").map((line) => JSON.parse(line));
+      const events = text.trim().split("\n").map((line) => JSON.parse(line)).filter((e) => e.component === "claims");
       expect(events.map((e) => [e.component, e.event, e.ok, e.code, e.story])).toEqual([
         ["claims", "claim", true, "claimed", "US03"],
         ["claims", "claim", false, "already_claimed", "US03"],

@@ -1,0 +1,113 @@
+{
+  "machines": {
+    "m-acba8183": {
+      "date": "2026-10-27",
+      "claims": 8,
+      "claimed": 5,
+      "refused": 2,
+      "claimErrors": 1,
+      "completes": 6,
+      "claimMedianMs": 3192,
+      "cliRuns": 0,
+      "cliOk": 0,
+      "cliMedianMs": null,
+      "completesByDay": {
+        "2026-10-16": 5,
+        "2026-10-20": 1
+      }
+    }
+  },
+  "metrics": [
+    {
+      "id": "tasks-completed",
+      "claim": "Agents finish work from the queue",
+      "value": 6,
+      "unit": "tasks",
+      "n": 1,
+      "date": "2026-10-27",
+      "kind": "real use (local aggregate)",
+      "command": "node scripts/proof.mjs record",
+      "history": [
+        {
+          "date": "2026-10-27",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "id": "double-claims-refused",
+      "claim": "No two agents take one task",
+      "value": 2,
+      "unit": "second claims refused (an accepted double claim cannot be logged; the conformance suite tests it)",
+      "n": 1,
+      "date": "2026-10-27",
+      "kind": "real use (local aggregate)",
+      "command": "node scripts/proof.mjs record",
+      "history": [
+        {
+          "date": "2026-10-27",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "claim-errors",
+      "claim": "Claiming works on real runs",
+      "value": 13,
+      "unit": "% of claims",
+      "of": 8,
+      "n": 1,
+      "date": "2026-10-27",
+      "kind": "real use (local aggregate)",
+      "command": "node scripts/proof.mjs record",
+      "history": [
+        {
+          "date": "2026-10-27",
+          "value": 13
+        }
+      ]
+    },
+    {
+      "id": "cli-success",
+      "claim": "The CLI works on real runs",
+      "value": null,
+      "unit": "% of runs",
+      "of": 0,
+      "n": 1,
+      "date": "2026-10-27",
+      "kind": "real use (local aggregate)",
+      "command": "node scripts/proof.mjs record",
+      "history": []
+    },
+    {
+      "id": "examples-lint-clean",
+      "claim": "One plain Markdown format any tool can check",
+      "value": 10,
+      "unit": "of 10 example queues lint clean",
+      "date": "2026-10-27",
+      "kind": "local run, 2026-10-27, darwin-arm64",
+      "command": "node scripts/proof.mjs record",
+      "history": [
+        {
+          "date": "2026-10-27",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "id": "pick-1000",
+      "claim": "Pick the next task fast",
+      "value": 134,
+      "unit": "ms for `tasks pick` on 1,000 tasks (median of 5)",
+      "date": "2026-10-27",
+      "kind": "local run, 2026-10-27, darwin-arm64",
+      "command": "node scripts/proof.mjs record",
+      "history": [
+        {
+          "date": "2026-10-27",
+          "value": 134
+        }
+      ]
+    }
+  ]
+}
