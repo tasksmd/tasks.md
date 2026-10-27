@@ -1,5 +1,5 @@
-// Content-free JSONL events for the long-running parts: `tasks watch` and
-// git-native claim operations. (`tasks-mcp` has a twin in packages/mcp.)
+// Content-free JSONL events: one `cli` run event per `tasks` command, `tasks
+// watch`, and git-native claim operations. (`tasks-mcp` has a twin in packages/mcp.)
 //
 // An event holds codes, counts, and timings only, never task text, IDs,
 // titles, paths, or error messages. Every string value must match SAFE, so
@@ -15,7 +15,7 @@ import { appendFileSync, mkdirSync, renameSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-export type Component = "watch" | "claims" | "mcp";
+export type Component = "watch" | "claims" | "mcp" | "cli";
 
 export interface TaskEvent {
   component: Component;

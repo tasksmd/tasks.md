@@ -13,6 +13,7 @@ import {
 } from "./lib.js";
 import { initTaskQueue } from "./commands/init.js";
 import { recordEvent } from "./events.js";
+import * as telemetry from "./telemetry.js";
 import { generateCommands } from "./commands/generate-commands.js";
 import { installCommands, installPreCommitHook } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
@@ -55,6 +56,80 @@ const program = new Command()
   .name("tasks")
   .description("Unified CLI for TASKS.md task queue management")
   .version(pkg.version);
+
+// ── field recording: one content-free `cli` run event per command ──
+// (docs/observability.md). Code is the command path, e.g. "fleet:init";
+// never arguments, task text, or paths.
+
+const COMMAND_STORY: Record<string, `US${string}`> = {
+  pick: "US04", list: "US07", stats: "US07", diff: "US07",
+  create: "US02", update: "US02",
+  claim: "US03", unclaim: "US03", complete: "US03", cancel: "US03", heartbeat: "US03",
+  workspaces: "US05",
+};
+
+function commandPath(cmd: Command): string {
+  const names: string[] = [];
+  for (let c: Command | null = cmd; c && c.parent; c = c.parent) names.unshift(c.name());
+  return names.join(":");
+}
+
+let runStarted = 0;
+let runCode = "";
+function recordRun(ok: boolean): void {
+  if (!runCode) return;
+  const top = runCode.split(":")[0];
+  recordEvent({ component: "cli", event: "run", ok, code: runCode, ms: performance.now() - runStarted, story: COMMAND_STORY[top] ?? "US01" });
+  runCode = "";
+}
+
+program
+  .hook("preAction", (_root, actionCommand) => {
+    runStarted = performance.now();
+    runCode = commandPath(actionCommand);
+    if (process.stderr.isTTY) {
+      const notice = telemetry.firstRunNotice();
+      if (notice) console.error(notice);
+    }
+  })
+  .hook("postAction", async () => {
+    recordRun(!process.exitCode);
+    await telemetry.sendDaily(pkg.version);
+  });
+
+// ── telemetry (opt-in field counts to PostHog EU; docs/observability.md) ──
+
+const telemetryCmd = program
+  .command("telemetry")
+  .description("Anonymous usage counts: status, on, off, send (ask the owner before send)");
+telemetryCmd
+  .command("status")
+  .description("Show whether usage counts are sent, and how many events wait")
+  .action(() => {
+    const st = telemetry.status();
+    console.log(`telemetry: ${st.on ? "on" : `off (${st.reason})`}; ${st.pending} event(s) pending; last send: ${st.lastSend ?? "never"}`);
+    console.log("key: env TASKS_POSTHOG_KEY, or Keychain service tasks-md, account posthog_key. Off: tasks telemetry off, or DO_NOT_TRACK=1.");
+  });
+telemetryCmd
+  .command("on")
+  .description("Allow sending usage counts (still needs a project key)")
+  .action(() => { telemetry.setEnabled(true); console.log("telemetry: on"); });
+telemetryCmd
+  .command("off")
+  .description("Never send usage counts from this machine")
+  .action(() => { telemetry.setEnabled(false); console.log("telemetry: off"); });
+telemetryCmd
+  .command("send")
+  .description("Send pending usage counts now; --dry-run prints the exact body with the key hidden")
+  .option("--dry-run", "Print the body and send nothing")
+  .action(async (opts: { dryRun?: boolean }) => {
+    const result = await telemetry.send(pkg.version, { dryRun: opts.dryRun });
+    if (opts.dryRun) {
+      console.log(JSON.stringify(result.body, null, 2));
+      return;
+    }
+    console.log(result.skipped ? `telemetry: nothing sent (${result.skipped})` : `telemetry: sent ${result.sent} event(s)`);
+  });
 
 // ── init (TypeScript-native) ──
 
@@ -895,7 +970,12 @@ program
     if (!report.ok) process.exitCode = 1;
   });
 
-program.parse();
+try {
+  await program.parseAsync();
+} catch (error) {
+  recordRun(false);
+  throw error;
+}
 
 /** Print an operation result and set a nonzero exit code on anything but `ok`. */
 function emitOperationResult(result: OperationResult, opts: BackendOpts): void {

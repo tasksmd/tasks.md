@@ -27,6 +27,7 @@ tasks stats                           # queue overview + throughput from git log
 tasks diff                            # what changed since HEAD
 tasks watch --fix                     # auto-lint TASKS.md on save
 tasks sync github --merge             # sync GitHub Issues into TASKS.md
+tasks telemetry status                # anonymous usage counts: status, on, off, send --dry-run
 ```
 
 `tasks pick` is the read-only counterpart of `/next-task` — same priority sort, blocker resolution, and `standing-loop` skip — but it makes no claim, no commit, and no file edit. See [the user stories](../../docs/user-stories/) for runnable walkthroughs of every command.
