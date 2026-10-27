@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-736acd26-71fd-4a65-bbc4-f11446997a57",
+  "task_id": "field-telemetry-and-readme-proof-section",
+  "event_type": "created",
+  "actor_id": "claude-proof",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-27T03:00:11.830Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Field telemetry and README Proof section",
+    "priority": "P1",
+    "tags": [
+      "proof"
+    ],
+    "body": "Field recording (one content-free cli run event per command), the opt-in PostHog EU telemetry adapter (tasks telemetry status|on|off|send --dry-run), and a generated README Proof section from docs/proof/metrics.json. Folds in PR #40.\n- **Hypothesis**: real-use totals replace not-measured-yet rows in the README Proof section\n- **Success**: 2 or more machines in the Proof table within 2 weeks of the key being set\n- **Pivot**: PostHog free tier cannot give per-event totals, then a private git repo of aggregates\n- **Measurement**: node scripts/proof.mjs record && node scripts/proof.mjs check\n- **Anchor**: Homebrew analytics (docs.brew.sh/Analytics), anonymous usage counts"
+  }
+}
