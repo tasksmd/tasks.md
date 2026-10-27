@@ -15,7 +15,7 @@ import { initTaskQueue } from "./commands/init.js";
 import { recordEvent } from "./events.js";
 import * as telemetry from "./telemetry.js";
 import { generateCommands } from "./commands/generate-commands.js";
-import { installCommands, installPreCommitHook } from "./commands/install.js";
+import { installCommands, installPreCommitHook, knownAgentNames } from "./commands/install.js";
 import { startWatching } from "./commands/watch.js";
 import { runMigrate } from "./commands/migrate.js";
 import { checkWorkPush } from "./backend/git-native.js";
@@ -198,6 +198,13 @@ program
   .option("--agent <name>", "Install for a specific agent only")
   .option("--hooks", "Install pre-commit hook that validates TASKS.md")
   .action((opts: { all?: boolean; agent?: string; hooks?: boolean }) => {
+    const agents = knownAgentNames();
+    if (opts.agent && !agents.includes(opts.agent)) {
+      console.error(`Error: unknown agent "${opts.agent}". Known agents: ${agents.join(", ")}`);
+      // exitCode, not exit(): the postAction hook still logs the run event.
+      process.exitCode = 2;
+      return;
+    }
     const commandsSourceDir = join(import.meta.dirname, "..");
     console.log("Installing /next-task commands...");
     const result = installCommands(process.cwd(), commandsSourceDir, {
@@ -491,6 +498,15 @@ program
   .option("--json", "Output as JSON instead of tab-separated")
   .option("--backend <kind>", "Override backend: tasks-md | github-issues | git-native")
   .action(async (opts: { priority?: string; tag?: string; unclaimed?: boolean; unblocked?: boolean; json?: boolean; backend?: string }) => {
+    if (opts.priority !== undefined) {
+      const priority = opts.priority.toUpperCase();
+      if (!["P0", "P1", "P2", "P3"].includes(priority)) {
+        console.error(`Error: invalid priority "${opts.priority}". Allowed values: P0, P1, P2, P3`);
+        process.exitCode = 2;
+        return;
+      }
+      opts.priority = priority;
+    }
     if (resolveBackendConfig(process.cwd(), opts.backend).backend !== "tasks-md") {
       const tasks = filterBackendTasks(await getBackend(process.cwd(), opts.backend).listOpen(), opts);
       if (opts.json) {
