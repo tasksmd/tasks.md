@@ -54,6 +54,11 @@ export interface InstallResult {
   messages: string[];
 }
 
+/** Agent names `--agent` accepts, from the one mapping registry. */
+export function knownAgentNames(): string[] {
+  return AGENT_MAPPINGS.map((mapping) => mapping.name);
+}
+
 export function installCommands(
   targetDir: string,
   sourceDir: string,

@@ -37,10 +37,10 @@ tasks telemetry status                # anonymous usage counts: status, on, off,
 | Command | Flags | What it does |
 |---------|-------|--------------|
 | `init` | `--install` | Scaffold TASKS.md with P0–P3 headings and add the Task Management section to AGENTS.md. Ends by pointing to `tasks doctor`; with `--install` it runs the doctor and exits nonzero on a `✗` |
-| `install` | `--all`, `--agent <name>`, `--hooks` | Install the `/next-task` command for detected agents (Claude Code, Codex, Cursor, Gemini CLI). Auto-detects unless `--all` |
+| `install` | `--all`, `--agent <name>`, `--hooks` | Install the `/next-task` command for detected agents (Claude Code, Codex, Cursor, Gemini CLI). Auto-detects unless `--all`. An unknown `--agent` name exits 2 and lists the known agents |
 | `generate-commands` | — | Regenerate every agent variant from the canonical `commands/*.md` sources. Run after editing a canonical source |
 | `pick` | `--tags <a,b>`, `--json` | Pick the highest-priority unblocked, unclaimed task. `--tags` is a soft preference. `--json` emits `{picked: false}` or `{picked, summary, priority, file, line, metadata, candidates, unblocks}` |
-| `list` | `--priority <P0..P3>`, `--tag <t>`, `--unclaimed`, `--unblocked`, `--json` | Enumerate every task that matches. Default output is `<priority>\t<id>\t<summary>` per line; `--json` returns `{id, summary, priority, tags, blocked, claimed, file, line}` records |
+| `list` | `--priority <P0..P3>`, `--tag <t>`, `--unclaimed`, `--unblocked`, `--json` | Enumerate every task that matches. Default output is `<priority>\t<id>\t<summary>` per line; `--json` returns `{id, summary, priority, tags, blocked, claimed, file, line}` records. A priority outside P0-P3 exits 2 (case-insensitive) |
 | `stats` | `--json` | Queue overview by priority + throughput counted from `git log` |
 | `diff` | `[<ref>]`, `--json` | Show TASKS.md changes since the given git ref (default `HEAD`) |
 | `watch` | `[<dir>]`, `--fix` | Watch TASKS.md and auto-lint on save. `--fix` reuses `tasks-lint --fix` to remove `[x]` completed tasks. Logs one content-free event per lint run ([observability](../../docs/observability.md)); `TASKS_EVENTS=0` turns it off |

@@ -664,6 +664,34 @@ describe("CLI", () => {
     }
   });
 
+  it("list --priority rejects a value outside P0-P3 with exit 2", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    writeFileSync(join(dir, "TASKS.md"), "# Tasks\n\n## P1\n\n- [ ] Test\n  - **ID**: test\n");
+    spawnSync("git", ["init"], { cwd: dir });
+    try {
+      const bad = spawnSync("node", [CLI, "list", "--priority", "P9"], { encoding: "utf-8", cwd: dir });
+      expect(bad.status).toBe(2);
+      expect(bad.stderr).toContain("P0, P1, P2, P3");
+      const lower = spawnSync("node", [CLI, "list", "--priority", "p1"], { encoding: "utf-8", cwd: dir });
+      expect(lower.status).toBe(0);
+      expect(lower.stdout).toContain("P1\ttest\tTest");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("install --agent with an unknown name exits 2 and names the known agents", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
+    try {
+      const result = spawnSync("node", [CLI, "install", "--agent", "nosuch"], { encoding: "utf-8", cwd: dir });
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain("claude, codex, cursor, gemini");
+      expect(result.stdout).not.toContain("No agent directories detected");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
   it("list --json outputs valid round-trippable JSON", () => {
     const dir = mkdtempSync(join(tmpdir(), "tasks-cli-test-"));
     writeFileSync(
