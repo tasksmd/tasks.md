@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-25bfab48-bfcf-4dc2-8f7e-261a064eb236",
+  "task_id": "field-telemetry-and-readme-proof-section",
+  "event_type": "claimed",
+  "actor_id": "claude-proof",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-27T03:00:18.633Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-08de5f91-02f0-4384-8c84-17b32e26cafe",
+    "lease_expires_at": 1793156418633
+  }
+}
