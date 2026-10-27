@@ -82,15 +82,14 @@ describe("fetchIssues", () => {
     );
   });
 
-  it("returns empty array when gh issue list fails", async () => {
+  it("throws with the gh stderr when gh issue list fails", async () => {
     mockExecSync
       .mockReturnValueOnce(Buffer.from("") as never)
       .mockImplementationOnce(() => {
-        throw new Error("network error");
+        throw Object.assign(new Error("network error"), { stderr: "HTTP 502" });
       });
     const source = createGitHubSource();
-    const issues = await source.fetchIssues();
-    expect(issues).toEqual([]);
+    await expect(source.fetchIssues()).rejects.toThrow("gh issue list failed: HTTP 502");
   });
 
   it("returns empty array when output is empty string", async () => {
