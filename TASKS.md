@@ -48,6 +48,26 @@
 
 ## P2
 
+- [ ] Rebuild the UI to the Hallmark design skill
+  - **ID**: hallmark-design
+  - **Details**: The owner chose Hallmark (nutlope/hallmark, installed through agentbrew on
+    2026-10-27) as the design skill for every app with a UI. Run `/hallmark audit docs/index.html` first
+    and save its report. Then `/hallmark redesign docs/index.html`: it keeps content and wiring and
+    changes only the look. Keep the comfort budget from `ui-ux-rankings`
+    (references/comfort-patterns.md) as the floor, and keep every existing UI test green.
+  - **Files**: `docs/index.html`
+  - **Acceptance**: the Hallmark audit reports no Floor failures and no Reflex gate left
+    without a recorded reason; the `ui-ux-rankings` comfort gates still pass on phone and
+    desktop, light and dark; before/after screenshots in the PR.
+  - **Hypothesis**: Hallmark Floor and Reflex findings on `docs/index.html` drop from the audit baseline
+    to 0 open, with no comfort-budget regression.
+  - **Measurement**: `/hallmark audit docs/index.html` (count of Floor + Reflex findings) plus the repo's
+    `ui-ux-rankings` gate.
+  - **Success**: 0 Floor findings, every Reflex finding fixed or overruled with a reason.
+  - **Pivot**: the redesign breaks a comfort gate or an everyday job takes more taps: keep the
+    audit fixes only and drop the redesign.
+  - **Anchor**: Nielsen 1994 (heuristic evaluation).
+
 - [ ] Protect tasks-claims and main from force-push/delete (with compactor exemption)
   - **ID**: protect-tasks-claims-and-main-from-force-push-delete-with-co
   - **Tags**: git-native, security, enforcement
