@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-e5afcfb9-65d7-433e-82b0-24409a9802bf",
+  "task_id": "tasks-install-agent-with-an-unknown-name-exits-0-with-a-misl",
+  "event_type": "completed",
+  "actor_id": "claude-goal-worker",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-27T15:46:57.723Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
