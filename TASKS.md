@@ -83,12 +83,3 @@
     - **Anchor**: GitHub docs 'Managing a custom domain for your GitHub Pages site'.
   - **Blocked**: needs-owner-decision-and-money — checked 2026-10-16: tasks.md is already registered by a third party (whois: created 1994-03-24, expires 2027-04-25, NS ns1.netim.net), so it cannot simply be bought. Owner picks and buys another domain (money + DNS). Repo part after that: add docs/CNAME with the domain, set it in Pages settings, add the DNS CNAME to tasksmd.github.io.
 
-- [ ] tasks list --priority accepts an invalid priority silently
-  - **ID**: tasks-list-priority-accepts-an-invalid-priority-silently
-  - **Tags**: cli, bug
-  - **Details**: `tasks list --priority P9` prints "No tasks match the filters." and exits 0. Reject values outside P0-P3 with exit 2 and the allowed values, matching the MCP list_tasks validation.
-    - **Hypothesis**: validating the flag turns a silent empty result into a usage error; invalid-priority runs that exit 0 drop from 1 to 0.
-    - **Measurement**: node packages/cli/dist/cli.js list --priority P9; echo $? (expect 2) plus a cli.test.ts case
-    - **Success**: exit 2 for P9; lower-case input handled the same way as pick.
-    - **Pivot**: if the MCP tool accepts other spellings, align both to one validator instead.
-    - **Anchor**: docs/user-stories/07-monitor-queue-health.md; POSIX utility conventions.
