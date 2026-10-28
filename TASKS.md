@@ -26,16 +26,6 @@
     - **Anchor**: docs/release-and-ci.md Autonomous release; Forsgren, Humble, Kim 2018 (deployment frequency).
   - **Blocked by**: land-0-10-3-version-bump-and-claim-check-cli-pin
 
-- [ ] sync github treats a failed gh issue list as an empty result
-  - **ID**: sync-github-treats-a-failed-gh-issue-list-as-an-empty-result
-  - **Tags**: sync, bug, stability
-  - **Details**: In packages/cli/src/sync/github.ts, a failing `gh issue list` (network, rate limit, wrong --repo) is caught and returns []. With `tasks sync github --merge`, an empty fetch can drop every synced task from TASKS.md, and without --merge it writes an empty queue with exit 0. Throw instead, with the gh stderr, and exit nonzero. Add a US06 e2e error case with a gh shim whose `issue list` fails.
-    - **Hypothesis**: failing loudly removes silent queue wipes; synced tasks lost to a failed fetch drop from possible (1 path) to 0, and the exit code becomes nonzero.
-    - **Measurement**: npm run e2e (a new US06 case: gh issue list exits 1 -> sync exits nonzero and TASKS.md is unchanged)
-    - **Success**: the new case passes and the existing US06 cases stay green.
-    - **Pivot**: if gh returns partial JSON on some errors, validate the JSON shape instead of trusting the exit code.
-    - **Anchor**: docs/user-stories/06-issue-tracker-flows-to-agents.md; Nygard 2018, Release It! (fail fast).
-
 - [ ] Make the README setup map honest and give stories outcome metrics (@claude)
   - **ID**: make-the-readme-setup-map-honest-and-give-stories-outcome-me
   - **Tags**: requirements, docs, observability
@@ -79,16 +69,6 @@
     - **Anchor**: docs/security/git-native-claims-threat-model.md B6; GitHub docs 'About rulesets'.
   - **Blocked**: needs-user-decision — DONE: main force-push+delete (ruleset 24311973) + tasks-claims deletion (24311989), so the log can't be nuked and main can't be rewritten. REMAINING + BLOCKED: tasks-claims force-push (non-fast-forward) rewrite protection. GitHub 422-rejects the github-actions bot (app 15368) as a ruleset bypass actor even on this org repo ('must be part of the ruleset source or owner organization'), so the compactor can't be exempted; arming non_fast_forward without the exemption wedges compaction at the 5000-event threshold (the log is far below it, so no live impact yet). Unblock options: (a) an org-level Actions ruleset-bypass setting; (b) push tasks-claims from tasks-snapshot.yml via an admin PAT + bypass the Repository-admin role in the ruleset (introduces a long-lived PAT — your call). The fold already dedups replayed/edited events by event_id; only a dropped-event rewrite is unprotected.
 
-- [ ] tasks install --agent with an unknown name exits 0 with a misleading message
-  - **ID**: tasks-install-agent-with-an-unknown-name-exits-0-with-a-misl
-  - **Tags**: cli, bug
-  - **Details**: `tasks install --agent nosuch` prints "No agent directories detected" and exits 0. It should name the known agents (claude, codex, cursor, gemini) and exit 2 (usage error).
-    - **Hypothesis**: a clear usage error stops silent no-op installs; misleading exits for an unknown agent drop from 1 to 0.
-    - **Measurement**: node packages/cli/dist/cli.js install --agent nosuch; echo $? (expect 2 and the list of agents) plus a cli.test.ts case
-    - **Success**: exit 2 with the agent list; existing install tests stay green.
-    - **Pivot**: if agent names are dynamic (plugins), validate against the generator registry instead of a fixed list.
-    - **Anchor**: docs/user-stories/03-agents-work-through-queue.md; POSIX utility conventions (exit 2 for usage errors).
-
 ## P3
 
 - [ ] Set up custom domain for GitHub Pages
@@ -103,12 +83,3 @@
     - **Anchor**: GitHub docs 'Managing a custom domain for your GitHub Pages site'.
   - **Blocked**: needs-owner-decision-and-money — checked 2026-10-16: tasks.md is already registered by a third party (whois: created 1994-03-24, expires 2027-04-25, NS ns1.netim.net), so it cannot simply be bought. Owner picks and buys another domain (money + DNS). Repo part after that: add docs/CNAME with the domain, set it in Pages settings, add the DNS CNAME to tasksmd.github.io.
 
-- [ ] tasks list --priority accepts an invalid priority silently
-  - **ID**: tasks-list-priority-accepts-an-invalid-priority-silently
-  - **Tags**: cli, bug
-  - **Details**: `tasks list --priority P9` prints "No tasks match the filters." and exits 0. Reject values outside P0-P3 with exit 2 and the allowed values, matching the MCP list_tasks validation.
-    - **Hypothesis**: validating the flag turns a silent empty result into a usage error; invalid-priority runs that exit 0 drop from 1 to 0.
-    - **Measurement**: node packages/cli/dist/cli.js list --priority P9; echo $? (expect 2) plus a cli.test.ts case
-    - **Success**: exit 2 for P9; lower-case input handled the same way as pick.
-    - **Pivot**: if the MCP tool accepts other spellings, align both to one validator instead.
-    - **Anchor**: docs/user-stories/07-monitor-queue-health.md; POSIX utility conventions.
