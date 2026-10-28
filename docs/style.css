@@ -3,6 +3,7 @@
  * axes: light/grotesk-sans/cool · posture: restrained · contrast: pass · fold: pass · v2.0.0 */
 /* Hallmark · pre-emit critique: P3 H3 E3 S2 R3 V3 · weakest: S, the page is a long spec, so sections are ruled ledgers and graphite panes instead of cards, and the copy stays the owner's */
 /* Hallmark · waive 8 · every section id is kept for inbound links · kept section order in a new composition (redesign.md, gate 8) */
+/* Hallmark · answered F1 · the one straight apostrophe sits inside a code literal from spec.md, kept as typed */
 @import url("./tokens.css");
 @import url("./base.css");
 

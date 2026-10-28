@@ -123,7 +123,7 @@
   <section id="format">
     <div class="container">
       <h2>The format</h2>
-      <div class="table-wrap">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Metadata fields">
         <table class="format-table">
           <thead>
             <tr><th>Field</th><th>Purpose</th><th>Example</th></tr>
@@ -150,7 +150,7 @@
 
       <h3 class="sub">Install</h3>
       <p>Copy the command file into your project (commit it so your team gets it too):</p>
-      <div class="table-wrap">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Install commands per agent">
         <table class="install-table">
           <thead>
             <tr><th>Agent</th><th>Install</th></tr>
@@ -217,7 +217,7 @@ Add more tasks             →     ...keeps draining the queue</code></pre>
         <div class="faq-item faq-item--wide">
           <h3>Why not Jira / GitHub Issues / Linear?</h3>
           <p>They solve a different problem. Issue trackers are for <strong>team coordination</strong>: sprints, assignments, reporting. TASKS.md is for <strong>agent execution</strong>: a local, fast, file-based queue that agents read and write without API calls. Use the tracker for <em>what</em> to build; use TASKS.md for <em>how</em> the agent builds it.</p>
-          <div class="table-wrap">
+          <div class="table-wrap" tabindex="0" role="region" aria-label="TASKS.md compared with issue trackers">
             <table class="format-table compare-table">
               <thead>
                 <tr><th></th><th>Issue trackers</th><th>TASKS.md</th></tr>

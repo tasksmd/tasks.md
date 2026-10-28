@@ -55,10 +55,17 @@ function extractFormatTable() {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        // Page typography: no dashes or straight apostrophes in rendered copy
-        .replace(/ — /g, ", ")
-        .replace(/(\w)'(\w)/g, "$1’$2")
-        .replace(/"([^"]*)"/g, "“$1”");
+        // Page typography: no dashes or straight quotes in rendered copy; `code` spans stay as typed
+        .split(/(`[^`]*`)/)
+        .map((part, i) =>
+          i % 2
+            ? part
+            : part
+                .replace(/ — /g, ", ")
+                .replace(/(\w)'(\w)/g, "$1’$2")
+                .replace(/"([^"]*)"/g, "“$1”"),
+        )
+        .join("");
 
       const examples = {
         ID: "**ID**: auth-fix",
