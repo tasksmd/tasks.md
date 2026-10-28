@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-5146b662-73a2-47a6-adfc-620ded4d103c",
+  "task_id": "rebuild-the-ui-to-the-hallmark-design-skill",
+  "event_type": "created",
+  "actor_id": "claude-lead",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-28T20:55:17.490Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Rebuild the UI to the Hallmark design skill",
+    "priority": "P2",
+    "tags": [],
+    "body": "- **Details**: The owner chose Hallmark (nutlope/hallmark, installed through agentbrew on\n  2026-10-27) as the design skill for every app with a UI. Run `/hallmark audit docs/index.html` first\n  and save its report. Then `/hallmark redesign docs/index.html`: it keeps content and wiring and\n  changes only the look. Keep the comfort budget from `ui-ux-rankings`\n  (references/comfort-patterns.md) as the floor, and keep every existing UI test green.\n- **Files**: `docs/index.html`\n- **Acceptance**: the Hallmark audit reports no Floor failures and no Reflex gate left\n  without a recorded reason; the `ui-ux-rankings` comfort gates still pass on phone and\n  desktop, light and dark; before/after screenshots in the PR.\n- **Hypothesis**: Hallmark Floor and Reflex findings on `docs/index.html` drop from the audit baseline\n  to 0 open, with no comfort-budget regression.\n- **Measurement**: `/hallmark audit docs/index.html` (count of Floor + Reflex findings) plus the repo's\n  `ui-ux-rankings` gate.\n- **Success**: 0 Floor findings, every Reflex finding fixed or overruled with a reason.\n- **Pivot**: the redesign breaks a comfort gate or an everyday job takes more taps: keep the\n  audit fixes only and drop the redesign."
+  }
+}
