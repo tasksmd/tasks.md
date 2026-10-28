@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-89bfc1df-e409-4d00-9adf-44a7b8345d12",
+  "task_id": "rebuild-the-ui-to-the-hallmark-design-skill",
+  "event_type": "claimed",
+  "actor_id": "claude-lead",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-10-28T20:55:24.062Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-a1893074-0777-42d0-85ac-40aae2d30f0e",
+    "lease_expires_at": 1793307324062
+  }
+}
