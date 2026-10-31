@@ -26,37 +26,7 @@
     - **Anchor**: docs/release-and-ci.md Autonomous release; Forsgren, Humble, Kim 2018 (deployment frequency).
   - **Blocked by**: land-0-10-3-version-bump-and-claim-check-cli-pin
 
-- [ ] Make the README setup map honest and give stories outcome metrics (@claude)
-  - **ID**: make-the-readme-setup-map-honest-and-give-stories-outcome-me
-  - **Tags**: requirements, docs, observability
-  - **Details**: Follow-up from the independent grade of tasks-md-meets-every-new-project-requirement-or-waives-it-wi. (1) map.setup named CONTRIBUTING.md, but the requirement is "first in the README": the README first block is the one-prompt setup, which still ends with tasks-lint, not tasks doctor (README and docs/user-stories/10 copies were missed when commands/setup.md changed). End both copies with `npx -y @tasks-md/cli doctor`, add a contributor pointer to `bash scripts/setup.sh` near the top, and map setup to README.md + scripts/setup.sh. (2) Six story metrics count passing e2e tests; replace US03, US04, US05, US07 with outcome rates from the local event log (docs/observability.md), keep test-count guards only where no event exists. (3) Re-render the TASKS.md snapshot.
-    - **Hypothesis**: the setup map then truly meets "one command, first in the README, ending with the doctor", and stories with an outcome metric rise from 4/10 to 8/10.
-    - **Measurement**: head -60 README.md (first block ends with tasks doctor) and grep -c "events.jsonl" docs/user-stories/0*.md
-    - **Success**: the first README block names tasks doctor; 4 stories cite an events.jsonl rate; npm run lint and check-setup.sh stay green.
-    - **Pivot**: if the README prompt cannot end with the doctor without hurting the landing page, waive setup with that reason instead.
-    - **Anchor**: agentbrew new-project SKILL.md (setup row); Basili et al. 1994 (GQM).
-
 ## P2
-
-- [ ] Rebuild the UI to the Hallmark design skill
-  - **ID**: hallmark-design
-  - **Details**: The owner chose Hallmark (nutlope/hallmark, installed through agentbrew on
-    2026-10-27) as the design skill for every app with a UI. Run `/hallmark audit docs/index.html` first
-    and save its report. Then `/hallmark redesign docs/index.html`: it keeps content and wiring and
-    changes only the look. Keep the comfort budget from `ui-ux-rankings`
-    (references/comfort-patterns.md) as the floor, and keep every existing UI test green.
-  - **Files**: `docs/index.html`
-  - **Acceptance**: the Hallmark audit reports no Floor failures and no Reflex gate left
-    without a recorded reason; the `ui-ux-rankings` comfort gates still pass on phone and
-    desktop, light and dark; before/after screenshots in the PR.
-  - **Hypothesis**: Hallmark Floor and Reflex findings on `docs/index.html` drop from the audit baseline
-    to 0 open, with no comfort-budget regression.
-  - **Measurement**: `/hallmark audit docs/index.html` (count of Floor + Reflex findings) plus the repo's
-    `ui-ux-rankings` gate.
-  - **Success**: 0 Floor findings, every Reflex finding fixed or overruled with a reason.
-  - **Pivot**: the redesign breaks a comfort gate or an everyday job takes more taps: keep the
-    audit fixes only and drop the redesign.
-  - **Anchor**: Nielsen 1994 (heuristic evaluation).
 
 - [ ] Protect tasks-claims and main from force-push/delete (with compactor exemption)
   - **ID**: protect-tasks-claims-and-main-from-force-push-delete-with-co
@@ -82,4 +52,3 @@
     - **Pivot**: if no domain under 20 characters costs less than 20 USD a year, close this task and keep the github.io URL.
     - **Anchor**: GitHub docs 'Managing a custom domain for your GitHub Pages site'.
   - **Blocked**: needs-owner-decision-and-money — checked 2026-10-16: tasks.md is already registered by a third party (whois: created 1994-03-24, expires 2027-04-25, NS ns1.netim.net), so it cannot simply be bought. Owner picks and buys another domain (money + DNS). Repo part after that: add docs/CNAME with the domain, set it in Pages settings, add the DNS CNAME to tasksmd.github.io.
-
