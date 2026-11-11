@@ -81,6 +81,18 @@ describe("publish workflow", () => {
     expect(check).toBeLessThan(workflow.indexOf("- name: Publish packages to npm"));
   });
 
+  it("keeps the manual OIDC check apart from the publish job", () => {
+    // A manual run must never publish, and a release must never run the check.
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).toContain("if: github.event_name == 'workflow_dispatch'");
+    expect(workflow).toContain("if: github.event_name == 'release'");
+    const script = readFileSync(join(repoRoot, "scripts", "check-npm-oidc.mjs"), "utf-8");
+    expect(script).not.toContain("npm publish --");
+    // Both tokens are masked before anything else is printed about them.
+    expect(script).toContain("::add-mask::${idToken}");
+    expect(script).toContain("::add-mask::${body.token}");
+  });
+
   describe("version check step", () => {
     beforeEach(makeFixture, SLOW_MS);
     afterEach(() => rmSync(dir, { recursive: true, force: true }));
