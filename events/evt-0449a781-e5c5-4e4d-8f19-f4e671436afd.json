@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-0449a781-e5c5-4e4d-8f19-f4e671436afd",
+  "task_id": "tidy-public-wording-registry-mirror-note-and-conduct-contact",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-11T01:50:40.448Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Tidy public wording: registry mirror note and conduct contact",
+    "priority": "P3",
+    "tags": [
+      "docs",
+      "oss"
+    ],
+    "body": "Two small in-tree items from the 2026-11-10 open-source safety audit. (1) .github/workflows/tasks-claim-check.yml line 35 names a specific registry-mirror product in a comment; AGENTS.md, docs/release-and-ci.md, .github/workflows/tasks-snapshot.yml and packages/cli/src/commands/fleet.ts say 'registry mirror'. Use the generic wording everywhere. (2) CODE_OF_CONDUCT.md line 59 sends private conduct reports to an address on the tasks.md domain, which a third party owns (see set-up-github-pages-custom-domain). Replace it with a contact the owner controls, for example GitHub private vulnerability reporting or the owner's public address. The owner picks the contact.\n- **Hypothesis**: a conduct contact the owner controls means a private report reaches the maintainer; contact addresses on domains the project does not own drop from 1 to 0.\n- **Measurement**: grep -c '@tasks.md' CODE_OF_CONDUCT.md\n- **Success**: the command prints 0 and npm run lint passes.\n- **Pivot**: if the owner wants no email contact, point the section at GitHub's report-abuse flow and close the task.\n- **Anchor**: Contributor Covenant 2.1, Enforcement section; GitHub docs 'Adding a code of conduct to your project'."
+  }
+}
