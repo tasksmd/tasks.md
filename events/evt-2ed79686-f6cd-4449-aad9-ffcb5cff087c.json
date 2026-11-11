@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-2ed79686-f6cd-4449-aad9-ffcb5cff087c",
+  "task_id": "harden-hosted-ci-pin-actions-by-sha-least-privilege-token-pi",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-11T01:50:24.789Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Harden hosted CI: pin actions by SHA, least-privilege token, pinned runner",
+    "priority": "P2",
+    "tags": [
+      "ci",
+      "security"
+    ],
+    "body": "The five workflows under .github/workflows/ use tag-pinned actions (actions/checkout@v4, actions/setup-node@v4), ubuntu-latest, no top-level permissions block and no concurrency group. Bring them to the agentbrew and dotfiles model: pin every action by commit SHA with a version comment, pin the runner image (ubuntu-24.04), add top-level 'permissions: contents: read' (widen per job only where needed), add a concurrency group that cancels superseded pull-request runs, set persist-credentials: false on checkout, and add a timeout per job. Keep the gate the same (lint, commands-drift, test, e2e, action-dogfood). Then decide whether the CI jobs join the required-checks ruleset next to claim-check, as the other two repos do. Update docs/release-and-ci.md and AGENTS.md. Found by the 2026-11-10 open-source safety audit; the audit stopped before this step.\n- **Hypothesis**: SHA-pinned actions and a read-only default token remove the mutable-tag supply-chain path; unpinned 'uses:' lines in .github/workflows drop from all to 0.\n- **Measurement**: grep -rhE '^\\s*-?\\s*uses: [^.]' .github/workflows | grep -vcE '@[0-9a-f]{40}'\n- **Success**: the command prints 0 and every CI job is green on the PR and on main.\n- **Pivot**: if a pinned action breaks the gate twice, keep that one action on its tag, record why in docs/release-and-ci.md, and pin the rest.\n- **Anchor**: GitHub docs 'Security hardening for GitHub Actions'; OpenSSF Scorecard checks Pinned-Dependencies and Token-Permissions."
+  }
+}
