@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-28b072a0-351c-4ac9-a2c9-b248b7280c11",
+  "task_id": "find-why-the-v0-11-0-publish-gets-404-with-the-trust-rule-se",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-11T13:53:17.523Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Find why the v0.11.0 publish gets 404 with the trust rule set",
+    "priority": "P1",
+    "tags": [
+      "release",
+      "ci"
+    ],
+    "body": "The v0.11.0 release exists on GitHub (tag on abf667a) but nothing is on npm. publish.yml run 43032668925 failed twice on 2026-11-11 at the first package: provenance signs, then 'npm error 404 Not Found - PUT https://registry.npmjs.org/@tasks-md%2fparser'. Checked the same day: npm trust list shows tasksmd/tasks.md + publish.yml with publish permission on all four packages; runner npm is 12.2.2; each package.json repository url is tasksmd/tasks.md; no NODE_AUTH_TOKEN is set. The log does not show the OIDC exchange result. Not ruled out: PR 48 moved publish.yml from actions/setup-node v4 to v7.1.0 and actions/checkout v4 to v7.0.1; npm@latest is unpinned. Next step: add a workflow_dispatch diagnostic to publish.yml that requests the GitHub OIDC token, calls the npm token exchange endpoint for one package, and prints only the HTTP status and error text (never the token); or run npm publish with --loglevel verbose. Then fix the cause and re-run the publish for the existing v0.11.0 release. Do not delete the release or the tag. Keep CLI_VERSION at 0.10.0 until npm has 0.11.0.\n  - **Hypothesis**: the OIDC token exchange fails for a reason the log hides; exposing its status and fixing the cause moves the publish failure rate from 2/2 to 0.\n  - **Measurement**: gh run list --workflow publish.yml --limit 1 --json conclusion -q '.[0].conclusion' and npm view @tasks-md/cli@0.11.0 version\n  - **Success**: the publish run concludes success and npm view prints 0.11.0 for all four packages.\n  - **Pivot**: if the exchange endpoint rejects a correct claim set twice, stop and open an npm support ticket with the status and message.\n  - **Anchor**: npm docs 'Trusted publishing for npm packages' (2025); docs/release-and-ci.md Autonomous release."
+  }
+}
