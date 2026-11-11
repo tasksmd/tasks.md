@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-29cefb6d-9bc2-4f2b-8d5d-d8f340a6e7e1",
+  "task_id": "find-why-the-v0-11-0-publish-gets-404-with-the-trust-rule-se",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-11T13:53:51.216Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-dc5a3e43-da86-4128-9943-ca3713e192e7",
+    "lease_expires_at": 1794491631216
+  }
+}
