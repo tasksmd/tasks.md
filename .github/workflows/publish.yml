@@ -3,6 +3,8 @@ name: Publish to npm
 on:
   release:
     types: [published]
+  # Manual run: checks the npm OIDC login only. It publishes nothing.
+  workflow_dispatch:
 
 # Trusted Publishing (npm OIDC, August 2025+):
 # - No NPM_TOKEN secret required — npm verifies the GitHub Actions OIDC
@@ -18,7 +20,25 @@ on:
 #   publish.yml`), and the environment (none — runs on release event).
 #   See: https://docs.npmjs.com/trusted-publishers
 jobs:
+  # Asks npm whether it trusts this workflow for each package, and prints
+  # npm's answer. `npm publish` hides that answer behind a 404.
+  oidc-check:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the npm OIDC token exchange
+        run: node scripts/check-npm-oidc.mjs
+
   publish:
+    if: github.event_name == 'release'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:

@@ -139,7 +139,11 @@ Publishing (OIDC) with provenance. Every `npm view` must print `<version>`.
 - Never use an npm token, and never publish from a laptop (`npm publish`
   stays human-only outside `publish.yml`).
 - Never re-run a failed publish blindly. Read the run log first. A 404 on
-  `PUT` means trust is missing: reopen the owner's setup task.
+  `PUT` means npm did not accept the OIDC login. `npm publish` hides the
+  reason, so ask npm directly: `gh workflow run publish.yml`, then read the
+  `oidc-check` job. It prints the claims and npm's answer for each package
+  (`scripts/check-npm-oidc.mjs`) and publishes nothing. If `npm trust list
+  <pkg>` shows no rule, reopen the owner's setup task.
 - Never unpublish to undo a bad release. Ship a fixed patch version.
 
 After a release, bump `CLI_VERSION` in `.github/workflows/tasks-claim-check.yml`
