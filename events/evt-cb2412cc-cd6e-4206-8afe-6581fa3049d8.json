@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-cb2412cc-cd6e-4206-8afe-6581fa3049d8",
+  "task_id": "release-v0-11-0-and-pin-the-claim-check-cli-to-it",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-11T13:49:32.574Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-e4956d11-758e-4bdd-a1bc-decab8c8f564",
+    "lease_expires_at": 1794491372574
+  }
+}
