@@ -53,6 +53,42 @@ edges that cost real debugging time — captured here so they don't recur:
   gracefully on failure (temp-file swap), so it never truncates `TASKS.md`. The
   `tasks-claim-check` workflow keeps the generic `npx` form (it's advisory).
 
+## Hosted CI
+
+CI runs on GitHub's standard runners. They are free for a public repository.
+Never add a paid runner.
+
+- **The gate.** `ci.yml` runs five jobs on every pull request and on every
+  push to `main`: `lint`, `commands-drift`, `test`, `e2e`, `action-dogfood`.
+  They are the hosted copy of `npm run build`, `npm test`, `npm run lint`,
+  and `npm run e2e`.
+- **Pin every action by commit SHA**, with the version in a comment:
+  `uses: actions/checkout@<40-hex-sha> # v7.0.1`. A tag can move; a SHA cannot.
+  To update a pin, read the SHA with
+  `gh api 'repos/actions/checkout/tags?per_page=5'`.
+- **Pin the runner image** (`ubuntu-24.04`), not `ubuntu-latest`.
+- **Start from a read-only token.** Each workflow sets
+  `permissions: contents: read`. Only `tasks-snapshot.yml` (pushes the
+  snapshot branch) and `publish.yml` (`id-token: write` for npm OIDC) ask for
+  more.
+- **No secrets.** No workflow reads a repository secret. Never use
+  `pull_request_target`.
+- **Checkout keeps no credentials** (`persist-credentials: false`), except in
+  `tasks-snapshot.yml`, which must push.
+- **Superseded runs stop.** `ci.yml` cancels an older run of the same pull
+  request. A run on `main` is never cancelled.
+- **Every job has a timeout** (`timeout-minutes: 20`).
+- **Required check.** Only `claim-check` is required by a ruleset. Wait for
+  all the CI jobs before you merge anyway.
+- **Not covered here.** `tasks fleet init` still writes tag-pinned workflows
+  for other repos (`packages/cli/src/commands/fleet.ts`).
+
+Check the pins: this must print `0`.
+
+```bash
+grep -rhE --include='*.yml' 'uses: [^.]' .github | grep -vcE '@[0-9a-f]{40}'
+```
+
 ## Autonomous release
 
 Standing approval from the owner on 2026-10-16: an agent may publish a

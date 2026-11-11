@@ -102,6 +102,7 @@ Full policy: [docs/editing-rules.md](docs/editing-rules.md#task-queue-policy).
 - The owner's global gitignore lists `TASKS.md`. Fixture git repos in tests need `GIT_CONFIG_GLOBAL=/dev/null`.
 - In the agent sandbox, git push, ssh, and `npm ci` network access can fail. Run them outside the sandbox.
 - CI may install through a lagging registry mirror. Release, OIDC, and ruleset traps: [docs/release-and-ci.md](docs/release-and-ci.md).
+- Hosted CI is free and hardened: pin each action by commit SHA, keep `ubuntu-24.04`, a read-only token, and no secrets ([rules](docs/release-and-ci.md#hosted-ci)).
 
 ## Delivery
 
