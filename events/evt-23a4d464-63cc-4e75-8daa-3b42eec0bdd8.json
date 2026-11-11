@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-23a4d464-63cc-4e75-8daa-3b42eec0bdd8",
+  "task_id": "harden-hosted-ci-pin-actions-by-sha-least-privilege-token-pi",
+  "event_type": "completed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-11T02:16:10.483Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
