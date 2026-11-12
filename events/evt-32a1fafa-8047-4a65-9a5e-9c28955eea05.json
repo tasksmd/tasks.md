@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-32a1fafa-8047-4a65-9a5e-9c28955eea05",
+  "task_id": "release-v0-11-0-and-pin-the-claim-check-cli-to-it",
+  "event_type": "updated",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-12T00:26:52.589Z",
+  "parent_event_ids": [],
+  "payload": {
+    "blocked": "npm bug npm/cli#9969: OIDC exchange 404s for GitHub immutable subjects (forced on repos created after 2026-07-15). Owner chose staged token publish 2026-11-11. Next: owner adds repo secret NPM_TOKEN; agent PRs publish.yml OIDC-then-token staged publish + docs exception; rerun v0.11.0 publish; owner approves with 2FA; then re-pin CLI_VERSION 0.11.0; owner unpublishes cli 0.10.0-0.10.2."
+  }
+}
