@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-af12b4a9-8a4d-4112-9dd6-3790ceaa3e8b",
+  "task_id": "release-v0-11-0-and-pin-the-claim-check-cli-to-it",
+  "event_type": "released",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-12T00:26:56.240Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
