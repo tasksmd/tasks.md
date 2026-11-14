@@ -4,17 +4,6 @@
 
 ## P1
 
-- [ ] Owner runs scripts/setup-npm-trusted-publishing.sh once (@tasks-md)
-  - **ID**: land-0-10-3-version-bump-and-claim-check-cli-pin
-  - **Tags**: release, ci, human-only
-  - **Details**: One-time owner step so publish.yml can publish through npm Trusted Publishing (the v0.10.3 run 404'd on PUT: no trust rule after the repo was recreated). In a real terminal: cd ~/apps/tooling/tasks.md && git pull && npm login && bash scripts/setup-npm-trusted-publishing.sh. It is idempotent and stores no token. Then complete this task (tasks complete land-0-10-3-version-bump-and-claim-check-cli-pin); that is precondition 1 of docs/release-and-ci.md 'Autonomous release'. The old 0.10.3 bump is superseded: main is at 0.11.0.
-    - **Hypothesis**: one owner run of the trust script lets publish.yml publish through npm Trusted Publishing; the publish failure rate drops from 1/1 (the v0.10.3 404 on PUT) to 0.
-    - **Measurement**: gh run list --workflow publish.yml --limit 1 --json conclusion -q '.[0].conclusion' after the next release
-    - **Success**: the next publish.yml run concludes success with no npm token in the repo.
-    - **Pivot**: if the run still 404s after the script ran, stop retrying and file an npm support ticket; switch to a manual publish checklist.
-    - **Anchor**: npm docs 'Trusted publishing for npm packages' (2025); docs/release-and-ci.md Autonomous release.
-  - **Blocked**: human-only — npm login needs the owner's browser 2FA in a real terminal; agents cannot do it.
-
 - [ ] Release v0.11.0 and pin the claim-check CLI to it
   - **ID**: release-v0-11-0-and-pin-the-claim-check-cli-to-it
   - **Tags**: release, ci
@@ -25,38 +14,20 @@
     - **Pivot**: if the publish fails twice with the trust rule in place, stop and keep the 0.10.0 pin; file a task with the run log.
     - **Anchor**: docs/release-and-ci.md Autonomous release; Forsgren, Humble, Kim 2018 (deployment frequency).
   - **Blocked by**: land-0-10-3-version-bump-and-claim-check-cli-pin
+  - **Blocked**: npm bug npm/cli#9969: OIDC exchange 404s for GitHub immutable subjects (forced on repos created after 2026-07-15). Owner chose staged token publish 2026-11-11. Next: owner adds repo secret NPM_TOKEN; agent PRs publish.yml OIDC-then-token staged publish + docs exception; rerun v0.11.0 publish; owner approves with 2FA; then re-pin CLI_VERSION 0.11.0; owner unpublishes cli 0.10.0-0.10.2.
 
-- [ ] Make the README setup map honest and give stories outcome metrics (@claude)
-  - **ID**: make-the-readme-setup-map-honest-and-give-stories-outcome-me
-  - **Tags**: requirements, docs, observability
-  - **Details**: Follow-up from the independent grade of tasks-md-meets-every-new-project-requirement-or-waives-it-wi. (1) map.setup named CONTRIBUTING.md, but the requirement is "first in the README": the README first block is the one-prompt setup, which still ends with tasks-lint, not tasks doctor (README and docs/user-stories/10 copies were missed when commands/setup.md changed). End both copies with `npx -y @tasks-md/cli doctor`, add a contributor pointer to `bash scripts/setup.sh` near the top, and map setup to README.md + scripts/setup.sh. (2) Six story metrics count passing e2e tests; replace US03, US04, US05, US07 with outcome rates from the local event log (docs/observability.md), keep test-count guards only where no event exists. (3) Re-render the TASKS.md snapshot.
-    - **Hypothesis**: the setup map then truly meets "one command, first in the README, ending with the doctor", and stories with an outcome metric rise from 4/10 to 8/10.
-    - **Measurement**: head -60 README.md (first block ends with tasks doctor) and grep -c "events.jsonl" docs/user-stories/0*.md
-    - **Success**: the first README block names tasks doctor; 4 stories cite an events.jsonl rate; npm run lint and check-setup.sh stay green.
-    - **Pivot**: if the README prompt cannot end with the doctor without hurting the landing page, waive setup with that reason instead.
-    - **Anchor**: agentbrew new-project SKILL.md (setup row); Basili et al. 1994 (GQM).
+- [ ] Find why the v0.11.0 publish gets 404 with the trust rule set
+  - **ID**: find-why-the-v0-11-0-publish-gets-404-with-the-trust-rule-se
+  - **Tags**: release, ci
+  - **Details**: The v0.11.0 release exists on GitHub (tag on abf667a) but nothing is on npm. publish.yml run 43032668925 failed twice on 2026-11-11 at the first package: provenance signs, then 'npm error 404 Not Found - PUT https://registry.npmjs.org/@tasks-md%2fparser'. Checked the same day: npm trust list shows tasksmd/tasks.md + publish.yml with publish permission on all four packages; runner npm is 12.2.2; each package.json repository url is tasksmd/tasks.md; no NODE_AUTH_TOKEN is set. The log does not show the OIDC exchange result. Not ruled out: PR 48 moved publish.yml from actions/setup-node v4 to v7.1.0 and actions/checkout v4 to v7.0.1; npm@latest is unpinned. Next step: add a workflow_dispatch diagnostic to publish.yml that requests the GitHub OIDC token, calls the npm token exchange endpoint for one package, and prints only the HTTP status and error text (never the token); or run npm publish with --loglevel verbose. Then fix the cause and re-run the publish for the existing v0.11.0 release. Do not delete the release or the tag. Keep CLI_VERSION at 0.10.0 until npm has 0.11.0.
+    - **Hypothesis**: the OIDC token exchange fails for a reason the log hides; exposing its status and fixing the cause moves the publish failure rate from 2/2 to 0.
+    - **Measurement**: gh run list --workflow publish.yml --limit 1 --json conclusion -q '.[0].conclusion' and npm view @tasks-md/cli@0.11.0 version
+    - **Success**: the publish run concludes success and npm view prints 0.11.0 for all four packages.
+    - **Pivot**: if the exchange endpoint rejects a correct claim set twice, stop and open an npm support ticket with the status and message.
+    - **Anchor**: npm docs 'Trusted publishing for npm packages' (2025); docs/release-and-ci.md Autonomous release.
+  - **Blocked**: npm bug npm/cli#9969: OIDC exchange 404s for GitHub immutable subjects (forced on repos created after 2026-07-15). Owner chose staged token publish 2026-11-11. Next: owner adds repo secret NPM_TOKEN; agent PRs publish.yml OIDC-then-token staged publish + docs exception; rerun v0.11.0 publish; owner approves with 2FA; then re-pin CLI_VERSION 0.11.0; owner unpublishes cli 0.10.0-0.10.2.
 
 ## P2
-
-- [ ] Rebuild the UI to the Hallmark design skill
-  - **ID**: hallmark-design
-  - **Details**: The owner chose Hallmark (nutlope/hallmark, installed through agentbrew on
-    2026-10-27) as the design skill for every app with a UI. Run `/hallmark audit docs/index.html` first
-    and save its report. Then `/hallmark redesign docs/index.html`: it keeps content and wiring and
-    changes only the look. Keep the comfort budget from `ui-ux-rankings`
-    (references/comfort-patterns.md) as the floor, and keep every existing UI test green.
-  - **Files**: `docs/index.html`
-  - **Acceptance**: the Hallmark audit reports no Floor failures and no Reflex gate left
-    without a recorded reason; the `ui-ux-rankings` comfort gates still pass on phone and
-    desktop, light and dark; before/after screenshots in the PR.
-  - **Hypothesis**: Hallmark Floor and Reflex findings on `docs/index.html` drop from the audit baseline
-    to 0 open, with no comfort-budget regression.
-  - **Measurement**: `/hallmark audit docs/index.html` (count of Floor + Reflex findings) plus the repo's
-    `ui-ux-rankings` gate.
-  - **Success**: 0 Floor findings, every Reflex finding fixed or overruled with a reason.
-  - **Pivot**: the redesign breaks a comfort gate or an everyday job takes more taps: keep the
-    audit fixes only and drop the redesign.
-  - **Anchor**: Nielsen 1994 (heuristic evaluation).
 
 - [ ] Protect tasks-claims and main from force-push/delete (with compactor exemption)
   - **ID**: protect-tasks-claims-and-main-from-force-push-delete-with-co
@@ -83,3 +54,30 @@
     - **Anchor**: GitHub docs 'Managing a custom domain for your GitHub Pages site'.
   - **Blocked**: needs-owner-decision-and-money — checked 2026-10-16: tasks.md is already registered by a third party (whois: created 1994-03-24, expires 2027-04-25, NS ns1.netim.net), so it cannot simply be bought. Owner picks and buys another domain (money + DNS). Repo part after that: add docs/CNAME with the domain, set it in Pages settings, add the DNS CNAME to tasksmd.github.io.
 
+- [ ] Apply to open-source AI maintainer programs when tasks.md has traction
+  - **ID**: apply-to-open-source-ai-maintainer-programs-when-tasks-md-ha
+  - **Tags**: funding, ai-cost, owner-action
+  - **Details**: Some vendors give open-source maintainers free AI. Research on 2026-11-10 found that tasks.md misses every published threshold, so applying now is a long shot. Recheck when the repo grows. Programs and rules as read on 2026-11-10 (reread each page before acting):
+    - Claude for Open Source (https://claude.com/contact-sales/claude-for-oss): 6 months of the top Claude plan, paid billing pauses. Any one of: 20 or more external contributors with merged PRs in 12 months, 200,000 or more monthly downloads, 500 or more dependent repos, OpenSSF criticality 0.4 or above. It also has a discretionary "apply anyway" track.
+    - OpenAI Codex for Open Source (https://developers.openai.com/codex/community/codex-for-oss): 6 months of ChatGPT Pro plus API credits. No numeric rule; it wants a "widely used public project".
+    - Greptile for open source (https://www.greptile.com/pricing/open-source): free AI review, automatic at 50 stars.
+    - Atlas Cloud OSS program (https://atlascloud.ai/docs/en/oss-program): monthly credits from about 100 stars.
+    - GitHub Copilot Pro for maintainers: automatic for a "popular" repo; check https://github.com/settings/copilot.
+    - No application needed on a public repo: CodeRabbit and Sourcery free AI review, Sentry for Open Source (includes Seer).
+    - npm downloads of the tasks.md packages count toward the 200,000 monthly downloads rule.
+    - **Hypothesis**: once tasks.md passes one threshold, one accepted application removes 6 months of AI subscription cost for the owner.
+    - **Measurement**: `gh api repos/tasksmd/tasks.md -q .stargazers_count` and `gh api repos/tasksmd/tasks.md/contributors -q length`
+    - **Success**: at least one program accepts and the benefit is active on the owner's account.
+    - **Pivot**: if two applications made after a threshold is met are both rejected, close this task and stop applying.
+    - **Anchor**: Anthropic Claude for Open Source program terms (https://www.anthropic.com/claude-for-oss-terms); Basili, Caldiera and Rombach (1994), GQM.
+  - **Blocked**: needs-traction-and-owner-application — 2026-11-10: tasks.md is below every threshold. Agents never submit applications or forms; the owner applies. Unblock when the measurement shows 50 or more stars or 20 or more contributors, or when the owner chooses to try the discretionary tracks.
+
+- [ ] Tidy public wording: registry mirror note and conduct contact
+  - **ID**: tidy-public-wording-registry-mirror-note-and-conduct-contact
+  - **Tags**: docs, oss
+  - **Details**: Two small in-tree items from the 2026-11-10 open-source safety audit. (1) .github/workflows/tasks-claim-check.yml line 35 names a specific registry-mirror product in a comment; AGENTS.md, docs/release-and-ci.md, .github/workflows/tasks-snapshot.yml and packages/cli/src/commands/fleet.ts say 'registry mirror'. Use the generic wording everywhere. (2) CODE_OF_CONDUCT.md line 59 sends private conduct reports to an address on the tasks.md domain, which a third party owns (see set-up-github-pages-custom-domain). Replace it with a contact the owner controls, for example GitHub private vulnerability reporting or the owner's public address. The owner picks the contact.
+    - **Hypothesis**: a conduct contact the owner controls means a private report reaches the maintainer; contact addresses on domains the project does not own drop from 1 to 0.
+    - **Measurement**: grep -c '@tasks.md' CODE_OF_CONDUCT.md
+    - **Success**: the command prints 0 and npm run lint passes.
+    - **Pivot**: if the owner wants no email contact, point the section at GitHub's report-abuse flow and close the task.
+    - **Anchor**: Contributor Covenant 2.1, Enforcement section; GitHub docs 'Adding a code of conduct to your project'.
