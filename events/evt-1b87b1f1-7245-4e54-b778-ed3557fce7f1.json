@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-1b87b1f1-7245-4e54-b778-ed3557fce7f1",
+  "task_id": "add-github-sponsors-link-funding-yml-readme",
+  "event_type": "created",
+  "actor_id": "claude-sponsors",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T03:19:27.024Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Add GitHub Sponsors link (FUNDING.yml + README)",
+    "priority": "P2",
+    "tags": []
+  }
+}
