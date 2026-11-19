@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-26c5ed3e-d68a-485d-a3d3-6fb39c3e5b81",
+  "task_id": "lint-warns-on-weak-pre-registration-fields",
+  "event_type": "claimed",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T13:35:37.825Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-89d2836c-6b83-4686-9047-09e1f895ebd1",
+    "lease_expires_at": 1795181737825
+  }
+}
