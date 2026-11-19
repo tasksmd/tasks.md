@@ -42,6 +42,10 @@ npx -y @tasks-md/cli init --install && npx -y @tasks-md/cli doctor
 - **Check a queue in CI** — the linter and GitHub Action catch broken queues on every push.
 - **One queue across many repos** — workspaces let an agent pick the best task across all of them.
 
+## Sponsor
+
+If tasks.md saves you time, you can [sponsor its author on GitHub](https://github.com/sponsors/fyodoriv). It keeps the work going.
+
 ## Features
 
 - **One Markdown file** any agent or human reads and writes — no accounts, no API, no server, works offline.
