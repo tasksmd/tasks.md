@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-35a46636-58df-4fe0-a6f9-27aebec3521e",
+  "task_id": "add-lint-rules-touches-shape-task-block-citations-ui-task-pr",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T04:51:25.810Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Add lint rules: Touches shape, task-block citations, UI-task priority",
+    "priority": "P3",
+    "tags": [
+      "absorb-minsky"
+    ],
+    "body": "Port three opt-in lint rules into packages/lint: (1) Touches field is a comma list of repo-relative globs; (2) citations in a task block point at a file or URL that exists; (3) a UI task is not filed below P2. Sources: https://github.com/fyodoriv/minsky/blob/main/scripts/check-touches-field.mjs, https://github.com/fyodoriv/minsky/blob/main/scripts/check-task-block-citations.mjs, https://github.com/fyodoriv/minsky/blob/main/scripts/check-ui-tasks-priority.mjs (credit only). Each rule is opt-in so existing queues do not break.\n- **Hypothesis**: three opt-in rules catch malformed Touches lines and dead citations at lint time instead of at pick time; bad-field task picks drop to 0 in a fixture queue.\n- **Measurement**: npm test -w packages/lint\n- **Success**: each rule has a failing and a passing fixture; default lint output is unchanged on examples/.\n- **Pivot**: if a rule needs more than 100 lines or needs repo knowledge, keep it in the consumer repo.\n- **Anchor**: Fagerholm et al. 2014 (continuous experimentation)."
+  }
+}
