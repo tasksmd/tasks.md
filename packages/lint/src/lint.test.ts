@@ -304,6 +304,14 @@ describe("tasks-lint", () => {
       expect(result.stderr).toMatch(/\*\*Blocked\*\* must have a non-empty reason/);
     });
 
+    it("fails on a **Blocked** reason that says DELIVERED", () => {
+      const result = lint(
+        ["# Tasks", "", "## P1", "", "- [ ] Ship release", "  - **Blocked**: DELIVERED in PR 12, awaiting cleanup", ""].join("\n")
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toMatch(/reason says DELIVERED/);
+    });
+
     it("allows **Blocked** and **Blocked by** on the same task", () => {
       const result = lint(
         [

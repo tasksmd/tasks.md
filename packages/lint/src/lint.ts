@@ -116,6 +116,16 @@ export function lintFiles(filePaths: string[], fixMode: boolean): LintResult {
         );
       }
 
+      // A **Blocked** reason that says DELIVERED is a stale block: the work
+      // shipped, so the task should be completed and removed instead.
+      if (/^\s+-\s+\*\*Blocked\*\*:.*DELIVERED/.test(line)) {
+        reportError(
+          filePath,
+          lineNum,
+          "**Blocked** reason says DELIVERED; the work shipped, so complete and remove the task instead of keeping a stale block"
+        );
+      }
+
       // Empty **Research** — same treatment as **Blocked**. An agent that
       // enriches a task should always leave a non-empty note; an empty
       // Research line is almost certainly a mistake.

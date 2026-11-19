@@ -48,6 +48,7 @@ tasks-lint [--fix] <file|directory> [file|directory...]
 | Unique IDs | No duplicate IDs within a file or across files |
 | Valid blockers | `**Blocked by**:` IDs must exist somewhere |
 | Empty `**Blocked**` | `**Blocked**:` must have a non-empty reason |
+| Stale `**Blocked**` | `**Blocked**:` must not say `DELIVERED`; complete and remove the task instead |
 | Empty `**Research**` | `**Research**:` must have a non-empty value |
 | ISO `**Last-enriched**` | Must be `YYYY-MM-DD` |
 | No orphaned metadata | `**ID**:`, `**Tags**:`, etc. must nest under a task |
