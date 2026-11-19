@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-94e12f6b-ece1-435c-aa1d-7fd3644ed23d",
+  "task_id": "drop-the-archived-taskgrind-state-ignore",
+  "event_type": "completed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T06:10:02.654Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
