@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-d0ff66bd-2d25-47e1-9816-b6ea7c472466",
+  "task_id": "check-tests-import-only-existing-exports",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T13:35:32.339Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "check tests import only existing exports",
+    "priority": "P3",
+    "tags": [],
+    "body": "From minsky scripts/check-orphan-tests.mjs: every symbol a test imports from ../src must exist as a named export.\n- **Hypothesis**: tests that import a missing symbol from ../src get caught before merge.\n- **Measurement**: `node scripts/check-orphan-tests.mjs` exits 1 on a planted orphan import.\n- **Success**: 0 orphan imports on main, the check is wired into npm run lint.\n- **Pivot**: more than 2 false positives on the current tree.\n- **Anchor**: Fowler 2006, continuous integration."
+  }
+}
