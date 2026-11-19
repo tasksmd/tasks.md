@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-bad29e1d-4139-47b9-89c3-40ec5c72b87f",
+  "task_id": "add-github-sponsors-link-funding-yml-readme",
+  "event_type": "claimed",
+  "actor_id": "claude-sponsors",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T03:19:33.444Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-f5b61ac4-9cfc-4b40-bf5e-fd33861abb2f",
+    "lease_expires_at": 1795144773444
+  }
+}
