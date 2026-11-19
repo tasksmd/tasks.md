@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-59882e86-11f6-4ba2-ba82-1b67e460c98a",
+  "task_id": "research-bridge-the-spec-to-claude-code-s-native-task-list-a",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T04:51:29.020Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Research: bridge the spec to Claude Code's native task list (Agent Teams)?",
+    "priority": "P2",
+    "tags": [
+      "absorb-minsky"
+    ],
+    "body": "Decide if the TASKS.md spec should map to Claude Code's native task list (Agent Teams). Compare fields, claims, and dependencies. Write the finding to docs/research/. Source idea: the minsky TASKS item investigate-claude-native-task-standard; see https://github.com/fyodoriv/minsky/blob/main/TASKS.md.\n- **Hypothesis**: a written mapping shows whether the spec can sync both ways; the answer is a clear yes or no with the field gaps counted.\n- **Measurement**: ls docs/research/ | rg native-task; the doc lists every spec field as mapped, lossy, or missing\n- **Success**: one research doc with a go or no-go and a field table covering all spec fields.\n- **Pivot**: if the native format has no stable public schema, record no-go and revisit at the next Claude Code release.\n- **Anchor**: Claude Code docs, Agent Teams (2026)."
+  }
+}
