@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-de884fb6-1441-4753-913d-ae8d70b6646c",
+  "task_id": "add-tasks-fleet-close-orphans-with-a-lossless-check",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T04:51:19.351Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Add tasks fleet close-orphans with a lossless check",
+    "priority": "P2",
+    "tags": [
+      "absorb-minsky"
+    ],
+    "body": "Add a fleet command that closes PRs whose task is gone, only after a lossless check proves every commit is already on the base branch or the work is captured elsewhere. Dry run by default; --yes to close. Sources: https://github.com/fyodoriv/minsky/blob/main/scripts/auto-close-orphan-prs.mjs and https://github.com/fyodoriv/minsky/blob/main/scripts/verify-pr-closure-is-lossless.mjs (credit only).\n- **Hypothesis**: a lossless check before closing cuts wrongly closed PRs (work lost) from unknown to 0 while clearing orphan PRs automatically.\n- **Measurement**: npm test -w packages/cli -- fleet-close-orphans (fixtures: merged-equivalent, unique-commits)\n- **Success**: 0 PRs with unique commits are closed in the fixture run; every merged-equivalent PR is closed.\n- **Pivot**: if one real lossy close occurs, remove --yes and keep report-only output.\n- **Anchor**: Kitchenham, Dybå, Jørgensen 2004 (evidence before action)."
+  }
+}
