@@ -58,6 +58,7 @@ tasks-lint [--fix] <file|directory> [file|directory...]
 | Policy not empty | `<!-- policy: -->` with no directive text is an error |
 | Unclosed comments | HTML comments must have a closing `-->` |
 | Rule-#9 fields *(opt-in)* | With `--require-prereg`: every task block must have **Hypothesis**, **Success**/**Acceptance**, **Pivot**, **Measurement**, **Anchor** |
+| Rule-#9 quality *(warning)* | With `--require-prereg`: warns when **Measurement** has no command in backticks, **Pivot** repeats **Success**, or **Anchor** names no year, URL, or DOI |
 
 `--fix` removes `[x]` completed tasks (and their metadata blocks), adds the missing list dash to bare `**Field**:` lines, and cleans up consecutive blank lines. Ambiguous cases (priority reordering, dangling blockers) are reported but not auto-fixed.
 
