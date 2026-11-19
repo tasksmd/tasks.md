@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-ff1620ea-feae-4664-a3da-fe3813802ebc",
+  "task_id": "drop-the-archived-taskgrind-state-ignore",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T06:08:39.030Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-562842ad-cb87-4da6-8c3d-caf1c14f1182",
+    "lease_expires_at": 1795154919030
+  }
+}
