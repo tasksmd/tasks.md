@@ -131,6 +131,8 @@ at the end of this section is what consumers copy; see also
   `- **Anchor**:`. Put them on their own lines at the end of the body you pass to
   `tasks create --body` or `tasks update <id> --body`. The snapshot job warns
   when a task lacks them; fix it with `tasks update` before the next refresh.
+  The lint also warns when the Measurement has no command in backticks, the
+  Pivot repeats the Success threshold, or the Anchor names no year, URL, or DOI.
 - **Complete via the CLI**, never by editing `TASKS.md`: `tasks complete <id>`
   appends a `completed` event and the projection refreshes the snapshot. Add a
   task with `tasks create "<title>"`, release one with `tasks unclaim <id>`.

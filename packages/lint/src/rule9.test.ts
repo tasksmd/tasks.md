@@ -7,6 +7,7 @@ import {
   parseRule9Blocks,
   classifyRule9Blocks,
   parseAllowlistFile,
+  qualityWarningsIn,
 } from "./rule9.js";
 
 const CLI = join(import.meta.dirname, "..", "dist", "cli.js");
@@ -236,5 +237,41 @@ describe("CLI integration", () => {
     expect(result.stderr).toMatch(
       /sparse-task' missing Hypothesis, Success\/Acceptance, Pivot, Measurement, Anchor/,
     );
+  });
+});
+
+describe("qualityWarningsIn", () => {
+  const good = [
+    "- **Measurement**: `pnpm test --run` reports 0 failures",
+    "- **Success**: flake rate below 1%",
+    "- **Pivot**: flake rate above 5%",
+    "- **Anchor**: Luo et al. 2014, flaky tests study",
+  ].join("\n");
+
+  it("returns no warnings for a well-formed block", () => {
+    expect(qualityWarningsIn(good)).toEqual([]);
+  });
+
+  it("warns when Measurement has no command in backticks", () => {
+    expect(qualityWarningsIn(good.replace("`pnpm test --run`", "run the tests"))).toContain(
+      "Measurement has no runnable command in backticks",
+    );
+  });
+
+  it("warns when Pivot repeats Success", () => {
+    expect(qualityWarningsIn(good.replace("above 5%", "below 1%"))).toContain(
+      "Pivot repeats the Success threshold; give it its own lower threshold",
+    );
+  });
+
+  it("warns when Anchor has no year, URL, or DOI", () => {
+    expect(qualityWarningsIn(good.replace("Luo et al. 2014, flaky tests study", "common sense"))).toContain(
+      "Anchor names no primary source (author and year, URL, or DOI)",
+    );
+  });
+
+  it("accepts a URL or DOI anchor", () => {
+    expect(qualityWarningsIn(good.replace("Luo et al. 2014, flaky tests study", "https://example.com/paper"))).toEqual([]);
+    expect(qualityWarningsIn(good.replace("Luo et al. 2014, flaky tests study", "doi 10.1145/2635868"))).toEqual([]);
   });
 });

@@ -71,6 +71,35 @@ function missingFieldsIn(body: string): string[] {
   return missing;
 }
 
+function fieldValue(body: string, name: string): string | undefined {
+  const m = new RegExp(`\\*\\*${name}\\*\\*:\\s*(.*)`).exec(body);
+  return m?.[1]?.trim();
+}
+
+/**
+ * Pure function. Non-blocking quality warnings for a block that has the
+ * fields: a Measurement with no runnable command in backticks, a Pivot
+ * that repeats the Success threshold, and an Anchor with no primary
+ * source (no year, URL, or DOI). Ported from minsky's experiment lints.
+ */
+export function qualityWarningsIn(body: string): string[] {
+  const warnings: string[] = [];
+  const measurement = fieldValue(body, "Measurement");
+  if (measurement !== undefined && !/`[^`]+`/.test(measurement)) {
+    warnings.push("Measurement has no runnable command in backticks");
+  }
+  const success = fieldValue(body, "Success") ?? fieldValue(body, "Acceptance");
+  const pivot = fieldValue(body, "Pivot");
+  if (success !== undefined && pivot !== undefined && success.length > 0 && success === pivot) {
+    warnings.push("Pivot repeats the Success threshold; give it its own lower threshold");
+  }
+  const anchor = fieldValue(body, "Anchor");
+  if (anchor !== undefined && !/(\b(19|20)\d{2}\b|https?:\/\/|\b10\.\d{4,}\/)/.test(anchor)) {
+    warnings.push("Anchor names no primary source (author and year, URL, or DOI)");
+  }
+  return warnings;
+}
+
 export interface Rule9Classification {
   /** Blocks missing fields that are NOT in the allowlist — these block the lint */
   blocking: readonly Rule9TaskBlock[];
@@ -118,6 +147,8 @@ export interface Rule9LintReport {
   clean: number;
   grandfathered: number;
   blocking: readonly Rule9TaskBlock[];
+  /** Non-blocking quality warnings for blocks that have every field */
+  warnings: readonly { id: string; messages: readonly string[] }[];
 }
 
 /**
@@ -136,5 +167,9 @@ export function lintRule9Content(
     clean,
     grandfathered: grandfathered.length,
     blocking,
+    warnings: blocks
+      .filter((b) => b.missingFields.length === 0)
+      .map((b) => ({ id: b.id, messages: qualityWarningsIn(b.body) }))
+      .filter((w) => w.messages.length > 0),
   };
 }

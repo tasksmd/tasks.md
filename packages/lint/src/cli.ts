@@ -61,6 +61,9 @@ if (requirePrereg) {
       );
       prereggErrors++;
     }
+    for (const w of report.warnings) {
+      console.warn(`WARN: ${file}: rule-#9 task '${w.id}': ${w.messages.join("; ")}`);
+    }
   }
 }
 
