@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-ca06b51a-7e84-4d30-8cf9-2e2d5851e41e",
+  "task_id": "lint-rejects-a-blocked-field-that-says-delivered",
+  "event_type": "completed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T06:01:29.717Z",
+  "parent_event_ids": [],
+  "payload": {}
+}
