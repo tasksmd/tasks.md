@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-ec142d61-1665-4eb5-bfe6-10efc60b08c0",
+  "task_id": "lint-rejects-a-blocked-field-that-says-delivered",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T05:59:45.726Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Lint rejects a Blocked field that says DELIVERED",
+    "priority": "P2",
+    "tags": [],
+    "body": "Stale task blocks keep a Blocked reason that says the work was DELIVERED. The linter now flags them. Source idea: https://github.com/fyodoriv/minsky/blob/main/scripts/check-no-delivered-retained-blocks.mjs\n- **Hypothesis**: A lint error on DELIVERED in Blocked drops stale delivered blocks in linted TASKS.md files from >0 to 0, because authors see the error at commit time.\n- **Measurement**: `npx vitest run packages/lint` passes with a fixture that holds a DELIVERED Blocked field.\n- **Success**: The fixture produces exactly one error and clean fixtures produce none.\n- **Pivot**: If the rule flags a legitimate Blocked reason in the repo's own TASKS.md, narrow the match or drop the rule.\n- **Anchor**: Kitchenham, Dybå, Jørgensen 2004 (evidence-based SE): checks must catch the defect class they target."
+  }
+}
