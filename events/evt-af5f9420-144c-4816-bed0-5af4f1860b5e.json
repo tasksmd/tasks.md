@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-af5f9420-144c-4816-bed0-5af4f1860b5e",
+  "task_id": "adoption-lead-propose-native-tasks-md-support-to-oh-my-claud",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T04:51:32.294Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Adoption lead: propose native tasks.md support to oh-my-claudecode",
+    "priority": "P2",
+    "tags": [
+      "absorb-minsky"
+    ],
+    "body": "Draft an issue for oh-my-claudecode (OMC) that proposes native TASKS.md support. Do not file it without the owner's yes: it is a public post. Keep the draft in docs/research/. Source idea: minsky task omc-tasksmd-issue; see https://github.com/fyodoriv/minsky/blob/main/TASKS.md.\n- **Hypothesis**: one concrete upstream proposal brings at least one new tool that reads TASKS.md, raising the adopter count by 1.\n- **Measurement**: gh issue list -R <omc repo> --search tasks.md (issue exists and gets a maintainer reply)\n- **Success**: a maintainer replies within 30 days or the proposal is merged.\n- **Pivot**: if there is no reply in 60 days, stop and try one other tool.\n- **Anchor**: Rogers 2003, Diffusion of Innovations."
+  }
+}
