@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-38c91f60-c7b8-4679-8082-63325fb44671",
+  "task_id": "lint-warns-on-weak-pre-registration-fields",
+  "event_type": "created",
+  "actor_id": "tasks-md",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T13:35:28.875Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "lint warns on weak pre-registration fields",
+    "priority": "P2",
+    "tags": [],
+    "body": "Port minsky's experiment-validate lints as non-blocking warnings.\n- **Hypothesis**: weak pre-registration (no command, Pivot equal to Success, no source) drops to 0 new cases once the lint warns.\n- **Measurement**: `npx tasks-lint --require-prereg TASKS.md` prints WARN lines for weak blocks.\n- **Success**: unit tests cover all 3 warnings and pass in CI.\n- **Pivot**: warnings fire on more than 20% of well-formed blocks (false positives).\n- **Anchor**: Munafò et al. 2017, pre-registration manifesto."
+  }
+}
