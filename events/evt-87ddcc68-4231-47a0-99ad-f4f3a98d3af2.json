@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-87ddcc68-4231-47a0-99ad-f4f3a98d3af2",
+  "task_id": "lint-rejects-a-blocked-field-that-says-delivered",
+  "event_type": "claimed",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T05:59:54.008Z",
+  "parent_event_ids": [],
+  "payload": {
+    "claim_id": "claim-7d8c272c-d0d7-4290-b76b-d25a48befed7",
+    "lease_expires_at": 1795154394008
+  }
+}
