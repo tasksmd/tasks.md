@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "evt-5b5c96eb-deca-4140-9a63-76abe723c11c",
+  "task_id": "add-tasks-fleet-rebase-for-dirty-prs",
+  "event_type": "created",
+  "actor_id": "claude",
+  "instance_id": "tasks-md-cli",
+  "created_at": "2026-11-19T04:51:15.280Z",
+  "parent_event_ids": [],
+  "payload": {
+    "title": "Add tasks fleet rebase for dirty PRs",
+    "priority": "P2",
+    "tags": [
+      "absorb-minsky"
+    ],
+    "body": "Add a fleet rebase command next to fleet auto-merge in packages/cli/src/commands/fleet.ts. It rebases PRs that report merge conflicts or a behind state, then force-pushes with lease. Source idea: https://github.com/fyodoriv/minsky/blob/main/scripts/auto-rebase-dirty-prs.mjs (credit only).\n- **Hypothesis**: a one-command rebase of dirty fleet PRs cuts the median time a dirty PR waits for a human from hours to under 10 minutes.\n- **Measurement**: npm test -w packages/cli -- fleet-rebase (fake gh, 3 dirty PRs)\n- **Success**: 3 of 3 dirty fixture PRs rebase cleanly; a conflicting PR is skipped and reported, never force-pushed.\n- **Pivot**: if the skipped-conflict rate is above 50% on real fleets, drop the command and keep only a report.\n- **Anchor**: Forsgren, Humble, Kim 2018 (lead time for changes)."
+  }
+}
